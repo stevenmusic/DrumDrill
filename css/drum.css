@@ -21,3 +21,12 @@
 #t-osmd .dd-stick{fill:#16130D}
 /* 題目卡:沒有上方那一列,題目直接在最上面 */
 #t-quizCard .q-head{margin-top:2px}
+
+/* 題目卡標籤:名稱、類別放不下時縮成「…」(不跑出卡片);左右手、最快速度不縮。量自然寬度時(.measure)先不縮 */
+#t-qTags .q-tag.fold{flex:0 1 auto;min-width:3.2em;overflow:hidden;text-overflow:ellipsis}
+#t-qTags.measure .q-tag.fold{flex:none}
+/* 速度卡標題右邊:這個打法的最快速度 */
+#t-bestTempo{flex:none;margin-left:auto;font-size:var(--fs-xs);font-weight:700;color:var(--gold-bright);border:1px solid var(--gold);border-radius:var(--radius-sm);padding:1px 8px;white-space:nowrap;font-variant-numeric:tabular-nums}
+#t-bestTempo:empty{display:none}
+/* 題目太長(折疊機的英文名):同一個高度排兩行 */
+#t-qTitle.two{display:block;white-space:normal;line-height:1.15;overflow:hidden;text-overflow:clip;align-content:center}

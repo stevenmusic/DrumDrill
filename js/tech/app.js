@@ -77,11 +77,12 @@ function setRudiment(no){
   groups = withLead(cur, S.lead);
   renderPicker();
   $("qTitle").textContent = `${cur.no}. ${name(cur)}`;
-  // 中英文標籤數量一樣(版面才會一樣):中文 = 英文名 + 類別;英文 = 類別 + PAS 編號
-  const tags = [getLang() === "en" ? tr(subOf(cur).zh, subOf(cur).en) : cur.en, getLang() === "en" ? "PAS No. " + cur.no : subOf(cur).zh,
+  // 中英文標籤數量一樣(版面才會一樣):中文 = 英文名,英文 = PAS 編號;左手先/右手先另加一個。
+  // 類別不放(上面分段鈕已經看得到,放了標籤列會擠不下)。英文名太長時縮成「…」;最快速度放在速度卡
+  const tags = [getLang() === "en" ? "PAS No. " + cur.no : cur.en,
     cur.second ? (S.lead === "L" ? tr("左手先", "Left lead") : tr("右手先", "Right lead")) : null].filter(Boolean);
-  const best = S.best[cur.no];
-  $("qTags").innerHTML = tags.map(t => `<span class="q-tag">${t}</span>`).join("") + (best ? `<span class="q-tag best">${T("bestLabel")} ♩=${best}</span>` : "");
+  $("qTags").innerHTML = tags.map((t, i) => `<span class="q-tag${i ? "" : " fold"}" title="${t}">${t}</span>`).join("");
+  showBest();
   fitTitle();
   $("playBtn").disabled = false;
   syncMastery();
@@ -275,12 +276,22 @@ function movePlayline(beat, follow){
 $("scroll").addEventListener("scroll", () => { if (!play) movePlayline(0, false); }, { passive: true });
 /* 題目固定一行:太長就把字縮小(中英文版面一樣) */
 function fitTitle(){
-  const el = $("qTitle"); el.style.fontSize = "";
+  const el = $("qTitle"); el.style.fontSize = ""; el.classList.remove("two");
   let fs = parseFloat(getComputedStyle(el).fontSize);
   const min = Math.max(14, fs * 0.55);
   while (el.scrollWidth > el.clientWidth + 1 && fs > min) { fs -= 1; el.style.fontSize = fs + "px"; }
-  const g = $("qTags"); let k = 1; g.style.setProperty("--tag-scale", 1);
-  while (g.scrollWidth > g.clientWidth + 1 && k > 0.6) { k -= 0.04; g.style.setProperty("--tag-scale", k); }
+  // 縮到最小還放不下(折疊機的長英文名):在同一個高度裡排成兩行,不截字
+  if (el.scrollWidth > el.clientWidth + 1) {
+    el.classList.add("two"); fs = Math.floor(el.clientHeight / 2.3);
+    el.style.fontSize = fs + "px";
+    while (el.scrollHeight > el.clientHeight + 1 && fs > 11) { fs -= 1; el.style.fontSize = fs + "px"; }
+  }
+  // 標籤先縮字(最多到 0.6,跟原本一樣),還放不下就讓名稱、類別縮成「…」(不會跑出卡片)
+  const g = $("qTags"); let k = 1; g.style.setProperty("--tag-scale", 1); g.classList.add("measure");
+  // 量最後一個標籤的右緣(留 2px:小數寬度四捨五入時不會多出「…」)
+  const over = () => g.lastElementChild && g.lastElementChild.getBoundingClientRect().right + 2 > g.getBoundingClientRect().right;
+  while (over() && k > 0.6) { k -= 0.04; g.style.setProperty("--tag-scale", k); }
+  g.classList.remove("measure");
 }
 const onStageResize = () => {
   if (!active) return;
@@ -451,7 +462,7 @@ async function startInner(){
       const sec = play.endBeat * play.beatSec;
       stopPlayback(true);
       logPractice(sec);
-      if (!S.clickOnly && (!S.best[cur.no] || bpm > S.best[cur.no])) { S.best[cur.no] = bpm; store.save(); setRudimentTags(); }
+      if (!S.clickOnly && (!S.best[cur.no] || bpm > S.best[cur.no])) { S.best[cur.no] = bpm; store.save(); showBest(); }
       if (S.loop && cur) { if (S.ramp) setBpm(bpm + 4, true); startPlayback(); }
       return;
     }
@@ -459,7 +470,7 @@ async function startInner(){
   };
   play.raf = requestAnimationFrame(tick);
 }
-function setRudimentTags(){ const keep = cur && cur.no; if (keep) { const b = S.best[keep]; const tags = $("qTags"); const old = tags.querySelector(".best"); if (old) old.remove(); if (b) tags.insertAdjacentHTML("beforeend", `<span class="q-tag best">${T("bestLabel")} ♩=${b}</span>`); fitTitle(); } }
+function showBest(){ const b = cur && S.best[cur.no]; $("bestTempo").textContent = b ? `${T("bestLabel")} ♩=${b}` : ""; }
 function stopPlayback(natural){
   starting = 0; $("playBtn").classList.remove("busy");
   if (play) { cancelAnimationFrame(play.raf); play = null; if (!natural) audio.stopAll(); }
