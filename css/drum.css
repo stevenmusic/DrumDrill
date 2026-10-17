@@ -1,0 +1,23 @@
+/* DrumDrill 專屬的樣式(共用的設計代幣、卡片、分頁在 css/app.css,照 PianoDrill) */
+
+/* 窄螢幕一欄時卡片的順序:選擇器 → 題目 → 鼓譜 → 速度 → 紀錄 */
+#t-picker,#t-examCard{order:1} #t-quizCard{order:2} #t-scoreCard{order:3} #t-metroCard{order:4} #t-logCard{order:5}
+
+/* 打法清單:固定格子(號碼 + 名稱,最多兩行),中英文每列個數、高度都一樣 */
+#mod-tech .picker .opts[data-k="no"]{display:grid;grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));gap:6px}
+#mod-tech .picker .opt.rud{height:44px;min-width:0;padding:0 10px;display:flex;align-items:center;gap:8px;text-align:left;
+  border-radius:var(--radius-sm);white-space:normal;font-size:var(--fs-sm)}
+.opt.rud b{flex:none;width:1.6em;text-align:right;font-variant-numeric:tabular-nums;color:var(--gold)}
+.opt.rud[aria-pressed="true"] b{color:var(--on-fill)}
+.opt.rud span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.2;overflow-wrap:anywhere}
+@media (max-width:359px){ #mod-tech .picker .opts[data-k="no"]{grid-template-columns:1fr} }
+@media (min-width:1100px){ #mod-tech .picker .opts[data-k="no"]{--cw:150px;grid-template-columns:repeat(2, minmax(0, 1fr))} }
+#mod-tech .picker .opts[data-k="lead"],#mod-tech .picker .opts[data-k="reps"]{display:grid;gap:6px}
+#mod-tech .picker .opts[data-k="lead"]{grid-template-columns:repeat(2, minmax(0, 120px))}
+#mod-tech .picker .opts[data-k="reps"]{grid-template-columns:repeat(4, minmax(0, 72px))}
+#mod-tech .picker .opts[data-k="lead"] .opt,#mod-tech .picker .opts[data-k="reps"] .opt{min-width:0;padding:0 6px}
+
+/* 鼓譜:左右手字母的顏色跟著紙(紙一律白底) */
+#t-osmd .dd-stick{fill:#16130D}
+/* 題目卡:沒有上方那一列,題目直接在最上面 */
+#t-quizCard .q-head{margin-top:2px}

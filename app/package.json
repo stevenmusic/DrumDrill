@@ -1,0 +1,16 @@
+{
+  "name": "drumdrill-app",
+  "private": true,
+  "scripts": {
+    "www": "node ../tools/build/app-www.mjs",
+    "sync": "npm run www && npx cap sync ios",
+    "open": "npx cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/ios": "^8.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.0.0"
+  }
+}

@@ -1,0 +1,15 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{background:#fff;margin:10px;font-family:sans-serif}.r{border-bottom:1px solid #ddd;padding:4px}.r b{font-size:13px}</style></head><body><div id="out"></div>
+<script src="../../vendor/opensheetmusicdisplay.min.js"></script>
+<script type="module">
+import { RUDIMENTS } from "../../js/tech/rudiments.js";
+import { rudimentXML, setPitch } from "../../js/tech/notation.js";
+const P = new URLSearchParams(location.search).get("p"); if (P) setPitch(P[0], P[1]);
+const nos = (new URLSearchParams(location.search).get("n") || "1,2,3").split(",").map(Number);
+for (const no of nos) {
+  const r = RUDIMENTS.find(x => x.no === no);
+  const d = document.createElement("div"); d.className = "r"; d.innerHTML = `<b>${no}. ${r.en}</b><div></div>`; document.getElementById("out").appendChild(d);
+  const o = new opensheetmusicdisplay.OpenSheetMusicDisplay(d.lastChild, { backend: "svg", autoResize: false, drawTitle: false, drawPartNames: false, drawMeasureNumbers: false, drawingParameters: "compacttight", renderSingleHorizontalStaffline: true });
+  try { await o.load(rudimentXML(r.groups, { reps: no === 1 ? 4 : 1 })); o.zoom = 0.9; o.EngravingRules.TupletNumberLimitConsecutiveRepetitions = false; o.render(); } catch (e) { d.lastChild.textContent = "ERR " + e.message; }
+}
+window.__done = 1;
+</script></body></html>

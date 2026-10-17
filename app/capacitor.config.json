@@ -1,0 +1,9 @@
+{
+  "appId": "io.github.stevenmusic.drumdrill",
+  "appName": "DrumDrill",
+  "webDir": "www",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#0C0A07"
+  }
+}
