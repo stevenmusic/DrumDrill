@@ -332,6 +332,16 @@ export default function check(ok){
     ok(Array.isArray(p.name) && p.name[1].length <= 22, `drumkey ${id} 名稱`);
   }
   for (const [id, s] of Object.entries(key.srcs)) ok(s.pending ? !s.p : PAGE.test(s.p || ""), `drumkey srcs.${id}:官方出處要有頁碼、待核對的不能有`);
+  // 圖例格子的出處小字(legend.js;格子 74px 寬,一行放得下):每個出處都要有 short [中, 英],英文 ≤ 16 字元;
+  // Trinity 的 Drum Kit 大綱要寫明 DK(不能寫成「Trinity p.107」,會以為是 Rock & Pop 的書)
+  const shortOK = v => Array.isArray(v) && v.length === 2 && v.every(x => typeof x === "string" && x.trim() && x.length <= 16);
+  for (const [id, s] of Object.entries(key.srcs)) {
+    ok(shortOK(s.short), `drumkey srcs.${id}.short 要是 [中, 英](各 ≤ 16 字元):${JSON.stringify(s.short)}`);
+    if (s.pending) ok(shortOK(s.posShort), `drumkey srcs.${id}.posShort(位置待核對)要是 [中, 英]`);
+    if (/Drum Kit/.test(s.ref || "")) ok((s.short || []).every(x => /Trinity DK p\./.test(x)), `drumkey srcs.${id}:Drum Kit 大綱要寫「Trinity DK p.…」`);
+    if (/errata/i.test(s.ref || "")) ok(same(s.short, ["Trinity 勘誤", "Trinity errata"]), `drumkey srcs.${id}:勘誤要寫「Trinity 勘誤」`);
+  }
+  ok(Array.isArray(key.singleLine.short) && key.singleLine.short[0] === "單線譜為 App 的選擇" && key.singleLine.short[1].length <= 22, "drumkey singleLine.short:單線譜為 App 的選擇");
   const P = key.pieces;
   ok(P.hhFoot.head === "x" && P.hhFoot.src === "trinity-dk-p107" && P.hhOpen.mark === "o" && P.hhClosed.mark === "+", "drumkey:腳踩 HH ×、開 o、閉 +(DK p.107)");
   // DK p.107 只畫 × 符頭與向下的符桿(圖上沒有譜線):位置(線下、D4)不是官方的,要有 posSrc = 待核對

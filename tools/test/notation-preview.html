@@ -1,30 +1,40 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{background:#fff;margin:10px;font-family:sans-serif}.r{border-bottom:1px solid #ddd;padding:4px}.r b{font-size:13px}</style></head><body><div id="out"></div>
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Notation preview</title>
+<style>body{background:#fff;margin:10px;font-family:sans-serif}.r{border-bottom:1px solid #ddd;padding:4px}.r b{font-size:13px}</style></head><body><div id="out"></div>
+<!-- ?n=1,2,3:基本打法(js/tech/notation.js),跟 PAS 官方表對照;?p=E4 換單線譜的位置
+     ?kit=all:鼓組記譜樣張(js/shared/kitnotation.js;每個鼓件 × 每種修飾、拍號、連音、力度、斜線、單線譜)+ 圖例(js/shared/legend.js)
+     ?kit=pieces / grooves / meters / tuplets / dyn / slash / line1、樣張 id、鼓件 id(逗號分開);&lang=zh|en 換語言 -->
 <script src="../../vendor/opensheetmusicdisplay.min.js"></script>
 <script type="module">
-import { RUDIMENTS, pattern, strokes } from "../../js/tech/rudiments.js";
-import { rudimentXML, setPitch } from "../../js/tech/notation.js";
-import { techItems } from "../../js/shared/examdata.js";
-/* ?n=1,2,3 = PAS 打法;?pattern=rsl-7-A(或 rsl-7 = 整級、可以逗號分隔多個)= RSL 的「依大綱時值」練習型(App 排的,不是官方譜),跟 PAS 官方表對照左右手、重音 */
 const Q = new URLSearchParams(location.search);
-const P = Q.get("p"); if (P) setPitch(P[0], P[1]);
-async function draw(label, groups, reps){
-  const d = document.createElement("div"); d.className = "r"; d.innerHTML = `<b></b><div></div>`; d.firstChild.textContent = label; document.getElementById("out").appendChild(d);
-  const o = new opensheetmusicdisplay.OpenSheetMusicDisplay(d.lastChild, { backend: "svg", autoResize: false, drawTitle: false, drawPartNames: false, drawMeasureNumbers: false, drawingParameters: "compacttight", renderSingleHorizontalStaffline: true });
-  try { await o.load(rudimentXML(groups, { reps })); o.zoom = 0.9; o.EngravingRules.TupletNumberLimitConsecutiveRepetitions = false; o.render(); } catch (e) { d.lastChild.textContent = "ERR " + e.message; }
-}
-if (Q.get("pattern")) {
-  const data = await (await fetch("../../data/exam-rsl.json")).json();
-  for (const spec of Q.get("pattern").split(",")) {
-    const [, g, grp] = spec.match(/^rsl-(\d)(?:-([A-F]))?$/) || [];
-    if (g == null) { await draw("? " + spec, [], 1); continue; }
-    for (const it of techItems(Number(g), data).filter(x => x.kind === "pattern" && (!grp || x.group === grp))) {
-      const groups = pattern(it), stick = strokes(groups).filter(s => s.kind !== "grace").map(s => s.hand + (s.kind === "accent" ? ">" : "")).join(" ");
-      await draw(`${it.key} · PAS #${it.pas}${it.sticking ? " " + it.sticking : ""} · ${it.value}${it.assumed ? " (assumed)" : ""} · ♩=${it.bpm} · ${stick}`, groups, 1);
-    }
-  }
+/* ?n=1,2,3 = PAS 打法;?pattern=rsl-7-A(或 rsl-7 = 整級、可以逗號分隔多個)= RSL 的「依大綱時值」練習型(App 排的,不是官方譜),跟 PAS 官方表對照左右手、重音 */
+if (Q.get("kit") != null) {
+  await import("./notation-preview-kit.mjs");
 } else {
-  const nos = (Q.get("n") || "1,2,3").split(",").map(Number);
-  for (const no of nos) { const r = RUDIMENTS.find(x => x.no === no); await draw(`${no}. ${r.en}`, r.groups, no === 1 ? 4 : 1); }
+  const { RUDIMENTS, pattern, strokes } = await import("../../js/tech/rudiments.js");
+  const { rudimentXML, setPitch } = await import("../../js/tech/notation.js");
+  const { techItems } = await import("../../js/shared/examdata.js");
+  const P = Q.get("p"); if (P) setPitch(P[0], P[1]);
+  const draw = async (label, groups, reps, no) => {
+    const d = document.createElement("div"); d.className = "r"; if (no != null) d.dataset.no = no; d.innerHTML = `<b></b><div></div>`; d.firstChild.textContent = label; document.getElementById("out").appendChild(d);
+    const o = new opensheetmusicdisplay.OpenSheetMusicDisplay(d.lastChild, { backend: "svg", autoResize: false, drawTitle: false, drawPartNames: false, drawMeasureNumbers: false, drawingParameters: "compacttight", renderSingleHorizontalStaffline: true });
+    const xml = rudimentXML(groups, { reps });
+    d._xml = xml; d._osmd = o;
+    try { await o.load(xml); o.zoom = 0.9; o.EngravingRules.TupletNumberLimitConsecutiveRepetitions = false; o.render(); } catch (e) { d.lastChild.textContent = "ERR " + e.message; d.dataset.err = e.message; }
+  };
+  if (Q.get("pattern")) {
+    const data = await (await fetch("../../data/exam-rsl.json")).json();
+    for (const spec of Q.get("pattern").split(",")) {
+      const [, g, grp] = spec.match(/^rsl-(\d)(?:-([A-F]))?$/) || [];
+      if (g == null) { await draw("? " + spec, [], 1); continue; }
+      for (const it of techItems(Number(g), data).filter(x => x.kind === "pattern" && (!grp || x.group === grp))) {
+        const groups = pattern(it), stick = strokes(groups).filter(s => s.kind !== "grace").map(s => s.hand + (s.kind === "accent" ? ">" : "")).join(" ");
+        await draw(`${it.key} · PAS #${it.pas}${it.sticking ? " " + it.sticking : ""} · ${it.value}${it.assumed ? " (assumed)" : ""} · ♩=${it.bpm} · ${stick}`, groups, 1);
+      }
+    }
+  } else {
+    const nos = (Q.get("n") || "1,2,3").split(",").map(Number);
+    for (const no of nos) { const r = RUDIMENTS.find(x => x.no === no); await draw(`${no}. ${r.en}`, r.groups, no === 1 ? 4 : 1, no); }
+  }
 }
-window.__done = 1;
+window.__done = 1; window.__stageReady = 1;
 </script></body></html>

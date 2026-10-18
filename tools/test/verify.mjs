@@ -1,4 +1,4 @@
-// 不用瀏覽器的檢查:基本打法資料(照 PAS 官方表)、鼓譜 MusicXML、RSL 依大綱時值的練習型、考試資料(照 RSL / Trinity 官方大綱)、版本指紋、兩個 App 的共用檔案(sync.mjs)
+// 不用瀏覽器的檢查:基本打法資料(照 PAS 官方表)、鼓譜 MusicXML(技巧的單線譜、鼓組譜)、RSL 依大綱時值的練習型、考試資料(照 RSL / Trinity 官方大綱)、版本指紋、兩個 App 的共用檔案(sync.mjs)
 // 執行:node tools/test/verify.mjs
 import { execFileSync } from "node:child_process";
 import { RUDIMENTS, CATEGORIES, strokes, cycleLength, mainStrokes, withLead, DIV } from "../../js/tech/rudiments.js";
@@ -6,6 +6,7 @@ import { rudimentXML } from "../../js/tech/notation.js";
 import examdata from "./checks/examdata.mjs";
 import appsamples from "./checks/appsamples.mjs";
 import patterncheck from "./checks/pattern.mjs";
+import kitxml from "./checks/kitxml.mjs";
 let fails = 0, checks = 0;
 const ok = (cond, msg) => { checks++; if (!cond) { fails++; console.log("✗ " + msg); } };
 
@@ -61,6 +62,8 @@ try { examdata(ok); } catch (e) { ok(false, "考試資料檢查出錯:" + e.stac
 try { patterncheck(ok); } catch (e) { ok(false, "練習型檢查出錯:" + e.stack); }
 // 6b. App 打包的取樣數(tools/build/app-samples.mjs 的 PIECES)= audio.js 小記憶體的 RR_LIMIT / KIT_RR(iOS App 一律走小記憶體)
 try { appsamples(ok); } catch (e) { ok(false, "App 取樣數檢查出錯:" + e.stack); }
+// 6c. 鼓組譜 MusicXML(js/shared/kitnotation.js):樣張、每小節每個聲部的時值 = 拍號、鼓件都在 drumkey、隨機 500 小節(checks/kitxml.mjs)
+try { kitxml(ok); } catch (e) { ok(false, "鼓組譜檢查出錯:" + e.stack); }
 // 7. 版本指紋與 sw.js 預快取清單
 try { execFileSync("node", [new URL("../build/stamp.mjs", import.meta.url).pathname, "--check"], { stdio: "pipe" }); checks++; }
 catch (e) { fails++; checks++; console.log("✗ " + (e.stdout || "").toString().trim()); }
