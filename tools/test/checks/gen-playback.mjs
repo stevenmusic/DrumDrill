@@ -4,11 +4,14 @@
 //    元素要同時在 playbackFor(資料檔)的白名單裡、而且 INTRO ≤ 這一級(低級不會出現高級元素)。
 //    元素從兩個地方各收一次:產生器輸出的 spec(時值代號、鼓件、記號)與 scoreXML 產生的 MusicXML(type / dot / time-modification、符頭位置 + 形狀、記號標籤)
 // 2. 每小節每個聲部的時值:用這裡自己的時值表重算 = 拍號長度;MusicXML 再用 kitxml.mjs 的 auditXML(只看 type/dot/time-modification)重算一次
-// 3. 總長度、句長在官方範圍內;換拍號只在 8 級、只在句子之間;8 級至少換一次
+// 3. 總長度、句長在官方範圍內;換拍號只在 8 級、只在句子之間;8 級換 1–2 次、最多 3 種拍號
 // 4. 聲部數(同時打的肢體數;Flam / Drag 多一隻手;連結線接續的音不算):Initial 一次一個、沒有和弦;1 級 1 到一半的小節有 2 個;
 //    2 級超過一半的小節有 2 個、最多 2 個;3 級起最多 3 個、每題至少一個 3 個
 // 5. 2 級以前的大鼓只在拍點上;手打 HH 和腳踩 HH 不同時;三連音、六連音、四分三連音只在 x/4、x/2;二連音只在 6/8、9/8、12/8、3/8;滾奏、Ruff 一律不出(4 級起帶說明 key)
 // 6. 同一個種子同一題;每一級白名單裡的每個元素在 1000 題裡至少出現一次(出題器真的會用到新的元素)
+// 7. 出題設計:連結線只接跨拍的音(八分以上、結束在拍點;同一拍內短音不連);四分三連音只有 3 個一組、從拍點開始;
+//    2/2 律動的小鼓反拍只在第 3 個四分音符;8 級換拍號 1–2 次、最多 3 種;Initial–2 級腳整小節沒有打 = 不印休止符(hideEmpty);
+//    1 級起每一句單獨的譜(phraseSpec)開頭一定有力度,而且跟整份譜在那裡的力度一樣
 import fs from "node:fs";
 import { genChart, playbackParams, phraseSpec, NOTES } from "../../../js/shared/playbackgen.js";
 import { playbackFor } from "../../../js/shared/examdata.js";
@@ -55,8 +58,9 @@ function xmlElements(xml){
   const out = { values: new Set(), rests: new Set(), pieces: new Set(), marks: new Set(), flags: new Set(), times: 0 };
   const POS = {};
   for (const [id, p] of Object.entries(key.pieces)) POS[`${p.step}${p.oct}:${p.head}`] = (POS[`${p.step}${p.oct}:${p.head}`] || []).concat(id);
-  for (const m of xml.matchAll(/<note>([\s\S]*?)<\/note>/g)) {
-    const n = m[1];
+  for (const m of xml.matchAll(/<note( print-object="no")?>([\s\S]*?)<\/note>/g)) {
+    const n = m[2];
+    if (m[1]) { if (!/^<rest measure="yes">/.test(n)) out.flags.add("hiddenNote"); continue; }   // 不印的整小節休止(hideEmpty)
     if (n.includes("<grace")) { out.flags.add(n.includes('slash="yes"') ? "flam" : "drag"); continue; }
     if (/<rest measure="yes"/.test(n)) { out.rests.add("r1"); continue; }
     const type = TYPE[(/<type>(\w+)<\/type>/.exec(n) || [])[1]], dot = n.includes("<dot/>");
@@ -105,7 +109,8 @@ function checkChart(g, P, chart, used){
   const changes = ms.filter((m, i) => i && m.time).length;
   if (changes && !P.extra.includes("meterChange")) E(`${g} 級不能換拍號`);
   if (changes) used.feature.add("meterChange");
-  if (g === 8 && !changes) E("8 級應該要換拍號");
+  if (g === 8 && !(changes >= 1 && changes <= 2)) E(`8 級換拍號 ${changes} 次(應該 1–2 次)`);
+  if (times.length > 3) E(`用了 ${times.length} 種拍號(最多 3 種)`);
   for (const ph of chart.phrases) if (barTime[ph.start] !== ph.time) E(`句子拍號 ${ph.time} ≠ 小節 ${barTime[ph.start]}`);
   // 每小節:時值、元素、同時打幾個
   const cap = CAP(g);
@@ -114,7 +119,7 @@ function checkChart(g, P, chart, used){
   ms.forEach((m, mi) => {
     const len = barLen(barTime[mi]), hits = new Map(), beats = new Set(beatStarts(barTime[mi])), hhAt = [new Set(), new Set()];
     m.voices.forEach((v, vi) => {
-      if (!v.length) { if (vi === 1 && !feetUsed) return; used.rest.add("r1"); if (!P.rests.includes("r1") || !(INTRO.rest.r1 <= g)) E(`第 ${mi + 1} 小節:整小節休止(全休止符)在 ${g} 級還沒有`); prevTie[vi] = false; return; }
+      if (!v.length) { if (vi === 1 && !feetUsed) return; prevTie[vi] = false; if (vi === 1 && m.hideEmpty) return; used.rest.add("r1"); if (!P.rests.includes("r1") || !(INTRO.rest.r1 <= g)) E(`第 ${mi + 1} 小節:整小節休止(全休止符)在 ${g} 級還沒有`); prevTie[vi] = false; return; }
       let p = 0;
       v.forEach((e, ei) => {
         const where = `第 ${mi + 1} 小節 ${vi ? "腳" : "手"} 第 ${ei + 1} 個`;
@@ -140,13 +145,28 @@ function checkChart(g, P, chart, used){
           }
           if (g === 0 && e.notes.length > 1) E(`${where}:Initial 只有單線(不能有和弦)`);
           if (!cont) hits.set(p, (hits.get(p) || 0) + k + (e.notes.some(n => n.flam || n.drag) ? 1 : 0));
-          if (e.tie) { used.feature.add("ties"); if (!featOK("ties", P) || !(INTRO.feature.ties <= g)) E(`${where}:連結線在 ${g} 級還沒有`); }
+          if (e.tie) {
+            used.feature.add("ties"); if (!featOK("ties", P) || !(INTRO.feature.ties <= g)) E(`${where}:連結線在 ${g} 級還沒有`);
+            const end = p + dur(e.value);
+            if (dur(e.value) < D / 2 || !(beats.has(end) || end === len)) E(`${where}:連結線只接跨拍的音(八分以上、結束在拍點),這個是 ${code} 結束在 ${end / D} 拍`);
+          }
+          // 2/2 律動:鈸 + 小鼓(或 rim-click)的反拍只在第 3 個四分音符
+          if (barTime[mi] === "2/2" && vi === 0 && e.notes.some(n => n.piece === "hh" || n.piece === "ride") && e.notes.some(n => (n.piece === "snare" || n.piece === "xstick") && !n.ghost) && p !== 2 * D) E(`${where}:2/2 律動的小鼓反拍只在第 3 個四分音符(${p / D} 拍)`);
           prevTie[vi] = !!e.tie;
         } else prevTie[vi] = false;
         p += dur(e.value);
       });
+      // 四分三連音:只有 3 個一組(兩拍),從拍點開始
+      for (let k = 0, q = 0; k < v.length; q += dur(v[k].value), k++) {
+        if (v[k].value.replace(/^r/, "") !== "4t3" || (k && v[k - 1].value.replace(/^r/, "") === "4t3")) continue;
+        let n = 0; while (k + n < v.length && v[k + n].value.replace(/^r/, "") === "4t3") n++;
+        if (n % 3 || q % D) E(`第 ${mi + 1} 小節:四分三連音要 3 個一組、從拍點開始(${n} 個,${q / D} 拍)`);
+      }
       if (p !== len) E(`第 ${mi + 1} 小節 ${vi ? "腳" : "手"}:時值加起來 ${p / D} 拍 ≠ 拍號 ${len / D} 拍`);
     });
+    // 腳整小節沒有打:Initial–2 級(還沒有全休止符)不印(hideEmpty)、3 級起印整小節休止
+    if (m.hideEmpty && (g >= 3 || !(m.voices[1] && !m.voices[1].length) || !m.voices[0].length)) E(`第 ${mi + 1} 小節:hideEmpty 只用在 Initial–2 級腳整小節沒有打`);
+    if (g < 3 && feetUsed && m.voices[1] && m.voices[1].length && m.voices[1].every(e => !e.notes)) E(`第 ${mi + 1} 小節:腳整小節沒有打,${g} 級應該不印休止符(hideEmpty)`);
     for (const x of hhAt[0]) if (hhAt[1].has(x)) E(`第 ${mi + 1} 小節 ${x / D} 拍:手打 HH 和腳踩 HH 同時(App 不這樣出)`);
     const mx = Math.max(0, ...hits.values());
     if (mx > cap) E(`第 ${mi + 1} 小節:同時打 ${mx} 個,${g} 級最多 ${cap} 個`);
@@ -172,6 +192,8 @@ function checkChart(g, P, chart, used){
   // 說明 key
   for (const k of chart.notes) if (!NOTES[k]) E(`說明 key ${k} 沒有文字`);
   if (P.extra.some(x => x === "roll" || x === "ruff") !== chart.notes.includes("noRollRuff")) E("滾奏 / Ruff 不出的說明 key");
+  if (P.extra.includes("rimclick") !== chart.notes.includes("rimClick")) E("rim-click = xstick 的說明 key");
+  if ((g === 0) !== chart.notes.includes("singleLine")) E("Initial 單線的說明 key");
   // MusicXML:scoreXML 不丟錯、auditXML 重算時值、元素(從 XML 收)也在白名單
   let xml;
   try { xml = scoreXML({ ...spec, key }); } catch (e) { E("scoreXML:" + e.message); return errs; }
@@ -184,7 +206,18 @@ function checkChart(g, P, chart, used){
   for (const c of X.flags) if (c === "roll" || !featOK(c, P) || !(INTRO.feature[c] <= g)) E(`MusicXML ${c} 在 ${g} 級還沒有`);
   if (X.times !== 1 + ms.filter((m, i) => i && m.time && m.time !== barTime[i - 1]).length) E(`MusicXML 拍號 ${X.times} 個`);
   // 每一句單獨也畫得出來(聽力回打用)
-  chart.phrases.forEach((ph, i) => { try { scoreXML({ ...phraseSpec(chart, i), key }); } catch (e) { E(`第 ${i + 1} 句單獨:${e.message}`); } });
+  const STATIC = ["pp", "p", "mp", "mf", "f", "ff"];
+  chart.phrases.forEach((ph, i) => {
+    const ps = phraseSpec(chart, i);
+    try { const x = scoreXML({ ...ps, key }); for (const a of auditXML(x, ps)) E(`第 ${i + 1} 句單獨:MusicXML ${a}`); } catch (e) { E(`第 ${i + 1} 句單獨:${e.message}`); }
+    if (g >= 1) {
+      // 整份譜在這一句開頭的力度(自己從 chart.dyn 找:這一句第一拍以前最後一個)
+      const want = chart.dyn.filter(d => STATIC.includes(d.mark) && (d.m < ph.start || (d.m === ph.start && d.beat === 0))).pop();
+      const at0 = ps.dyn.filter(d => d.m === 0 && d.beat === 0 && STATIC.includes(d.mark));
+      if (at0.length !== 1) E(`第 ${i + 1} 句單獨:開頭沒有力度記號`);
+      else if (!want || at0[0].mark !== want.mark) E(`第 ${i + 1} 句單獨:開頭力度 ${at0[0].mark} ≠ 整份譜在這裡的 ${want && want.mark}`);
+    }
+  });
   return errs;
 }
 
@@ -231,6 +264,19 @@ export default function check(ok){
     const t3 = structuredClone(c); t3.spec.measures[0].voices = [[{ value: "8", notes: [{ piece: "snare" }] }, { value: "8", notes: [{ piece: "kick" }] }, { value: "4", notes: [{ piece: "snare" }] }, { value: "r2" }]];
     t3.spec.time = "4/4"; t3.phrases[0].measures[0] = t3.spec.measures[0];
     ok(checkChart(0, P0, t3, u).some(e => /反拍大鼓/.test(e)), "檢查本身:Initial 的反拍大鼓要抓到");
+  }
+  // 竄改:同一拍內的短音連結線、四分三連音只有兩個、8 級沒換拍號
+  {
+    const P2 = playbackParams(2, data), c = genChart(P2, 5), u = { time: new Set(), value: new Set(), rest: new Set(), dyn: new Set(), piece: new Set(), feature: new Set() };
+    const t4 = structuredClone(c), beatsN = barLen(t4.spec.time) / D;
+    t4.spec.measures[0].voices[0] = [{ value: "8", notes: [{ piece: "snare" }], tie: true }, { value: "8", notes: [{ piece: "snare" }] }, ...Array(beatsN - 1).fill(0).map(() => ({ value: "r4" }))];
+    t4.phrases[0].measures[0] = t4.spec.measures[0];
+    ok(checkChart(2, P2, t4, u).some(e => /跨拍/.test(e)), "檢查本身:同一拍內短音的連結線要抓到");
+    const P7 = playbackParams(7, data);
+    const t5 = structuredClone(genChart(P7, 2)); t5.spec.time = "4/4"; for (const m of t5.spec.measures) delete m.time;
+    t5.spec.measures[0].voices[0] = [{ value: "4t3", notes: [{ piece: "snare" }] }, { value: "8t3", notes: [{ piece: "snare" }] }, { value: "r4" }, { value: "r2" }];
+    t5.phrases[0].measures[0] = t5.spec.measures[0];
+    ok(checkChart(7, P7, t5, u).some(e => /四分三連音/.test(e)), "檢查本身:一拍內 4t3 + 8t3 要抓到");
   }
   // 不完整的參數要丟出錯誤
   let threw = false; try { genChart(null, 1); } catch (e) { threw = true; } ok(threw, "genChart(null) 應該丟出錯誤");

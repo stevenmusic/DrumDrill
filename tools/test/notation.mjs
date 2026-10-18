@@ -1,7 +1,7 @@
 // 瀏覽器實際畫譜檢查(對應 PianoDrill 的 notation.mjs):用 OSMD(vendor)把譜畫出來,讀 SVG 比對
 //  1. PAS 40 個基本打法(js/tech/notation.js,notation-preview.html?n=1..40):沒有錯誤;SVG 的符頭數 = MusicXML 的 <note> 數(含裝飾音、休止符)
 //  2. 鼓組記譜樣張(js/shared/kitnotation.js,notation-preview.html?kit=all;樣張在 kitsamples.mjs):
-//     沒有錯誤;符頭數 = <note> 數;每種符頭形狀(一般 / x / 菱形 / 圈 x / 斜線)的數量 = MusicXML;
+//     沒有錯誤;符頭數 = <note> 數(<note print-object="no"> 要畫成透明,數量一樣);每種符頭形狀(一般 / x / 菱形 / 圈 x / 斜線)的數量 = MusicXML;
 //     每個符頭的高度 = drumkey.json 的位置(五線:E4 = 最下面那條線;單線:在線上);
 //     補畫的記號(鬼音括號、開 HH 的 o)數量 = MusicXML;閉 HH 的 + 是 OSMD 畫的(lefthandpizzicato);
 //     連音組數 = MusicXML 的 <tuplet type="start">(8t3 與 16t3 混在一拍是一組);
@@ -52,8 +52,12 @@ async function kitPage(width, lang, shots, { kit = "all", zoom = null, query = "
       if (r.err || !r.osmd) continue;
       const svg = r.el.querySelector(".kit-paper svg"), doc = new DOMParser().parseFromString(r.xml, "application/xml");
       // 符頭數
-      const want = (r.xml.match(/<note>/g) || []).length, got = svg.querySelectorAll(".vf-notehead").length;
+      // 不印的音(<note print-object="no">,hideEmpty 的整小節休止):OSMD 畫成透明(fill #00000000),不算符頭,但數量要一樣
+      const clear = h => [...h.querySelectorAll("path")].every(p => /^#[0-9a-f]{6}00$|^transparent$|^none$/i.test(p.getAttribute("fill") || ""));
+      const heads = [...svg.querySelectorAll(".vf-notehead")], hidden = heads.filter(clear).length;
+      const want = (r.xml.match(/<note>/g) || []).length, got = heads.length - hidden, wantHidden = (r.xml.match(/<note print-object="no">/g) || []).length;
       if (want !== got) o.issues.push(`符頭 ${got} 個,MusicXML 有 ${want} 個`);
+      if (hidden !== wantHidden) o.issues.push(`不印的音 畫成透明的 ${hidden} 個,MusicXML 有 ${wantHidden} 個`);
       // 每種形狀的數量(不含休止符)
       const wantShape = {}, gotShape = {};
       for (const n of doc.querySelectorAll("note")) { if (n.querySelector("rest")) continue; const h = (n.querySelector("notehead") || { textContent: "normal" }).textContent; wantShape[h] = (wantShape[h] || 0) + 1; }

@@ -23,9 +23,13 @@
    - 聲部數 = 同一個時間點同時打的肢體數(和弦的音 + 腳;Flam / Drag 多算一隻手;連結線接續的音不算)[推估]。
      Initial:一次一個(手腳輪流,一拍內不換聲部);1 級「部分 2 聲部」= 至少一小節、最多一半的小節有 2 個同時;
      2 級「大多 2 聲部」= 超過一半的小節有 2 個同時、最多 2 個;3 級起最多 3 個,而且每題至少一個時間點 3 個。
-   - 1、2 級還沒有全休止符、八分休止符:沒有打的聲部只用白名單裡的休止符(整拍休止),所以一拍內手腳不換;3 級起整小節沒有打的聲部是整小節休止(全休止符)。
-   - 2 級以前的大鼓只在拍點上(3 級才有反拍大鼓)。
-   - 總長度不含回打的小節 [推估]:譜上每一句只寫一次,回打由播放器處理。換拍號只在句子之間 [推估]。 */
+   - 1、2 級還沒有全休止符、八分休止符:沒有打的聲部只用白名單裡的休止符(整拍休止),所以一拍內手腳不換;
+     腳整小節沒有打 → 不印休止符(kitnotation 的 hideEmpty;Initial 一樣);3 級起整小節沒有打的聲部是整小節休止(全休止符)。
+   - 2 級以前的大鼓只在拍點上(3 級才有反拍大鼓)。2/2 半小節一拍:律動的小鼓反拍只在第 3 個四分音符 [推估]。
+   - 連結線只接「跨拍」的音:前一個音八分音符以上、結束在拍點(可以跨小節線,不跨句子);同一拍內的短音不連。
+   - 總長度不含回打的小節 [推估]:譜上每一句只寫一次,回打由播放器處理。換拍號只在句子之間 [推估];
+     8 級每題換 1–2 次(最多 3 種拍號),優先換到相近的拍號(REL_TIME;練習設定)。
+   - phraseSpec(單句的譜)開頭一定有力度:這一句開頭沒寫的話,補上前面最後一個力度記號。 */
 import { DIV, parseTime } from "./kitnotation.js";
 import { playbackFor } from "./examdata.js";
 
@@ -47,7 +51,10 @@ export const NOTES = {
   compound: { kind: "assumed", text: ["複拍子依附點四分分組;5/8 = 3+2、7/8 = 2+2+3(常見寫法,待核對)", "Compound time grouped in dotted crotchets; 5/8 = 3+2, 7/8 = 2+2+3 (common use, pending check)"] },
   independence: { kind: "practice", text: ["進階手腳獨立:App 用比較多樣的大鼓節奏表示", "Extended independence: the App uses more varied bass drum rhythms"] },
   anyTerms: { kind: "practice", text: ["「任何常見術語與記號」只用前面各級列過的", "'Any common terms and signs': only those listed in earlier grades"] },
-  meterChange: { kind: "assumed", text: ["換拍號只在句子之間", "Metre changes only between phrases"] }
+  meterChange: { kind: "assumed", text: ["換拍號只在句子之間", "Metre changes only between phrases"] },
+  rimClick: { kind: "assumed", text: ["rim-click 用 drumkey 的 cross stick(xstick)符號與聲音", "Rim-click uses the drum key's cross-stick (xstick) symbol and sound"] },
+  singleLine: { kind: "assumed", text: ["Initial「只有單線」解讀成一次只打一個(手腳輪流,不同時)", "Initial 'single line' read as one stroke at a time (hands and feet alternate)"] },
+  cutTime: { kind: "assumed", text: ["2/2 半小節一拍:律動的小鼓反拍在第 3 個四分音符", "2/2 has two beats a bar: the groove backbeat is on the 3rd crotchet"] }
 };
 
 /* ── 節奏格(App 的出題設計;練習設定)── */
@@ -62,12 +69,12 @@ const mk = (s, w = 1) => {
 const CELL_Q = [
   ["4", 3], ["8 8", 3], ["8 16 16", 1.5], ["16 16 8", 1.5], ["16 8 16", 0.8], ["16 16 16 16", 1.5], ["8. 16", 1.5], ["16 8.", 0.6],
   ["8t3 8t3 8t3", 2], ["16t3 16t3 16t3 8", 1], ["8 16t3 16t3 16t3", 1], ["16t3 16t3 16t3 16 16", 0.6], ["16 16 16t3 16t3 16t3", 0.6],
-  ["16t3 16t3 16t3 16t3 16t3 16t3", 0.6], ["16t6 16t6 16t6 16t6 16t6 16t6", 1.2], ["8t3 16t3 16t3 8t3", 0.6], ["4t3 8t3", 1], ["8t3 4t3", 1],
+  ["16t3 16t3 16t3 16t3 16t3 16t3", 0.6], ["16t6 16t6 16t6 16t6 16t6 16t6", 1.2], ["8t3 16t3 16t3 8t3", 0.6],
   ["16. 32 8", 1], ["8 16. 32", 0.8], ["16. 32 16. 32", 0.8], ["32 32 16 8", 0.8], ["8 32 32 16", 0.6], ["16 32 32 16 16", 0.6], ["32 32 32 32 8", 0.6],
   ["r4", 0.4], ["r8 8", 1], ["8 r8", 0.8], ["r8 16 16", 0.8], ["16 16 r8", 0.6], ["r16 16 8", 0.6], ["r16 16 16 16", 0.6], ["8 r16 16", 0.6],
   ["r8. 16", 0.8], ["16 r8.", 0.5], ["r16 8.", 0.5], ["r16. 32 8", 0.6], ["8 r16. 32", 0.5]
 ].map(([s, w]) => mk(s, w));
-// 跨幾拍(x/4、x/2):二分、附點二分、全音符、附點四分 + 八分、四分三連音
+// 跨幾拍(x/4、x/2):二分、附點二分、全音符、附點四分 + 八分、四分三連音(只用 3 個四分三連音放進 2 拍;一拍內 4t3 + 8t3 的寫法不出)
 const CELL_QM = [["2", 2], ["2.", 1], ["1", 1], ["4. 8", 1.5], ["4t3 4t3 4t3", 1.5]].map(([s, w]) => mk(s, w));
 // 附點四分一組(6/8、9/8、12/8、3/8;5/8、7/8 的三個八分音符一組不放二連音)
 const CELL_DQ = [
@@ -134,6 +141,9 @@ function meterInfo(time){
   let p = 0; for (const g of m.groups) { starts.push(p); p += g; }
   return { ...m, time, starts, kinds: m.groups.map(g => (g === Q ? "q" : g === 1.5 * Q ? "dq" : "x")), simple: m.type !== 8, compound: m.type === 8 && m.beats % 3 === 0 };
 }
+/* 相近的拍號(8 級換拍號優先換到這些;練習設定):分母一樣(x/4 ↔ x/4、x/8 ↔ x/8),加上每小節拍數相近的幾組 */
+const REL_TIME = [["2/2", "4/4"], ["2/2", "2/4"], ["4/4", "12/8"], ["4/4", "6/8"], ["2/4", "6/8"], ["3/4", "6/8"], ["3/4", "9/8"]];
+export const relatedTime = (a, b) => a !== b && (a.split("/")[1] === b.split("/")[1] || REL_TIME.some(([x, y]) => (x === a && y === b) || (x === b && y === a)));
 /* 在第 gi 組可以放的格子(一組的、或跨幾組的);endG = 不能超過的組 */
 function cellsAt(C, meter, gi, endG, pool, multi){
   const kind = meter.kinds[gi], out = [];
@@ -175,7 +185,8 @@ function strikes(evs, map = new Map()){
 }
 const barStrikes = bar => strikes(bar.feet, strikes(bar.hand));
 const maxStrikes = bar => Math.max(0, ...barStrikes(bar).values());
-const backbeat = (gi, b, nG) => (nG === 1 ? b % 2 === 1 : gi % 2 === 1);
+/* 反拍:x/4 單數的組;3/8(一小節一組)單數的小節;x/2 半小節一拍 → 第 3 個四分音符(gi = 2,推估) */
+const backbeat = (gi, b, meter) => (meter.groups.length === 1 ? b % 2 === 1 : meter.type === 2 ? gi % 4 === 2 : gi % 2 === 1);
 
 /* 大鼓的格子(白名單;2 級以前只在拍點上;cap = 跟手加起來最多幾個) */
 function kickCell(C, R, meter, gi, handEvs, { startOnly = false, need0 = false } = {}){
@@ -259,7 +270,8 @@ function grooveSetup(C, R){
 function grooveGroups(C, R, meter, b, S, o, hand, feet, upto){
   const nG = meter.groups.length;
   for (let gi = 0; gi < upto; gi++) {
-    const kind = meter.kinds[gi], pos = meter.starts[gi], bb = backbeat(gi, b, nG);
+    const kind = meter.kinds[gi], pos = meter.starts[gi], bb = backbeat(gi, b, meter);
+    const halfOff = meter.type === 2 && gi % 2 === 1;   // x/2 拍與拍之間的四分音符:大鼓少一點
     let ost = kind === "dq" ? S.ostDQ : S.ostQ;
     if (!ost || ost.len !== meter.groups[gi] || !cellOK(C, ost, meter)) ost = mk(kind === "dq" ? (C.values.has("4.") ? "4." : "4 8") : "4");
     // 幽靈音:鈸八分音符的組改成十六分,單數的十六分是小鼓幽靈音
@@ -282,7 +294,7 @@ function grooveGroups(C, R, meter, b, S, o, hand, feet, upto){
       if (crash && C.kick) plan = { piece: "kick", cell: kickCell(C, R, meter, gi, evs, { need0: true, startOnly: !C.offbeatBD }) };
       else if (bb && S.foot) plan = { piece: "hhFoot", cell: mk(kind === "dq" ? "4." : "4") };
       else if (bb) plan = C.maxV >= 3 && C.kick && R() < (C.indep ? 0.5 : 0.3) ? { piece: "kick", cell: kickCell(C, R, meter, gi, evs, { startOnly: !C.offbeatBD }) } : { rest: true };
-      else plan = C.kick && R() < 0.85 ? { piece: "kick", cell: kickCell(C, R, meter, gi, evs, { startOnly: !C.offbeatBD }) } : { rest: true };
+      else plan = C.kick && R() < (halfOff ? 0.35 : 0.85) ? { piece: "kick", cell: kickCell(C, R, meter, gi, evs, { startOnly: !C.offbeatBD }) } : { rest: true };
       if (!crash) S.feetPlan[pk] = plan;
     }
     const hs = strikes(evs);
@@ -433,14 +445,17 @@ function chooseLengths(C, R){
   throw new Error("Playback:找不到合乎範圍的長度");
 }
 
-/* 連結線(2 級起):過門 / 單線的音接到下一個同一個鼓件(下一個音下面沒有腳;不跨句子) */
+/* 連結線(2 級起):過門 / 單線的音接到下一個同一個鼓件(下一個音下面沒有腳;不跨句子)。
+   只接「跨拍」的:前一個音八分音符以上、結束在拍點(組的開頭或小節線;可以跨小節線);同一拍內的短音不連 */
 function addTies(C, R, ph){
-  const seq = [];
+  const seq = [], meter = ph.meter, beatAt = new Set([...meter.starts, meter.len]);
   ph.bars.forEach((bar, b) => { const fs = new Set([...strikes(bar.feet).keys()]); for (const e of bar.hand) seq.push({ e, b, feet: fs.has(e.pos) }); });
   const cand = [];
   for (let i = 0; i + 1 < seq.length; i++) {
     const a = seq[i], z = seq[i + 1];
     if (a.e.rest || z.e.rest || z.feet || a.e.cont || a.e.tie) continue;
+    const d = codeDur(a.e.code), end = a.e.pos + d;
+    if (d < Q / 2 || !beatAt.has(end) || (end === meter.len ? z.b !== a.b + 1 || z.e.pos !== 0 : z.b !== a.b || z.e.pos !== end)) continue;
     if (!/^(fill|line)$/.test(a.e.role) || !/^(fill|line)$/.test(z.e.role)) continue;
     if (a.e.notes.length !== 1 || z.e.notes.length !== 1 || a.e.notes[0].piece === "crash") continue;
     cand.push([a.e, z.e]);
@@ -469,13 +484,17 @@ export function genChart(params, seed = 1){
 
 function build(C, R, params, seed){
   const lens = chooseLengths(C, R), total = lens.reduce((a, b) => a + b, 0);
-  // 拍號:一份一個;8 級句子之間換(至少換一次)
-  const pickT = (not) => wpick(R, C.times.filter(t => t !== not), t => (C.fresh.has(t) ? 3 : 1));
-  const times = [pickT()];
-  for (let i = 1; i < lens.length; i++) times.push(C.meterChange && R() < 0.5 ? pickT(times[i - 1]) : times[i - 1]);
-  if (C.meterChange && lens.length > 1 && C.times.length > 1 && times.every(t => t === times[0])) {
-    const i = 1 + Math.floor(R() * (lens.length - 1)), t = pickT(times[i - 1]);
-    for (let j = i; j < lens.length && times[j] === times[i - 1]; j++) times[j] = t;
+  // 拍號:一份一個;8 級句子之間換 1–2 次(最多 3 種),優先換到相近的拍號
+  const times = Array(lens.length).fill(wpick(R, C.times, t => (C.fresh.has(t) ? 3 : 1)));
+  if (C.meterChange && lens.length > 1 && C.times.length > 1) {
+    const k = Math.min(lens.length - 1, R() < 0.6 ? 1 : 2), bounds = [...Array(lens.length - 1).keys()].map(i => i + 1), at = [];
+    while (at.length < k) at.push(bounds.splice(Math.floor(R() * bounds.length), 1)[0]);
+    let cur = times[0];
+    for (const i of at.sort((a, b) => a - b)) {
+      const t = wpick(R, C.times.filter(x => x !== cur), x => (relatedTime(cur, x) ? 6 : 1));
+      for (let j = i; j < lens.length; j++) times[j] = t;
+      cur = t;
+    }
   }
   // 1 級「部分 2 聲部」:挑 1 到一半的小節
   const coordBars = new Set();
@@ -527,7 +546,8 @@ function build(C, R, params, seed){
         const ph = phs[pick(R, cands)], bar = ph.bars[ph.fillM];
         const e = bar.hand.find(x => x.role === "fill" && !x.rest && !x.cont && x.pos >= ph.fillPos);
         const m = ph.start + ph.fillM;
-        if (e && !dyn.some(d => d.m === m && Math.round(d.beat * Q) === e.pos && !/cresc|dim/.test(d.mark))) dyn.push({ m, beat: e.pos / Q, mark: "sfz" });
+        // 不放在句子的第一拍(單句的譜要在那裡補力度記號)
+        if (e && !(m === ph.start && e.pos === 0) && !dyn.some(d => d.m === m && Math.round(d.beat * Q) === e.pos && !/cresc|dim/.test(d.mark))) dyn.push({ m, beat: e.pos / Q, mark: "sfz" });
       }
     }
   }
@@ -538,7 +558,11 @@ function build(C, R, params, seed){
   phs.forEach((ph, i) => {
     ph.bars.forEach((bar, b) => {
       const m = { voices: [mergeRests(C, ph.meter, bar.hand).map(toEv)] };
-      if (anyFeet) m.voices.push(mergeRests(C, ph.meter, bar.feet).map(toEv));
+      // 腳整小節沒有打、還沒有全休止符(Initial–2 級):不印休止符(hideEmpty)
+      if (anyFeet) {
+        if (bar.feet.every(e => e.rest) && !C.r("r1")) { m.voices.push([]); m.hideEmpty = true; }
+        else m.voices.push(mergeRests(C, ph.meter, bar.feet).map(toEv));
+      }
       if (b === 0 && i > 0 && ph.time !== phs[i - 1].time) m.time = ph.time;
       measures.push(m);
     });
@@ -558,6 +582,9 @@ function build(C, R, params, seed){
   if (C.indep) notes.push("independence");
   if ((params.extra || []).includes("anyTerms")) notes.push("anyTerms");
   if (C.meterChange) notes.push("meterChange");
+  if (C.rim) notes.push("rimClick");
+  if (C.amount === "only") notes.push("singleLine");
+  if (usedTimes.includes("2/2") && C.cyms.length) notes.push("cutTime");
   return {
     grade: params.grade, seed, time: times[0], times: usedTimes, phrases, dyn, totalBars: total,
     spec: { lines: 5, time: times[0], measures, dyn },
@@ -565,10 +592,16 @@ function build(C, R, params, seed){
   };
 }
 
-/* 一句單獨的譜(聽力回打用):拍號 = 這一句的;沒有腳的話不畫腳的聲部 */
+/* 一句單獨的譜(聽力回打用):拍號 = 這一句的;沒有腳的話不畫腳的聲部;
+   開頭沒有力度記號的話,補上整份譜在這一句開頭之前最後一個力度(p mp mf f pp ff;不含漸強漸弱、sfz) */
 export function phraseSpec(chart, i){
   const ph = chart.phrases[i];
   if (!ph) return null;
   const feet = ph.measures.some(m => m.voices[1] && m.voices[1].some(e => e.notes));
-  return { lines: 5, time: ph.time, dyn: ph.dyn, measures: ph.measures.map(m => ({ voices: feet ? m.voices : [m.voices[0]] })) };
+  const dyn = ph.dyn.map(d => ({ ...d }));
+  if (!dyn.some(d => d.m === 0 && d.beat === 0 && LEVELS.includes(d.mark))) {
+    const prev = chart.dyn.filter(d => LEVELS.includes(d.mark) && (d.m < ph.start || (d.m === ph.start && d.beat === 0))).pop();
+    if (prev) dyn.unshift({ m: 0, beat: 0, mark: prev.mark });
+  }
+  return { lines: 5, time: ph.time, dyn, measures: ph.measures.map(m => ({ voices: feet ? m.voices : [m.voices[0]], ...(feet && m.hideEmpty ? { hideEmpty: true } : {}) })) };
 }

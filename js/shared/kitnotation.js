@@ -8,10 +8,12 @@
      time: "4/4"           拍號:x/2、x/4、x/8(1–15 拍);不規則的 x/8 可以寫分組,例如 "2+2+3/8"(連桿照分組;每一組只能是 2 或 3 個八分音符,
                            x/2、x/4 不能寫分組 → 丟出錯誤)。沒寫分組時:5/8 = 3+2、7/8 = 2+2+3、其他奇數 x/8 = 2+…+2+1(常見寫法,待核對)
      showTime: true        印不印拍號
-     measures: [{ voices: [手, 腳], slash: false, time: "6/8" }]
+     measures: [{ voices: [手, 腳], slash: false, time: "6/8", hideEmpty: false }]
                            voices[0] = 手(voice 1、符桿朝上)、voices[1] = 腳(voice 2、符桿朝下;只能有 kick、hhFoot);
                            不滿一小節的部分自動補休止;整份譜都沒有腳的話就不畫 voice 2(手的一個聲部)。
-                           slash = 自由發展的小節:每拍一個斜線符頭(不畫符桿),內容不看;time = 從這一小節起換拍號
+                           slash = 自由發展的小節:每拍一個斜線符頭(不畫符桿),內容不看;time = 從這一小節起換拍號;
+                           hideEmpty = 這一小節空的聲部(voices[i] 是 [] 或沒寫)不印整小節休止符(<note print-object="no">,時值照算、OSMD 不畫;
+                           例如還沒有全休止符的級數,腳整小節沒有打)
      dyn: [{ m, beat, mark, end }]
                            m = 第幾小節(0 起算)、beat = 從小節開頭算幾個四分音符(0 = 第一拍;要對到某個音或休止符的開頭)、
                            mark = p mp mf f pp ff sfz | cresc | dim(cresc/dim 畫成 wedge,end = { m, beat } 結束的位置,沒寫就到那一小節結束);
@@ -215,7 +217,7 @@ function checkMods(e, where, voice, key){
 }
 
 /* 一個聲部整理好(補休止、連音、連桿);voice = 1 手、2 腳 */
-function buildVoice(raw, meter, where, voice, key, lines){
+function buildVoice(raw, meter, where, voice, key, lines, hide = false){
   const evs = (raw || []).map((ev, i) => normEv(ev, `${where} 第 ${i + 1} 個`));
   for (const e of evs) for (const n of e.notes) {
     const p = key.pieces[n.piece];
@@ -229,7 +231,7 @@ function buildVoice(raw, meter, where, voice, key, lines){
   let pos = 0;
   for (const e of evs) { e.pos = pos; pos += e.info.dur; }
   if (pos > meter.len) throw new Error(`${where}:時值加起來 ${pos / DIV} 拍,超過一小節 ${meter.len / DIV} 拍`);
-  if (!evs.length) return [{ measureRest: true, rest: true, notes: [], pos: 0, info: { dur: meter.len }, beams: [] }];
+  if (!evs.length) return [{ measureRest: true, hidden: !!hide, rest: true, notes: [], pos: 0, info: { dur: meter.len }, beams: [] }];
   const out = [...evs, ...fillRests(pos, meter.len, meter, where)];
   pos = 0; for (const e of out) { e.pos = pos; pos += e.info.dur; }
   assignBeams(out, meter);
@@ -252,7 +254,7 @@ const isClosed = (key, n) => !!n.closed || key.pieces[n.piece].mark === "+";
 function noteXML(e, ctx){
   const { voice, key, lines, nextTie } = ctx, stem = voice === 1 ? "up" : "down", out = [];
   const tm = e.info && e.info.tuplet ? `<time-modification><actual-notes>${e.info.tuplet.actual}</actual-notes><normal-notes>${e.info.tuplet.normal}</normal-notes><normal-type>${e.info.tuplet.type}</normal-type></time-modification>` : "";
-  if (e.measureRest) return [`<note>${restEl(ctx, true)}<duration>${e.info.dur}</duration><voice>${voice}</voice><type>whole</type></note>`];
+  if (e.measureRest) return [`<note${e.hidden ? ' print-object="no"' : ""}>${restEl(ctx, true)}<duration>${e.info.dur}</duration><voice>${voice}</voice><type>whole</type></note>`];
   if (e.rest) {
     return [`<note>${restEl(ctx, false)}<duration>${e.info.dur}</duration><voice>${voice}</voice><type>${e.info.type}</type>${e.info.dot ? "<dot/>" : ""}${tm}` +
       (e.tupStart || e.tupStop ? `<notations>${tupletXML(e)}</notations>` : "") + `</note>`];
@@ -375,8 +377,8 @@ export function scoreXML(spec){
       body.push(...ds.filter(d => d.at === null || d.at === meter.len).map(d => dynXML(d, placement)));
       for (const d of ds) if (d.at !== 0 && d.at !== null && d.at !== meter.len && meter.groups.reduce((a, g, i) => (a.push(a[i] + g), a), [0]).indexOf(d.at) < 0) throw new Error(`${where}:力度的位置對不到拍(${d.at / DIV})`);
     } else {
-      const vs = [buildVoice(m.voices && m.voices[0], meter, where + " 手", 1, key, lines)];
-      if (feet) vs.push(buildVoice(m.voices && m.voices[1], meter, where + " 腳", 2, key, lines));
+      const vs = [buildVoice(m.voices && m.voices[0], meter, where + " 手", 1, key, lines, m.hideEmpty)];
+      if (feet) vs.push(buildVoice(m.voices && m.voices[1], meter, where + " 腳", 2, key, lines, m.hideEmpty));
       const used = new Set();
       vs.forEach((evs, vi) => {
         const voice = vi + 1;
