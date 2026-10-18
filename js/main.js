@@ -34,6 +34,13 @@ const S = (() => {
     Object.defineProperty(s.sub, "sight", { enumerable: true, configurable: true,
       get: () => picked ?? String(s.exam && Number.isInteger(s.exam.grade) ? s.exam.grade : 0), set: v => { picked = v; } });
   }
+  /* 聽力分頁的題型還沒自己選過:跟著考試系統走(Trinity → 回打 Playback;RSL、沒選考試 → 過門 Fill) */
+  if (!s.onboarded || !(saved.sub && saved.sub.ear != null)) {
+    let picked = null;
+    Object.defineProperty(s.sub, "ear", { enumerable: true, configurable: true,
+      get: () => picked ?? (s.exam && s.exam.system === "trinity" ? "playback" : "fill"), set: v => { picked = v; } });
+  }
+  if (!["fill", "groove", "playback"].includes(s.sub.ear)) s.sub.ear = "fill";
   return s;
 })();
 /* ── 考試:Trinity Rock & Pop Drums(Initial、1–8 級)、RSL Rockschool Drums(Debut、1–8 級) ── */
@@ -49,7 +56,8 @@ const SUBS = {
   tech: () => [["roll", tr("滾奏", "Rolls")], ["diddle", tr("複點", "Diddles")], ["flam", "Flam"], ["drag", "Drag"]],
   // 視奏:子項目列放級數 0–8(跟技巧的四大類同一個位置);第一格 RSL 寫 D(Debut)、Trinity 寫 I(Initial),aria-label 寫完整級名
   sight: () => [0, 1, 2, 3, 4, 5, 6, 7, 8].map(g => [String(g), g === 0 ? (examSystem() === "rsl" ? "D" : "I") : String(g)]),
-  ear: () => [],
+  // 聽力:子項目 = 題型(RSL 有 Fill、Groove;Trinity 有 Playback;不適用的題型 js/ear/app.js 顯示說明)
+  ear: () => [["fill", tr("過門", "Fill")], ["groove", tr("律動", "Groove")], ["playback", tr("回打", "Playback")]],
   exam: () => [["tech", tr("技巧", "Technique")], ["sight", tr("視奏", "Sight-reading")], ["ear", tr("聽力", "Aural")]]
 };
 const PART_LABEL = () => ({ tech: tr("技巧", "Technique"), sight: tr("視奏", "Sight-reading"), ear: tr("聽力", "Aural") });

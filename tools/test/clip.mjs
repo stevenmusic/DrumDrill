@@ -42,7 +42,8 @@ const APP = "drumdrill";
 const START = { onboarded: true, view: "tech", exam: { system: "rsl", grade: 5 } };
 // 子項目 "" = 這一頁沒有子項目
 // 視奏:子項目 = 級數(Debut、3 級有題目;6 級是說明卡);more() 再看準備中 / 結果 / 正確版本與 Trinity 的說明卡
-const VIEWS = [["tech", ["roll", "diddle", "flam", "drag"]], ["sight", ["0", "3", "4", "6"]], ["ear", [""]], ["exam", ["tech", "sight", "ear"]]];
+const VIEWS = [["tech", ["roll", "diddle", "flam", "drag"]], ["sight", ["0", "3", "4", "6"]], ["ear", ["fill", "groove", "playback"]], ["exam", ["tech", "sight", "ear"]]];
+// 聽力:子項目 = 題型(START 是 RSL 5 級:Fill、Groove 有題目,Playback 是說明卡);more() 再看 Fill 的選譜 / 結果、Groove 結果、Trinity 4 級 Playback 的看譜 / 結果
 // 同一個畫面再多看幾種內容:技巧每一類的每個打法(不同長度、g j p y 的名稱)
 async function more(page, view, s, report){
   // 檢定頁:RSL 0/3/8、Trinity 0/4/8(最後回到 START 的考試)
@@ -80,6 +81,27 @@ async function more(page, view, s, report){
       return;
     }
     await states(`${view}/${s}`, false);
+    return;
+  }
+  if (view === "ear") {
+    const eDo = (fn, arg) => page.evaluate(([f, a]) => window.__ear[f](a), [fn, arg]);
+    const eKind = k => page.waitForFunction(k => window.__ear.state.kind === k, k, { timeout: 120000 });
+    if (s === "playback") {   // RSL 沒有 Playback(說明卡已經看過)→ Trinity 4 級(最後回到 START 的考試)
+      await page.evaluate(() => { window.__shell.setExam("trinity", 4); window.__shell.showView("ear", "playback"); });
+      await page.waitForFunction(() => window.__ear.state.key === "trinity-4-playback", null, { timeout: 20000 }); await page.waitForTimeout(800);
+      await report(`${view} trinity 4`);
+      await eDo("study"); await page.waitForTimeout(400); await report(`${view} trinity 4 看譜`); await eDo("study");
+      await eDo("perform"); await eKind("pass"); await eDo("finishNow"); await eDo("perform"); await eKind("pass");
+      await page.keyboard.press("j"); await eDo("finishNow"); await page.waitForTimeout(400);
+      await report(`${view} trinity 4 結果`);
+      await page.evaluate(ex => { window.__shell.setExam(ex.system, ex.grade); window.__shell.showView("ear", "playback"); }, START.exam); await page.waitForTimeout(300);
+      return;
+    }
+    await page.waitForFunction(() => window.__ear.state.key && !window.__ear.state.pending, null, { timeout: 20000 }).catch(() => {});
+    await eDo("listen"); await eKind("listen"); await eDo("finishNow");
+    await eDo("perform"); await eKind("perform"); await page.keyboard.press(s === "fill" ? "j" : "k"); await eDo("finishNow");
+    if (s === "fill") { await page.waitForFunction(() => window.__ear.state.optsDrawn === window.__ear.state.options, null, { timeout: 20000 }).catch(() => {}); await page.waitForTimeout(400); await report(`${view}/${s} 選譜`); await eDo("choose", 0); }
+    await page.waitForTimeout(1200); await report(`${view}/${s} 結果`);
     return;
   }
   if (view !== "tech") return;

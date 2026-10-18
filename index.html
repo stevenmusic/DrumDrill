@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/app.css?v=9f6af68d07">
-<link rel="stylesheet" href="css/drum.css?v=d408d0ace9">
+<link rel="stylesheet" href="css/drum.css?v=062d7dad82">
 </head>
 <body>
 <header>
@@ -248,9 +248,31 @@
         <div class="spec-cards" id="s-specCards" hidden></div>
     </div>
   </div>
-  <!-- 聽力(練習準備中;檢定頁有考試摘要與規格) -->
+  <!-- 聽力(S12 + S13;照 PianoDrill 聽音的卡片):子項目 = 題型「過門 Fill / 律動 Groove / 回打 Playback」;
+       RSL 有 Fill、Groove(js/ear/gen.js),Trinity 有 Playback(js/shared/playbackgen.js);不適用的題型只有說明卡。
+       檢定頁:考試摘要 + 規格卡(不放練習紀錄、練習回饋) -->
   <div class="mod" id="mod-ear" data-mod="ear" hidden>
+    <!-- 寬螢幕(≥1100)分兩欄:左 = 設定、紀錄;右 = 題目、譜、鼓墊。窄螢幕兩個容器都 display:contents,卡片照 order 排成一欄 -->
     <div class="mod-side">
+        <section class="card picker" id="e-setup">
+          <button class="setup-summary" aria-expanded="false"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span class="sum" id="e-sum"></span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+          <div class="setup-body">
+            <div class="prow"><span class="lbl" data-i18n="ear.gradeLbl">級數</span><div class="opts" data-k="grade" id="e-grades"></div></div>
+            <div class="metro">
+              <button class="btn round" id="e-bpmDown" data-i18n-attr="aria-label:ear.bpmDown,title:ear.bpmDown" aria-label="慢 1(按住連續減少)" title="慢 1(按住連續減少)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
+              <div class="bpm"><b id="e-bpmVal">80</b><small id="e-bpmUnit">♩ / 分</small></div>
+              <button class="btn round" id="e-bpmUp" data-i18n-attr="aria-label:ear.bpmUp,title:ear.bpmUp" aria-label="快 1(按住連續增加)" title="快 1(按住連續增加)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+              <input type="range" id="e-bpmRange" min="30" max="240" step="1" value="80" data-i18n-attr="aria-label:ear.tempo" aria-label="速度" style="grid-column:1 / -1">
+              <div class="row2"><div class="beats" id="e-beats"><i class="first"></i><i></i><i></i><i></i></div><p class="info" id="e-tempoNote"></p></div>
+              <div class="play-opts">
+                <button class="chip" id="e-optHide" aria-pressed="false" data-i18n="ear.optHide">不看譜</button>
+              </div>
+            </div>
+          </div>
+        </section>
+        <!-- 檢定頁:考試摘要(手機收成一行) -->
         <section class="card setup pane" data-pane="exam" id="e-paneExam" hidden>
           <button class="setup-summary" aria-expanded="false"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6l1 2h3v15H5V6h3z"/><path d="M9 11h6M9 15h4"/></svg><span class="sum" id="e-examSummary"></span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
           <div class="setup-body">
@@ -259,11 +281,64 @@
             <p class="practice-only" id="e-sumNote"></p>
           </div>
         </section>
+        <section class="card" id="e-logCard">
+          <div class="card-title"><b data-i18n="ear.logTitle">練習紀錄</b></div>
+          <div class="log-stats">
+            <div><b id="e-logStreak">0</b><small data-i18n="ear.logStreak">連續天數</small></div>
+            <div><b id="e-logToday">0</b><small data-i18n="ear.logToday">今天題數</small></div>
+            <div><b id="e-logTotal">0</b><small data-i18n="ear.logTotal">練過的題目</small></div>
+          </div>
+          <div class="log-week" id="e-logWeek"></div>
+        </section>
     </div>
     <div class="mod-main">
-      <section class="card" id="e-soonCard"><div class="card-title"><b data-i18n="soonTitle">準備中</b></div><p class="soon" id="e-soonText"></p></section>
-      <!-- 檢定頁:規格卡(照官方大綱;練習在之後的 Stage) -->
-      <div class="spec-cards" id="e-specCards" hidden></div>
+        <!-- 這個題型不適用於選的考試(RSL 沒有 Playback、Trinity 沒有 Fill / Groove)、資料還沒載好:說明 + 規格卡(#e-specCards) -->
+        <section class="card notice" id="e-unsupported" hidden><div class="card-title"><b id="e-unsupportedTitle"></b></div><p id="e-unsupportedText"></p><p class="practice-only" id="e-unsupportedNote"></p></section>
+        <!-- 題目卡(跟技巧、視奏同一個排法):大標題 = 考試與級數,右邊 ▶(RSL:聽題目兩次;Trinity:聽整份譜);標籤;步驟說明;
+             Fill 的譜面選項(#e-answers);左下:看答案(RSL)/ 看譜 30 秒 + 倒數(Trinity),右下:下一題 -->
+        <section class="card quiz" id="e-quizCard" aria-live="polite">
+          <div class="q-head">
+            <div class="q-title empty" id="e-qTitle"></div>
+            <button class="play-round" id="e-playBtn" disabled data-i18n-attr="aria-label:ear.playAria,title:ear.playAria" aria-label="聽題目" title="聽題目">
+              <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path id="e-playIcon" d="M8 5v14l11-7z"/></svg></button>
+          </div>
+          <div class="q-row"><div class="q-tags" id="e-qTags"></div><span class="loading" id="e-loadingMsg"></span></div>
+          <p class="feedback" id="e-feedback"></p>
+          <p class="step-q" id="e-stepQ"></p>
+          <div class="answers e-opts" id="e-answers" hidden></div>
+          <div id="e-ansLegend" hidden></div>
+          <div class="q-foot">
+            <button class="btn ghost small" id="e-revealBtn" disabled><span class="btn-label" id="e-revealLabel"></span></button>
+            <button class="btn ghost small" id="e-studyBtn" disabled hidden>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></svg>
+              <span class="btn-label" id="e-studyLabel"></span></button>
+            <div class="countdown" id="e-countdown" aria-live="off" hidden><span id="e-countdownValue">30</span><span class="unit" data-i18n="ear.countdownUnit">秒</span></div>
+            <span style="flex:1"></span>
+            <button class="btn primary" id="e-nextBtn" disabled>
+              <span class="btn-label" id="e-nextLabel" data-i18n="ear.next">下一題</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+          </div>
+          <p class="practice-only" id="e-practiceOnly"></p>
+        </section>
+        <!-- 譜(一整行 + 播放軸,js/shared/score.js):RSL 揭曉後才出現(正確的譜);Trinity 的 song chart 一開始就在(「不看譜」時播放中蓋起來) -->
+        <section class="card" id="e-scoreCard" hidden>
+          <div class="score-head"><div class="card-title" style="margin:0"><b id="e-scoreTitle"></b><span class="sub" id="e-scoreSub"></span></div></div>
+          <div class="paper stage" id="e-stage"><div id="e-scroll"><div id="e-osmd"></div></div><div id="e-playline" hidden></div><div class="paper-msg" id="e-paperMsg"></div></div>
+          <div id="e-legend"></div>
+        </section>
+        <!-- 回打:觸控鼓墊(Fill 1 個、其他 3 個;鍵盤 J / F / K)+ 練習回饋(不是考試分數)+ 推估 / 練習設定的說明 -->
+        <section class="card along" id="e-along">
+          <div class="pads" id="e-pads"></div>
+          <div class="along-row">
+            <button class="btn primary" id="e-performBtn" type="button" disabled></button>
+            <p class="along-note" id="e-alongNote"></p>
+          </div>
+          <div class="along-result" id="e-alongResult" hidden aria-live="polite"></div>
+          <p class="score-note" id="e-notes"></p>
+        </section>
+        <div class="prep-float" id="e-studyFloat" hidden><span id="e-studyFloatValue">30</span><span class="unit" data-i18n="ear.countdownUnit">秒</span></div>
+        <!-- 規格卡(檢定頁;不適用的題型也放這裡) -->
+        <div class="spec-cards" id="e-specCards" hidden></div>
     </div>
   </div>
 
@@ -300,9 +375,9 @@
   </div>
 </div>
 
-<script type="importmap">{"imports":{"./js/ear/app.js":"./js/ear/app.js?v=e7c7005d2c","./js/ear/gen.js":"./js/ear/gen.js?v=ae372fb41e","./js/main.js":"./js/main.js?v=752ab02578","./js/shared/audio.js":"./js/shared/audio.js?v=94dcfa09e5","./js/shared/examdata.js":"./js/shared/examdata.js?v=48f1b46bf2","./js/shared/examview.js":"./js/shared/examview.js?v=b4959afa11","./js/shared/i18n.js":"./js/shared/i18n.js?v=a561423d5b","./js/shared/kitevents.js":"./js/shared/kitevents.js?v=967a5358a2","./js/shared/kitgen.js":"./js/shared/kitgen.js?v=091dc4de5b","./js/shared/kitnotation.js":"./js/shared/kitnotation.js?v=65e0d6b2cb","./js/shared/landscape.js":"./js/shared/landscape.js?v=8ab1bab3eb","./js/shared/legend.js":"./js/shared/legend.js?v=ea60776dd0","./js/shared/onsets.js":"./js/shared/onsets.js?v=d8df0b9ef2","./js/shared/pad.js":"./js/shared/pad.js?v=6499e1631c","./js/shared/playbackgen.js":"./js/shared/playbackgen.js?v=25e49e3c09","./js/shared/player.js":"./js/shared/player.js?v=3b242c7289","./js/shared/score.js":"./js/shared/score.js?v=f50e900a94","./js/shared/tempo.js":"./js/shared/tempo.js?v=1e38af7d3f","./js/shared/timing.js":"./js/shared/timing.js?v=3ff7813241","./js/sight/app.js":"./js/sight/app.js?v=b475a00766","./js/sight/fingerprint.js":"./js/sight/fingerprint.js?v=c0cdf7916e","./js/sight/gen.js":"./js/sight/gen.js?v=6633bf6b2e","./js/sight/meter.js":"./js/sight/meter.js?v=94d1b94ae1","./js/sight/random.js":"./js/sight/random.js?v=3b9b511386","./js/sight/stage.js":"./js/sight/stage.js?v=9ca7fb07ed","./js/sight/strings.js":"./js/sight/strings.js?v=1b1baccc51","./js/tech/app.js":"./js/tech/app.js?v=f61dc3b4dd","./js/tech/notation.js":"./js/tech/notation.js?v=5bee65ac3d","./js/tech/rudiments.js":"./js/tech/rudiments.js?v=cc1a2635ff","./js/tech/store.js":"./js/tech/store.js?v=c27b27f99c","./js/tech/strings.js":"./js/tech/strings.js?v=fa3be55e9c"}}</script>
+<script type="importmap">{"imports":{"./js/ear/app.js":"./js/ear/app.js?v=12ee677c2e","./js/ear/gen.js":"./js/ear/gen.js?v=ae372fb41e","./js/ear/strings.js":"./js/ear/strings.js?v=1e9501c1e1","./js/main.js":"./js/main.js?v=28d7906e4f","./js/shared/audio.js":"./js/shared/audio.js?v=94dcfa09e5","./js/shared/examdata.js":"./js/shared/examdata.js?v=48f1b46bf2","./js/shared/examview.js":"./js/shared/examview.js?v=b4959afa11","./js/shared/i18n.js":"./js/shared/i18n.js?v=a561423d5b","./js/shared/kitevents.js":"./js/shared/kitevents.js?v=967a5358a2","./js/shared/kitgen.js":"./js/shared/kitgen.js?v=091dc4de5b","./js/shared/kitnotation.js":"./js/shared/kitnotation.js?v=65e0d6b2cb","./js/shared/landscape.js":"./js/shared/landscape.js?v=8ab1bab3eb","./js/shared/legend.js":"./js/shared/legend.js?v=ea60776dd0","./js/shared/onsets.js":"./js/shared/onsets.js?v=d8df0b9ef2","./js/shared/pad.js":"./js/shared/pad.js?v=6499e1631c","./js/shared/playbackgen.js":"./js/shared/playbackgen.js?v=25e49e3c09","./js/shared/player.js":"./js/shared/player.js?v=3b242c7289","./js/shared/score.js":"./js/shared/score.js?v=f50e900a94","./js/shared/tempo.js":"./js/shared/tempo.js?v=1e38af7d3f","./js/shared/timing.js":"./js/shared/timing.js?v=3ff7813241","./js/sight/app.js":"./js/sight/app.js?v=b475a00766","./js/sight/fingerprint.js":"./js/sight/fingerprint.js?v=c0cdf7916e","./js/sight/gen.js":"./js/sight/gen.js?v=6633bf6b2e","./js/sight/meter.js":"./js/sight/meter.js?v=94d1b94ae1","./js/sight/random.js":"./js/sight/random.js?v=3b9b511386","./js/sight/stage.js":"./js/sight/stage.js?v=9ca7fb07ed","./js/sight/strings.js":"./js/sight/strings.js?v=1b1baccc51","./js/tech/app.js":"./js/tech/app.js?v=f61dc3b4dd","./js/tech/notation.js":"./js/tech/notation.js?v=5bee65ac3d","./js/tech/rudiments.js":"./js/tech/rudiments.js?v=cc1a2635ff","./js/tech/store.js":"./js/tech/store.js?v=c27b27f99c","./js/tech/strings.js":"./js/tech/strings.js?v=fa3be55e9c"}}</script>
 <script type="application/json" id="pdVersions">{"data/drumkey.json":"7b58a38cef","data/exam-rsl.json":"d4a099542c","data/exam-trinity.json":"33070e658b"}</script>
 <script src="vendor/opensheetmusicdisplay.min.js?v=4bfeb3d01c"></script>
-<script type="module" src="js/main.js?v=752ab02578"></script>
+<script type="module" src="js/main.js?v=28d7906e4f"></script>
 </body>
 </html>
