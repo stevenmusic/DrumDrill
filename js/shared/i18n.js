@@ -2,9 +2,13 @@
    頂欄最右邊的語言按鈕(中文時顯示 EN、英文時顯示 中),選擇存在 localStorage,第一次一律英文(使用者要求)。
    靜態文字:HTML 上的 data-i18n="key"(文字)/ data-i18n-attr="aria-label:key,title:key";
    程式產生的文字:tr("中文", "English")。
-   模組(技巧 tech …)各自的字串用前綴分開:"tech.play",模組裡用 scoped("tech") 拿到只查自己那一組的 T。 */
+   模組各自的字串用前綴分開:"tech.play"、"ear.play"(同一個字在不同模組意思不同),模組裡用 scoped("tech") 拿到只查自己那一組的 T。
+   PianoDrill / DrumDrill 共用(tools/test/sync.mjs 檢查):@app 區段(LANG_KEY、OLD_KEYS、STR)以外兩邊一模一樣 */
+// @app-begin
+/* DrumDrill:技巧的字串在 js/tech/strings.js(前綴 tech.) */
 const LANG_KEY = "drumdrill-lang";
 const OLD_KEYS = ["pianodrill-lang"];   // 同一個網域上的 PianoDrill 選過的語言,第一次打開沿用
+// @app-end
 let LANG = (() => {
   try {
     for (const k of [LANG_KEY, ...OLD_KEYS]) { const v = localStorage.getItem(k); if (v === "en" || v === "zh") return v; }
@@ -14,6 +18,7 @@ let LANG = (() => {
 export const getLang = () => LANG;
 export const tr = (zh, en) => LANG === "en" ? en : zh;
 
+// @app-begin
 const STR = {
   pageTitle: ["DrumDrill 爵士鼓檢定特訓", "DrumDrill — drum kit exam trainer"],
   tagline: ["爵士鼓檢定特訓", "Drum kit exam trainer"],
@@ -34,6 +39,7 @@ const STR = {
     "Pick a board and grade: Exams opens set to that grade for technique, sight-reading and aural. Change any time in Exams."],
   obYes: ["開始準備考試", "Start exam prep"], obNo: ["不考試,自由練習", "No exam — free practice"]
 };
+// @app-end
 /* 模組的字串:addStrings("tech", { play: ["播放示範", "Play"] }) → "tech.play" */
 export function addStrings(ns, dict){ for (const [k, v] of Object.entries(dict)) STR[ns + "." + k] = v; }
 export const T = key => (STR[key] ? STR[key][LANG === "en" ? 1 : 0] : key);

@@ -11,5 +11,5 @@ addStrings("tech", {
   optLoop: ["循環播放", "Loop"], optRamp: ["每輪 +4", "+4 each loop"], optClick: ["只聽拍點", "Click only"],
   logTitle: ["練習紀錄", "Practice log"], logStreak: ["連續天數", "Day streak"], logToday: ["今天次數", "Today"], logMin: ["今天分鐘", "Minutes"],
   examTitle: ["本級要求", "This grade"],
-  bestLabel: ["最快", "Best"]
+  bestLabel: ["示範最快", "Demo best"]
 });

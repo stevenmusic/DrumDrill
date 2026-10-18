@@ -1,17 +1,48 @@
 /* 離線使用(Service Worker)
+   - 安裝時先把整份 App(首頁、manifest、圖示、css、js、data、vendor;清單 PRECACHE 由 tools/build/stamp.mjs 寫入)存好,
+     第一次打開之後就算沒網路、沒點過的分頁也能用;快取名稱帶清單的雜湊,版本一變就換一個快取,舊的在新版啟用時刪掉
    - 首頁(index.html):先上網拿最新的,沒網路才用快取 → 有更新時一定拿到新版
    - 同網域的 css / js / data / vendor:網址都帶 ?v=內容指紋(tools/build/stamp.mjs),同一個網址內容不會變 → 先用快取;
      存了新版本就刪掉同一個檔案的舊版本
    - Google 字型:先用快取
-   - 鼓的取樣(raw.githubusercontent)由 js/shared/audio.js 自己存在 drumdrill-samples-* 快取,這裡不管;
+   - 樂器取樣(raw.githubusercontent)由 js/shared/audio.js 自己存在 APP-samples-* 快取,這裡不管;
      App 版打包在 App 裡的取樣(samples/)本來就在裝置上,也不再存一份
-   第一次連網打開時會把用到的檔案都存起來,之後沒網路也能開 */
-const CACHE = "drumdrill-app-v1";
+   PianoDrill / DrumDrill 共用(tools/test/sync.mjs 檢查):@app 區段與預快取清單以外兩邊一模一樣 */
+// @app-begin
+const APP = "drumdrill";
+// @app-end
+/*@precache-begin*/
+const CACHE = APP + "-app-c57bc86c";
+const PRECACHE = [
+  "./",
+  "manifest.webmanifest",
+  "icons/apple-touch-icon.png",
+  "icons/favicon.svg",
+  "icons/icon-192.png",
+  "icons/icon-512.png",
+  "icons/icon-maskable-512.png",
+  "css/app.css?v=9f6af68d07",
+  "css/drum.css?v=03c9686e4a",
+  "vendor/opensheetmusicdisplay.min.js?v=4bfeb3d01c",
+  "js/ear/app.js?v=81309d6e94",
+  "js/main.js?v=afa1c5aa02",
+  "js/shared/audio.js?v=52b4c1f8a6",
+  "js/shared/i18n.js?v=7990fd2bf5",
+  "js/sight/app.js?v=d7972f3155",
+  "js/tech/app.js?v=d701b590b5",
+  "js/tech/notation.js?v=ffe8ac66c4",
+  "js/tech/rudiments.js?v=5e7d24246c",
+  "js/tech/store.js?v=c27b27f99c",
+  "js/tech/strings.js?v=d34b22fcde"
+];
+/*@precache-end*/
 self.addEventListener("install", e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(["./", "manifest.webmanifest", "icons/icon-192.png", "icons/apple-touch-icon.png"])).then(() => self.skipWaiting()));
+  // ?v= 的網址內容不會變,可以用瀏覽器快取裡的;首頁、manifest、圖示要先問伺服器(GitHub Pages 會讓瀏覽器快取 10 分鐘)
+  const reqs = PRECACHE.map(u => new Request(u, { cache: u.includes("?v=") ? "default" : "no-cache" }));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(reqs)).then(() => self.skipWaiting()));
 });
 self.addEventListener("activate", e => {
-  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith("drumdrill-app-") && k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith(APP + "-app-") && k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
 async function networkFirst(req){
   const c = await caches.open(CACHE);

@@ -1,4 +1,4 @@
-// 不用瀏覽器的檢查:基本打法資料(照 PAS 官方表)、鼓譜 MusicXML、版本指紋
+// 不用瀏覽器的檢查:基本打法資料(照 PAS 官方表)、鼓譜 MusicXML、版本指紋、兩個 App 的共用檔案(sync.mjs)
 // 執行:node tools/test/verify.mjs
 import { execFileSync } from "node:child_process";
 import { RUDIMENTS, CATEGORIES, strokes, cycleLength, mainStrokes, withLead, DIV } from "../../js/tech/rudiments.js";
@@ -52,9 +52,12 @@ for (const r of RUDIMENTS) {
   ok((xml.match(/<note>/g) || []).length >= r.groups.flat().length, `${r.no} 音符數不對`);
   ok(!/undefined|NaN/.test(xml), `${r.no} MusicXML 有 undefined`);
 }
-// 6. 版本指紋
+// 6. 版本指紋與 sw.js 預快取清單
 try { execFileSync("node", [new URL("../build/stamp.mjs", import.meta.url).pathname, "--check"], { stdio: "pipe" }); checks++; }
 catch (e) { fails++; checks++; console.log("✗ " + (e.stdout || "").toString().trim()); }
+// 7. 兩個 App 的共用檔案(PIANODRILL=…;找不到 PianoDrill 就略過)
+try { console.log(execFileSync("node", [new URL("./sync.mjs", import.meta.url).pathname], { stdio: "pipe" }).toString().trim()); checks++; }
+catch (e) { fails++; checks++; console.log((e.stdout || "").toString().trim()); }
 
 console.log(fails ? `\n✗ ${fails} 項失敗(共 ${checks} 項)` : `✓ 全部通過(${checks} 項)`);
 process.exit(fails ? 1 : 0);

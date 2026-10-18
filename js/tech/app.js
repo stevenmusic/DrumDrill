@@ -17,11 +17,22 @@ let cur = null, groups = null, osmd = null;
 let bpm = 60;
 
 /* ══ 外框呼叫 ══ */
-export function relang(){ if (active) switchTab(tab); renderLog(); }
+/* 換語言:只重寫文字(不停止播放、不重畫鼓譜) */
+export function relang(){ relabel(); }
 export function setExam(ex){ exam = ex; if (active && tab === "exam") renderExam(); }
-export function enter(t){ active = true; switchTab(t); requestAnimationFrame(onStageResize); }
+/* 進來:同一類、已經有題目就照原樣(回到前景、從別的分頁回來不會重新出題);換了類別或檢定頁才重畫 */
+export function enter(t){
+  active = true;
+  if (t !== tab || t === "exam" || !cur) switchTab(t);
+  requestAnimationFrame(onStageResize);
+}
+/* 離開(切分頁、切到背景):停止播放,題目保留 */
 export function leave(){ active = false; stopPlayback(); }
-export function examStatus(){ return ""; }
+/* 檢定分頁的進度:已經會了幾個(S3 之後改成本級的進度) */
+export function examStatus(){
+  const n = RUDIMENTS.filter(r => S.mastery[r.no] === "good").length;
+  return tr(`已會 ${n}/40`, `${n}/40 known`);
+}
 export function onKey(e){
   if (e.code === "Space") { e.preventDefault(); $("playBtn").click(); }
   else if (e.key === "ArrowUp") { e.preventDefault(); setBpm(bpm + 1, true); }
@@ -32,6 +43,17 @@ const name = r => tr(r.zh, r.en);
 const catOf = id => CATEGORIES.find(c => c.id === id);
 const subOf = r => catOf(r.cat).sub.find(s => r.no >= s.from && r.no <= s.to);
 
+/* 換語言時重寫的文字:選擇器、題目、標籤、速度單位、按鈕、紀錄卡;在檢定頁時重畫檢定說明 */
+function relabel(){
+  if (tab === "exam") renderExam();
+  else if (cur) {
+    renderPicker(); renderTitle();
+    if (active) fitTitle();
+  }
+  syncTempoUI(); showBest();
+  $("playLabel").textContent = play ? T("stop") : starting ? tr("準備中…", "Preparing…") : T("play");
+  renderLog();
+}
 function switchTab(t){
   stopPlayback();
   tab = t;
@@ -76,12 +98,7 @@ function setRudiment(no){
   cur = byNo(no);
   groups = withLead(cur, S.lead);
   renderPicker();
-  $("qTitle").textContent = `${cur.no}. ${name(cur)}`;
-  // 中英文標籤數量一樣(版面才會一樣):中文 = 英文名,英文 = PAS 編號;左手先/右手先另加一個。
-  // 類別不放(上面分段鈕已經看得到,放了標籤列會擠不下)。英文名太長時縮成「…」;最快速度放在速度卡
-  const tags = [getLang() === "en" ? "PAS No. " + cur.no : cur.en,
-    cur.second ? (S.lead === "L" ? tr("左手先", "Left lead") : tr("右手先", "Right lead")) : null].filter(Boolean);
-  $("qTags").innerHTML = tags.map((t, i) => `<span class="q-tag${i ? "" : " fold"}" title="${t}">${t}</span>`).join("");
+  renderTitle();
   showBest();
   fitTitle();
   $("playBtn").disabled = false;
@@ -92,7 +109,16 @@ function setRudiment(no){
   preloadSamples();
 }
 
-/* ══ 已經會了 / 待加強 ══ */
+function renderTitle(){
+  $("qTitle").textContent = `${cur.no}. ${name(cur)}`;
+  // 中英文標籤數量一樣(版面才會一樣):中文 = 英文名,英文 = PAS 編號;左手先/右手先另加一個。
+  // 類別不放(上面分段鈕已經看得到,放了標籤列會擠不下)。英文名太長時縮成「…」;示範最快的速度放在速度卡
+  const tags = [getLang() === "en" ? "PAS No. " + cur.no : cur.en,
+    cur.second ? (S.lead === "L" ? tr("左手先", "Left lead") : tr("右手先", "Right lead")) : null].filter(Boolean);
+  $("qTags").innerHTML = tags.map((t, i) => `<span class="q-tag${i ? "" : " fold"}" title="${t}">${t}</span>`).join("");
+}
+
+/* ══ 已經會了 / 待加強(只是標記,不算一次練習)══ */
 function syncMastery(){
   const m = cur && S.mastery[cur.no];
   ROOT.querySelectorAll(".mbtn").forEach(b => { b.disabled = !cur; b.setAttribute("aria-pressed", String(b.dataset.m === m)); });
@@ -100,16 +126,16 @@ function syncMastery(){
 ROOT.querySelectorAll(".mbtn").forEach(b => b.onclick = () => {
   if (!cur) return;
   const m = b.dataset.m;
-  if (S.mastery[cur.no] === m) delete S.mastery[cur.no]; else { S.mastery[cur.no] = m; logPractice(0); }
+  if (S.mastery[cur.no] === m) delete S.mastery[cur.no]; else S.mastery[cur.no] = m;
   store.save(); syncMastery();
+  if (ctx) ctx.examChanged();   // 檢定分頁「已會 n/40」
 });
 
 /* ══ 檢定分頁:本級要求(還沒照官方大綱整理之前,只說明還沒有,不自己編) ══ */
 function renderExam(){
   const ex = exam || { system: "trinity", grade: 1 };
   const sys = ex.system === "rsl" ? "RSL Rockschool Drums" : "Trinity Rock & Pop Drums";
-  const g = ex.grade === 0 ? (ex.system === "rsl" ? "Debut" : tr("初級", "Initial")) : tr(ex.grade + " 級", "Grade " + ex.grade);
-  $("examTitle").textContent = `${sys} · ${g}`;
+  $("examTitle").textContent = `${sys} · ${ctx.gradeLabel(ex.grade, ex.system)}`;
   pairText($("examText"), () => tr(
     "這一級的技巧要求(基本打法、節奏型、過門)還在照官方大綱逐頁核對,核對完才會放上來,不會先用猜的。在那之前,可以先到「技巧」分頁練 PAS 40 個基本打法。",
     "This grade's technical requirements (rudiments, grooves, fills) are still being checked page by page against the official syllabus and will appear once verified. Until then, practise the 40 PAS rudiments in Technique."));
@@ -447,7 +473,7 @@ async function startInner(){
   // 雙擊的第二下標記出來(播放時輕一點)
   const list = strokes(groups).map((s, i, a) => (s.kind === "roll" && !s.first && a[i - 1] && a[i - 1].kind === "roll" && a[i - 1].hand === s.hand && !a[i - 1].second ? { ...s, second: true } : s));
   const t0 = actx.currentTime + 0.15 + COUNT_IN * beatSec;
-  play = { t0, beatSec, reps, cyc, list, raf: 0, endBeat: reps * cyc / DIV };
+  play = { t0, real0: t0, beatSec, reps, cyc, list, raf: 0, endBeat: reps * cyc / DIV };
   schedulePlay(play, -Infinity);
   revealScore();
   $("playLabel").textContent = T("stop");
@@ -460,6 +486,7 @@ async function startInner(){
     movePlayline(beat < 0 ? 0 : beat >= play.endBeat ? len : beat % len, true);
     if (beat > play.endBeat + 0.3) {
       const sec = play.endBeat * play.beatSec;
+      lastEnd = { n: lastEnd.n + 1, scheduled: audio.scheduledCount() };   // 測試用:自然播完時還排著的節點數(播完的會自己移除)
       stopPlayback(true);
       logPractice(sec);
       if (!S.clickOnly && (!S.best[cur.no] || bpm > S.best[cur.no])) { S.best[cur.no] = bpm; store.save(); showBest(); }
@@ -470,10 +497,17 @@ async function startInner(){
   };
   play.raf = requestAnimationFrame(tick);
 }
+let lastEnd = { n: 0, scheduled: 0 };
 function showBest(){ const b = cur && S.best[cur.no]; $("bestTempo").textContent = b ? `${T("bestLabel")} ♩=${b}` : ""; }
 function stopPlayback(natural){
   starting = 0; $("playBtn").classList.remove("busy");
-  if (play) { cancelAnimationFrame(play.raf); play = null; if (!natural) audio.stopAll(); }
+  if (play) {
+    cancelAnimationFrame(play.raf);
+    // 中途停止(按停止、換題、切分頁、切到背景):已經播的秒數算進今天的練習時間,次數不加
+    if (!natural) { const sec = audio.audioNow() - play.real0; if (sec >= 0.5) addPracticeSec(sec); }
+    play = null;
+    if (!natural) audio.stopAll();
+  }
   if (osmd && noteXs.length) { $("scroll").scrollLeft = 0; movePlayline(0, false); }
   $("playLabel").textContent = T("play");
   $("playIcon").innerHTML = '<path d="M7 4v16l13-8z"/>';
@@ -502,11 +536,12 @@ function syncPlayOpts(){
 for (const [id, k] of [["optLoop", "loop"], ["optRamp", "ramp"], ["optClick", "clickOnly"]]) $(id).onclick = () => { S[k] = !S[k]; store.save(); syncPlayOpts(); };
 syncPlayOpts();
 
-/* ══ 練習紀錄:示範完整播完、或按了 ✓ / ⚠ 算一次 ══ */
+/* ══ 練習紀錄:示範完整播完算一次;中途停止只加秒數(熟練標記不算練習)══ */
 const dayKey = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-function logPractice(sec){
+function logPractice(sec){ addPracticeSec(sec, 1); }
+function addPracticeSec(sec, n = 0){
   const k = dayKey(new Date()), e = S.log[k] || (S.log[k] = { n: 0, sec: 0 });
-  e.n++; e.sec += Math.round(sec || 0);
+  e.n += n; e.sec += Math.round(sec || 0);
   const keys = Object.keys(S.log).sort();
   while (keys.length > 400) delete S.log[keys.shift()];
   store.save(); renderLog();
@@ -533,5 +568,5 @@ export async function start(c){
   ctx = c; exam = c.exam;
   renderLog();
   window.__tech = { get cur(){ return cur; }, get groups(){ return groups; }, get osmd(){ return osmd; },
-    get state(){ return { play: !!play, starting: !!starting, bpm, scheduled: audio.scheduledCount(), noteXs: noteXs.length }; }, setRudiment, switchTab, S };
+    get state(){ return { play: !!play, starting: !!starting, bpm, scheduled: audio.scheduledCount(), noteXs: noteXs.length, lastEnd: { ...lastEnd } }; }, setRudiment, switchTab, setBpm, S };
 }
