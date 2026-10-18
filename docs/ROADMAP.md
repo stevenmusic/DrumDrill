@@ -624,3 +624,10 @@
 - Capacitor 8 / Xcode 26 / SPM:[Ionic 官方公告](https://ionic.io/blog/announcing-capacitor-8)、[Capawesome 升級指南](https://capawesome.io/docs/blog/how-to-upgrade-your-capacitor-app-to-capacitor-8/)、[Ionic 論壇 SPM iOS 14 回報](https://forum.ionicframework.com/t/capapp-spm-package-swift-always-generates-ios-14-instead-of-ios-15-after-capacitor-8-spm-migration/251606)
 - RSL Drums 2018 大綱說明(可核對項目名稱):[AMEB 鏡像 PDF](https://rockschool.ameb.edu.au/wp-content/uploads/2019/09/RSL_Drums_Syllabus_Guide_2018_DIGITAL_31May2019-1.pdf);2024 書:[AMEB Drums Debut 2024](https://www.ameb.edu.au/rockschool-drums-debut-2024)
 - Trinity Rock & Pop 結構(零售/彙整頁,非官方,僅供方向):[Artium Academy](https://artiumacademy.com/music-theory/music-certifications/trinity/rock-and-pop)、[Boosey Trinity Rock & Pop Drums](https://www.boosey.com/shop/ucat/2063)
+
+---
+## 使用者決定(2026-10-18)
+1. 1.0 範圍:**全部做完再上架**(技巧、視奏、聽力、檢定都完成才送審;不先出只有技巧的版本)
+2. 檢定子項目:**跟 PianoDrill 一樣**,固定「技巧 / 視奏 / 聽力」三項(考試系統沒有某一項時,該頁說明並提供一般練習)
+3. 出題:**跟 PianoDrill 一樣**,參數照官方大綱與範例,題目由 App 依規則產生,並標示「僅供練習;實際要求以官方大綱為準」
+4. 考試系統:待定(候選:RSL Rockschool、Trinity Rock & Pop、LCM Drum Kit)
