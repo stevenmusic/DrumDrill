@@ -1,15 +1,26 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{background:#fff;margin:10px;font-family:sans-serif}.r{border-bottom:1px solid #ddd;padding:4px}.r b{font-size:13px}</style></head><body><div id="out"></div>
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Notation preview</title>
+<style>body{background:#fff;margin:10px;font-family:sans-serif}.r{border-bottom:1px solid #ddd;padding:4px}.r b{font-size:13px}</style></head><body><div id="out"></div>
+<!-- ?n=1,2,3:基本打法(js/tech/notation.js),跟 PAS 官方表對照;?p=E4 換單線譜的位置
+     ?kit=all:鼓組記譜樣張(js/shared/kitnotation.js;每個鼓件 × 每種修飾、拍號、連音、力度、斜線、單線譜)+ 圖例(js/shared/legend.js)
+     ?kit=pieces / grooves / meters / tuplets / dyn / slash / line1、樣張 id、鼓件 id(逗號分開);&lang=zh|en 換語言 -->
 <script src="../../vendor/opensheetmusicdisplay.min.js"></script>
 <script type="module">
-import { RUDIMENTS } from "../../js/tech/rudiments.js";
-import { rudimentXML, setPitch } from "../../js/tech/notation.js";
-const P = new URLSearchParams(location.search).get("p"); if (P) setPitch(P[0], P[1]);
-const nos = (new URLSearchParams(location.search).get("n") || "1,2,3").split(",").map(Number);
-for (const no of nos) {
-  const r = RUDIMENTS.find(x => x.no === no);
-  const d = document.createElement("div"); d.className = "r"; d.innerHTML = `<b>${no}. ${r.en}</b><div></div>`; document.getElementById("out").appendChild(d);
-  const o = new opensheetmusicdisplay.OpenSheetMusicDisplay(d.lastChild, { backend: "svg", autoResize: false, drawTitle: false, drawPartNames: false, drawMeasureNumbers: false, drawingParameters: "compacttight", renderSingleHorizontalStaffline: true });
-  try { await o.load(rudimentXML(r.groups, { reps: no === 1 ? 4 : 1 })); o.zoom = 0.9; o.EngravingRules.TupletNumberLimitConsecutiveRepetitions = false; o.render(); } catch (e) { d.lastChild.textContent = "ERR " + e.message; }
+const Q = new URLSearchParams(location.search);
+if (Q.get("kit") != null) {
+  await import("./notation-preview-kit.mjs");
+} else {
+  const { RUDIMENTS } = await import("../../js/tech/rudiments.js");
+  const { rudimentXML, setPitch } = await import("../../js/tech/notation.js");
+  const P = Q.get("p"); if (P) setPitch(P[0], P[1]);
+  const nos = (Q.get("n") || "1,2,3").split(",").map(Number);
+  for (const no of nos) {
+    const r = RUDIMENTS.find(x => x.no === no);
+    const d = document.createElement("div"); d.className = "r"; d.dataset.no = no; d.innerHTML = `<b>${no}. ${r.en}</b><div></div>`; document.getElementById("out").appendChild(d);
+    const o = new opensheetmusicdisplay.OpenSheetMusicDisplay(d.lastChild, { backend: "svg", autoResize: false, drawTitle: false, drawPartNames: false, drawMeasureNumbers: false, drawingParameters: "compacttight", renderSingleHorizontalStaffline: true });
+    const xml = rudimentXML(r.groups, { reps: no === 1 ? 4 : 1 });
+    d._xml = xml; d._osmd = o;
+    try { await o.load(xml); o.zoom = 0.9; o.EngravingRules.TupletNumberLimitConsecutiveRepetitions = false; o.render(); } catch (e) { d.lastChild.textContent = "ERR " + e.message; d.dataset.err = e.message; }
+  }
 }
-window.__done = 1;
+window.__done = 1; window.__stageReady = 1;
 </script></body></html>
