@@ -327,7 +327,7 @@
 
 **2. 檔案與內容**
 - `js/shared/score.js`
-  - `createScore({ $, zoom:()=>number, afterRender(svg), onPending })`,回傳 `{ load(xml), render(), fitWidth(), measure(lenBeats), xAtBeat(b), movePlayline(beat, follow), placeExtent(), onResize(), setActive(bool), get noteXs }`。
+  - `createScore({ $, zoom:()=>number, afterRender(svg), onPending })`,回傳 `{ load(xml), render(), fitWidth(), measure(lenBeats), xAtBeat(b), movePlayline(beat, follow), placeExtent(), onResize(), refit(), home(), clear(), landZoom, get osmd, get noteXs, get pending }`(看不看得到由 `opts.isActive()` 決定,沒有 `setActive`;完整說明在 `score.js` 檔頭)。
   - 需要的元素:`$("stage")`、`$("scroll")`、`$("osmd")`、`$("playline")`、`$("paperMsg")`。
   - 搬自 `tech/app.js:118-307`;`drawSticking` 留在技巧模組,當作 `afterRender` 傳入。
 - `js/shared/tempo.js`

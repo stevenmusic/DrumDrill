@@ -17,7 +17,22 @@
      onDrawn(xml) 畫好(或失敗)之後(測試用的計數)
      onPending()  因為看不到而延後時
      fitLand()    手機橫式依高度放大;回傳 true 表示已經重畫
-     setup(osmd)  第一次建立 OSMD 時(EngravingRules 之類) */
+     setup(osmd)  第一次建立 OSMD 時(EngravingRules 之類)
+   回傳的物件(實際 API;沒有 setActive,看不看得到一律問 opts.isActive()):
+     landZoom             手機橫式的縮放(fitLandZoom 設定;null = 用 zoom())
+     osmd / noteXs / pending   目前的 OSMD(沒有譜時 null)、每一步的拍點與 x、是不是因為看不到而延後
+     zoom()               目前的縮放(landZoom 或 opts.zoom())
+     load(xml)            載入並畫出來(看不到時先記著);回傳 Promise<true = 畫好了>
+     render()             照目前的縮放重畫一次(之後呼叫 afterRender)
+     fitWidth()           短的譜放大到大約填滿紙張
+     refit()              縮放改了(手機橫式放大 / 縮回):重畫、重量;回傳 true
+     measure(len)         重量 noteXs(len = 一輪幾拍,預設 opts.lenBeats())
+     xAtBeat(b)           第 b 拍的 x
+     movePlayline(beat, follow)  播放軸移到第 beat 拍;follow = 播放中(目前位置停在 25%)
+     placeExtent()        播放軸的上下範圍
+     home()               停止後:捲回開頭、播放軸回到第一個音
+     clear()              清掉譜面(osmd 變 null、landZoom 歸零、延後的不畫了)
+     onResize()           畫面大小改了 / 回到畫面:延後的先畫;縮放或寬度改了就重畫 */
 import { tr } from "./i18n.js";
 const PLAYLINE_RATIO = 0.25;
 export function createScore(opts){
@@ -154,7 +169,7 @@ export function createScore(opts){
   /* 停止播放後:捲回開頭、播放軸回到第一個音 */
   function home(){ if (osmd && noteXs.length) { $("scroll").scrollLeft = 0; movePlayline(0, false); } }
   /* 清掉譜面(沒有題目時) */
-  function clear(){ if (osmd) { try { osmd.clear(); } catch (e) {} } $("osmd").innerHTML = ""; osmd = null; noteXs = []; $("playline").hidden = true; seq++; pending = false; }
+  function clear(){ if (osmd) { try { osmd.clear(); } catch (e) {} } $("osmd").innerHTML = ""; osmd = null; noteXs = []; $("playline").hidden = true; seq++; pending = false; api.landZoom = null; lastXml = null; }
   /* 畫面大小改了 / 回到畫面:延後的先畫;縮放或紙張寬度改了就重畫;不然只重量播放軸 */
   function onResize(){
     if (!osmd) return;

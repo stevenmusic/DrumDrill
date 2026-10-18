@@ -330,8 +330,11 @@ function retempo(){
     schedulePlay(play, from);
   }, 60);
 }
+/* 開始播放。沒有開始(取樣沒載到、播放失敗)時 land.release():循環的下一輪是 stopPlayback(true, keepView) 留著 land-play 的,
+   不放掉會卡在「樂譜卡貼頂、放大」的畫面(別人接手的 "busy" 不放:那一次會自己處理) */
 async function startPlayback(){
-  try { await startInner(); }
+  let r = "failed";
+  try { r = await startInner(); }
   catch (e) {
     console.error(e);
     starting = 0; $("playBtn").classList.remove("busy");
@@ -339,9 +342,12 @@ async function startPlayback(){
     $("playLabel").textContent = T("play");
     setMsg("loadingMsg", () => tr("播放失敗:", "Playback failed: ") + (e && e.message || e));
   }
+  if (r === "failed") land.release();
+  return r;
 }
+/* 回傳 "started"(開始播了)、"busy"(正在準備 / 被換題或停止取代)、"failed"(取樣沒載到) */
 async function startInner(){
-  if (!cur || starting) return;
+  if (!cur || starting) return "busy";
   const token = starting = Date.now() + Math.random();
   const r0 = cur;
   const actx = audio.ensureAudio();
@@ -349,9 +355,9 @@ async function startInner(){
   if (actx.state !== "running") await within(actx.resume().catch(() => {}), 1500);
   const loaded = await preloadSamples();
   await within(audio.masterReady, 1500);
-  if (starting !== token || cur !== r0) { if (starting === token) { starting = 0; $("playLabel").textContent = T("play"); } $("playBtn").classList.remove("busy"); return; }
+  if (starting !== token || cur !== r0) { if (starting === token) { starting = 0; $("playLabel").textContent = T("play"); } $("playBtn").classList.remove("busy"); return "busy"; }
   starting = 0; $("playBtn").classList.remove("busy");
-  if (!loaded) { $("playLabel").textContent = T("play"); return; }
+  if (!loaded) { $("playLabel").textContent = T("play"); return "failed"; }
   const beatSec = 60 / bpm, cyc = cycleLength(groups), reps = S.reps;
   // 雙擊的第二下標記出來(播放時輕一點)
   const list = strokes(groups).map((s, i, a) => (s.kind === "roll" && !s.first && a[i - 1] && a[i - 1].kind === "roll" && a[i - 1].hand === s.hand && !a[i - 1].second ? { ...s, second: true } : s));
@@ -379,6 +385,7 @@ async function startInner(){
     play.raf = requestAnimationFrame(tick);
   };
   play.raf = requestAnimationFrame(tick);
+  return "started";
 }
 let lastEnd = { n: 0, scheduled: 0, at: 0 };
 function showBest(){ const b = cur && S.best[cur.no]; $("bestTempo").textContent = b ? `${T("bestLabel")} ♩=${b}` : ""; }

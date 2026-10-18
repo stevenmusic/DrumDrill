@@ -1,7 +1,8 @@
 // 播放的排程與停止(Playwright):
 //  1. 技巧 #20 Flam,♩=240,循環播放 20 輪:每輪自然播完時,還排著的聲音節點 ≤「照每個節點的 stop 時間,這時候還在響的」節點數
 //     (測試把 AudioBufferSourceNode 的 start/stop 時間記下來,門檻就是實際值;播完的節點自己移除,不會越積越多)
-//  1b. 循環 + 每輪 +4(ramp)跑 3 輪:每輪播完時「排程中 − 還在響」不增加(= 0,沒有一輪一輪累積),速度 +12
+//  1b. 循環 + 每輪 +4(ramp)跑 5 輪:每輪播完時「排程中 − 還在響」不增加(= 0,沒有一輪一輪累積),速度 +20;
+//      另外看「排程中」本身的趨勢:每一輪都比前一輪多、而且累積超過一輪節點數的 5%(至少 3 個)= 低於上限的緩慢累積(上面的比較抓不到)
 //  2. 播放中按停止:300ms 後排程中的節點 = 0,技巧的播放狀態是停止
 //  3. 切到背景(visibilitychange → hidden):播放停止;回到前景不會自己開始播
 //  4. 播放中換語言:不停止播放,題目、選擇器、按鈕文字換成新語言
@@ -58,14 +59,14 @@ const click = () => page.click("#t-playBtn");
   await page.waitForTimeout(300);
 }
 
-// 1b. 循環 + 每輪 +4,跑 3 輪
+// 1b. 循環 + 每輪 +4,跑 5 輪
 {
-  const bpm0 = 200;
-  await setup(20, bpm0, { loop: true, ramp: true });
+  const bpm0 = 200, ROUNDS = 5;
+  const r = await setup(20, bpm0, { loop: true, ramp: true });
   const ends0 = (await state()).lastEnd.n, n0 = bad;
   await click();
   const seen = [], extra = [];
-  for (let k = 1; k <= 3; k++) {
+  for (let k = 1; k <= ROUNDS; k++) {
     try { await waitFor(n => window.__tech.state.lastEnd.n >= n, ends0 + k, 30000); }
     catch (e) { fail(`每輪 +4:第 ${k} 輪沒有自然播完`); break; }
     const s = await state(), lim = await alive(s.lastEnd.at);
@@ -73,11 +74,14 @@ const click = () => page.click("#t-playBtn");
   }
   const bpmNow = (await state()).bpm;
   await click(); await page.waitForTimeout(300);
-  if (seen.length === 3) {
+  if (seen.length === ROUNDS) {
     if (extra.some((x, i) => x > (i ? extra[i - 1] : 0))) fail(`每輪 +4:每輪播完時「排程中 − 還在響」在增加 ${extra.join(" → ")}(排程中 ${seen.join(" → ")})`);
-    if (bpmNow !== bpm0 + 12) fail(`每輪 +4:3 輪之後速度是 ${bpmNow},應該是 ${bpm0 + 12}`);
+    // 趨勢:每一輪都比前一輪多,而且總共多出來的超過門檻 → 一輪一輪慢慢累積(還在上限以內,上面那條抓不到)
+    const rising = seen.every((x, i) => !i || x > seen[i - 1]), grow = seen[seen.length - 1] - seen[0], tol = Math.max(3, Math.round(r.perRound * 0.05));
+    if (rising && grow > tol) fail(`每輪 +4:排程中的節點每輪都在增加 ${seen.join(" → ")}(多了 ${grow} > ${tol}),有東西沒有收掉`);
+    if (bpmNow !== bpm0 + 4 * ROUNDS) fail(`每輪 +4:${ROUNDS} 輪之後速度是 ${bpmNow},應該是 ${bpm0 + 4 * ROUNDS}`);
   }
-  if (bad === n0) ok(`#20 循環 + 每輪 +4(♩=${bpm0}→${bpmNow})3 輪:每輪播完時「排程中 − 還在響」${extra.join(" → ")},沒有增加(排程中 ${seen.join(" → ")})`);
+  if (bad === n0) ok(`#20 循環 + 每輪 +4(♩=${bpm0}→${bpmNow})${ROUNDS} 輪:每輪播完時「排程中 − 還在響」${extra.join(" → ")},沒有增加;排程中 ${seen.join(" → ")} 沒有一輪一輪累積`);
   await page.evaluate(() => { window.__tech.S.ramp = false; });
 }
 

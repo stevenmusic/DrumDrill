@@ -18,6 +18,7 @@ function openSetupHeight(stage){
 }
 /* score:js/shared/score.js 的 createScore 回傳的物件(landZoom、osmd、refit());回傳 true = 縮放改了、已經重畫 */
 export function fitLandZoom(score, { $ }){
+  if (!score.osmd) { score.landZoom = null; return false; }   // 沒有譜(clear 之後):不能 refit
   if (!isPhoneLand()) { if (score.landZoom) { score.landZoom = null; return score.refit(); } return false; }
   const osmd = score.osmd, svg = $("osmd").querySelector("svg"); if (!svg || !osmd) return false;
   const H = svg.getBoundingClientRect().height; if (!H) return false;
