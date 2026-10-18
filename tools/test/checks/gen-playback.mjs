@@ -7,7 +7,7 @@
 // 3. 總長度、句長在官方範圍內;換拍號只在 8 級、只在句子之間;8 級至少換一次
 // 4. 聲部數(同時打的肢體數;Flam / Drag 多一隻手;連結線接續的音不算):Initial 一次一個、沒有和弦;1 級 1 到一半的小節有 2 個;
 //    2 級超過一半的小節有 2 個、最多 2 個;3 級起最多 3 個、每題至少一個 3 個
-// 5. 2 級以前的大鼓只在拍點上;三連音、六連音、四分三連音只在 x/4、x/2;二連音只在 6/8、9/8、12/8、3/8;滾奏、Ruff 一律不出(4 級起帶說明 key)
+// 5. 2 級以前的大鼓只在拍點上;手打 HH 和腳踩 HH 不同時;三連音、六連音、四分三連音只在 x/4、x/2;二連音只在 6/8、9/8、12/8、3/8;滾奏、Ruff 一律不出(4 級起帶說明 key)
 // 6. 同一個種子同一題;每一級白名單裡的每個元素在 1000 題裡至少出現一次(出題器真的會用到新的元素)
 import fs from "node:fs";
 import { genChart, playbackParams, phraseSpec, NOTES } from "../../../js/shared/playbackgen.js";
@@ -112,7 +112,7 @@ function checkChart(g, P, chart, used){
   let multiBars = 0, has3 = false, prevTie = [false, false];
   const feetUsed = ms.some(m => m.voices[1] && m.voices[1].some(e => e.notes));
   ms.forEach((m, mi) => {
-    const len = barLen(barTime[mi]), hits = new Map(), beats = new Set(beatStarts(barTime[mi]));
+    const len = barLen(barTime[mi]), hits = new Map(), beats = new Set(beatStarts(barTime[mi])), hhAt = [new Set(), new Set()];
     m.voices.forEach((v, vi) => {
       if (!v.length) { if (vi === 1 && !feetUsed) return; used.rest.add("r1"); if (!P.rests.includes("r1") || !(INTRO.rest.r1 <= g)) E(`第 ${mi + 1} 小節:整小節休止(全休止符)在 ${g} 級還沒有`); prevTie[vi] = false; return; }
       let p = 0;
@@ -131,6 +131,7 @@ function checkChart(g, P, chart, used){
           for (const n of e.notes) {
             const id = n.open && n.piece === "hh" ? "hhOpen" : n.closed && n.piece === "hh" ? "hhClosed" : n.piece;
             used.piece.add(id);
+            if (/^hh/.test(n.piece)) hhAt[vi].add(p);
             if (!pieceOK(id, P) || !(INTRO.piece[id] <= g)) E(`${where}:鼓件 ${id} 不在 ${g} 級白名單`);
             for (const f of ["flam", "drag", "ghost"]) if (n[f]) { used.feature.add(f); if (!featOK(f, P) || !(INTRO.feature[f] <= g)) E(`${where}:${f} 在 ${g} 級還沒有`); }
             if (n.accent) { used.dyn.add("accent"); if (!P.dyn.includes("accent") || !(INTRO.dyn.accent <= g)) E(`${where}:重音在 ${g} 級還沒有`); }
@@ -146,6 +147,7 @@ function checkChart(g, P, chart, used){
       });
       if (p !== len) E(`第 ${mi + 1} 小節 ${vi ? "腳" : "手"}:時值加起來 ${p / D} 拍 ≠ 拍號 ${len / D} 拍`);
     });
+    for (const x of hhAt[0]) if (hhAt[1].has(x)) E(`第 ${mi + 1} 小節 ${x / D} 拍:手打 HH 和腳踩 HH 同時(App 不這樣出)`);
     const mx = Math.max(0, ...hits.values());
     if (mx > cap) E(`第 ${mi + 1} 小節:同時打 ${mx} 個,${g} 級最多 ${cap} 個`);
     if (mx >= 2) multiBars++;

@@ -8,7 +8,8 @@
 //     開 HH 的 o:OSMD 照 <open-string/> 畫的小圓圈有藏起來(每個 o 一個)、o 的中心跟符頭中心水平差 < 0.1 符頭高、
 //     不碰到力度、漸強線、重音、+、連桿、符桿、其他符頭與補畫記號(兩種縮放:0.8 與 1.3)
 //  3. 折疊機 280 寬:樣張不超出紙張、沒有橫向捲動;圖例中英版面一樣(每一格的位置、大小相同)、出處小字最多兩行、沒有 undefined
-// 截圖存到 tools/test/out/notation/(基本打法、樣張 1000 寬 + 每一張、280 寬中英)
+//  4. Trinity Playback 產生器(notation-preview.html?playback=all):每一級 2 題做跟樣張一樣的檢查;320 寬不超出紙張
+// 截圖存到 tools/test/out/notation/(基本打法、樣張 1000 寬 + 每一張、280 寬中英、playback-0.png … playback-8.png)
 // 用法:node tools/test/notation.mjs
 import { open } from "./harness.mjs";
 import fs from "node:fs";
@@ -39,8 +40,8 @@ const ok = m => console.log("✓ " + m);
 /* 2. 鼓組記譜樣張 */
 // MusicXML 的符頭形狀 → VexFlow 畫出來的字形(OSMD 2.1.0 / VexFlow 1.2;一般 = 黑 / 二分 / 全音符,x = 四分以下 / 二分以上)
 const GLYPH = { normal: ["vb", "v81", "v1d"], x: ["v3e", "v95", "v92"], "circle-x": ["v3b"], diamond: ["v22", "v27", "v2d"], slash: [undefined] };
-async function kitPage(width, lang, shots, { kit = "all", zoom = null } = {}){
-  const { page, errors, close } = await open({ viewport: { width, height: 900 }, path: `tools/test/notation-preview.html?kit=${kit}${lang ? "&lang=" + lang : ""}${zoom ? "&zoom=" + zoom : ""}` });
+async function kitPage(width, lang, shots, { kit = "all", zoom = null, query = "" } = {}){
+  const { page, errors, close } = await open({ viewport: { width, height: 900 }, path: `tools/test/notation-preview.html?kit=${kit}${lang ? "&lang=" + lang : ""}${zoom ? "&zoom=" + zoom : ""}${query}` });
   await page.waitForFunction(() => window.__done, null, { timeout: 120000 });
   const res = await page.evaluate(({ GLYPH }) => {
     const L = window.__L, out = [];
@@ -148,7 +149,9 @@ async function kitPage(width, lang, shots, { kit = "all", zoom = null } = {}){
     const cellSrc = Object.fromEntries([...document.querySelectorAll("#legend5 .kl-cell, #legend1 .kl-cell")].map(c => [c.closest(".kit-legend").id + ":" + c.dataset.piece, c.querySelector(".kl-src").textContent]));
     return { out, legend, overflow, cellOverflow, srcIssues, cellSrc };
   }, { GLYPH });
-  if (shots) {
+  if (shots === "playback") {
+    for (const id of await page.$$eval("[id^=pb-]", els => els.filter(e => !e.dataset.sample).map(e => e.id))) await (await page.$("#" + id)).screenshot({ path: OUT + `playback-${id.slice(3)}.png` });
+  } else if (shots) {
     await page.screenshot({ path: OUT + `kit-${width}${lang ? "-" + lang : ""}.png`, fullPage: true });
     if (shots === "each") for (const id of res.out.map(o => o.id)) { const el = await page.$(`[data-sample="${id}"]`); if (el) await el.screenshot({ path: OUT + `sample-${id}.png` }); }
     if (shots === "each") for (const id of ["legend5", "legend1"]) { const el = await page.$("#" + id); if (el) await el.screenshot({ path: OUT + `${id}.png` }); }
@@ -196,6 +199,21 @@ async function kitPage(width, lang, shots, { kit = "all", zoom = null } = {}){
     }
   }
   if (bad === n0) ok(`280 寬:樣張都在紙張裡、沒有橫向捲動;圖例中英版面一樣(${zh.legend.map(l => l.cells.length).join(" + ")} 格)`);
+}
+
+{
+  // 4. Trinity Playback 產生器(js/shared/playbackgen.js):每一級 2 題,跟樣張一樣的檢查(符頭數、形狀、高度、補畫記號、閉 HH、連音組數、開 HH 的 o、鬼音括號、不超出紙張)
+  //    截圖 playback-0.png … playback-8.png(1000 寬);再用 320 寬檢查不超出紙張、沒有橫向捲動
+  const n0 = bad;
+  const r = await kitPage(1000, "en", "playback", { kit: "", query: "&playback=all&per=2&seed=1" });
+  for (const o of r.out) { if (o.err) fail(`Playback ${o.id}:${o.err}`); for (const i of o.issues) fail(`Playback ${o.id}:${i}`); }
+  for (const e of r.errors) fail("Playback console:" + e);
+  if (r.overflow) fail(`Playback 1000 寬有橫向捲動 ${r.overflow}`);
+  const n = await kitPage(320, "zh", false, { kit: "", query: "&playback=all&per=1&seed=7" });
+  for (const o of n.out) { if (o.err) fail(`Playback 320 寬 ${o.id}:${o.err}`); for (const i of o.issues) fail(`Playback 320 寬 ${o.id}:${i}`); }
+  for (const e of n.errors) fail("Playback 320 寬 console:" + e);
+  if (n.overflow) fail(`Playback 320 寬有橫向捲動 ${n.overflow}`);
+  if (bad === n0) ok(`Playback 產生器 ${r.out.length} + ${n.out.length} 題:OSMD 畫出來沒有錯誤,符頭數、形狀、高度(${r.out.reduce((s, o) => s + (o.checked || 0), 0)} 個音)、補畫記號、連音組數、開 HH 的 o 都對;320 寬不超出紙張`);
 }
 
 console.log(bad ? `✗ ${bad} 項問題` : `✓ 全部通過(截圖在 ${OUT})`);

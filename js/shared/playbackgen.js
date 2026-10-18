@@ -290,7 +290,7 @@ function grooveGroups(C, R, meter, b, S, o, hand, feet, upto){
     else feet.push(groupRest(meter, gi));
   }
   // 開 HH:一小節最多一次,下一個 HH 寫閉(+)
-  if (S.open && R() < 0.75) {
+  if (S.open && R() < 0.4) {
     const hh = hand.filter(e => e.role === "groove" && !e.rest && e.notes.some(n => n.piece === "hh"));
     const cand = hh.slice(0, -1).filter(e => e.notes.length === 1);
     if (cand.length) {
@@ -310,12 +310,12 @@ function fillGroups(C, R, meter, from, to, hand, feet){
     const { cell, span } = wpick(R, pool, x => freshW(C, x.cell) * (0.6 + 0.3 * Math.min(x.cell.notes, 6)));
     const pos = meter.starts[gi], split = cell.notes >= 4 && R() < 0.35, p1 = walk(gf), p2 = walk(gf + 1);
     const evs = cellEvents(cell, pos, (k) => [{ piece: split && k >= cell.notes / 2 ? p2 : p1 }], "fill");
-    // 重音、Flam / Drag(八分音符以上)、幽靈音(十六分以下的小鼓)
+    // 重音、Flam / Drag(八分音符以上)、幽靈音(十六分音符的小鼓;更短的音加括號會擠在一起)
     evs.filter(e => !e.rest).forEach((e, k) => {
       const n = e.notes[0], d = codeDur(e.code);
       if (C.accent && (k === 0 ? R() < 0.45 : R() < 0.08)) n.accent = true;
       if (d >= Q / 2 && (C.flam || C.drag) && R() < 0.3) { if (C.flam && (!C.drag || R() < 0.55)) n.flam = true; else n.drag = true; }
-      else if (C.ghost && !n.accent && n.piece === "snare" && d <= Q / 4 && R() < 0.3) n.ghost = true;
+      else if (C.ghost && !n.accent && n.piece === "snare" && e.code === "16" && R() < 0.3) n.ghost = true;
     });
     hand.push(...evs);
     const hs = strikes(evs);
