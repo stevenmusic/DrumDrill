@@ -113,7 +113,8 @@ export async function start(c){
   window.__sight = {
     get state(){ const p = player.state; return { phase, play: p.playing, kind: playKind, timer: !!countdown, left, key: cur && cur.key, grade: cur && cur.grade, mode: cur && cur.kind,
       bpm: cur ? bpmNow() : null, drawn, pending: pendingDraw, systems: stage ? stage.systems : 0, loading, loaded: sampleOk, lanes: pads.lanes.length,
-      result: lastResult ? { ...lastResult.r, taps: lastResult.taps } : null, taps: perf ? perf.taps.length : 0, unloadPending: !!unloadTimer }; },
+      result: lastResult ? { ...lastResult.r, taps: lastResult.taps } : null, taps: perf ? perf.taps.length : 0, unloadPending: !!unloadTimer,
+      sent: p.sent, failed: p.failed, dropped: p.dropped }; },
     get test(){ return cur && cur.test; }, get xml(){ return cur && cur.xml; }, get osmd(){ return osmd; }, get timeline(){ return cur && cur.test.tl; },
     eventsAt: b => (cur ? eventsAt(b) : []),
     newTest, startPrep, startPerform, toggleListen, setBpm: v => setBpm(v), SS,

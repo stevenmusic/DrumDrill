@@ -436,6 +436,63 @@ const click = () => page.click("#t-playBtn");
     `卡 2.5 秒漏 ${drop.s.dropped} 個(onLate ${drop.late.length} 次,sent ${drop.s.sent} + dropped = ${drop.n})、bpm 不合法丟 RangeError、超出範圍的事件不播、播完後 stop(true) 收掉尾音`);
 }
 
+// 7. 視奏的整組鼓播放(js/sight/app.js + meter.js):聽正確版本照時間軸排程(player 的 sent = 真的排進 audio 的數目)
+//  7a. Trinity 4 級(換到有 x/8 的題目:播放器用八分音符當一拍)♩=240 播完:sent = 事件(含裝飾音)+ 拍點(meter.js 的 clickAt;拍點開),failed、dropped = 0
+//  7b. RSL 4 級拍點關掉:sent = 事件 + 預備拍 + 自由發展兩小節的拍點(自由發展沒有鼓聲、只有拍點)
+//  7c. 播放中換語言不停;按 ▶ 停止後 300 ms 排程中的節點 = 0
+{
+  const n0 = bad;
+  const sightGo = async (sys, g) => {
+    await page.evaluate(([s, g]) => { window.__shell.setExam(s, g); window.__shell.showView("sight", String(g)); }, [sys, g]);
+    await waitFor(() => window.__sight.state.drawn > 0 && window.__sight.state.loaded && window.__sight.state.loading == null, null, 60000);
+  };
+  const expected = clickOn => page.evaluate(async clickOn => {
+    const { clickAt } = await import("./js/sight/meter.js");
+    const S = window.__sight, tl = S.timeline, b = S.state.bpm, u = tl.unit;
+    const inDev = q => !!(S.test.develop && q >= tl.bars[S.test.develop.from].start - 1e-6);
+    const evs = S.eventsAt(b).filter(e => e.beat >= -tl.countIn.len - 1e-9 && e.beat < tl.len - 1e-9);
+    let clicks = 0, devClicks = 0;
+    for (let x = -tl.countIn.len / u; x < tl.len / u - 1e-9; x++) { const q = x * u, c = clickAt(tl, x); if (c && (q < 0 || inDev(q) || clickOn)) { clicks++; if (inDev(q)) devClicks++; } }
+    return { ev: evs.length, devEv: evs.filter(e => inDev(e.beat)).length, clicks, devClicks, unit: u, times: S.test.times || [S.test.time] };
+  }, clickOn);
+  const listenToEnd = async () => {
+    await page.evaluate(() => document.getElementById("s-play").click());
+    await waitFor(() => window.__sight.state.kind === "listen", null, 20000);
+    await waitFor(() => !window.__sight.state.play, null, 120000);
+    await page.waitForTimeout(200);
+    return page.evaluate(() => window.__sight.state);
+  };
+  // 7a
+  await sightGo("trinity", 4);
+  for (let k = 0; k < 30 && !(await page.evaluate(() => window.__sight.timeline.unit === 0.5)); k++) {
+    const d = await page.evaluate(() => window.__sight.state.drawn); await page.evaluate(() => window.__sight.newTest());
+    await waitFor(d => window.__sight.state.drawn > d && window.__sight.state.loading == null && window.__sight.state.loaded, d, 60000);
+  }
+  await page.evaluate(() => { window.__sight.SS.clickPerform = true; window.__sight.setBpm(240); });
+  const ea = await expected(true), sa = await listenToEnd();
+  if (ea.unit !== 0.5) fail(`Trinity 4 級 30 題都沒有 x/8(${ea.times.join()})`);
+  if (sa.sent !== ea.ev + ea.clicks || sa.failed || sa.dropped) fail(`Trinity 4 級(${ea.times.join(" ")})播完:sent ${sa.sent}(應該 事件 ${ea.ev} + 拍點 ${ea.clicks})、failed ${sa.failed}、dropped ${sa.dropped}`);
+  // 7b
+  await sightGo("rsl", 4);
+  await page.evaluate(() => { window.__sight.SS.clickPerform = false; window.__sight.setBpm(240); });
+  const eb = await expected(false), sb = await listenToEnd();
+  if (eb.devEv !== 0) fail(`RSL 4 級自由發展的小節有 ${eb.devEv} 個鼓聲事件`);
+  if (eb.devClicks !== 8) fail(`RSL 4 級自由發展的拍點 ${eb.devClicks} 個(應該 2 小節 × 4)`);
+  if (sb.sent !== eb.ev + eb.clicks || sb.failed || sb.dropped) fail(`RSL 4 級(拍點關)播完:sent ${sb.sent}(應該 事件 ${eb.ev} + 預備拍與自由發展的拍點 ${eb.clicks})、failed ${sb.failed}、dropped ${sb.dropped}`);
+  // 7c
+  await page.evaluate(() => { window.__sight.SS.clickPerform = true; window.__sight.setBpm(80); document.getElementById("s-play").click(); });
+  await waitFor(() => window.__sight.state.kind === "listen", null, 20000); await page.waitForTimeout(1500);
+  await page.click("#langToggle"); await page.waitForTimeout(500);
+  const still = await page.evaluate(() => window.__sight.state.play && window.__sight.state.kind === "listen");
+  if (!still) fail("視奏播放中換語言,播放停了");
+  await page.evaluate(() => document.getElementById("s-play").click()); await page.waitForTimeout(300);
+  const left = await page.evaluate(async () => (await import("./js/shared/audio.js")).scheduledCount());
+  if (left || (await page.evaluate(() => window.__sight.state.play))) fail(`視奏按停止 300 ms 後還有 ${left} 個排程中的節點`);
+  await page.click("#langToggle"); await page.waitForTimeout(300);
+  await page.evaluate(() => { window.__sight.SS.clickPerform = true; });
+  if (bad === n0) ok(`視奏整組鼓播放:Trinity 4 級(${ea.times.join(" ")},八分音符一拍)送出 ${sa.sent} = 事件 ${ea.ev} + 拍點 ${ea.clicks};RSL 4 級拍點關 ${sb.sent} = 事件 ${eb.ev} + 預備拍與自由發展拍點 ${eb.clicks}(自由發展沒有鼓聲);換語言不停、停止後排程歸零`);
+}
+
 for (const e of errors) fail("console:" + e);
 await close();
 console.log(bad ? `✗ ${bad} 項問題` : "✓ 播放排程與停止全部通過");
