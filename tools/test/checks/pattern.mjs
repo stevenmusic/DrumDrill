@@ -9,7 +9,7 @@
 //      normal-type = 這個音本身的時值(八分三連音是 eighth);沒有連音的不能有 time-modification
 // 另外:有滾奏斜線 / 多次反彈的 PAS 打法要丟錯;PAS 表原本的 16t3 / 16t6 照舊是 16th
 import fs from "node:fs";
-import { RUDIMENTS, byNo, strokes, cycleLength, withLead, pattern, parseToken, DIV } from "../../../js/tech/rudiments.js";
+import { RUDIMENTS, byNo, strokes, cycleLength, withLead, pattern, patternSeq, parseToken, DIV } from "../../../js/tech/rudiments.js";
 import { rudimentXML } from "../../../js/tech/notation.js";
 import { techItems, GRADES } from "../../../js/shared/examdata.js";
 
@@ -72,6 +72,17 @@ export default function check(ok){
     } else ok(!/time-modification|<tuplet/.test(xml), `${at}:不是連音,不能有 time-modification`);
   }
   ok(n >= 40, `RSL pattern 項目太少(${n}):techItems 讀不到?`);
+  // 手寫錨點(照 PAS 官方表另外抄的最短重複單位,不從 rudiments.js 算):f = Flam、d = Drag、> = 重音
+  //   #16 單複點 R>LRRL>RLL、#19 單複點加雙擊 R>LRRLL、#22 Flam tap fR>RfL>L、雙擊(#6 實際打的)RRLL、單擊(#1)RL
+  const ANCHOR = [[{ pas: 16 }, "R>LRRL>RLL"], [{ pas: 19 }, "R>LRRLL"], [{ pas: 22 }, "fR>RfL>L"], [{ pas: 6, sticking: "double" }, "RRLL"], [{ pas: 1, sticking: "single" }, "RL"]];
+  const seqStr = q => q.map(x => (x.flam ? "f" : "") + (x.drag ? "d" : "") + x.hand + (x.accent ? ">" : "")).join("");
+  for (const [arg, want] of ANCHOR) {
+    let got = ""; try { got = seqStr(patternSeq(arg)); } catch (e) { got = "丟錯 " + e.message; }
+    ok(got === want, `錨點 PAS #${arg.pas}${arg.sticking ? " " + arg.sticking : ""}:應該 ${want},實際 ${got}`);
+    // 練習型的每一下也要是這個序列重複(用 8 分音符排一次)
+    let notes = []; try { notes = pattern({ ...arg, value: "8" }).flat(); } catch (e) {}
+    ok(notes.length && seqStr(notes) === want.repeat(notes.length / (want.match(/[RL]/g).length)), `錨點 PAS #${arg.pas}:練習型 ${seqStr(notes)} 不是 ${want} 重複`);
+  }
   // 不支援的:滾奏斜線(#7 五擊)、多次反彈(#4)、附點時值
   for (const bad of [{ pas: 7, value: "8" }, { pas: 4, value: "16" }, { pas: 16, value: "8." }, { pas: 6, value: "8" }]) {
     let threw = false; try { pattern(bad); } catch (e) { threw = true; }

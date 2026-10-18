@@ -56,9 +56,12 @@
 
 - **OSMD 設定與載入**:建立 OSMD 之後 `setupKit(osmd, lines, xml)`(`legend.js`:五線 `PercussionOneLineCutoff = 0`、單線維持 3;連音每組標數字;平桿;有鬼音時間距放寬),
   再 `osmd.load(osmdXML(xml))`(`kitnotation.js`:`<open/>` 換成 `<open-string/>`)。
+- **行距**:五線譜 `setupKit` 讓行與行之間至少留 3 格(`KIT_SYSTEM_GAP`;compacttight 預設 1 格):`decorate` 往上移的力度、漸強線、連音數字 OSMD 排行距時沒算到,
+  不留的話會碰到上一行譜的最下面那條線(notation.mjs 檢查抬高的記號不碰上一行、不超出紙)。
 - **畫完之後**:`decorate(osmd, xml, svg)`(傳原本的 xml)補畫 o 與鬼音括號、把連音數字與譜上方的力度 / 漸強線移開 o 與重音(每次 render 都要再叫一次,跟技巧的 `drawSticking` 一樣放在 `score.js` 的 `afterRender`)。
 - **資料驗證**(`scoreXML` 丟出中文錯誤,含第幾小節、手 / 腳、第幾個):open / closed 只准手打的 hh 類、不能同時;flam / drag 只准手、同一個音或和弦擇一;
-  roll / buzz 只准手、時值要八分音符以上(十六分以下含 16t / 32t 連音不可:斜線會跟連桿疊在一起,也不是常見寫法;待依 PAS 指南核對);同一個位置不能兩個力度或兩個漸強 / 漸弱。
+  roll / buzz 只准手;roll(滾奏斜線)時值要四分音符以上(沒有連桿:1、2、4 含附點、4t3;八分音符的符尾 / 連桿加上斜線分不清是幾條)、
+  buzz(多次反彈 z)要八分音符以上(十六分以下含 16t / 32t 連音不可;都待依 PAS 指南核對);同一個位置不能兩個力度或兩個漸強 / 漸弱。
 - **每一份鼓組譜旁邊都要有圖例**:`drawLegend(el, { pieces: piecesUsed(spec), lines })`。圖例一格 74×88、名稱與出處用 `pairText`,中英版面一樣(notation.mjs 在 280 寬逐格比對)。
 - **力度的位置**要對到某個音或休止符的開頭(`beat` = 從小節開頭算幾個四分音符);對不到會丟出錯誤,出題器要放在音上。
 - **連音**照時值代號自動分組:同一種比例連續的音是一段,加起來等於段裡某一種的一組長度、而且至少一拍(段裡最長的一組比一拍短時 = 那一組)就結束一組

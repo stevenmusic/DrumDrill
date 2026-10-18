@@ -140,9 +140,9 @@ export function randomScore(seed, nMeasures = 4){
       if (next && !next.some(c => /t|dup/.test(c))) codes.push(...next.slice(0, Math.floor(R() * next.length)));
     } else codes = groups.flat();
     const evs = codes.map(c => (R() < 0.15 ? { value: "r" + c } : { value: c, notes: notesFn() }));
-    // 滾奏:手、八分音符以上(十六分以下不可)
-    const rollable = c => !/^(16|32)/.test(c);
-    if (!feet && lines === 5) evs.forEach(e => { if (!e.notes || !rollable(e.value)) return; if (R() < 0.05) e.roll = 1 + Math.floor(R() * 3); else if (R() < 0.03) e.buzz = true; });
+    // 滾奏:手;roll 四分音符以上(沒有連桿)、buzz 八分音符以上(十六分以下不可)
+    const rollable = c => /^(1|2\.?|4\.?|4t3)$/.test(c), buzzable = c => !/^(16|32)/.test(c);
+    if (!feet && lines === 5) evs.forEach(e => { if (!e.notes) return; if (rollable(e.value) && R() < 0.05) e.roll = 1 + Math.floor(R() * 3); else if (buzzable(e.value) && R() < 0.03) e.buzz = true; });
     // 連結線:下一個也是音的話,把下一個改成同樣的鼓件
     for (let i = 0; i + 1 < evs.length; i++) if (evs[i].notes && evs[i + 1].notes && R() < 0.1) { evs[i].tie = true; evs[i + 1].notes = evs[i].notes.map(n => ({ piece: n.piece })); }
     return evs;
@@ -235,6 +235,10 @@ export default function check(ok){
     ["roll 在十六分音符", S([[{ value: "16", notes: [{ piece: "snare" }], roll: 1 }]])],
     ["roll 在附點十六分", S([[{ value: "16.", notes: [{ piece: "snare" }], roll: 1 }, { value: "32", notes: [{ piece: "snare" }] }]])],
     ["buzz 在三十二分音符", S([[{ value: "32", notes: [{ piece: "snare" }], buzz: true }]])],
+    ["roll 在八分音符", S([[{ value: "8", notes: [{ piece: "snare" }], roll: 1 }, { value: "8", notes: [{ piece: "snare" }] }]])],
+    ["roll 在附點八分", S([[{ value: "8.", notes: [{ piece: "snare" }], roll: 2 }, { value: "16", notes: [{ piece: "snare" }] }]])],
+    ["roll 在 8t3", S([[...[0, 1, 2].map(i => ({ value: "8t3", notes: [{ piece: "snare" }], ...(i ? {} : { roll: 2 }) }))]])],
+    ["buzz 在十六分音符", S([[{ value: "16", notes: [{ piece: "snare" }], buzz: true }]])],
     ["roll 在 16t3", S([[...[0, 1, 2].map(i => ({ value: "16t3", notes: [{ piece: "snare" }], ...(i ? {} : { roll: 2 }) }))]])],
     // 力度
     ["同一個位置兩個力度", S([[q("snare")]], { dyn: [{ m: 0, beat: 0, mark: "f" }, { m: 0, beat: 0, mark: "p" }] })],
@@ -287,11 +291,11 @@ export default function check(ok){
     try { xml = scoreXML(spec2); } catch (e) { xml = ""; ok(false, `連結線的 ${mk} HH(鼓件):${e.message}`); }
     ok((xml.match(new RegExp(tag, "g")) || []).length === 1, `連結線接續的 ${mk === "open" ? "hhOpen" : "hhClosed"} 只在第一個音畫`);
   }
-  // 滾奏在八分音符、8t3、二連音可以
-  for (const v of ["8", "8.", "8t3", "4t3", "2", "1"]) {
-    const n = /t3$/.test(v) ? 3 : 1, spec = { key, time: "4/4", measures: [{ voices: [Array(n).fill(0).map(() => ({ value: v, notes: [{ piece: "snare" }], roll: 2 }))] }] };
+  // 滾奏斜線(roll)在四分音符以上可以;多次反彈(buzz)在八分音符、8t3、二連音也可以
+  for (const [v, k] of [["4", "roll"], ["4.", "roll"], ["4t3", "roll"], ["2", "roll"], ["1", "roll"], ["8", "buzz"], ["8.", "buzz"], ["8t3", "buzz"], ["4", "buzz"]]) {
+    const n = /t3$/.test(v) ? 3 : 1, spec = { key, time: "4/4", measures: [{ voices: [Array(n).fill(0).map(() => ({ value: v, notes: [{ piece: "snare" }], ...(k === "roll" ? { roll: 2 } : { buzz: true }) }))] }] };
     let errs; try { errs = auditXML(scoreXML(spec), spec); } catch (e) { errs = [e.message]; }
-    ok(!errs.length, `滾奏在 ${v}:${errs.join(";")}`);
+    ok(!errs.length, `${k === "roll" ? "滾奏斜線" : "多次反彈"}在 ${v}:${errs.join(";")}`);
   }
   // 交給 OSMD 的版本:<open/> → <open-string/>(其他不動)
   {

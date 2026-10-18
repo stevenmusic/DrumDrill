@@ -115,7 +115,9 @@ function renderPicker(){
   $("picker").querySelector(".rows").innerHTML = rows.map(([k, lbl, opts]) =>
     `<div class="prow"><span class="lbl">${lbl}</span><div class="opts" data-k="${k}">` +
     opts.map(([v, t]) => `<button class="opt${k === "no" ? " rud" : ""}" data-v="${v}" aria-pressed="${String(v) === String(val[k])}">${t}</button>`).join("") + `</div></div>`).join("");
-  $("picker").querySelector(".sum").textContent = [`${cur.no}. ${name(cur)}`, cur.second ? (S.lead === "L" ? tr("左手先", "Left lead") : tr("右手先", "Right lead")) : "", "×" + S.reps].filter(Boolean).join(" · ");
+  // 練習型(目標模式):摘要寫練習型的名稱(跟題目一樣),不寫 PAS 原譜的名稱
+  const pt = target && target.pattern;
+  $("picker").querySelector(".sum").textContent = [pt ? patternName(pt) : `${cur.no}. ${name(cur)}`, cur.second ? (S.lead === "L" ? tr("左手先", "Left lead") : tr("右手先", "Right lead")) : "", "×" + S.reps].filter(Boolean).join(" · ");
 }
 $("picker").querySelector(".rows").onclick = e => {
   const b = e.target.closest(".opt"); if (!b) return;
@@ -272,7 +274,8 @@ function renderRsl(d, g){
       const note = () => [
         it.kind === "book" && !(it.note && it.note !== gr.note) ? tr("譜見官方檢定書。", "See the official grade book.") : "",
         it.note && it.note !== gr.note ? L(it.note) + tr("。", ".") : "",
-        it.assumed ? TS("srcAssumed") + tr("。", ".") : "",
+        // 推估:項目自己的備註已經寫了「推估」(4 級 C 組 Flam tap)就不再重複
+        it.assumed && !(it.note && it.note !== gr.note) ? TS("srcAssumed") + tr("。", ".") : "",
         it.kind === "book" && it.related.length ? tr("可以先練相關的 PAS 打法:", "Related PAS rudiments:") : ""
       ].filter(Boolean).join(" ");
       if (note()) { const p = el("p", "xi-note"); w.appendChild(p); pairText(p, note); }
@@ -377,6 +380,7 @@ function renderTrinity(d, g){
 function syncTarget(){
   const show = !!target && tab !== "exam";
   $("target").hidden = !show;
+  showBest();   // 目標模式不顯示「示範最快」(進出目標都要更新)
   if (!show) return;
   const t = target, sysName = t.system === "rsl" ? "RSL" : "Trinity", gl = () => ctx.gradeLabel(t.grade, t.system);   // 級名要在 fn 裡算(兩種語言各算一次)
   pairStack($("targetText"), () => tr(`${sysName} ${gl()} · ${t.group} 組 · ♩=${t.bpm} · p.${t.p}`, `${sysName} ${gl()} · Group ${t.group} · ♩=${t.bpm} · p.${t.p}`));
@@ -495,7 +499,7 @@ const tempo = createTempo({ $, min: MIN_BPM, max: MAX_BPM, get: () => bpm, set: 
 function syncTempoUI(){
   tempo.sync(`♩ / ${tr("分", "min")}`);
   $("examTempo").textContent = tr("由慢到快、再由快到慢(PAS:open – close – open)", "Slow to fast to slow (PAS: open – close – open)");
-  const beats = Math.max(1, Math.round(cycleLength(groups || [[{ dur: 4 * DIV }]]) / DIV));
+  const beats = Math.max(1, Math.round(accentEvery(cycleLength(groups || [[{ dur: 4 * DIV }]])) / DIV));
   tempo.setBeats(Math.min(8, beats));
 }
 function setBpm(v, fromUser){
@@ -533,6 +537,9 @@ const within = (p, ms) => Promise.race([p, new Promise(r => setTimeout(r, ms))])
 
 /* ── 示範播放:預備拍一小節(四拍)+ 每拍一個拍點 ── */
 const COUNT_IN = 4;
+/* 拍點的重拍:每一輪的開頭。練習型的一輪常常只有 1、2 拍(例如單擊八分音符 = 1 拍),每一下都是重拍就沒有意義
+   → 練習型一輪不到 4 拍(而且 4 拍是整數輪)時,重拍改成每 4 拍一次(取「4 拍」與「一輪」比較大的);PAS 原譜照舊每一輪 */
+function accentEvery(cyc){ return target && target.pattern && cyc < 4 * DIV && (4 * DIV) % cyc === 0 ? 4 * DIV : cyc; }
 const VEL = { accent: 0.95, tap: 0.6, roll: 0.55, buzz: 0.5, grace: 0.3 };
 let play = null, starting = 0;
 function schedulePlay(p, from){
@@ -559,7 +566,7 @@ function schedulePlay(p, from){
   const clicks = Math.ceil(reps * cyc / DIV);
   for (let b = -COUNT_IN; b < clicks; b++) {
     const at = t0 + b * beatSec;
-    if (at >= from) audio.playClick(at, b < 0 ? b === -COUNT_IN : (b * DIV) % cyc === 0);
+    if (at >= from) audio.playClick(at, b < 0 ? b === -COUNT_IN : (b * DIV) % p.acc === 0);
   }
 }
 let retempoTimer = 0;
@@ -606,10 +613,14 @@ async function startInner(){
   starting = 0; $("playBtn").classList.remove("busy");
   if (!loaded) { $("playLabel").textContent = T("play"); return "failed"; }
   const beatSec = 60 / bpm, cyc = cycleLength(groups), reps = S.reps;
-  // 雙擊的第二下標記出來(播放時輕一點)
-  const list = strokes(groups).map((s, i, a) => (s.kind === "roll" && !s.first && a[i - 1] && a[i - 1].kind === "roll" && a[i - 1].hand === s.hand && !a[i - 1].second ? { ...s, second: true } : s));
+  // 雙擊的第二下標記出來(播放時輕一點);RSL 雙擊練習型(RRLL)照 #6 雙擊開放滾奏的播法:每一對的第二下輕一點
+  const dbl = !!(target && target.pattern && target.pattern.sticking === "double");
+  const list = strokes(groups).map((s, i, a) => {
+    if (dbl && s.kind === "tap") return { ...s, kind: "roll", second: i % 2 === 1 };
+    return s.kind === "roll" && !s.first && a[i - 1] && a[i - 1].kind === "roll" && a[i - 1].hand === s.hand && !a[i - 1].second ? { ...s, second: true } : s;
+  });
   const t0 = actx.currentTime + 0.15 + COUNT_IN * beatSec;
-  play = { t0, real0: t0, beatSec, reps, cyc, list, raf: 0, endBeat: reps * cyc / DIV };
+  play = { t0, real0: t0, beatSec, reps, cyc, acc: accentEvery(cyc), list, raf: 0, endBeat: reps * cyc / DIV };
   schedulePlay(play, -Infinity);
   revealScore();
   $("playLabel").textContent = T("stop");
@@ -636,7 +647,8 @@ async function startInner(){
   return "started";
 }
 let lastEnd = { n: 0, scheduled: 0, at: 0 };
-function showBest(){ const b = cur && S.best[cur.no]; $("bestTempo").textContent = b ? `${T("bestLabel")} ♩=${b}` : ""; }
+/* 示範最快:PAS 原譜自由練習的紀錄;目標模式(官方速度、練習型)不顯示(那是別的譜、別的速度) */
+function showBest(){ const b = cur && !target && S.best[cur.no]; $("bestTempo").textContent = b ? `${T("bestLabel")} ♩=${b}` : ""; }
 function stopPlayback(natural, keepView){
   starting = 0; $("playBtn").classList.remove("busy");
   land.release(keepView);   // 手機橫式:播完(或停止)捲回播放前的位置、縮回;循環的下一輪不捲

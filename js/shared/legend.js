@@ -200,7 +200,10 @@ function liftAbove(osmd, svg){
      單線譜維持預設 3(設 0 的話 E4 會畫在線下兩格;notation.mjs 檢查符頭高度)
    - 連音每一組都標數字(跟技巧一樣)
    - 平的連桿(FlatBeams;鼓譜慣用,不跟著音高斜)
-   - 有鬼音(括號是 decorate 補畫的,OSMD 不知道)時音符間距放寬一點,連續十六分鬼音的括號才不會擠在一起 */
+   - 有鬼音(括號是 decorate 補畫的,OSMD 不知道)時音符間距放寬一點,連續十六分鬼音的括號才不會擠在一起
+   - 五線譜行與行之間至少留 KIT_SYSTEM_GAP 格(compacttight 預設 1 格):decorate 的 liftAbove 會把力度、漸強線、連音數字往上移開
+     o 與重音(最多約 1.5 格),OSMD 排行距時沒算到,不留空間的話會碰到上一行譜的最下面那條線(notation.mjs 檢查) */
+export const KIT_SYSTEM_GAP = 3;
 let SPACING = null;
 export function setupKit(osmd, lines = 5, xml = ""){
   const R = osmd.EngravingRules;
@@ -209,8 +212,9 @@ export function setupKit(osmd, lines = 5, xml = ""){
   R.TupletNumberLimitConsecutiveRepetitions = false;
   R.FlatBeams = true;
   if (!SPACING) SPACING = new WeakMap();
-  if (!SPACING.has(R)) SPACING.set(R, [R.VoiceSpacingMultiplierVexflow, R.VoiceSpacingAddendVexflow]);
-  const [mul, add] = SPACING.get(R), ghost = /parentheses="yes"/.test(xml || "");
+  if (!SPACING.has(R)) SPACING.set(R, [R.VoiceSpacingMultiplierVexflow, R.VoiceSpacingAddendVexflow, R.MinSkyBottomDistBetweenSystems]);
+  const [mul, add, sky] = SPACING.get(R), ghost = /parentheses="yes"/.test(xml || "");
+  R.MinSkyBottomDistBetweenSystems = lines === 1 ? sky : Math.max(sky, KIT_SYSTEM_GAP);
   R.VoiceSpacingMultiplierVexflow = ghost ? mul * 1.5 : mul;
   R.VoiceSpacingAddendVexflow = ghost ? add + 2 : add;
 }

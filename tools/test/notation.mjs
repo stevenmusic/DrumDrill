@@ -6,7 +6,8 @@
 //     補畫的記號(鬼音括號、開 HH 的 o)數量 = MusicXML;閉 HH 的 + 是 OSMD 畫的(lefthandpizzicato);
 //     連音組數 = MusicXML 的 <tuplet type="start">(8t3 與 16t3 混在一拍是一組);
 //     開 HH 的 o:OSMD 照 <open-string/> 畫的小圓圈有藏起來(每個 o 一個)、o 的中心跟符頭中心水平差 < 0.1 符頭高、
-//     不碰到力度、漸強線、重音、+、連桿、符桿、其他符頭與補畫記號(兩種縮放:0.8 與 1.3)
+//     不碰到力度、漸強線、重音、+、連桿、符桿、其他符頭與補畫記號(兩種縮放:0.8 與 1.3);
+//     decorate 抬高的力度、漸強線、連音數字(kit-lift)不碰到上一行譜、不超出譜面與紙張的上緣
 //  3. 折疊機 280 寬:樣張不超出紙張、沒有橫向捲動;圖例中英版面一樣(每一格的位置、大小相同)、出處小字最多兩行、沒有 undefined
 // 截圖存到 tools/test/out/notation/(基本打法、樣張 1000 寬 + 每一張、280 寬中英)
 // 用法:node tools/test/notation.mjs
@@ -130,6 +131,22 @@ async function kitPage(width, lang, shots, { kit = "all", zoom = null } = {}){
       // 鬼音的括號:彼此不疊在一起(連續十六分鬼音)。text 的 bbox 是字寬(advance),墨水 ≈ 中間 75%
       const gh = [...svg.querySelectorAll(".kit-ghost")].map(box).map(b => ({ ...b, x: b.x + b.w * 0.125, w: b.w * 0.75 }));
       for (let i = 0; i < gh.length; i++) for (let j = i + 1; j < gh.length; j++) if (hit(gh[i], gh[j], 0.3)) { o.issues.push(`鬼音括號疊在一起(x ${Math.round(gh[i].x)} / ${Math.round(gh[j].x)})`); i = gh.length; break; }
+      // 抬高的力度、漸強線、連音數字(legend.js decorate 的 liftAbove,class kit-lift):不碰到上一行譜的任何東西、不超出 SVG 與紙張的上緣
+      const lifted = [...svg.querySelectorAll(".kit-lift")], rows = [...svg.querySelectorAll(".staffline")], vb = svg.viewBox && svg.viewBox.baseVal;
+      const paperTop = r.el.querySelector(".kit-paper").getBoundingClientRect().top;
+      let liftChecked = 0;
+      for (const e of lifted) {
+        const b = box(e), li = rows.findIndex(l => l.contains(e)), what = e.getAttribute("class") + (e.textContent ? "「" + e.textContent + "」" : "");
+        if (vb && vb.height && b.y < vb.y - 0.5) o.issues.push(`抬高的 ${what} 超出譜面上緣(${b.y.toFixed(1)} < ${vb.y.toFixed(1)})`);
+        if (e.getBoundingClientRect().top < paperTop - 1) o.issues.push(`抬高的 ${what} 超出紙張`);
+        if (li > 0) {
+          const prev = [...rows[li - 1].querySelectorAll("path, rect, text")].map(box).filter(x => x.w || x.h);
+          const hitPrev = prev.find(x => hit(b, x, 0.3));
+          if (hitPrev) o.issues.push(`抬高的 ${what}(第 ${li + 1} 行)碰到上一行譜(y ${hitPrev.y.toFixed(1)}–${(hitPrev.y + hitPrev.h).toFixed(1)})`);
+        }
+        liftChecked++;
+      }
+      o.liftChecked = liftChecked;
       // 樣張不超出紙張
       const pr = r.el.querySelector(".kit-paper").getBoundingClientRect(), gr = svg.getBoundingClientRect();
       if (gr.right > pr.right + 1 || gr.left < pr.left - 1) o.issues.push(`超出紙張(${Math.round(gr.left)}–${Math.round(gr.right)} / ${Math.round(pr.left)}–${Math.round(pr.right)},縮放 ${r.zoom.toFixed(2)})`);
@@ -167,7 +184,7 @@ async function kitPage(width, lang, shots, { kit = "all", zoom = null } = {}){
   // 出處的字(英文):Trinity DK p.107 + 位置待核對、Ride bell = Trinity errata、單線譜小鼓 = RSL p.31–43 + 1-line: App's choice
   const want = { "legend5:hhFoot": "Trinity DK p.107\nPos. pending", "legend5:hhOpen": "Trinity DK p.107\nPos. pending", "legend5:rideBell": "Trinity errata", "legend5:kick": "Pending", "legend1:snare": "RSL p.31–43\n1-line: App's choice" };
   for (const [k, v] of Object.entries(want)) if (r.cellSrc[k] !== v) fail(`圖例 ${k} 出處「${r.cellSrc[k]}」,應該「${v}」`);
-  if (bad === n0) ok(`鼓組記譜樣張 ${r.out.length} 張:OSMD 畫出來沒有錯誤,符頭數、形狀、高度(${r.out.reduce((s, o) => s + (o.checked || 0), 0)} 個音)、補畫記號、閉 HH 的 +、連音組數、開 HH 的 o(${r.out.reduce((s, o) => s + (o.oChecked || 0), 0)} 個)都對;圖例出處`);
+  if (bad === n0) ok(`鼓組記譜樣張 ${r.out.length} 張:OSMD 畫出來沒有錯誤,符頭數、形狀、高度(${r.out.reduce((s, o) => s + (o.checked || 0), 0)} 個音)、補畫記號、閉 HH 的 +、連音組數、開 HH 的 o(${r.out.reduce((s, o) => s + (o.oChecked || 0), 0)} 個)、抬高的記號(${r.out.reduce((s, o) => s + (o.liftChecked || 0), 0)} 個)都對;圖例出處`);
 }
 {
   // 另一種縮放(1.3):開 HH 的 o 位置、不碰撞
@@ -195,7 +212,7 @@ async function kitPage(width, lang, shots, { kit = "all", zoom = null } = {}){
       (a.cells || []).forEach((c, k) => { if (c !== (b.cells || [])[k]) fail(`280 寬 圖例格子 中 ${c} ≠ 英 ${(b.cells || [])[k]}`); });
     }
   }
-  if (bad === n0) ok(`280 寬:樣張都在紙張裡、沒有橫向捲動;圖例中英版面一樣(${zh.legend.map(l => l.cells.length).join(" + ")} 格)`);
+  if (bad === n0) ok(`280 寬:樣張都在紙張裡、抬高的記號(${zh.out.reduce((s, o) => s + (o.liftChecked || 0), 0)} 個)不碰上一行、沒有橫向捲動;圖例中英版面一樣(${zh.legend.map(l => l.cells.length).join(" + ")} 格)`);
 }
 
 console.log(bad ? `✗ ${bad} 項問題` : `✓ 全部通過(截圖在 ${OUT})`);

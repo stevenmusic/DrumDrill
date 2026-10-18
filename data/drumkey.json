@@ -25,7 +25,7 @@
     "tomMid": { "name": ["中鼓", "Mid tom"], "abbr": "MT", "step": "D", "oct": 5, "head": "normal", "src": "pending-pas-weinberg" },
     "tomHi": { "name": ["高鼓", "High tom"], "abbr": "HT", "step": "E", "oct": 5, "head": "normal", "src": "pending-pas-weinberg" },
     "hhFoot": { "name": ["腳踩 HH", "Foot hi-hat"], "abbr": "HH", "step": "D", "oct": 4, "head": "x", "src": "trinity-dk-p107", "posSrc": "pending-pas-weinberg", "note": ["官方只畫 × 符頭與向下的符桿(DK p.107,圖上沒有譜線);「線下」與 D4 是常見寫法,待 PAS 指南核對", "Official: × head, stem down (DK p.107, no staff shown); below the staff at D4 is common use, pending PAS check"] },
-    "hh": { "name": ["Hi-hat", "Hi-hat"], "abbr": "HH", "step": "G", "oct": 5, "head": "x", "src": "pending-pas-weinberg" },
+    "hh": { "name": ["腳踏鈸 HH", "Hi-hat"], "abbr": "HH", "step": "G", "oct": 5, "head": "x", "src": "pending-pas-weinberg" },
     "hhClosed": { "name": ["閉 HH", "Closed hi-hat"], "abbr": "HH", "step": "G", "oct": 5, "head": "x", "mark": "+", "src": "trinity-dk-p107", "posSrc": "pending-pas-weinberg" },
     "hhOpen": { "name": ["開 HH", "Open hi-hat"], "abbr": "HH", "step": "G", "oct": 5, "head": "x", "mark": "o", "src": "trinity-dk-p107", "posSrc": "pending-pas-weinberg" },
     "ride": { "name": ["Ride", "Ride"], "abbr": "RC", "step": "F", "oct": 5, "head": "x", "src": "pending-pas-weinberg" },

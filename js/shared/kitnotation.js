@@ -30,8 +30,9 @@
                            "continue" = 已經滿一組也不要在這裡結束(例如 [16t3 ×3(第 3 個寫 continue), 16t3, 8t3] 一拍一組)
      roll: 2               滾奏斜線數(1–3;tremolo,OSMD 會畫)
      buzz: true            多次反彈滾奏(符桿上的 z;<tremolo type="unmeasured">,OSMD 會畫)
-                           roll / buzz 只准手的聲部,時值要八分音符以上(含附點、8t3、4t3、二連音);十六分音符以下(含 16t、32t 連音)不可:
-                           斜線會跟連桿疊在一起,而且這麼短的音不寫成滾奏(常理;待依 PAS 指南核對)
+                           roll / buzz 只准手的聲部。roll 的時值要四分音符以上(沒有連桿:1 2 2. 4 4. 4t3):八分音符的符尾 / 連桿
+                           加上斜線,畫出來分不清是幾條(常理;待依 PAS 指南核對);buzz 要八分音符以上(含附點、8t3、4t3、二連音),
+                           十六分音符以下(含 16t、32t 連音)不可
      notes: [{ piece, accent, ghost, open, closed, flam, drag }]
                            piece = drumkey.json 的鼓件 id;ghost = 鬼音(符頭加括號);open / closed = HH 開 o / 閉 +
                            (只准手打的 hh;hhOpen、hhClosed 本身就帶 o / +,不能再寫相反的;開閉不能同時;連結線接續的音不再畫 o / +);
@@ -194,7 +195,7 @@ function assignBeams(evs, meter){
 /* 修飾記號合不合理(不合理丟出 Error):
    - open / closed:只准手打的 hh 類(hh、hhOpen、hhClosed);開閉不能同時(hhOpen 不能寫 closed、hhClosed 不能寫 open)
    - flam / drag:只准手的聲部;同一個音、同一個和弦只能擇一
-   - roll / buzz:只准手的聲部;時值要八分音符以上(連桿 ≤ 1 條:1 2 4 8 含附點、8t3、4t3、dup),十六分以下不可 */
+   - roll / buzz:只准手的聲部;roll 要四分音符以上(沒有連桿:1 2 4 含附點、4t3),buzz 要八分音符以上(連桿 ≤ 1 條:再加 8 8. 8t3 dup) */
 const HH_HAND = new Set(["hh", "hhOpen", "hhClosed"]);
 function checkMods(e, where, voice, key){
   if (e.rest) return;
@@ -210,7 +211,8 @@ function checkMods(e, where, voice, key){
   if (fl && dr) throw new Error(`${where}:同一個和弦 Flam、Drag 只能選一個`);
   if (e.roll || e.buzz) {
     if (voice !== 1) throw new Error(`${where}:滾奏(roll / buzz)只能在手的聲部`);
-    if (e.info.beams > 1) throw new Error(`${where}:滾奏(roll / buzz)的時值要八分音符以上,十六分音符以下不可(${e.info.code})`);
+    if (e.roll && e.info.beams > 0) throw new Error(`${where}:滾奏斜線(roll)的時值要四分音符以上,八分音符以下不可(${e.info.code})`);
+    if (e.buzz && e.info.beams > 1) throw new Error(`${where}:多次反彈(buzz)的時值要八分音符以上,十六分音符以下不可(${e.info.code})`);
   }
 }
 
