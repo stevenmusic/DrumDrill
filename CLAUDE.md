@@ -56,14 +56,28 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
     第一次 / 第二次進行中速度鈕不能按;速度每一級各自記(`bpmBy`)
   - 譜卡從檢定頁、說明卡回來要還原(`showPractice`:Trinity 一直有、RSL 揭曉後有),enter 的 rAF 重畫
   - 整組鼓 `audio.loadKit`(進度在題目卡);測試掛鉤 `window.__ear`(`state`、`finishNow`、`expected`…)
+- **模擬考**(S14,`js/shared/mock.js`;照 PianoDrill 的 `t-mockBtn` / `e-mockBtn` 與 `.mock-res`):每個模組的檢定頁一張模擬考卡(`#t-mockCard`、`#s-mockCard`、`#e-mockCard`),不做跨模組的整場模擬
+  - 技巧(RSL):每一組抽一項(只抽 `pas`、`pattern`;`book` 組顯示「這一組請用檢定書練」並跳過),依組的順序一項一項;官方速度 + 拍點(預備拍 1 小節),
+    Debut–3 可選「只聽一小節拍點」(`tech[g].click === "optional"`,p.30 等),4–8 一定跟拍點;只播拍點、不播示範;每項 4 小節(練習設定);Trinity 沒有技巧模擬考(在 Song 3 評)
+  - 視奏:出一題 → 官方準備時間計時,不能暫停、不能提早結束(RSL 90 秒 / Trinity Playback 看譜 30 秒)→ 時間到自動正式打一次;RSL 用這一題的官方速度,Trinity 用自己的練習速度(練習設定);RSL 6–8 沒有模擬考
+  - 聽力:RSL = Fill → Groove 各一題(自動聽兩次、不能重聽、不能看答案;練習後回打;Fill 再選譜);Trinity = Playback(看譜 30 秒 → 第一次 → 第二次,自動接下去)
+  - 進行中、結果、中止的說明:考試摘要(配分、等第)與規格卡 / 本級要求藏起來;結果只有各項的練習回饋(節奏吻合度、選譜對錯、完成與否),
+    **不算總分、不出現 Pass / Merit / Distinction、不換算官方分數**;practiceOnly
+  - 中途切分頁、切到背景、重新整理、旋轉螢幕(直式 ↔ 橫式)、換考試 = 中止:不殘留播放與計時,回到檢定頁說明「模擬考已中止」(重新整理靠各模組 localStorage 的 `mockRun` 標記)
+  - 進行中、結果也算進練習紀錄(真的打了);測試掛鉤:`__tech.startMock / mockNext / mockFinishRun`、`__sight.startMock / mockSkipPrep`、`__ear.startMock / mockNext / mockSkipStudy`
+- **練習紀錄**(`js/shared/practicelog.js`;三個模組同一個格式,PianoDrill 的樣式):三格數字 + 每週目標(`.goal`,最近 7 天的分鐘數;點一下換 15/30/60/90/120/180,預設 60,存各自 localStorage 的 `goal`)+ 最近 7 天
+  - 技巧:連續天數 / 今天次數 / 今天分鐘;視奏:連續天數 / 今天題數 / 今天分鐘 + 各級練過題數(`#s-statsCard`);聽力:連續天數 / 今天題數 / 今天正確率(`e-logAcc` = 回打命中的音 + 選對的譜 ÷ 全部)+ 各題型正確率(`#e-statsCard`)
+  - 秒數只算真的播放、準備、作答的時間(技巧:預備拍之後的播放;視奏:準備、正式打、聽正確版本;聽力:聽題目、看譜、回打);保留 400 天
+  - 紀錄卡、統計卡是練習回饋:檢定頁不放;檢定頁三格進度(`examStatus`)只寫進度(已會 n/m、已練 n 題),不寫命中率
 - **整組鼓所有權**(`js/shared/audio.js` 的 @app 區段):視奏、聽力 enter 時 `audio.holdKit(名字)`、leave 時 `audio.dropKit(名字)`;
   沒有人拿著才開始 60 秒計時,到時 `unloadKit()`(小鼓保留),計時中有人拿起來就取消(聽力 ↔ 視奏切換不釋放)。
   載入中被釋放("kit unloaded")不是失敗:在模組裡就靜靜重新載;模組記 `kitGeneration()`,變了就重新 loadKit
 - 中英雙語(預設英文,切過就記住):外框字串 `js/shared/i18n.js`、技巧 `js/tech/strings.js`(前綴 `tech.`)、視奏 `js/sight/strings.js`(前綴 `sight.`)、聽力 `js/ear/strings.js`(前綴 `ear.`);程式產生的文字用 `tr("中", "EN")`
 - 用詞:「檢定」「考試」,不用「考級」(只有 App Store 關鍵字可以放)
-- localStorage:`drumdrill.v1`(外框)、`drumdrill.tech.v1`(技巧)、`drumdrill.sight.v1`(視奏:pick、節拍器 / 拍點開關、`bpmOverride` 每一級各自的練習速度(`rsl-3`、`trinity-4`)、
-  出題歷史、各級練過幾題、練習紀錄、譜面排法;讀進來先消毒)、`drumdrill.ear.v1`(聽力:`grades` 各系統的級數、`examSeen`、Trinity 每一級的練習速度 `bpmBy`(`trinity-4`)、`hideChart`、
-  `stats`〔"rsl-3-fill": {n, picks, ok}〕、`log`;讀進來先消毒)、`drumdrill-lang`(語言)
+- localStorage:`drumdrill.v1`(外框)、`drumdrill.tech.v1`(技巧:熟練度、速度、`log`、`goal`、`mockOneBar`、`mockRun`)、`drumdrill.sight.v1`(視奏:pick、節拍器 / 拍點開關、`bpmOverride` 每一級各自的練習速度(`rsl-3`、`trinity-4`)、
+  出題歷史、`stats`〔"rsl-3": {n, hits, total}〕各級練過幾題、`log`、`goal`、`mockRun`、譜面排法;讀進來先消毒)、`drumdrill.ear.v1`(聽力:`grades` 各系統的級數、`examSeen`、Trinity 每一級的練習速度 `bpmBy`(`trinity-4`)、`hideChart`、
+  `stats`〔"rsl-3-fill": {n, picks, ok, hits, total}〕、`log`〔日期: {n, sec, hits, total}〕、`goal`、`mockRun`;讀進來先消毒)、`drumdrill-lang`(語言)。
+  `log` 的格式三個模組一樣:`{ "YYYY-MM-DD": { n, sec } }`;`mockRun` = 進行中的模擬考標記(正常結束拿掉;重新整理後還在 = 說明「模擬考已中止」)
 
 ## 絕不能做的事
 - **不要有 build step**:多檔 ES modules,直接部署 GitHub Pages(main 根目錄);App 版只是把同樣的檔案複製到 `app/www`
@@ -116,6 +130,7 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
   - 瀏覽器(`cd tools/test && npm i` 一次;Playwright):`node layout.mjs`(19 種尺寸)、`node bilingual.mjs`(中英版面)、`node clip.mjs`(文字被切掉)、
     `node human.mjs 150 3`(模擬真人操作)、`node playback.mjs`(播放排程與停止)、`node pad.mjs`(觸控鼓墊)、
     `node notation.mjs`(OSMD 實際畫譜:40 個打法、鼓組樣張、視奏小鼓譜與整組鼓譜)、`node kitaudio.mjs`(整組鼓取樣;視奏、聽力離開 60 秒釋放、互相切換不釋放、載入訊息不蓋結果);
+    layout / bilingual / clip / human 都有模擬考的狀態(`mockTour`:技巧 RSL 3、視奏 RSL 3 / 4 與 Trinity 4、聽力 RSL 4 與 Trinity 4 × 進行中 / 結果 / 中止;human 的「模擬考中途中止」);
     layout / bilingual / clip / human 都有視奏、聽力的狀態(視奏:RSL 0、3、4、5、6,Trinity 0、4、8 × 準備 / 作答 / 結果 / 正確版本;Trinity 一首很長,測試用 `__sight.finishNow()` 提早出結果;
     聽力:human 的「照節奏回打」要「準」);playback.mjs 有視奏、聽力(換語言不停播、Trinity 空檔只有拍點)
   - 重構前後畫面要一樣:動手前 `node shots.mjs --save`,改完 `node shots.mjs --compare`(19 種尺寸 × 技巧四類 + #40×8 + 檢定頁 × 中英,逐像素比對)

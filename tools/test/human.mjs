@@ -18,6 +18,8 @@ let bad = 0; const fail = (m) => { bad++; console.log("✗ " + m); };
 // DrumDrill 聽力(S12 / S13):聽題目、回打 / 停止、選譜、看答案、看譜 30 秒、點鼓墊、下一題、級數、不看譜;
 //   「照節奏回打」:RSL Fill / Groove 照題目的節奏 ± 20 毫秒點鼓墊 → 練習回饋要「準」(≥ 80 / 100、全部命中);Trinity 兩次各快轉一次 → 有每一句的回饋。
 //   檢查:聽力不在畫面上(或在檢定頁)時沒有在播放、看譜倒數停了、不在回打;回打按鈕、播放鈕跟狀態一致
+// DrumDrill 模擬考(S14):開始、下一步(技巧下一組、視奏 / 聽力的準備時間快轉)、「模擬考中途中止」:進行中切分頁 / 重新整理 / 旋轉 / 切到背景
+//   → 不能還在播放、倒數不能還在跑;回到檢定頁要看到「模擬考已中止」。檢查:模擬考進行中時那個模組一定在檢定頁上(其他時候不能在 run)
 const APP = "drumdrill", SYSTEMS = ["trinity", "rsl"], STORE_KEYS = ["drumdrill.v1", "drumdrill.tech.v1", "drumdrill.sight.v1", "drumdrill.ear.v1"];
 const appActions = ({ page, tap, tapAny }) => [
   [10, "技巧選擇器", async () => tapAny("#t-picker .rows .opt")],
@@ -57,7 +59,7 @@ const appActions = ({ page, tap, tapAny }) => [
   [2, "視奏 新題目", async () => tap("#s-generate")],
   [1, "視奏 速度 ±", async () => tap(pickOne(["#s-bpmUp", "#s-bpmDown"]))],
   [2, "視奏 正式打到結果", async () => {
-    const ok = await page.evaluate(() => !document.getElementById("mod-sight").hidden && !document.getElementById("s-quiz").hidden && !!window.__sight.test);
+    const ok = await page.evaluate(() => !document.getElementById("mod-sight").hidden && !document.getElementById("s-quiz").hidden && !!window.__sight.test && window.__sight.mock.state !== "run");   // 模擬考有自己的動作
     if (!ok) return false;
     await page.evaluate(() => { const S = window.__sight; if (S.state.phase === "perform") document.getElementById("s-playAlong").click(); S.setBpm(240); document.getElementById("s-playAlong").click(); });
     try { await page.waitForFunction(() => window.__sight.state.phase === "perform", null, { timeout: 60000 }); } catch (e) { return false; }
@@ -80,8 +82,54 @@ const appActions = ({ page, tap, tapAny }) => [
   [2, "聽力 下一題", async () => tap("#e-nextBtn")],
   [1, "聽力 級數", async () => tapAny("#e-grades .opt")],
   [1, "聽力 不看譜", async () => tap("#e-optHide")],
+  // S14 模擬考
+  [3, "模擬考 開始/停止", async () => tapAny("#t-mockBtn, #s-mockBtn, #e-mockBtn")],
+  [3, "模擬考 下一步", async () => page.evaluate(() => {
+    const T = window.__tech, S = window.__sight, E = window.__ear;
+    if (T.state.mock === "run") { if (T.state.play) T.mockFinishRun(); else T.mockNext(); return true; }
+    if (S.mock.state === "run") { if (S.state.phase === "perform") S.finishNow(); else S.mockSkipPrep(); return true; }
+    if (E.mock.state === "run") { if (E.state.kind) E.finishNow(); else if (E.state.phase === "study") E.mockSkipStudy(); else if (E.state.phase === "choose") E.choose(0); else if (!document.getElementById("e-performBtn").disabled) document.getElementById("e-performBtn").click(); else E.mockNext(); return true; }
+    return false;
+  })],
+  [3, "模擬考中途中止", async () => {
+    const mod = pickOne(["tech", "sight", "ear"]);
+    const sys = mod === "tech" ? "rsl" : pickOne(["rsl", "trinity"]), g = pickOne(mod === "sight" && sys === "rsl" ? [0, 3, 4, 5] : [0, 2, 4, 6, 8]);
+    await page.evaluate(([m, s, g]) => { window.__shell.setExam(s, g); window.__shell.showView("exam", m); }, [mod, sys, g]); await page.waitForTimeout(300);
+    const api = { tech: "__tech", sight: "__sight", ear: "__ear" }[mod];
+    await page.evaluate(a => window[a].startMock(), api);
+    const running = () => page.evaluate(([m, a]) => (m === "tech" ? window.__tech.state.mock : window[a].mock.state) === "run", [mod, api]);
+    if (!(await running())) return false;
+    // 讓它真的在跑:技巧按播放;視奏、聽力已經在準備 / 聽題目 / 看譜
+    if (mod === "tech") await page.evaluate(() => { const b = document.getElementById("t-playBtn"); if (!b.disabled) b.click(); });
+    await page.waitForTimeout(500 + rnd() * 1200);
+    const touch = await page.evaluate(() => navigator.maxTouchPoints > 0);
+    const how = pickOne(touch ? ["分頁", "重新整理", "旋轉", "背景"] : ["分頁", "重新整理", "背景"]);
+    if (how === "分頁") await tap(`#tabbar button[data-view="${pickOne(["tech", "sight", "ear"])}"]`);
+    else if (how === "重新整理") { await page.reload(); await page.waitForFunction(() => window.__stageReady >= 1); }
+    else if (how === "旋轉") { const v = page.viewportSize(); await page.setViewportSize({ width: v.height, height: v.width }); }
+    else await page.evaluate(() => { Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" }); Object.defineProperty(document, "hidden", { configurable: true, get: () => true }); document.dispatchEvent(new Event("visibilitychange")); });
+    await page.waitForTimeout(400);
+    const left = await page.evaluate(() => {
+      const out = [];
+      if (window.__tech.state.play || window.__tech.state.scheduled) out.push("技巧還在播放");
+      if (window.__playback && window.__playback.playing) out.push("視奏還在播放");
+      if (window.__sight.state.timer) out.push("視奏倒數還在跑");
+      if (window.__ear.play) out.push("聽力還在播放");
+      if (window.__ear.state.timer) out.push("聽力倒數還在跑");
+      for (const [n, st] of [["技巧", window.__tech.state.mock], ["視奏", window.__sight.mock.state], ["聽力", window.__ear.mock.state]]) if (st === "run") out.push(n + "模擬考還在進行");
+      return out;
+    });
+    if (how === "背景") await page.evaluate(() => { delete document.visibilityState; delete document.hidden; document.dispatchEvent(new Event("visibilitychange")); });
+    if (left.length) fail(`模擬考中途${how}:${left.join("、")}`);
+    // 回到檢定頁:要說明「模擬考已中止」
+    await page.evaluate(m => window.__shell.showView("exam", m), mod); await page.waitForTimeout(400);
+    const r = await page.evaluate(([m, a]) => ({ st: m === "tech" ? window.__tech.state.mock : window[a].mock.state, txt: document.getElementById(m[0] + "-mockText").textContent, card: !document.getElementById(m[0] + "-mockCard").hidden }), [mod, api]);
+    if (r.st !== "aborted" || !r.card || !/中止|stopped/.test(r.txt)) fail(`模擬考中途${how}(${mod} ${sys} ${g}):回來沒有說明中止 ${JSON.stringify(r)}`);
+    if (how === "旋轉") { const v = page.viewportSize(); await page.setViewportSize({ width: v.height, height: v.width }); }
+    return true;
+  }],
   [3, "聽力 照節奏回打", async () => {
-    const ok = await page.evaluate(() => !document.getElementById("mod-ear").hidden && !document.getElementById("e-quizCard").hidden && !!window.__ear.q);
+    const ok = await page.evaluate(() => !document.getElementById("mod-ear").hidden && !document.getElementById("e-quizCard").hidden && !!window.__ear.q && window.__ear.mock.state !== "run");   // 模擬考有自己的動作
     if (!ok) return false;
     const sys = await page.evaluate(() => window.__ear.state.sys);
     if (sys === "trinity") {
@@ -132,12 +180,15 @@ const appCheck = async () => {
       if (want !== got) out.push(`左右手字母 ${got} / ${want}(${A.cur.no})`);
     }
   }
-  // 檢定頁沒有播放鈕:技巧在檢定頁也不能在播
-  if (A && shown[0] === "tech" && view === "exam" && A.state.play) out.push("技巧在檢定頁卻還在播放");
+  // 檢定頁沒有播放鈕:技巧在檢定頁也不能在播(模擬考進行中除外)
+  if (A && shown[0] === "tech" && view === "exam" && A.state.play && A.state.mock !== "run") out.push("技巧在檢定頁卻還在播放");
+  // 模擬考進行中:那個模組一定在檢定頁上(離開就要中止)
+  const exSub = view === "exam" ? sh.S.sub.exam : null;
+  for (const [m, st] of [["tech", A && A.state.mock], ["sight", window.__sight && window.__sight.mock.state], ["ear", window.__ear && window.__ear.mock.state]]) if (st === "run" && exSub !== m) out.push(`${m} 模擬考不在畫面上卻還在進行`);
   // 視奏:不在畫面上(或在檢定頁)時不能在播、倒數要停、不能在正式打;在畫面上時按鈕跟狀態一致
   const Sg = window.__sight;
   if (Sg) {
-    const s = Sg.state, onScreen = shown[0] === "sight" && view !== "exam" && !document.getElementById("s-quiz").hidden;
+    const s = Sg.state, onScreen = shown[0] === "sight" && (view !== "exam" || Sg.mock.state === "run") && !document.getElementById("s-quiz").hidden;
     if (!onScreen) {
       if (s.play) out.push("視奏不在畫面上卻還在播放");
       if (s.timer) out.push("視奏不在畫面上,準備的倒數還在跑");
@@ -147,6 +198,7 @@ const appCheck = async () => {
       if ((s.phase === "perform") !== ["停止", "Stop"].includes(lbl)) out.push(`視奏 ${s.phase} 但正式打按鈕寫「${lbl}」`);
       if ((s.kind === "listen") !== document.getElementById("s-play").classList.contains("is-active")) out.push(`視奏播放鈕狀態不一致(${s.kind})`);
       if ((s.phase === "prep") !== s.timer) out.push(`視奏準備倒數不一致(${s.phase}, timer ${s.timer})`);
+      if (Sg.mock.state === "run" && view === "exam" && (s.kind === "listen" || !document.getElementById("s-play").disabled)) out.push("視奏模擬考中還能聽正確版本");
       if (s.drawn && !s.pending && !document.querySelector("#s-score svg")) out.push("視奏沒有譜");
       if (s.mode && s.lanes !== (s.mode === "snare" ? 1 : 3)) out.push(`視奏 ${s.mode} 的鼓墊 ${s.lanes} 個`);
       if (s.loading != null && (!document.getElementById("s-play").disabled || !document.getElementById("s-play").classList.contains("busy"))) out.push("整組鼓載入中,▶ 沒有進度環或還能按");
@@ -155,7 +207,7 @@ const appCheck = async () => {
   // 聽力:不在畫面上(或在檢定頁)時不能在播、看譜倒數要停、不能在回打;在畫面上時按鈕跟狀態一致
   const Er = window.__ear;
   if (Er) {
-    const s = Er.state, onScreen = shown[0] === "ear" && view !== "exam" && !document.getElementById("e-quizCard").hidden;
+    const s = Er.state, onScreen = shown[0] === "ear" && (view !== "exam" || Er.mock.state === "run") && !document.getElementById("e-quizCard").hidden;
     if (!onScreen) {
       if (Er.play) out.push("聽力不在畫面上卻還在播放");
       if (s.timer) out.push("聽力不在畫面上,看譜倒數還在跑");

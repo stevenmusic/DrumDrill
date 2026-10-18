@@ -43,6 +43,68 @@ for (const [name, w, h, mobile] of VPS) {
   const sub = v => page.click(`#subSeg button[data-v="${v}"]`).then(() => page.waitForTimeout(500));
   const expand = async sel => { if (await page.isVisible(sel + " .setup-summary")) { await page.click(sel + " .setup-summary"); await page.waitForTimeout(200); } };
   // @app-begin:各 App 的畫面狀態;最後把題目與標籤的中英行數差異放進 diff
+  // S14 模擬考(檢定頁):技巧 RSL 3(開始前 / 進行中 / 播放中 / 結果 / 中止的說明)、視奏 RSL 3、RSL 4、Trinity 4(準備中 / 作答中 / 結果)、
+  //   聽力 RSL 4(聽題目 / 練習 / 選譜 / 結果)、Trinity 4(看譜 / 結果);check(狀態名稱) = 這支測試自己的檢查
+  async function mockTour(page, check){
+    const ev = (f, a) => page.evaluate(f, a);
+    const wait = (f, a) => page.waitForFunction(f, a, { timeout: 60000 });
+    await ev(() => { window.__shell.setExam("rsl", 3); window.__shell.showView("exam", "tech"); }); await page.waitForTimeout(400);
+    await check("模擬考 技巧 開始前");
+    await ev(() => document.getElementById("t-mockBtn").click()); await page.waitForTimeout(700);
+    await check("模擬考 技巧 進行中");
+    await ev(() => document.getElementById("t-playBtn").click()); await wait(() => window.__tech.state.play); await page.waitForTimeout(400);
+    await check("模擬考 技巧 播放中");
+    await ev(() => window.__tech.mockFinishRun());
+    for (let i = 0; i < 8 && (await ev(() => window.__tech.state.mock)) === "run"; i++) { await ev(() => window.__tech.mockNext()); await page.waitForTimeout(200); }
+    await page.waitForTimeout(300); await check("模擬考 技巧 結果");
+    await ev(() => document.getElementById("t-mockBtn").click()); await page.waitForTimeout(300);
+    await ev(() => window.__shell.showView("tech")); await page.waitForTimeout(300);
+    await ev(() => window.__shell.showView("exam", "tech")); await page.waitForTimeout(400);
+    await check("模擬考 技巧 中止");
+    await ev(() => document.getElementById("t-mockClose").click()); await page.waitForTimeout(200);
+    for (const [sys, g] of [["rsl", 3], ["rsl", 4], ["trinity", 4]]) {
+      const at = `模擬考 視奏 ${sys} ${g}`;
+      await ev(([s, g]) => { window.__shell.setExam(s, g); window.__shell.showView("exam", "sight"); }, [sys, g]); await page.waitForTimeout(400);
+      if (sys === "rsl" && g === 3) await check("模擬考 視奏 開始前");
+      await ev(() => document.getElementById("s-mockBtn").click());
+      await wait(() => window.__sight.state.drawn > 0 && !window.__sight.state.pending && window.__sight.state.loading == null && window.__sight.mock.state === "run"); await page.waitForTimeout(500);
+      await check(`${at} 準備中`);
+      await ev(() => window.__sight.mockSkipPrep());
+      await wait(() => window.__sight.state.phase === "perform"); await page.waitForTimeout(600);
+      await check(`${at} 作答中`);
+      await ev(() => window.__sight.finishNow());
+      await wait(() => window.__sight.mock.state === "result"); await page.waitForTimeout(400);
+      await check(`${at} 結果`);
+    }
+    for (const sys of ["rsl", "trinity"]) {
+      await ev(s => { window.__shell.setExam(s, 4); window.__shell.showView("exam", "ear"); }, sys); await page.waitForTimeout(400);
+      await ev(() => document.getElementById("e-mockBtn").click());
+      if (sys === "rsl") {
+        await wait(() => window.__ear.state.kind === "listen"); await page.waitForTimeout(500);
+        await check("模擬考 聽力 rsl 聽題目");
+        await ev(() => window.__ear.finishNow()); await page.waitForTimeout(300); await check("模擬考 聽力 rsl 練習");
+        await ev(() => document.getElementById("e-performBtn").click()); await wait(() => window.__ear.state.kind === "perform");
+        await page.keyboard.press("j"); await ev(() => window.__ear.finishNow());
+        await wait(() => window.__ear.state.optsDrawn === window.__ear.state.options); await page.waitForTimeout(500);
+        await check("模擬考 聽力 rsl 選譜");
+        await ev(() => window.__ear.choose(0)); await page.waitForTimeout(300);
+        await ev(() => window.__ear.mockNext()); await wait(() => window.__ear.state.kind === "listen");
+        await ev(() => window.__ear.finishNow()); await page.waitForTimeout(200);
+        await ev(() => document.getElementById("e-performBtn").click()); await wait(() => window.__ear.state.kind === "perform");
+        await ev(() => window.__ear.finishNow()); await page.waitForTimeout(500);
+        await ev(() => window.__ear.mockNext());
+      } else {
+        await wait(() => window.__ear.state.phase === "study" && !window.__ear.state.pending); await page.waitForTimeout(600);
+        await check("模擬考 聽力 trinity 看譜");
+        await ev(() => window.__ear.mockSkipStudy()); await wait(() => window.__ear.state.kind === "pass");
+        await ev(() => window.__ear.finishNow()); await wait(() => window.__ear.state.kind === "pass" && window.__ear.state.pass === 1);
+        await page.keyboard.press("j"); await ev(() => window.__ear.finishNow());
+      }
+      await wait(() => window.__ear.mock.state === "result"); await page.waitForTimeout(400);
+      await check(`模擬考 聽力 ${sys} 結果`);
+      await ev(() => document.getElementById("e-mockClose").click()); await page.waitForTimeout(200);
+    }
+  }
   await page.evaluate(() => { localStorage.clear(); localStorage.setItem("drumdrill-lang", "zh"); });
   await page.reload(); await page.waitForFunction(() => window.__stageReady >= 1);
   await compare(page, name, "對話框");
@@ -143,6 +205,7 @@ for (const [name, w, h, mobile] of VPS) {
     await page.evaluate(([s, t]) => { window.__shell.setExam(s, 3); window.__shell.showView("ear", t); }, [sys, t]); await page.waitForTimeout(500);
     await compare(page, name, `聽力 ${sys} ${t} 說明卡`);
   }
+  await mockTour(page, st => compare(page, name, st));
   // 40 個打法的題目與標籤:中英文行數一樣
   await tab("tech");
   const diff = await page.evaluate(async () => {
