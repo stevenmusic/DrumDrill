@@ -1,7 +1,7 @@
 /* 技巧模組:PAS 40 個基本打法(分頁:滾奏 / 複點 / Flam / Drag),練習面板(題目、鼓譜、速度)照 PianoDrill 的技巧分頁。
    外框(js/main.js)負責頂欄、分頁、考試系統與級數;這裡的元素 id 都加 "t-" 前綴 */
 import * as store from "./store.js";
-import { RUDIMENTS, CATEGORIES, byNo, withLead, strokes, cycleLength, DIV } from "./rudiments.js";
+import { RUDIMENTS, CATEGORIES, byNo, withLead, strokes, cycleLength, DIV, pattern } from "./rudiments.js";
 import { rudimentXML } from "./notation.js";
 import { tr, T as TS, scoped, getLang, pairText } from "../shared/i18n.js";
 import { techItems, techPasNos } from "../shared/examdata.js";
@@ -20,7 +20,8 @@ const S = store.load();
 let tab = S.cat;            // roll / diddle / flam / drag / exam
 let cur = null, groups = null;
 let bpm = 60;
-/* 從檢定清單點「練習」的目標:{ system, grade, group, no, bpm, p, key }。目標速度只放在 bpm,不寫進 S.bpm(× 離開就回到自己的速度);
+/* 從檢定清單點「練習」的目標:{ system, grade, group, no, bpm, p, key, pattern?, assumed? }。目標速度只放在 bpm,不寫進 S.bpm(× 離開就回到自己的速度);
+   pattern = { pas, sticking, value }:RSL 的「依大綱時值」練習型(rudiments.js pattern();no = 那個 PAS 編號,熟練度記在 PAS 編號上);
    換到別的打法(選擇器、別的類別)自動離開 */
 let target = null, lastKey = null;
 
@@ -131,7 +132,8 @@ function setRudiment(no){
   stopPlayback();
   if (target && target.no !== no) { target = null; syncTarget(); }   // 換到別的打法:離開檢定目標
   cur = byNo(no);
-  groups = withLead(cur, S.lead);
+  // 練習型:PAS 的左右手、重音、裝飾音 + 大綱的時值(不是官方譜);否則照 PAS 原譜
+  groups = target && target.pattern ? pattern({ ...target.pattern, lead: S.lead }) : withLead(cur, S.lead);
   renderPicker();
   renderTitle();
   showBest();
@@ -147,11 +149,14 @@ function setRudiment(no){
 }
 
 function renderTitle(){
-  $("qTitle").textContent = `${cur.no}. ${name(cur)}`;
-  // 中英文標籤數量一樣(版面才會一樣):中文 = 英文名,英文 = PAS 編號;左手先/右手先另加一個。
+  const pt = target && target.pattern;
+  $("qTitle").textContent = pt ? patternName(pt) : `${cur.no}. ${name(cur)}`;
+  // 中英文標籤數量一樣(版面才會一樣):中文 = 英文名,英文 = PAS 編號;左手先/右手先另加一個;練習型再加「App 練習型」(完整說明在目標橫幅)與「推估」(時值是推估的)。
   // 類別不放(上面分段鈕已經看得到,放了標籤列會擠不下)。英文名太長時縮成「…」;示範最快的速度放在速度卡
   const tags = [getLang() === "en" ? "PAS No. " + cur.no : cur.en,
-    cur.second ? (S.lead === "L" ? tr("左手先", "Left lead") : tr("右手先", "Right lead")) : null].filter(Boolean);
+    cur.second ? (S.lead === "L" ? tr("左手先", "Left lead") : tr("右手先", "Right lead")) : null,
+    pt ? tr("App 練習型", "App drill") : null,
+    pt && target.assumed ? TS("srcAssumed") : null].filter(Boolean);   // 時值是推估的(4 級 C 組 Flam tap 的四分音符)
   $("qTags").innerHTML = tags.map((t, i) => `<span class="q-tag${i ? "" : " fold"}" title="${t}">${t}</span>`).join("");
 }
 
@@ -172,14 +177,14 @@ ROOT.querySelectorAll(".mbtn").forEach(b => b.onclick = () => {
    資料:data/exam-rsl.json、exam-trinity.json(外框經 ctx.examData 給;還沒載好是 null)。只列官方大綱寫的,不自己編:
    - RSL:每組一列(組別、名稱、♩、頁碼、已會狀態)。
        pas = PAS 原譜 → 「練習」跳到技巧分頁那個打法,速度設成官方 ♩(目標模式,#t-target);
-       pattern = PAS 左右手 + 大綱時值 → 下一版(S4)才做,先停用;book = 譜只在官方檢定書 → 只列名稱 + 相關 PAS 打法
+       pattern = PAS 左右手 + 大綱時值 → 「依大綱時值練習」:技巧分頁用 rudiments.js pattern() 排的練習型(標「不是官方譜」),速度也設成官方 ♩;
+       book = 譜只在官方檢定書 → 只列名稱 + 相關 PAS 打法
    - Trinity:Rock & Pop 沒有獨立的技巧項目(在 Song 3 評)→ 說明 + 這一級自選曲參數表的 Techniques + 類別按鈕(官方只寫類別) */
 const curExam = () => exam || { system: "trinity", grade: 1 };
 const dataOf = sys => (ctx && ctx.examData ? ctx.examData(sys) : null);
 const el = (tag, cls, attrs) => { const e = document.createElement(tag); if (cls) e.className = cls; if (attrs) for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); return e; };
 const ICON = {
   play: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16l13-8z"/></svg>',
-  later: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
   book: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5"/></svg>',
   go: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>'
 };
@@ -237,9 +242,9 @@ function renderRsl(d, g){
   $("progress").hidden = false;
   $("progressBar").style.width = (nos.length ? 100 * good / nos.length : 0) + "%";
   $("listRule").dataset.src = srcOf("rsl", t.src.p);
-  // 規則(click 一定要跟 / 可以不跟,照各級頁面);有 pattern 的級數另外說明 ◷ 的意思(只寫一次,不每一項重複)
+  // 規則(click 一定要跟 / 可以不跟,照各級頁面);有 pattern 的級數另外說明名稱後面寫時值的是練習型(只寫一次,不每一項重複)
   const hasPattern = items.some(x => x.kind === "pattern");
-  para($("listRule"), () => L(t.rule) + (hasPattern ? tr("。◷ = App 依大綱時值排的練習型(不是官方譜),下一版提供。", ". ◷ = the App's drill in the syllabus note values (not the official part), coming next.") : ""));
+  para($("listRule"), () => L(t.rule) + (hasPattern ? tr("。名稱後面寫時值的(例如「· 八分音符」)是 App 依大綱時值排的練習型,不是官方譜。", ". Items with a note value (e.g. “· quavers”) are App drills in the syllabus values, not official parts.") : ""));
   const box = $("qGroups");
   for (const gr of t.groups) {
     const G = el("div", "xgroup"), head = el("div", "xhead");
@@ -253,8 +258,8 @@ function renderRsl(d, g){
         row = el("button", "xitem", { "data-key": it.key, "data-act": "pas" });
         row.innerHTML = `<i class="dot ${markOf(it.no)}"></i><span class="xi-name"></span>${ICON.play}`;
       } else if (it.kind === "pattern") {
-        row = el("div", "xitem off", { "data-key": it.key });
-        row.innerHTML = `<i class="dot ${markOf(it.pas)}"></i><span class="xi-name"></span>${ICON.later}`;
+        row = el("button", "xitem", { "data-key": it.key, "data-act": "pattern" });
+        row.innerHTML = `<i class="dot ${markOf(it.pas)}"></i><span class="xi-name"></span>${ICON.play}`;
       } else {
         row = el("div", "xitem book", { "data-key": it.key });
         row.innerHTML = `${ICON.book}<span class="xi-name"></span>`;
@@ -262,7 +267,8 @@ function renderRsl(d, g){
       const w = el("div", "xwrap"); its.appendChild(w); w.appendChild(row);
       pairText(row.querySelector(".xi-name"), () => itemName(it));
       if (it.kind === "pas") row.setAttribute("aria-label", tr("練習 ", "Practise ") + itemName(it));
-      // 這一項的說明:pattern = 下一版才有;book = 譜見官方檢定書(+ 相關 PAS 打法);項目自己的備註、推估
+      if (it.kind === "pattern") row.setAttribute("aria-label", tr("依大綱時值練習 ", "Practise in the syllabus values: ") + itemName(it));
+      // 這一項的說明:book = 譜見官方檢定書(+ 相關 PAS 打法);項目自己的備註、推估(4 級 C 組 Flam tap 的四分音符)
       const note = () => [
         it.kind === "book" && !(it.note && it.note !== gr.note) ? tr("譜見官方檢定書。", "See the official grade book.") : "",
         it.note && it.note !== gr.note ? L(it.note) + tr("。", ".") : "",
@@ -288,8 +294,8 @@ function renderRsl(d, g){
     ].filter(Boolean).join(" ");
     if (gnote()) { const p = el("p", "xnote"); G.appendChild(p); pairText(p, gnote); }
   }
-  // 抽一項 / 下一項:只在連到 PAS 原譜的項目裡(pattern 下一版才能練)
-  const pool = items.filter(x => x.kind === "pas");
+  // 抽一項 / 下一項:App 能直接練的項目(PAS 原譜 + 依大綱時值的練習型;book 不算)
+  const pool = practiceItems();
   $("drawBtn").hidden = $("nextBtn").hidden = false; $("listActions").hidden = false;
   $("drawBtn").disabled = $("nextBtn").disabled = !pool.length;
   // 沒有可以抽的項目(這一級的項目 App 都還不能直接練):按鈕停用,並說一句為什麼
@@ -300,8 +306,9 @@ function renderRsl(d, g){
    → setRudiment(S.pick[類別]) = 這個打法:因為 target.no 相同,setRudiment 不會清掉目標,並在這時套用一次官方速度(target.bpmSet)。
    下面的 setRudiment 是保險(外框沒有走到 switchTab 時);syncTarget 畫目標橫幅 */
 function practiceItem(it){
-  const ex = curExam(), r = byNo(it.no);
-  target = { system: ex.system, grade: ex.grade, group: it.group, no: it.no, bpm: it.bpm, p: it.src.p, key: it.key };
+  const ex = curExam(), no = it.kind === "pattern" ? it.pas : it.no, r = byNo(no);
+  target = { system: ex.system, grade: ex.grade, group: it.group, no, bpm: it.bpm, p: it.src.p, key: it.key,
+    pattern: it.kind === "pattern" ? { pas: it.pas, sticking: it.sticking, value: it.value } : null, assumed: !!it.assumed };
   lastKey = it.key;
   S.pick[r.cat] = r.no; store.save();
   ctx.showView("tech", r.cat);   // → enter(類別) → switchTab → setRudiment(S.pick[類別]):同一個打法,保留目標
@@ -318,22 +325,24 @@ function openRudiment(no){
   syncTarget();
 }
 function openCategory(cat){ target = null; ctx.showView("tech", cat); syncTarget(); }
-const pasItems = () => { const ex = curExam(); return ex.system === "rsl" ? techItems(ex.grade, dataOf("rsl")).filter(x => x.kind === "pas") : []; };
+/* App 能直接練的項目:PAS 原譜(pas)+ 依大綱時值的練習型(pattern);熟練度都看 PAS 編號 */
+const practiceItems = () => { const ex = curExam(); return ex.system === "rsl" ? techItems(ex.grade, dataOf("rsl")).filter(x => x.kind === "pas" || x.kind === "pattern") : []; };
+const pasNoOf = it => (it.kind === "pattern" ? it.pas : it.no);
 $("drawBtn").onclick = () => {
-  const all = pasItems(); if (!all.length) return;
+  const all = practiceItems(); if (!all.length) return;
   // 先抽還沒標「已經會了」的(全部都會了就全部);不連續抽到同一項
-  let pool = all.filter(x => S.mastery[x.no] !== "good"); if (!pool.length) pool = all;
+  let pool = all.filter(x => S.mastery[pasNoOf(x)] !== "good"); if (!pool.length) pool = all;
   if (pool.length > 1) pool = pool.filter(x => x.key !== lastKey);
   practiceItem(pool[Math.floor(Math.random() * pool.length)]);
 };
 $("nextBtn").onclick = () => {
-  const all = pasItems(); if (!all.length) return;
+  const all = practiceItems(); if (!all.length) return;
   const i = all.findIndex(x => x.key === lastKey);
   practiceItem(all[(i + 1) % all.length]);
 };
 $("qGroups").onclick = e => {
   const b = e.target.closest("[data-act]"); if (!b) return;
-  if (b.dataset.act === "pas") { const it = pasItems().find(x => x.key === b.dataset.key); if (it) practiceItem(it); }
+  if (b.dataset.act === "pas" || b.dataset.act === "pattern") { const it = practiceItems().find(x => x.key === b.dataset.key); if (it) practiceItem(it); }
   else if (b.dataset.act === "rel") openRudiment(Number(b.dataset.no));
   else if (b.dataset.act === "cat") openCategory(b.dataset.cat);
   else if (b.dataset.act === "pasno") openRudiment(Number(b.dataset.no));
@@ -371,11 +380,18 @@ function syncTarget(){
   if (!show) return;
   const t = target, sysName = t.system === "rsl" ? "RSL" : "Trinity", gl = () => ctx.gradeLabel(t.grade, t.system);   // 級名要在 fn 裡算(兩種語言各算一次)
   pairStack($("targetText"), () => tr(`${sysName} ${gl()} · ${t.group} 組 · ♩=${t.bpm} · p.${t.p}`, `${sysName} ${gl()} · Group ${t.group} · ♩=${t.bpm} · p.${t.p}`));
+  // 練習型:不是官方譜 + practiceOnly(時值是推估的那一項另外在題目標籤標「推估」,橫幅才不會在窄手機上太高)
+  $("targetNote").hidden = !t.pattern;
+  if (t.pattern) pairStack($("targetNote"), () => tr("App 依大綱時值排的練習型 · 不是官方譜", "App drill in the syllabus values · not the official part") +
+    tr("。", ". ") + TS("practiceOnly"));
 }
 /* 離開目標模式:速度回到自己的設定(× 按鈕、換了考試系統或級數) */
 function leaveTarget(){
+  const wasPattern = !!(target && target.pattern);
   target = null; syncTarget();
-  if (cur) { stopPlayback(); bpm = S.bpm[cur.no] || 60; syncTempoUI(); }
+  if (!cur) return;
+  if (wasPattern) setRudiment(cur.no);   // 練習型 → 回到 PAS 原譜(速度也回到自己的)
+  else { stopPlayback(); bpm = S.bpm[cur.no] || 60; syncTempoUI(); }
 }
 $("targetClose").onclick = leaveTarget;
 $("targetList").onclick = () => ctx.showView("exam", "tech");

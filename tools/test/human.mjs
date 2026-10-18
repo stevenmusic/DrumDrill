@@ -23,10 +23,11 @@ const appActions = ({ page, tap, tapAny }) => [
   [3, "熟練/待加強", async () => tapAny("#mod-tech .mbtn")],
   [3, "播放選項", async () => tapAny("#mod-tech .play-opts .chip")],
   // S3:檢定清單 → 練習:跳到技巧分頁的打法編號、速度要等於 data/exam-rsl.json(另外讀一次 JSON 核對)
+  // S4:「依大綱時值」練習型(pattern)也一起抽:打法 = 它的 PAS 編號,每一個音的時值 = 大綱寫的,鼓譜下面標「App 練習型」
   [4, "檢定清單→練習", async () => {
     await page.evaluate(g => { const sh = window.__shell; if (sh.S.view !== "exam" || sh.S.sub.exam !== "tech" || !sh.S.exam || sh.S.exam.system !== "rsl") { sh.setExam("rsl", g); sh.showView("exam", "tech"); } }, pickOne([1, 2, 3, 4, 5, 6, 7, 8]));
     await page.waitForTimeout(300);
-    const els = []; for (const e of await page.$$('#t-qGroups button.xitem[data-act="pas"]')) if (await e.isVisible()) els.push(e);
+    const els = []; for (const e of await page.$$('#t-qGroups button.xitem[data-act="pas"], #t-qGroups button.xitem[data-act="pattern"]')) if (await e.isVisible()) els.push(e);
     if (!els.length) return false;
     const e = pickOne(els), key = await e.getAttribute("data-key");
     try { if (page.viewportSize().width < 1000) await e.tap({ timeout: 3000 }); else await e.click({ timeout: 3000 }); } catch (er) { return false; }
@@ -35,9 +36,11 @@ const appActions = ({ page, tap, tapAny }) => [
       const [, g, gid, i] = key.split("-"), d = await (await fetch("data/exam-rsl.json")).json();
       const gr = d.tech[g].groups.find(x => x.id === gid), it = gr.items[Number(i) - 1];
       const T = window.__tech;
-      return { view: window.__shell.S.view, no: T.cur && T.cur.no, bpm: T.state.bpm, wantNo: it.no, wantBpm: gr.bpm, banner: !document.getElementById("t-target").hidden };
+      const vals = [...new Set(T.groups.flat().map(n => n.value + (n.tuplet ? "t" + n.tuplet : "")))];
+      return { view: window.__shell.S.view, no: T.cur && T.cur.no, bpm: T.state.bpm, wantNo: it.kind === "pattern" ? it.pas : it.no, wantBpm: gr.bpm, banner: !document.getElementById("t-target").hidden,
+        pattern: it.kind === "pattern", valOk: it.kind !== "pattern" || (vals.length === 1 && vals[0] === it.value), noteShown: !document.getElementById("t-targetNote").hidden };
     }, key);
-    if (r.view !== "tech" || r.no !== r.wantNo || r.bpm !== r.wantBpm || !r.banner) fail(`清單→練習 ${key}:${JSON.stringify(r)}`);
+    if (r.view !== "tech" || r.no !== r.wantNo || r.bpm !== r.wantBpm || !r.banner || !r.valOk || r.noteShown !== r.pattern) fail(`清單→練習 ${key}:${JSON.stringify(r)}`);
     return true;
   }],
   [1, "離開目標", async () => tap("#t-targetClose")],

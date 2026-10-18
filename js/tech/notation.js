@@ -2,7 +2,7 @@
    Flam = 一個帶斜線的八分裝飾音、Drag = 兩個十六分裝飾音(都有連線接到主音);
    滾奏 = 音符加斜線(tremolo)、滾奏音到放開的那個音之間有連線;多次反彈 = 音符上的 z(OSMD 不會畫,app.js 自己補)。
    左右手(R / L)不用歌詞:app.js 照音符位置自己畫在下面(裝飾音的字比較小),跟官方表一樣 */
-import { DIV } from "./rudiments.js";
+import { DIV, TUPLET_NORMAL, cycleLength } from "./rudiments.js";
 
 const TYPE = { "32": "32nd", "16": "16th", "8": "eighth", "8.": "eighth", "4": "quarter", "2": "half" };
 const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
@@ -32,11 +32,15 @@ export const setPitch = (s, o) => { PITCH = `<unpitched><display-step>${s}</disp
 
 /* reps:反覆幾次(> 1 時畫反覆記號,右上角寫 ×N) */
 export function rudimentXML(groups, { reps = 1, title = "" } = {}){
-  const total = groups.flat().reduce((s, n) => s + n.dur, 0);
+  const total = cycleLength(groups);
+  // MusicXML 的 duration 要是整數:五、七、九、十連音(RSL 練習型)一個音不是 1/24 拍的整數倍 → divisions 放大 k 倍(PAS 表的打法 k = 1)
+  let k = 1;
+  while (k < 2520 && !groups.flat().every(n => Math.abs(n.dur * k - Math.round(n.dur * k)) < 1e-6)) k++;
+  const D = n => Math.round(n.dur * k);
   const notes = [];
   let slurOpen = false;
   const flat = groups.flatMap((g, gi) => g.map((n, i) => ({ n, gi, i })));
-  const tupletPos = new Map();   // 三連音、六連音:每 n 個一組,標「開始 / 結束」
+  const tupletPos = new Map();   // N 連音:每 N 個一組,標「開始 / 結束」(每一組都標數字)
   for (let k = 0; k < flat.length;) {
     const t = flat[k].n.tuplet;
     if (!t) { k++; continue; }
@@ -48,7 +52,7 @@ export function rudimentXML(groups, { reps = 1, title = "" } = {}){
     g.forEach((n, i) => {
       const idx = flat.findIndex(f => f.gi === gi && f.i === i);
       if (n.rest) {
-        notes.push(`<note><rest/><duration>${n.dur}</duration><voice>1</voice><type>${TYPE[n.value]}</type></note>`);
+        notes.push(`<note><rest/><duration>${D(n)}</duration><voice>1</voice><type>${TYPE[n.value]}</type></note>`);
         return;
       }
       // 裝飾音
@@ -68,8 +72,9 @@ export function rudimentXML(groups, { reps = 1, title = "" } = {}){
       if (tp === "stop") nt.push(`<tuplet type="stop"/>`);
       if (n.accent) nt.push("<articulations><accent placement=\"above\"/></articulations>");
       if (n.trem) nt.push(`<ornaments><tremolo type="single">${n.trem}</tremolo></ornaments>`);
-      const tm = n.tuplet ? `<time-modification><actual-notes>${n.tuplet}</actual-notes><normal-notes>${n.tuplet === 3 ? 2 : 4}</normal-notes><normal-type>16th</normal-type></time-modification>` : "";
-      notes.push(`<note>${PITCH}<duration>${n.dur}</duration><voice>1</voice><type>${TYPE[n.value]}</type>${n.value === "8." ? "<dot/>" : ""}${tm}<stem>up</stem>` +
+      // N:M(3:2、5:4、6:4、7:4、9:8、10:8);normal-type = 這個音本身的時值(八分三連音是 eighth,不是 16th)
+      const tm = n.tuplet ? `<time-modification><actual-notes>${n.tuplet}</actual-notes><normal-notes>${TUPLET_NORMAL[n.tuplet]}</normal-notes><normal-type>${TYPE[n.value]}</normal-type></time-modification>` : "";
+      notes.push(`<note>${PITCH}<duration>${D(n)}</duration><voice>1</voice><type>${TYPE[n.value]}</type>${n.value === "8." ? "<dot/>" : ""}${tm}<stem>up</stem>` +
         levels[i].map(([L, v]) => `<beam number="${L}">${v}</beam>`).join("") +
         (nt.length ? `<notations>${nt.join("")}</notations>` : "") + `</note>`);
     });
@@ -83,7 +88,7 @@ export function rudimentXML(groups, { reps = 1, title = "" } = {}){
 <!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
 <score-partwise version="4.0"><work><work-title>${esc(title)}</work-title></work>
 <part-list><score-part id="P1"><part-name print-object="no">Snare</part-name></score-part></part-list>
-<part id="P1"><measure number="1">${left}<attributes><divisions>${DIV}</divisions><key print-object="no"><fifths>0</fifths></key>
+<part id="P1"><measure number="1">${left}<attributes><divisions>${DIV * k}</divisions><key print-object="no"><fifths>0</fifths></key>
 <time print-object="no"><beats>${beats}</beats><beat-type>4</beat-type></time>
 <clef><sign>percussion</sign></clef><staff-details><staff-lines>1</staff-lines></staff-details></attributes>
 ${words}${notes.join("\n")}${right}</measure></part></score-partwise>`;

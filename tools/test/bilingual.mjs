@@ -63,6 +63,14 @@ for (const [name, w, h, mobile] of VPS) {
   await page.click('#t-qGroups button.xitem[data-act="pas"]'); await page.waitForTimeout(700);
   await compare(page, name, "技巧 目標橫幅");
   await page.click("#t-targetClose"); await page.waitForTimeout(200);
+  // S4:依大綱時值的練習型(最長的 8 級 A 組三十二分十連音、4 級 C 組推估的 Flam tap)
+  for (const [g, key] of [[8, "rsl-8-A-10"], [4, "rsl-4-C-1"]]) {
+    await page.evaluate(g => { window.__shell.setExam("rsl", g); window.__shell.showView("exam", "tech"); }, g); await page.waitForTimeout(300);
+    await page.click(`#t-qGroups button.xitem[data-key="${key}"]`); await page.waitForTimeout(900);
+    await compare(page, name, "技巧 練習型 " + key);
+    await page.click("#t-targetClose"); await page.waitForTimeout(200);
+  }
+  await page.evaluate(() => window.__shell.showView("exam", "tech")); await page.waitForTimeout(200);
   await tab("tech");
   for (const c of ["roll", "diddle", "flam", "drag"]) { await sub(c); await expand("#t-picker"); await compare(page, name, "技巧 " + c); }
   await tab("sight"); await compare(page, name, "視奏"); await tab("ear"); await compare(page, name, "聽力");

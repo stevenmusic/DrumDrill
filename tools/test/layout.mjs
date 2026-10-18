@@ -115,6 +115,15 @@ for (const [name, w, h, mobile] of VPS) {
     }
   }
   await sub("tech"); await page.evaluate(() => window.__shell.setExam("rsl", 8)); await page.waitForTimeout(250);
+  // S4:依大綱時值的練習型(7、8 級 A 組的最長:十六分七連音、三十二分十連音;4 級 C 組 Flam tap 推估)→ 技巧分頁的目標橫幅 + 鼓譜
+  for (const [g, key] of [[8, "rsl-8-A-10"], [7, "rsl-7-A-7"], [4, "rsl-4-C-1"]]) {
+    await page.evaluate(g => { window.__shell.setExam("rsl", g); window.__shell.showView("exam", "tech"); }, g); await page.waitForTimeout(300);
+    await page.click(`#t-qGroups button.xitem[data-key="${key}"]`); await page.waitForTimeout(900);
+    await audit(page, name, "技巧 練習型 " + key);
+    if (key === "rsl-8-A-10") await shot("pattern");
+    await page.click("#t-targetClose"); await page.waitForTimeout(200);
+  }
+  await page.evaluate(() => { window.__shell.setExam("rsl", 8); window.__shell.showView("exam", "tech"); }); await page.waitForTimeout(250);
   await expand("#examSetup"); await page.click('#systemSeg button[data-v="trinity"]'); await page.waitForTimeout(300);
   await audit(page, name, "檢定 Trinity 設定展開");
   await sub("sight"); await audit(page, name, "檢定 視奏");
