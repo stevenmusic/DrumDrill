@@ -9,11 +9,13 @@
 // 4. 播放事件 = MusicXML 的音(xmlevents.mjs 只看 MusicXML 算拍位與鼓件);自由發展的小節不出聲
 // 5. 同一個種子同一題;速度是整數、在官方範圍;白名單每個時值、休止符、鼓件在 1000 題裡至少出現一次
 // 6. toEvents 共用:Trinity Playback(playbackgen.js)每級 200 題 + 每一句單獨的譜,事件 = MusicXML(連音、連結線、換拍號、Flam / Drag 裝飾音);
-//    力度音量表 = player.js 的 DYN_VEL;漸強漸弱、sfz、重音、幽靈音的音量方向對
+//    力度音量表 = player.js 的 DYN_VEL;漸強漸弱、sfz、重音、幽靈音的音量方向對;
+//    沒寫力度 = 鼓件預設音量(PIECE_VEL,練習設定;這裡手抄 docs/GENERATORS.md §4 的表核對):drumkey 13 個鼓件都有、鈸比鼓小聲、Crash 最大聲;
+//    RSL 整組鼓視奏與 Trinity Initial(沒有力度記號)每個音 = 表上的音量;給了 opts.dyn 就全部用那一級
 // 7. 竄改:白名單外的時值 / 休止符 / 鼓件、附點八分跨拍、自由發展不在最後、事件錯位、自由發展出聲、速度超出範圍 → 一定抓到
 import fs from "node:fs";
 import { genRslKit, NOTES } from "../../../js/shared/kitgen.js";
-import { toEvents, hitsOnly, graceBeats, DYN_VEL } from "../../../js/shared/kitevents.js";
+import { toEvents, hitsOnly, graceBeats, DYN_VEL, PIECE_VEL, GRACE_MUL, EVENT_NOTES } from "../../../js/shared/kitevents.js";
 import { genChart, playbackParams, phraseSpec } from "../../../js/shared/playbackgen.js";
 import { scoreXML } from "../../../js/shared/kitnotation.js";
 import { auditXML } from "./kitxml.mjs";
@@ -31,6 +33,20 @@ const WL = {
   5: { bars: 8, dev: 2, time: "4/4", values: ["4", "4.", "8", "8.", "16"], rests: ["r4", "r8"], bpm: [80, 120] }
 };
 const KIT = ["hh", "ride", "crash", "snare", "tomHi", "tomMid", "tomFloor", "kick"];   // 整組鼓(推估;NOTES.kitPieces)
+/* 手抄 docs/GENERATORS.md §4:沒寫力度時的鼓件預設音量(練習設定);gen-ear.mjs 也用 */
+export const PIECE_VEL_DOC = {
+  hh: 0.55, hhClosed: 0.55, hhOpen: 0.6, hhFoot: 0.5, ride: 0.6, rideBell: 0.65, crash: 0.85,
+  snare: 0.75, xstick: 0.7, kick: 0.75, tomHi: 0.75, tomMid: 0.75, tomFloor: 0.75
+};
+/* 沒有力度記號的譜:每個音(不含裝飾音)= 鼓件預設音量(重音 +0.2、幽靈音 ×0.4) */
+export function pieceVelErrs(events){
+  const bad = hitsOnly(events).filter(e => {
+    let v = PIECE_VEL_DOC[e.piece]; if (v == null) return true;
+    if (e.accent) v = Math.min(1, v + 0.2); if (e.ghost) v *= 0.4;
+    return Math.abs(e.vel - Math.round(v * 1000) / 1000) > 1e-9;
+  });
+  return bad.length ? [`沒寫力度的音量不是鼓件預設音量:${bad.slice(0, 3).map(e => `${e.piece}@${e.beat}=${e.vel}`).join("、")}`] : [];
+}
 const D = 2520, QV = { "4": 1, "4.": 1.5, "8": 0.5, "8.": 0.75, "16": 0.25, "2": 2, "1": 4, "16.": 0.375, "32": 0.125 };
 const dur = c => Math.round(QV[c.replace(/^r/, "")] * D);
 const MARKS = ["accent", "ghost", "open", "closed", "flam", "drag"];
@@ -98,6 +114,8 @@ export function checkKit(g, q, used = { value: new Set(), rest: new Set(), piece
   const devStart = (W.bars - W.dev) * 4;
   if (q.events.some(e => e.beat >= devStart - 1e-9)) E("自由發展的小節有出聲的事件");
   if (q.events.some(e => !(e.vel > 0 && e.vel <= 1))) E("事件音量不在 0–1");
+  errs.push(...pieceVelErrs(q.events));
+  if (!q.notes.includes("pieceVel")) E("要說明鼓件預設音量(pieceVel,練習設定)");
   if (q.lenBeats !== W.bars * 4) E(`lenBeats ${q.lenBeats}(應該 ${W.bars * 4})`);
   return errs;
 }
@@ -154,6 +172,7 @@ export default function check(ok){
     tamper(q => { q.events[3].beat += 0.25; }, /播放事件 ≠ MusicXML/, "事件錯位要抓到");
     tamper(q => { q.events.push({ beat: 26, piece: "snare", vel: 0.7 }); }, /自由發展的小節有出聲|播放事件 ≠/, "自由發展出聲要抓到");
     tamper(q => { q.bpm = 95; }, /速度 95 不在/, "4 級 ♩=95 要抓到");
+    tamper(q => { q.events.forEach(e => { e.vel = 0.7; }); }, /不是鼓件預設音量/, "沒寫力度卻全部 mf(0.7)要抓到");
     tamper(q => { hand(q)[0].notes[0].accent = true; }, /不寫 accent/, "重音要抓到");
     tamper(q => { q.spec.measures[2].voices[1] = [{ value: "r4" }, { value: "r4" }, { value: "r4" }, { value: "r4" }]; }, /整小節沒有音/, "腳整小節空白要抓到");
     // 5 級的題目拿 4 級檢查:速度超過 90 的一定抓到
@@ -173,6 +192,7 @@ export default function check(ok){
       const errs = checkEvents(c.spec, toEvents(c.spec, { bpm }), bpm);
       c.phrases.forEach((ph, i) => { const ps = phraseSpec(c, i); errs.push(...checkEvents(ps, toEvents(ps, { bpm }), bpm).map(e => `第 ${i + 1} 句:${e}`)); });
       graces += toEvents(c.spec, { bpm }).filter(e => e.grace).length;
+      if (g === 0) errs.push(...pieceVelErrs(toEvents(c.spec, { bpm })));   // Initial 沒有力度記號
       ties += c.spec.measures.reduce((s, m) => s + m.voices.flat().filter(e => e.tie).length, 0);
       if (errs.length) { bad++; if (bad <= 3) ok(false, `toEvents × Trinity ${g} 級 #${seed}:${errs.slice(0, 3).join(";")}`); }
     }
@@ -201,6 +221,22 @@ export default function check(ok){
     ok(graceBeats(300) === 0.1, "快速時裝飾音最多提前 1/10 拍");
     const hh = toEvents({ lines: 5, time: "4/4", measures: [{ voices: [[{ value: "4", notes: [{ piece: "hh", open: true }] }, { value: "4", notes: [{ piece: "hh", closed: true }] }, { value: "4", notes: [{ piece: "hh" }] }, { value: "4", notes: [{ piece: "hhOpen" }] }]] }] });
     ok(hh.map(e => e.piece).join() === "hhOpen,hhClosed,hh,hhOpen", "開閉 HH 對應 hhOpen / hhClosed:" + hh.map(e => e.piece).join());
+    // 鼓件預設音量(沒寫力度;練習設定)
+    const P = PIECE_VEL_DOC, keyIds = Object.keys(key.pieces);
+    ok(JSON.stringify(PIECE_VEL) === JSON.stringify(P), "kitevents 的 PIECE_VEL 跟 docs/GENERATORS.md §4 的表不一樣");
+    ok(keyIds.every(id => PIECE_VEL[id] > 0 && PIECE_VEL[id] <= 1) && Object.keys(PIECE_VEL).every(id => keyIds.includes(id)), "PIECE_VEL 要剛好涵蓋 drumkey.json 的鼓件(0–1)");
+    const cymMax = Math.max(P.hh, P.hhOpen, P.ride, P.rideBell), drumMin = Math.min(P.snare, P.kick, P.tomHi, P.tomMid, P.tomFloor);
+    ok(cymMax < drumMin && P.hhFoot <= P.hh && P.crash > drumMin && P.xstick < P.snare, "鼓件預設音量要有層次:HH / Ride < 鼓、腳踩 HH ≤ HH、Crash 最大聲、cross stick < 小鼓");
+    ok(EVENT_NOTES.pieceVel && EVENT_NOTES.pieceVel.kind === "practice", "鼓件預設音量要標練習設定(EVENT_NOTES.pieceVel)");
+    const all = Object.keys(P).filter(id => id !== "hhClosed" && id !== "hhOpen");
+    const pvs = { lines: 5, time: "4/4", measures: [{ voices: [all.slice(0, 4).map(id => ({ value: "4", notes: [{ piece: id }] }))] }, { voices: [all.slice(4, 8).map(id => ({ value: "4", notes: [{ piece: id }] }))] },
+      { voices: [all.slice(8).concat(["snare"]).slice(0, 4).map(id => ({ value: "4", notes: [{ piece: id }] }))] },
+      { voices: [[sn("4", { accent: true }), sn("4", { ghost: true }), { value: "4", notes: [{ piece: "hh", open: true }] }, sn("4", { flam: true })]] }] };
+    const ev = toEvents(pvs, { bpm: 90 });
+    ok(!pieceVelErrs(ev).length && ev.filter(e => e.grace).every(e => e.vel === Math.round(P.snare * GRACE_MUL * 1000) / 1000), "沒寫力度:每個鼓件用預設音量(含重音、幽靈音、開 HH、Flam 裝飾音)" + pieceVelErrs(ev).join(""));
+    const half = toEvents({ ...pvs, dyn: [{ m: 2, beat: 0, mark: "f" }] }, { bpm: 90 });
+    ok(half.filter(e => e.m < 2).every(e => e.vel === P[e.piece]) && half.filter(e => e.m === 2 && !e.grace).every(e => e.vel === DYN_VEL.f), "力度記號以前用鼓件預設音量、以後全部照力度記號");
+    ok(toEvents(pvs, { bpm: 90, dyn: "mf" }).filter(e => e.m < 3).every(e => e.vel === DYN_VEL.mf), "給了 opts.dyn = 沒寫力度的地方全部用那一級");
   }
 }
 

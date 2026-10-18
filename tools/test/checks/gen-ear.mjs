@@ -1,7 +1,7 @@
 // RSL 聽力出題器(js/ear/gen.js:genFill、distractors、fillOptions、genGroove)的檢查,verify.mjs 會呼叫;
 // 也可以單獨跑:node tools/test/checks/gen-ear.mjs(EAR_SEEDS=100 可以少跑一點)
 // 每一級(Debut–8)1000 個種子:
-// 1. Fill:只用白名單(這裡手抄了大綱的表:RSL p.31…69 / docs/sources/rsl-drums.md §5.2,6–8 級「四分到十六分六連音」= 主持人決定的 4 8 8t3 16 16t6;
+// 1. Fill:只用白名單(這裡手抄了大綱的表:RSL p.31…69 / docs/sources/rsl-drums.md §5.2,6–8 級「四分到十六分六連音的所有時值與組合」= 4 8 8t3 8. 16 16t6;
 //    不從資料檔複製,反過來跟資料檔核對);1 小節 4/4、只有小鼓、單線譜(lines:1)、♩=70、聽兩次、1 小節預備拍;
 //    時值自己的表重算 = 4 拍、連音一組從拍點開始(8t3 三個、16t6 六個);MusicXML auditXML + MusicXML 收到的時值也在白名單;事件 = MusicXML
 // 2. 干擾選項:數目 = 選項數 − 1(Debut–3 級 1 個、4–8 級 2 個);每個只改一拍(自己把小節切成拍比對)、也只用白名單;
@@ -10,12 +10,15 @@
 //    速度是整數、在官方範圍;播兩遍(推估)、playEvents = 兩遍;不出風格題(styleOptions null;4–8 級帶 noStyle 說明);事件 = MusicXML
 // 4. 同一個種子同一題;每一級白名單的每個時值、休止符、Groove 鼓件在 1000 題裡至少出現一次
 // 5. 竄改:白名單外的時值、速度、鼓件、干擾跟答案一樣 / 聽起來一樣 / 改了兩拍、選項數不對、事件錯位 → 一定抓到
+// 6. 練習設定:沒寫力度 = 鼓件預設音量(gen-kit.mjs 的手抄表);6–8 級 Fill 的附點八分只在「8. 16」「16 8.」;7–8 級含休止的拍比例 ≈ 6 級;
+//    Debut 的大鼓不出「4. 8」;4–8 級整段 Ride 碗四分 ≤ 8%;Groove 手的節奏型種類 4 → 6 → 7 級遞增
 import fs from "node:fs";
 import { genFill, distractors, fillOptions, genGroove, NOTES } from "../../../js/ear/gen.js";
 import { scoreXML } from "../../../js/shared/kitnotation.js";
 import { auditXML } from "./kitxml.mjs";
 import { xmlEvents, xmlCodes, evKey, evDiff } from "./xmlevents.mjs";
 import { hitsOnly } from "../../../js/shared/kitevents.js";
+import { pieceVelErrs } from "./gen-kit.mjs";
 
 const root = new URL("../../../", import.meta.url).pathname;
 const data = JSON.parse(fs.readFileSync(root + "data/exam-rsl.json", "utf8"));
@@ -23,7 +26,7 @@ const key = JSON.parse(fs.readFileSync(root + "data/drumkey.json", "utf8"));
 const SEEDS = Number(process.env.EAR_SEEDS) || 1000;
 
 /* 手抄(RSL p.31、35、39、43、48、53、59、64、69) */
-const R68 = ["4", "8", "8t3", "16", "16t6"];   // 6–8 級:依官方範圍(主持人決定)
+const R68 = ["4", "8", "8t3", "8.", "16", "16t6"];   // 6–8 級:依官方範圍「所有時值與組合」(附點八分只配十六分 = 出題限制)
 const FILL = {
   0: { values: ["4", "8"], rests: [], options: 2 },
   1: { values: ["4", "8"], rests: ["r4"], options: 2 },
@@ -99,6 +102,16 @@ function checkFillBar(g, f, used, tag = ""){
   const XE = xmlEvents(xml, key, 1);
   if (evKey(hitsOnly(f.events)) !== evKey(XE.hits)) E("事件 ≠ MusicXML:" + evDiff(hitsOnly(f.events), XE.hits).join("、"));
   ONSETS.set(f, XE.hits.map(h => h.beat.toFixed(3)).join(","));   // 從 MusicXML 算的擊打時間(比「聽起來一不一樣」)
+  errs.push(...pieceVelErrs(f.events).map(e => tag + e));
+  // 附點八分只在同一拍的「8. 16」「16 8.」(出題限制)
+  let q8 = 0;
+  v.forEach((e, ei) => {
+    if (e.value === "8.") {
+      const pv = v[ei - 1], nv = v[ei + 1];
+      if (!((q8 % D === 0 && nv && nv.value === "16") || (q8 % D === D / 4 && pv && pv.value === "16"))) E(`附點八分要跟十六分在同一拍(8. 16 / 16 8.),位置 ${q8 / D} 拍`);
+    }
+    q8 += Math.round(QV[e.value.replace(/^r/, "")] || 0);
+  });
   return errs;
 }
 export function checkFill(g, f, ds, used){
@@ -159,8 +172,14 @@ export function checkGroove(g, q, used){
   const XE = xmlEvents(xml, key, 5);
   for (const h of XE.hits) if (!W.pieces.includes(h.piece)) E(`MusicXML 鼓件 ${h.piece} 不在 ${g} 級`);
   if (evKey(hitsOnly(q.events)) !== evKey(XE.hits)) E("事件 ≠ MusicXML:" + evDiff(hitsOnly(q.events), XE.hits).join("、"));
+  errs.push(...pieceVelErrs(q.events));
+  if (g === 0 && q.spec.measures.some(m => m.voices[1] && m.voices[1].some(e => e.value === "4."))) E("Debut 的大鼓不出「4. 8」切分(練習設定)");
   return errs;
 }
+/* 整段 Ride 碗四分(手打的鈸全部是碗、而且都在拍點;Crash 不算) */
+const bellQuarters = q => { const h = hitsOnly(q.events).filter(e => ["hh", "hhOpen", "hhClosed", "ride", "rideBell"].includes(e.piece));
+  return h.length > 0 && h.every(e => e.piece === "rideBell" && Math.abs(e.beat - Math.round(e.beat)) < 1e-6); };
+const restBeats = f => f.cells.length && beatsOf(f.spec.measures[0].voices[0]).filter(x => /r/.test(x)).length;
 
 export default function check(ok){
   // 手抄的表 = 資料檔
@@ -175,9 +194,10 @@ export default function check(ok){
       e.groove.repeat.v === 2 && e.groove.repeat.assumed === true && [...gp].sort().join() === [...G.pieces].sort().join(),
       `exam-rsl.json ear[${g}].groove 跟手抄的大綱表不一樣`);
   }
+  const restRate = [], handKinds = [];
   for (let g = 0; g <= 8; g++) {
-    const used = { value: new Set(), rest: new Set() }, gUsed = new Set(), bpms = new Set();
-    let bad = 0, gBad = 0;
+    const used = { value: new Set(), rest: new Set() }, gUsed = new Set(), bpms = new Set(), hands = new Set();
+    let bad = 0, gBad = 0, rests = 0, bellQ = 0;
     for (let seed = 1; seed <= SEEDS; seed++) {
       let f, ds, errs;
       try { f = genFill(data.ear[g], seed, g); ds = distractors(f, f.options - 1, seed); errs = checkFill(g, f, ds, used); }
@@ -188,8 +208,9 @@ export default function check(ok){
         if (o.options.length !== f.options || o.options[o.answer] !== f || new Set(o.options.map(x => x.cells.join())).size !== f.options) errs.push("fillOptions 的選項或答案位置不對");
       }
       if (errs.length) { bad++; if (bad <= 3) ok(false, `RSL Fill ${g} 級 #${seed}:${errs.slice(0, 4).join(";")}`); }
+      else rests += restBeats(f);
       let q, ge;
-      try { q = genGroove(data.ear[g], seed, g); ge = checkGroove(g, q, gUsed); bpms.add(q.bpm); } catch (e) { ge = [e.message]; }
+      try { q = genGroove(data.ear[g], seed, g); ge = checkGroove(g, q, gUsed); bpms.add(q.bpm); if (bellQuarters(q)) bellQ++; q.spec.measures.forEach(m => hands.add(JSON.stringify(m.voices[0]))); } catch (e) { ge = [e.message]; }
       if (!ge.length && seed % 50 === 0 && JSON.stringify(genGroove(data.ear[g], seed, g)) !== JSON.stringify(q)) ge.push("同一個種子產生不同的題目");
       if (ge.length) { gBad++; if (gBad <= 3) ok(false, `RSL Groove ${g} 級 #${seed}:${ge.slice(0, 4).join(";")}`); }
     }
@@ -201,7 +222,12 @@ export default function check(ok){
     ok(!gm.length, `RSL Groove ${g} 級:鼓件沒出現過 ${gm.join("、")}`);
     const W = GROOVE[g].bpm;
     ok(SEEDS < 200 || (bpms.has(W[0]) && bpms.has(W[1])), `RSL Groove ${g} 級:速度沒用到範圍兩端`);
+    restRate[g] = rests / (SEEDS * 4); handKinds[g] = hands.size;
+    if (g >= 4) ok(bellQ <= SEEDS * 0.08, `RSL Groove ${g} 級:整段 Ride 碗四分 ${bellQ} 題(應該 ≤ 8%)`);
   }
+  // 練習設定的難度:7–8 級含休止的拍比例 ≈ 6 級(不超過 1.15 倍);Groove 手的節奏型種類遞增
+  for (const g of [7, 8]) ok(restRate[g] <= restRate[6] * 1.15 + 1e-9, `RSL Fill ${g} 級含休止的拍 ${(restRate[g] * 100).toFixed(1)}%(6 級 ${(restRate[6] * 100).toFixed(1)}%)`);
+  ok(SEEDS < 200 || (handKinds[4] < handKinds[6] && handKinds[6] < handKinds[7]), `RSL Groove 手的節奏型種類要遞增(4 級 ${handKinds[4]}、6 級 ${handKinds[6]}、7 級 ${handKinds[7]})`);
   // 竄改:檢查本身抓得到錯
   {
     const g = 3, f = genFill(data.ear[g], 11, g), ds = distractors(f, 1, 11), u = { value: new Set(), rest: new Set() };
@@ -235,6 +261,22 @@ export default function check(ok){
     TG(a => { a.events[2].beat += 0.25; }, /事件 ≠ MusicXML/, "Groove 事件錯位要抓到");
     let xs = 0; for (let s = 1; s <= 200; s++) { const z = genGroove(data.ear[5], s, 5); if (checkGroove(4, z, new Set()).some(e => /xstick 不在 4 級/.test(e))) xs++; }
     ok(xs > 0, "檢查本身:5 級的 cross stick 當 4 級檢查要抓到");
+    TG(a => { a.events.forEach(e => { e.vel = 0.7; }); }, /不是鼓件預設音量/, "Groove 沒寫力度卻全部 mf 要抓到");
+    // Debut 的大鼓「4. 8」
+    const q0 = genGroove(data.ear[0], 3, 0), t0 = structuredClone(q0);
+    t0.spec.measures[0].voices[1] = [{ value: "4.", notes: [{ piece: "kick" }] }, { value: "8", notes: [{ piece: "kick" }] }, { value: "r4" }, { value: "r4" }];
+    ok(checkGroove(0, t0, new Set()).some(e => /4\. 8/.test(e)), "檢查本身:Debut 大鼓「4. 8」要抓到");
+    // 6 級附點八分跨拍
+    let dotDone = false;
+    for (let s = 1; s <= 300 && !dotDone; s++) {
+      const f6 = genFill(data.ear[6], s, 6), w = f6.spec.measures[0].voices[0], bs = beatsOf(w), k = bs.findIndex(x => x === "8. 16");
+      if (k < 0 || k === 3) continue;
+      dotDone = true;
+      const fake = structuredClone(f6);
+      fake.spec.measures[0].voices[0] = rewriteBeats(w, { [k]: ["8", "8."], [k + 1]: ["16", "8"] }, bs);   // 附點八分從反拍開始、跨到下一拍
+      ok(checkFill(6, fake, distractors(f6, 2, s), u).some(e => /附點八分要跟十六分/.test(e)), "檢查本身:6 級附點八分跨拍要抓到");
+    }
+    ok(dotDone, "檢查本身:找不到有「8. 16」的 6 級 Fill");
     let threw = false; try { genFill(data.ear[3], 1); } catch (e) { threw = true; } ok(threw, "genFill 沒給級數應該丟出錯誤");
   }
 }

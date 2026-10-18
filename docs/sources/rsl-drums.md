@@ -332,7 +332,7 @@ Graded Certificate 是錄影考,沒有規定時間(p.15)。
 
 | # | 項目 | A 說法 | B 說法 | 建議 |
 |---|---|---|---|---|
-| 1 | 5 級 Fill 速度 | 大綱 p.52:**90 bpm** | 官網 learn-drums:80 bpm | 以 PDF 大綱為準 |
+| 1 | 5 級技巧 F 組 Fill 練習速度(不是聽力 Fill) | 大綱 p.52:**90 bpm** | 官網 learn-drums:80 bpm | 以 PDF 大綱為準 |
 | 2 | 3 級考試時間 | 大綱 p.15:23 分(p.42 誤寫成「The Grade 2 exam lasts 23 minutes」) | 官網:25 分 | 以 p.15 為準 |
 | 3 | 4、6 級聽力題名 | 大綱:Groove Recall | 官網:誤寫成「Harmonic Recall」 | 用 Groove Recall |
 | 4 | Debut 聽力題名 | p.31 第一句寫「Rhythmic Recall」 | 下一段寫「Groove Recall」 | 用 Groove Recall |

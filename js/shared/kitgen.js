@@ -12,7 +12,7 @@
    spec = exam-rsl.json 的 sight[g](type 要是 "kit");同一個 spec + seed 一定出同一題(mulberry32,跟 playbackgen.js 同一個寫法)。
 
    白名單:每一拍照「十六分格子」寫成 MASK_CELL 的寫法,寫法裡的每個時值 / 休止符都要在 spec.values / spec.rests 裡才用
-   (所以只會有 4 4. 8 8. 16 與 r4 r8;附點八分只出現在「8. 16」「16 8.」,一定配十六分;沒有二分、全休止符、十六分休止符)。
+   (所以只會有 4 4. 8 8. 16 與 r4 r8;附點八分只出現在「8. 16」「16 8.」,一定配十六分 = App 的出題限制,不是官方規定(NOTES.design);沒有二分、全休止符、十六分休止符)。
    推估(畫面要標):
    - 鼓件:大綱只寫「整組鼓」→ App 用 HH、小鼓、大鼓、高 / 中 / 落地鼓、Ride、Crash(KIT_SIGHT_PIECES;NOTES.kitPieces)
    - 2 小節自由發展放在最後兩小節(斜線;NOTES.developEnd;資料檔 develop.pos assumed)
@@ -21,14 +21,15 @@
    - 手:鈸(HH 或 Ride,一段固定)的節奏型 + 小鼓反拍(第 2、4 拍)、偶爾多一下小鼓;大鼓:兩拍一組的節奏格;過門:小鼓 → 筒鼓往下走,有時候加大鼓
    - 不寫力度、重音、開閉 HH、鬼音、Flam / Drag(大綱只列時值;NOTES.noMarks)
    - 速度在官方範圍內隨機取整數(NOTES.tempoRandom) */
-import { toEvents, specBeats } from "./kitevents.js";
+import { toEvents, specBeats, EVENT_NOTES } from "./kitevents.js";
 
 export const SIGHT_KIT_GRADES = [4, 5];
 export const KIT_SIGHT_PIECES = ["hh", "ride", "crash", "snare", "tomHi", "tomMid", "tomFloor", "kick"];
 export const NOTES = {
   kitPieces: { kind: "assumed", text: ["大綱只寫「整組鼓」:App 用 HH、小鼓、大鼓、三個筒鼓、Ride、Crash", "Syllabus says 'full kit': the App uses HH, snare, bass drum, 3 toms, ride, crash"] },
   developEnd: { kind: "assumed", text: ["2 小節自由發展的位置大綱沒寫,App 放在最後兩小節(斜線)", "Position of the 2-bar development not stated; the App uses the last 2 bars (slashes)"] },
-  design: { kind: "practice", text: ["節奏型、過門與組合方式是 App 的出題設計,不是官方題目", "Grooves, fills and how they combine are the App's design, not official tests"] },
+  design: { kind: "practice", text: ["節奏型、過門與組合方式是 App 的出題設計,不是官方題目;附點八分只配十六分是出題限制,不是官方規定", "Grooves, fills and how they combine are the App's design, not official tests; pairing ♪. only with ♬ is the App's limit, not an official rule"] },
+  pieceVel: EVENT_NOTES.pieceVel,
   noMarks: { kind: "practice", text: ["大綱只列時值:App 不寫力度、重音、開閉 HH", "The syllabus lists note values only: no dynamics, accents or open hi-hat"] },
   tempoRandom: { kind: "practice", text: ["速度在官方範圍內隨機", "Tempo picked at random within the official range"] },
   developClick: { kind: "practice", text: ["自由發展的小節播放時只有拍點", "Development bars play the click only"] }
@@ -177,7 +178,7 @@ function build(spec, R, C, g, seed, bars, dev, written, bpm){
   for (let m = written; m < bars; m++) measures.push({ slash: true });
   const specOut = { lines: 5, time: "4/4", measures };
   const events = toEvents(specOut, { bpm });
-  const notes = ["kitPieces", "developEnd", "design", "noMarks", "tempoRandom", "developClick"];
+  const notes = ["kitPieces", "developEnd", "design", "noMarks", "tempoRandom", "developClick", "pieceVel"];
   return {
     grade: g, seed: seed >>> 0, time: "4/4", bars, bpm, bpmRange: [...spec.bpm], develop: { from: written, bars: dev }, cyms: [cymA, cymB],
     spec: specOut, measures, events, lenBeats: specBeats(specOut), notes, src: spec.src || null
