@@ -441,7 +441,7 @@ const score = createScore({
   label: () => scoreLabel()
 });
 function renderScore(){ if (cur) score.load(rudimentXML(groups, { reps: S.reps, title: cur.en })); }
-/* 無障礙:鼓譜的文字說明 = 標題(打法名稱 / 練習型名稱)+ 一輪的左右手(Flam / Drag、重音、多次反彈、休止標出來)+ 反覆次數 */
+/* 無障礙:鼓譜的文字說明 = 標題(打法名稱 / 練習型名稱)+ 一輪的左右手(Flam / Drag、重音、滾奏、多次反彈、休止標出來)+ 反覆次數 */
 function scoreLabel(){
   if (!cur || !groups) return "";
   const title = $("qTitle").textContent.trim() || `${cur.no}. ${name(cur)}`;
@@ -451,7 +451,8 @@ function scoreLabel(){
     const orn = n.flam ? "Flam " : n.drag ? "Drag " : "";
     if (n.buzz) { words.push(orn + tr("多次反彈滾奏(z,兩手交替)", "multiple-bounce roll (z, alternating hands)")); continue; }
     const hands = strokes([[n]]).filter(x => x.kind !== "grace").map(x => x.hand);
-    hands.forEach((h, i) => words.push((i ? "" : orn) + h + (i === 0 && n.accent ? tr("(重音)", " accent") : "")));
+    const roll = n.trem ? tr("滾奏:", "roll: ") : "";   // 滾奏斜線展開的音:前面標「滾奏:」(不然聽起來像一般的單擊)
+    hands.forEach((h, i) => words.push((i ? "" : orn + roll) + h + (i === 0 && n.accent ? tr("(重音)", " accent") : "")));
   }
   return tr(`${title}:${words.join(" ")};反覆 ${S.reps} 次`, `${title}: ${words.join(" ")}; repeat ×${S.reps}`);
 }
@@ -637,6 +638,7 @@ async function startPlayback(){
     setMsg("loadingMsg", () => tr("播放失敗:", "Playback failed: ") + (e && e.message || e));
   }
   if (r === "failed") land.release();
+  if (r !== "started") loopNext = false;   // 沒有開始(失敗、被取代):下一次使用者按播放要照常播報
   return r;
 }
 /* 回傳 "started"(開始播了)、"busy"(正在準備 / 被換題或停止取代)、"failed"(取樣沒載到) */
@@ -695,6 +697,7 @@ let loopNext = false;   // 循環播放的下一輪(無障礙:不重複播報)
 /* 示範最快:PAS 原譜自由練習的紀錄;目標模式(官方速度、練習型)不顯示(那是別的譜、別的速度) */
 function showBest(){ const b = cur && !target && S.best[cur.no]; $("bestTempo").textContent = b ? `${T("bestLabel")} ♩=${b}` : ""; }
 function stopPlayback(natural, keepView){
+  if (!natural) loopNext = false;   // 中途停止(包括循環下一輪準備中被停):下一次開始要播報
   starting = 0; $("playBtn").classList.remove("busy");
   land.release(keepView);   // 手機橫式:播完(或停止)捲回播放前的位置、縮回;循環的下一輪不捲
   if (play) {

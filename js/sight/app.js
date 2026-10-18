@@ -1228,7 +1228,7 @@ ensurePads();
 /* ── 聽正確版本(預備拍 + 拍點照「正式打的拍點」設定;自由發展的小節一定有拍點,沒有鼓聲)── */
 async function toggleListen(){
   if (!cur || starting) return;
-  if (playKind === "listen") { stopListening(); return; }
+  if (playKind === "listen") { stopListening(); announce(tr("停止播放", "Playback stopped")); return; }   // 只有使用者按停止才播報
   if (phase === "perform") stopPerform();
   if (phase === "prep") endPrep(false);
   if (playKind) stopPlayer();
@@ -1248,10 +1248,8 @@ function retempoListen(){ player.retempo(bpmNow() / unitNow()); }
 function stopListening(){ if (playKind === "listen") stopPlayer(); endListenUI(); }
 function endListenUI(){ setPlayState(false); if (stage) stage.end(); }
 function setPlayState(on){
-  const was = $("play").classList.contains("is-active");
   $("play").classList.toggle("is-active", on);
   $("play").setAttribute("aria-label", on ? tr("停止", "Stop") : T("playAria"));
-  if (was && !on && active) announce(tr("停止播放", "Playback stopped"));
   $("playIcon").setAttribute("d", on ? "M6 5h4v14H6zM14 5h4v14h-4z" : "M8 5v14l11-7z");
 }
 $("play").onclick = () => toggleListen();

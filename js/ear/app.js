@@ -581,7 +581,7 @@ function segMsg(seg, n){
     return;
   }
   if (k === "listen") say(() => (isRsl() ? tr(`第 ${seg.take} 次播放中…`, `Play ${seg.take}…`) : tr("整份譜播放中…", "Playing the whole chart…")), false, seg.take > 1);
-  else if (k === "perform") say(() => tr("回打中:照聽到的打…", "Your turn: play what you heard…"));
+  else if (k === "perform") say(() => tr("回打中:照聽到的打…", "Your turn: play what you heard…"), false, true);   // 不播報:開始時已經念過「回打開始」
   else if (k === "pass") {
     const p = perf ? perf.pass : 1, lbl = p === 1 ? tr("第一次(練習)", "Play 1 (practice)") : tr("第二次(評時間)", "Play 2 (assessed)");
     say(() => (seg.kind === "app" ? tr(`${lbl} · 第 ${ph} / ${nph} 句:聽`, `${lbl} · phrase ${ph} / ${nph}: listen`) : tr(`${lbl} · 第 ${ph} / ${nph} 句:換你打`, `${lbl} · phrase ${ph} / ${nph}: your turn`)), false, true);

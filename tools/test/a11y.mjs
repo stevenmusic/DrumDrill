@@ -186,10 +186,10 @@ for (const c of ["roll", "diddle", "flam", "drag"]) {
 {
   await ev(() => window.__tech.setRudiment(6)); await techReady();
   const l = await ev(() => document.getElementById("t-osmd").getAttribute("aria-label"));
-  if (!/^6\. 雙擊開放滾奏:R R L L R R L L/.test(l)) fail("技巧 #6", `說明應該是「6. 雙擊開放滾奏:R R L L …」,實際 ${l.slice(0, 60)}`);
+  if (!/^6\. 雙擊開放滾奏:滾奏:R R L L R R L L/.test(l)) fail("技巧 #6", `說明應該是「6. 雙擊開放滾奏:滾奏:R R L L …」,實際 ${l.slice(0, 60)}`);
   await page.click("#langToggle"); await page.waitForTimeout(400);
   const en = await ev(() => document.getElementById("t-osmd").getAttribute("aria-label"));
-  if (!/^6\. Double Stroke Open Roll: R R L L/.test(en) || !/repeat ×\d/.test(en)) fail("技巧 #6 英文", `換英文後說明沒有跟著換:${en.slice(0, 60)}`);
+  if (!/^6\. Double Stroke Open Roll: roll: R R L L/.test(en) || !/repeat ×\d/.test(en)) fail("技巧 #6 英文", `換英文後說明沒有跟著換:${en.slice(0, 60)}`);
   await audit("技巧 英文", { tech: true });
   await page.click("#langToggle"); await page.waitForTimeout(400);
   // 播放:#srLive 寫「開始播放示範」,停止寫「停止了」
