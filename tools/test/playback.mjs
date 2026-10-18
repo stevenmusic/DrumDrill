@@ -6,6 +6,7 @@
 //  2. 播放中按停止:300ms 後排程中的節點 = 0,技巧的播放狀態是停止
 //  3. 切到背景(visibilitychange → hidden):播放停止;回到前景不會自己開始播
 //  4. 播放中換語言:不停止播放,題目、選擇器、按鈕文字換成新語言
+//  5. 共用播放器(js/shared/player.js):時間窗排程、改速度不重複、stop 後歸零、切到背景自己停(細項見下面第 5 段)
 // 用法:node tools/test/playback.mjs
 import { open } from "./harness.mjs";
 let bad = 0;
@@ -140,6 +141,148 @@ const click = () => page.click("#t-playBtn");
   if (bad === n0) ok(`播放中換語言:繼續播放,題目「${before.title}」→「${after.title}」`);
   await click(); await page.waitForTimeout(300);
   await page.click("#langToggle"); await page.waitForTimeout(300);
+}
+
+// 5. 共用播放器(js/shared/player.js,視奏 / 聽力用):24 小節鼓組事件(♩=120,hi-hat 在反拍、大鼓小鼓在正拍,每小節最後一拍開放 hi-hat)
+//  5a. 時間窗:每 50 ms 取樣,排程中的節點數 ≤ 2 ×「還在響或 1.5 秒內要響的事件與拍點」;最晚的節點 ≤ 現在 + 1.5 秒(+ 0.25 秒計時器餘裕)
+//  5b. 播到第 5 小節(預備拍後約 9 秒)改速度 120 → 150:改之前已經送出的不動,之後的照新速度、每個反拍 hi-hat 只有一個節點(不重複、不漏),
+//      舊時間的節點都取消了
+//  5c. stop():不再排新的;還沒開始的取消,正在響的自然收尾 → 響完排程中 = 0;stop(true) 立刻歸零
+//  5d. 頁面切到背景:播放器自己停止、不再補排(外框的 leave 之外的保險)
+{
+  const n0 = bad;
+  await page.evaluate(async () => {
+    const A = window.__A = await import("./js/shared/audio.js");
+    A.stopAll(); A.ensureAudio(); A.unlockAudio();
+    await A.loadKit(["kick", "snare", "hhClosed", "hhOpen"]); await A.loadClick();
+    const P = AudioScheduledSourceNode.prototype, B = AudioBufferSourceNode.prototype;   // AudioBufferSourceNode 有自己的 start
+    if (!P.__pl) {
+      P.__pl = true;
+      const start0 = B.start, stop0 = P.stop;
+      B.start = function(when){ this.__at = Math.max(when || 0, this.context.currentTime); this.__made = this.context.currentTime; this.__dur = this.buffer ? this.buffer.duration : 0; (window.__pl || (window.__pl = [])).push(this); return start0.apply(this, arguments); };
+      P.stop = function(when){ const st = when || this.context.currentTime; if (this.__at != null && st <= this.__at + 1e-6) this.__cancel = true; return stop0.apply(this, arguments); };
+    }
+  });
+  const BARS = 24, BPM = 120, BPM2 = 150;
+  const mkPlay = (opts) => page.evaluate(async ([BARS, BPM, opts]) => {
+    const { createPlayer, LOOKAHEAD } = await import("./js/shared/player.js");
+    const ev = [];
+    for (let bar = 0; bar < BARS; bar++) for (let b = 0; b < 4; b++) {
+      const at = bar * 4 + b;
+      ev.push({ beat: at, piece: b % 2 ? "snare" : "kick", vel: b === 0 ? "f" : "mf" });
+      ev.push({ beat: at + 0.5, piece: b === 3 ? "hhOpen" : "hhClosed", vel: "mp" });
+    }
+    window.__pl = []; window.__plEnd = 0;
+    const pl = window.__player = createPlayer({ onEnd: () => { window.__plEnd++; } });
+    const t0 = pl.play({ events: ev, lenBeats: BARS * 4, bpm: BPM, countInBeats: 4, click: b => (b < 0 ? (b === -4 ? 2 : 1) : b % 4 === 0 ? 2 : 1), ...opts });
+    window.__plEv = ev;
+    return { t0, LOOKAHEAD, n: ev.length };
+  }, [BARS, BPM, opts || {}]);
+  const sampleWindow = ms => page.evaluate(async ms => {
+    const A = window.__A, ctx = A.getCtx(), pl = window.__player, st = A.kitStats();
+    const dur = { kick: st.maxSec.kick, snare: st.maxSec.snare, hhClosed: st.maxSec.hhClosed, hhOpen: st.maxSec.hhOpen };
+    const out = { worst: 0, latest: 0, samples: 0 };
+    const t1 = performance.now() + ms;
+    while (performance.now() < t1 && pl.state.playing) {
+      const now = ctx.currentTime, s = pl.state, sec = s.beatSec;
+      const tm = b => s.t0 + b * sec;
+      let win = 0;
+      for (const e of window.__plEv) { const t = tm(e.beat); if (t <= now + 1.75 && t + dur[e.piece] > now - 0.1) win++; }
+      for (let b = -s.countIn; b < s.lenBeats; b++) { const t = tm(b); if (t <= now + 1.75 && t + 0.4 > now - 0.1) win++; }
+      const n = A.scheduledCount();
+      const pend = window.__pl.filter(x => !x.__cancel && x.__at > now);
+      const latest = pend.reduce((m, x) => Math.max(m, x.__at - now), 0);
+      out.samples++;
+      out.latest = Math.max(out.latest, latest);
+      if (n > 2 * win) out.over = { n, win, beat: +s.beat.toFixed(2) };
+      out.worst = Math.max(out.worst, n);
+      await new Promise(r => setTimeout(r, 50));
+    }
+    return out;
+  }, ms);
+
+  // 5a + 5b
+  const p = await mkPlay();
+  const w1 = await sampleWindow(11000);   // 預備拍 2 秒 + 4.5 小節
+  if (w1.over) fail(`player 時間窗:第 ${w1.over.beat} 拍排程中 ${w1.over.n} 個節點 > 2 × 時間窗內 ${w1.over.win} 個`);
+  if (!(w1.latest > 1)) fail(`player 沒有往前排(最遠 ${w1.latest.toFixed(2)} 秒;測試沒有記到節點?)`);
+  if (w1.latest > p.LOOKAHEAD + 0.25) fail(`player 往前排了 ${w1.latest.toFixed(2)} 秒(上限 ${p.LOOKAHEAD} 秒)`);
+  const rt = await page.evaluate(BPM2 => {
+    const A = window.__A, pl = window.__player, ctx = A.getCtx();
+    const before = pl.state;
+    const at = ctx.currentTime;
+    pl.retempo(BPM2);
+    return { at, from: at + 0.06, beatFrom: pl.timeToBeat(at + 0.06), oldT0: before.t0, oldSec: before.beatSec, t0: pl.state.t0, sec: pl.state.beatSec };
+  }, BPM2);
+  const w2 = await sampleWindow(5000);
+  if (w2.over) fail(`改速度後時間窗:第 ${w2.over.beat} 拍排程中 ${w2.over.n} 個 > 2 × ${w2.over.win}`);
+  if (w2.latest > p.LOOKAHEAD + 0.25) fail(`改速度後往前排了 ${w2.latest.toFixed(2)} 秒`);
+  // 反拍 hi-hat:每一個 = 恰好一個沒被取消的節點(改速度前的照舊時間、之後的照新時間);舊時間 ≥ from 的都被取消
+  const dup = await page.evaluate(rt => {
+    const nodes = window.__pl.filter(x => !x.__cancel), ctx = window.__A.getCtx(), now = ctx.currentTime;
+    const res = { checked: 0, bad: [], stale: 0 };
+    for (const e of window.__plEv) {
+      if (e.beat % 1 === 0) continue;   // 正拍有大鼓 / 小鼓 + 拍點(交叉淡化兩層),只看反拍的 hi-hat
+      const oldT = rt.oldT0 + e.beat * rt.oldSec;
+      const t = oldT < rt.from ? oldT : rt.t0 + e.beat * rt.sec;
+      if (t > now - 0.05) continue;   // 還沒到的不算(時間窗外可能還沒排)
+      const k = nodes.filter(x => Math.abs(x.__at - t) < 0.002).length;
+      res.checked++;
+      if (k !== 1) res.bad.push(`${e.beat}:${k}`);
+      if (oldT >= rt.from && Math.abs(oldT - t) > 0.01 && nodes.some(x => Math.abs(x.__at - oldT) < 0.002 && x.__dur < 1.5)) res.stale++;
+    }
+    return res;
+  }, rt);
+  if (dup.bad.length) fail(`改速度後反拍 hi-hat 的節點數不是 1:${dup.bad.slice(0, 8).join("、")}${dup.bad.length > 8 ? "…" : ""}(共 ${dup.checked} 個)`);
+  if (dup.stale) fail(`改速度後還有 ${dup.stale} 個 hi-hat 留在舊時間`);
+  if (dup.checked < 20) fail(`改速度後只檢查到 ${dup.checked} 個反拍`);
+  // 5c. stop()
+  const s1 = await page.evaluate(async () => {
+    const A = window.__A, pl = window.__player, ctx = A.getCtx();
+    const stopAt = ctx.currentTime;
+    pl.stop();
+    const future = window.__pl.filter(x => !x.__cancel && x.__at > stopAt + 0.01).length;
+    const ring = Math.max(0, ...window.__pl.filter(x => !x.__cancel && x.__at <= stopAt + 0.01).map(x => x.__at + x.__dur - ctx.currentTime));
+    const made0 = window.__pl.length;
+    await new Promise(r => setTimeout(r, Math.min(8000, ring * 1000 + 400)));
+    return { future, ring, after: A.scheduledCount(), madeAfter: window.__pl.length - made0, playing: pl.state.playing, end: window.__plEnd };
+  });
+  if (s1.future) fail(`stop() 之後還有 ${s1.future} 個還沒開始的節點沒取消`);
+  if (s1.madeAfter) fail(`stop() 之後又排了 ${s1.madeAfter} 個節點`);
+  if (s1.after) fail(`stop() 後響完(${s1.ring.toFixed(1)} 秒)排程中還有 ${s1.after} 個節點`);
+  if (s1.playing || s1.end) fail(`stop() 後 playing=${s1.playing}、onEnd 被叫了 ${s1.end} 次(中途停止不算播完)`);
+  // stop(true):立刻歸零
+  await mkPlay();
+  await page.waitForTimeout(3000);
+  const s2 = await page.evaluate(async () => { window.__player.stop(true); await new Promise(r => setTimeout(r, 300)); return window.__A.scheduledCount(); });
+  if (s2) fail(`stop(true) 後 300 ms 排程中還有 ${s2} 個節點`);
+  // 5d. 切到背景
+  await mkPlay();
+  await page.waitForTimeout(2500);
+  const bg = await page.evaluate(async () => {
+    Object.defineProperty(document, "hidden", { configurable: true, get: () => true });
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" });
+    await new Promise(r => setTimeout(r, 300));   // 計時器至少跑兩次
+    const m0 = window.__pl.length;
+    await new Promise(r => setTimeout(r, 1500));
+    const r = { playing: window.__player.state.playing, made: window.__pl.length - m0 };
+    delete document.hidden; delete document.visibilityState;
+    return r;
+  });
+  if (bg.playing || bg.made) fail(`頁面隱藏後播放器還在跑(playing=${bg.playing}、又排了 ${bg.made} 個節點)`);
+  // 自然播完:onEnd 一次
+  const end = await page.evaluate(async () => {
+    const { createPlayer } = await import("./js/shared/player.js");
+    let n = 0;
+    const pl = createPlayer({ onEnd: () => n++ });
+    pl.play({ events: [{ beat: 0, piece: "snare", vel: 0.8 }, { beat: 1, piece: "kick", vel: "ff" }], lenBeats: 2, bpm: 240, countInBeats: 2 });
+    await new Promise(r => setTimeout(r, 1800));
+    return { n, playing: pl.state.playing };
+  });
+  if (end.n !== 1 || end.playing) fail(`自然播完:onEnd ${end.n} 次、playing=${end.playing}`);
+  await page.evaluate(() => window.__A.stopAll());
+  if (bad === n0) ok(`共用播放器 24 小節(${p.n} 個鼓組事件):排程中最多 ${Math.max(w1.worst, w2.worst)} 個節點,每個時刻都 ≤ 2 × 時間窗內的事件,最遠只往前排 ${Math.max(w1.latest, w2.latest).toFixed(2)} 秒;` +
+    `第 ${rt.beatFrom.toFixed(1)} 拍改速度 ${BPM}→${BPM2}:${dup.checked} 個反拍 hi-hat 各一個節點、不重複;stop() 後不再排、響完歸零,stop(true) 立刻歸零;切到背景自己停;自然播完 onEnd 一次`);
 }
 
 for (const e of errors) fail("console:" + e);
