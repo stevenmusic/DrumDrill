@@ -242,9 +242,9 @@ async function earTake(type, grade, mode = "exact"){
 async function earMockSettle(){
   const wav = path.join(TMP, "ear-mock-fill-3.wav");
   const { page, errors, close } = await openApp(wav, { "drumdrill.v1": { onboarded: true, view: "exam", exam: { system: "rsl", grade: 3 }, mic: true, sub: { exam: "ear" } } });
-  await page.waitForFunction(() => window.__ear && window.__ear.state && window.__ear.state.key, null, { timeout: 60000 });
-  await page.evaluate(() => window.__ear.startMock());
-  await page.waitForFunction(() => window.__ear.mock.state === "run" && window.__ear.state.kind === "listen", null, { timeout: 60000 });
+  // 檢定頁(還沒有題目):考試資料載好以後 startMock 才會開始
+  await page.waitForFunction(() => { const E = window.__ear; if (!E || !E.state || E.state.mode !== "exam") return false; if (E.mock.state !== "run") E.startMock(); return E.mock.state === "run"; }, null, { timeout: 60000, polling: 500 });
+  await page.waitForFunction(() => window.__ear.state.kind === "listen", null, { timeout: 60000 });
   await page.evaluate(() => window.__ear.finishNow());
   await page.waitForFunction(() => !window.__ear.state.kind && !document.getElementById("e-performBtn").disabled, null, { timeout: 30000 });
   const plan = await page.evaluate(() => window.__ear.micPlan());
@@ -303,7 +303,7 @@ async function sightSide(){
   show("視奏 整組鼓", kit);
   if (process.env.DEBUG) console.log("  expected", kit.mic.expected.map(t => t.toFixed(3)).join(" "), "\n  detected", kit.mic.detected.map(t => t.toFixed(3)).join(" "), "\n  pieces", JSON.stringify(kit.plan.pieces.map(h => [h.time.toFixed(3), h.piece, h.vel])));
   // 命中門檻 93%:node 側同樣的混音漏偵 ≤ 2%(上面);瀏覽器端多了假麥克風開始放的時間、AudioContext 排程的抖動,每次會再差一兩下
-  // (這一題約 30–40 下,一兩下 = 3–6%)。95% 太接近會偶爾失敗;90% 太鬆,偵測真的變差(漏三成的輕 hi-hat 那種)也會過。93% = 留兩下的餘量
+  // (這一題約 54 下,一兩下 = 2–4%)。95% 太接近會偶爾失敗;90% 太鬆,偵測真的變差(漏好幾下輕 hi-hat 那種)也會過。93% = 最多漏 3 下
   ok(kit.r && kit.r.score >= 85 && kit.r.hits / kit.r.total >= 0.93, `視奏 RSL 4 整組鼓(合併一條、官方速度)準時:分數 ${kit.r && kit.r.score}、命中 ${kit.r && kit.r.hits}/${kit.r && kit.r.total}(要 ≥ 85、≥ 93%)`);
 }
 async function earSide(){
