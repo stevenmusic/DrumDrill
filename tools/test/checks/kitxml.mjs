@@ -55,7 +55,7 @@ export function auditXML(xml, spec){
   const hasFeet = /<voice>2<\/voice>/.test(xml);
   ms.forEach((m, i) => {
     const sums = {}, tup = {}; let t = 0, max = 0;
-    for (const el of m[2].matchAll(/<note>([\s\S]*?)<\/note>|<backup><duration>(\d+)<\/duration><\/backup>/g)) {
+    for (const el of m[2].matchAll(/<note(?: print-object="no")?>([\s\S]*?)<\/note>|<backup><duration>(\d+)<\/duration><\/backup>/g)) {
       if (el[2]) { t -= Number(el[2]); continue; }
       const n = el[1];
       if (!n.includes("<rest")) {
@@ -296,6 +296,16 @@ export default function check(ok){
     const n = /t3$/.test(v) ? 3 : 1, spec = { key, time: "4/4", measures: [{ voices: [Array(n).fill(0).map(() => ({ value: v, notes: [{ piece: "snare" }], ...(k === "roll" ? { roll: 2 } : { buzz: true }) }))] }] };
     let errs; try { errs = auditXML(scoreXML(spec), spec); } catch (e) { errs = [e.message]; }
     ok(!errs.length, `${k === "roll" ? "滾奏斜線" : "多次反彈"}在 ${v}:${errs.join(";")}`);
+  }
+  // hideEmpty:空的聲部整小節休止不印(<note print-object="no">),時值照算;沒寫 hideEmpty 照常印
+  {
+    const hand = Array(8).fill(0).map(() => ({ value: "8", notes: [{ piece: "hh" }] }));
+    const spec = { key, time: "3/4", measures: [{ voices: [hand.slice(0, 6), [{ value: "4", notes: [{ piece: "kick" }] }]] }, { voices: [hand.slice(0, 6), []], hideEmpty: true }, { voices: [hand.slice(0, 6), []] }] };
+    let xml = "", errs; try { xml = scoreXML(spec); errs = auditXML(xml, spec); } catch (e) { errs = [e.message]; }
+    ok(!errs.length, `hideEmpty:${errs.join(";")}`);
+    const hidden = xml.match(/<note print-object="no">[\s\S]*?<\/note>/g) || [];
+    ok(hidden.length === 1 && /<rest measure="yes">/.test(hidden[0]) && /<voice>2<\/voice>/.test(hidden[0]) && /<duration>7560<\/duration>/.test(hidden[0]), `hideEmpty:第 2 小節腳的整小節休止不印(${hidden.length} 個)`);
+    ok((xml.match(/<note><rest measure="yes">/g) || []).length === 1, "hideEmpty:第 3 小節沒寫 hideEmpty 照常印整小節休止");
   }
   // 交給 OSMD 的版本:<open/> → <open-string/>(其他不動)
   {

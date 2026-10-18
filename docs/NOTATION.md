@@ -18,6 +18,7 @@
 | 斜線符頭(自由發展小節) | `<notehead>slash</notehead>` + `<stem>none</stem>` | OSMD 可以 | 每拍(複拍子每個附點四分)一個,放在中線 B4(單線譜放在線上) |
 | 手 / 腳兩個聲部 | voice 1 `<stem>up</stem>`、voice 2 `<stem>down</stem>`、`<backup>` | OSMD 可以 | 休止符用 `<rest><display-step>` 分開(手 C5、腳 E4;整小節休止 手 D5、腳 G4) |
 | 整小節休止 | `<rest measure="yes"/>` + **`<type>whole</type>`** | OSMD 可以 | 沒寫 `<type>` 的話,OSMD 在 7/8 會畫成複附點二分休止符 |
+| 不印的整小節休止(`hideEmpty`) | `<note print-object="no"><rest measure="yes"/>…` | OSMD 可以(不畫,位置照算) | 空的聲部整小節不印休止符;Playback 1、2 級(還沒有全休止符)腳整小節沒有打時用 |
 | 和弦(手同時打兩個) | `<chord/>` | OSMD 可以 | |
 | 重音 | `<articulations><accent/>` | OSMD 可以 | 手在上、腳在下 |
 | Flam / Drag | `<grace slash="yes"/>` 八分 / 兩個 `<grace/>` 十六分 + `<slur>` | OSMD 可以 | 跟技巧的單線譜同一套寫法;裝飾音照主音的鼓件(× 鈸的裝飾音也是 ×) |

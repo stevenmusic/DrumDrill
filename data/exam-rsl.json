@@ -486,7 +486,7 @@
     "text": ["4 題音樂知識 + 1 題樂器知識,根據考生指定的一首演奏曲;App 只列範圍,不出題", "4 music + 1 instrument questions on a piece you choose; the App lists the scope only"]
   },
   "conflicts": [
-    { "id": 1, "about": ["5 級過門速度", "Grade 5 fill tempo"], "use": ["照大綱 p.52 ♩=90(官網寫 80)", "Syllabus p.52: 90 (website: 80)"], "src": { "p": "52" } },
+    { "id": 1, "about": ["5 級技巧 F 組過門練習速度(不是聽力 Fill)", "Grade 5 technical Group F fill tempo (not the ear-test fill)"], "use": ["照大綱 p.52 ♩=90(官網寫 80)", "Syllabus p.52: 90 (website: 80)"], "src": { "p": "52" } },
     { "id": 2, "about": ["3 級考試時間", "Grade 3 exam length"], "use": ["照 p.15 是 23 分(p.42 誤寫 Grade 2,官網寫 25)", "p.15: 23 min (p.42 misprint, website 25)"], "src": { "p": "15, 42" } },
     { "id": 4, "about": ["Debut 聽力題名", "Debut ear test name"], "use": ["用 Groove Recall", "Use Groove Recall"], "src": { "p": "31" } },
     { "id": 5, "about": ["Debut 樂理問答題數", "Debut GMQ count"], "use": ["照配分表 5 題", "5, per the mark scheme"], "src": { "p": "16, 30–31" } },

@@ -1,7 +1,7 @@
 // 瀏覽器實際畫譜檢查(對應 PianoDrill 的 notation.mjs):用 OSMD(vendor)把譜畫出來,讀 SVG 比對
 //  1. PAS 40 個基本打法(js/tech/notation.js,notation-preview.html?n=1..40):沒有錯誤;SVG 的符頭數 = MusicXML 的 <note> 數(含裝飾音、休止符)
 //  2. 鼓組記譜樣張(js/shared/kitnotation.js,notation-preview.html?kit=all;樣張在 kitsamples.mjs):
-//     沒有錯誤;符頭數 = <note> 數;每種符頭形狀(一般 / x / 菱形 / 圈 x / 斜線)的數量 = MusicXML;
+//     沒有錯誤;符頭數 = <note> 數(<note print-object="no"> 要畫成透明,數量一樣);每種符頭形狀(一般 / x / 菱形 / 圈 x / 斜線)的數量 = MusicXML;
 //     每個符頭的高度 = drumkey.json 的位置(五線:E4 = 最下面那條線;單線:在線上);
 //     補畫的記號(鬼音括號、開 HH 的 o)數量 = MusicXML;閉 HH 的 + 是 OSMD 畫的(lefthandpizzicato);
 //     連音組數 = MusicXML 的 <tuplet type="start">(8t3 與 16t3 混在一拍是一組);
@@ -10,7 +10,9 @@
 //     decorate 抬高的力度、漸強線、連音數字(kit-lift)不碰到上一行譜、不超出譜面與紙張的上緣
 //  3. 折疊機 280 寬:樣張不超出紙張、沒有橫向捲動;圖例中英版面一樣(每一格的位置、大小相同)、出處小字最多兩行、沒有 undefined
 //  4. 視奏(S8):RSL Debut–3 的小鼓單線譜在視奏分頁實際畫出來(1000 / 280 寬,每級 4 題)
-// 截圖存到 tools/test/out/notation/(基本打法、樣張 1000 寬 + 每一張、280 寬中英、視奏)
+//  5. Trinity Playback 產生器(notation-preview.html?playback=all):每一級 2 題做跟樣張一樣的檢查;320 寬不超出紙張
+//  6. RSL 出題器(?rslkit=4,5&fill=0..8&groove=0..8):整組鼓視奏、聽力 Fill(含干擾選項)、Groove,跟樣張一樣的檢查;320 寬不超出紙張
+// 截圖存到 tools/test/out/notation/(基本打法、樣張 1000 寬 + 每一張、280 寬中英、視奏 sight-*.png、playback-0.png … playback-8.png、rslkit-4/5.png、fill-0…8.png、groove-0…8.png)
 // 用法:node tools/test/notation.mjs
 import { open } from "./harness.mjs";
 import fs from "node:fs";
@@ -41,8 +43,8 @@ const ok = m => console.log("✓ " + m);
 /* 2. 鼓組記譜樣張 */
 // MusicXML 的符頭形狀 → VexFlow 畫出來的字形(OSMD 2.1.0 / VexFlow 1.2;一般 = 黑 / 二分 / 全音符,x = 四分以下 / 二分以上)
 const GLYPH = { normal: ["vb", "v81", "v1d"], x: ["v3e", "v95", "v92"], "circle-x": ["v3b"], diamond: ["v22", "v27", "v2d"], slash: [undefined] };
-async function kitPage(width, lang, shots, { kit = "all", zoom = null } = {}){
-  const { page, errors, close } = await open({ viewport: { width, height: 900 }, path: `tools/test/notation-preview.html?kit=${kit}${lang ? "&lang=" + lang : ""}${zoom ? "&zoom=" + zoom : ""}` });
+async function kitPage(width, lang, shots, { kit = "all", zoom = null, query = "" } = {}){
+  const { page, errors, close } = await open({ viewport: { width, height: 900 }, path: `tools/test/notation-preview.html?kit=${kit}${lang ? "&lang=" + lang : ""}${zoom ? "&zoom=" + zoom : ""}${query}` });
   await page.waitForFunction(() => window.__done, null, { timeout: 120000 });
   const res = await page.evaluate(({ GLYPH }) => {
     const L = window.__L, out = [];
@@ -53,8 +55,12 @@ async function kitPage(width, lang, shots, { kit = "all", zoom = null } = {}){
       if (r.err || !r.osmd) continue;
       const svg = r.el.querySelector(".kit-paper svg"), doc = new DOMParser().parseFromString(r.xml, "application/xml");
       // 符頭數
-      const want = (r.xml.match(/<note>/g) || []).length, got = svg.querySelectorAll(".vf-notehead").length;
+      // 不印的音(<note print-object="no">,hideEmpty 的整小節休止):OSMD 畫成透明(fill #00000000),不算符頭,但數量要一樣
+      const clear = h => [...h.querySelectorAll("path")].every(p => /^#[0-9a-f]{6}00$|^transparent$|^none$/i.test(p.getAttribute("fill") || ""));
+      const heads = [...svg.querySelectorAll(".vf-notehead")], hidden = heads.filter(clear).length;
+      const want = (r.xml.match(/<note>/g) || []).length, got = heads.length - hidden, wantHidden = (r.xml.match(/<note print-object="no">/g) || []).length;
       if (want !== got) o.issues.push(`符頭 ${got} 個,MusicXML 有 ${want} 個`);
+      if (hidden !== wantHidden) o.issues.push(`不印的音 畫成透明的 ${hidden} 個,MusicXML 有 ${wantHidden} 個`);
       // 每種形狀的數量(不含休止符)
       const wantShape = {}, gotShape = {};
       for (const n of doc.querySelectorAll("note")) { if (n.querySelector("rest")) continue; const h = (n.querySelector("notehead") || { textContent: "normal" }).textContent; wantShape[h] = (wantShape[h] || 0) + 1; }
@@ -166,7 +172,14 @@ async function kitPage(width, lang, shots, { kit = "all", zoom = null } = {}){
     const cellSrc = Object.fromEntries([...document.querySelectorAll("#legend5 .kl-cell, #legend1 .kl-cell")].map(c => [c.closest(".kit-legend").id + ":" + c.dataset.piece, c.querySelector(".kl-src").textContent]));
     return { out, legend, overflow, cellOverflow, srcIssues, cellSrc };
   }, { GLYPH });
-  if (shots) {
+  if (shots === "groups") {
+    // 出題器每一級一個框:pb-N → playback-N.png、rk-N → rslkit-N.png、fill-N → fill-N.png、gr-N → groove-N.png
+    const NAME = { pb: "playback", rk: "rslkit", fill: "fill", gr: "groove" };
+    for (const id of await page.$$eval("#out > div[id]", els => els.filter(e => !e.dataset.sample).map(e => e.id))) {
+      const [, pre, g] = /^(\w+)-(\d)$/.exec(id) || [];
+      if (NAME[pre]) await (await page.$("#" + id)).screenshot({ path: OUT + `${NAME[pre]}-${g}.png` });
+    }
+  } else if (shots) {
     await page.screenshot({ path: OUT + `kit-${width}${lang ? "-" + lang : ""}.png`, fullPage: true });
     if (shots === "each") for (const id of res.out.map(o => o.id)) { const el = await page.$(`[data-sample="${id}"]`); if (el) await el.screenshot({ path: OUT + `sample-${id}.png` }); }
     if (shots === "each") for (const id of ["legend5", "legend1"]) { const el = await page.$("#" + id); if (el) await el.screenshot({ path: OUT + `${id}.png` }); }
@@ -266,6 +279,40 @@ for (const width of [1000, 280]) {
   for (const e of errors) fail(`視奏 ${width} 寬 console:` + e);
   if (bad === n0) ok(`視奏 ${width} 寬:${tests} 題小鼓單線譜都畫得出來、符頭數 = MusicXML、都在線上、在紙張裡、每行小節數與縮放照考卷規則、有圖例`);
   await close();
+}
+
+{
+  // 5. Trinity Playback 產生器(js/shared/playbackgen.js):每一級 2 題,跟樣張一樣的檢查(符頭數、形狀、高度、補畫記號、閉 HH、連音組數、開 HH 的 o、鬼音括號、不超出紙張)
+  //    截圖 playback-0.png … playback-8.png(1000 寬);再用 320 寬檢查不超出紙張、沒有橫向捲動
+  const n0 = bad;
+  const r = await kitPage(1000, "en", "groups", { kit: "", query: "&playback=all&per=2&seed=1" });
+  for (const o of r.out) { if (o.err) fail(`Playback ${o.id}:${o.err}`); for (const i of o.issues) fail(`Playback ${o.id}:${i}`); }
+  for (const e of r.errors) fail("Playback console:" + e);
+  if (r.overflow) fail(`Playback 1000 寬有橫向捲動 ${r.overflow}`);
+  const n = await kitPage(320, "zh", false, { kit: "", query: "&playback=all&per=1&seed=7" });
+  for (const o of n.out) { if (o.err) fail(`Playback 320 寬 ${o.id}:${o.err}`); for (const i of o.issues) fail(`Playback 320 寬 ${o.id}:${i}`); }
+  for (const e of n.errors) fail("Playback 320 寬 console:" + e);
+  if (n.overflow) fail(`Playback 320 寬有橫向捲動 ${n.overflow}`);
+  if (bad === n0) ok(`Playback 產生器 ${r.out.length} + ${n.out.length} 題:OSMD 畫出來沒有錯誤,符頭數、形狀、高度(${r.out.reduce((s, o) => s + (o.checked || 0), 0)} 個音)、補畫記號、連音組數、開 HH 的 o 都對;320 寬不超出紙張`);
+}
+
+{
+  // 6. RSL 出題器:整組鼓視奏(js/shared/kitgen.js;4、5 級各 2 題,最後 2 小節斜線)、聽力 Fill(js/ear/gen.js;每一級 1 題 + 干擾選項,單線譜)、
+  //    Groove(每一級 1 題):跟樣張一樣的檢查(符頭數、形狀含斜線、高度、補畫記號、閉 HH 的 +、連音組數、開 HH 的 o、不超出紙張)
+  //    截圖 rslkit-4/5.png、fill-0…8.png、groove-0…8.png(1000 寬);再用 320 寬(換種子)檢查不超出紙張、沒有橫向捲動
+  const n0 = bad;
+  const q = "&rslkit=4,5&fill=0..8&groove=0..8&seed=1";
+  const r = await kitPage(1000, "en", "groups", { kit: "", query: q });
+  for (const o of r.out) { if (o.err) fail(`RSL ${o.id}:${o.err}`); for (const i of o.issues) fail(`RSL ${o.id}:${i}`); }
+  for (const e of r.errors) fail("RSL console:" + e);
+  if (r.overflow) fail(`RSL 1000 寬有橫向捲動 ${r.overflow}`);
+  const want = 2 * 2 + [2, 2, 2, 2, 3, 3, 3, 3, 3].reduce((a, b) => a + b, 0) + 9;
+  if (r.out.length !== want) fail(`RSL 題目畫了 ${r.out.length} 張(應該 ${want})`);
+  const n = await kitPage(320, "zh", false, { kit: "", query: "&rslkit=4,5&fill=0..8&groove=0..8&per=1&seed=9" });
+  for (const o of n.out) { if (o.err) fail(`RSL 320 寬 ${o.id}:${o.err}`); for (const i of o.issues) fail(`RSL 320 寬 ${o.id}:${i}`); }
+  for (const e of n.errors) fail("RSL 320 寬 console:" + e);
+  if (n.overflow) fail(`RSL 320 寬有橫向捲動 ${n.overflow}`);
+  if (bad === n0) ok(`RSL 出題器 ${r.out.length} + ${n.out.length} 張(整組鼓視奏、Fill 含干擾選項、Groove):OSMD 畫出來沒有錯誤,符頭數、形狀(含斜線)、高度(${r.out.reduce((s, o) => s + (o.checked || 0), 0)} 個音)、補畫記號、連音組數、開 HH 的 o 都對;320 寬不超出紙張`);
 }
 
 console.log(bad ? `✗ ${bad} 項問題` : `✓ 全部通過(截圖在 ${OUT})`);

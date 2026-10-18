@@ -38,6 +38,8 @@ const OTHER = [
     { voices: [[ev("16", N("tomHi")), ev("16", N("tomHi")), ev("16", N("tomMid")), ev("16", N("tomMid")), ev("16", N("snare", { flam: true })), ev("16", N("snare")), ev("16", N("tomFloor")), ev("16", N("tomFloor")),
       ev("8", N("tomFloor", { accent: true })), ev("8", N("snare", { drag: true })), ev("4", [N("crash", { accent: true })])],
       [r("2"), ev("8", N("kick")), ev("8", N("kick")), ev("4", N("kick"))]] }] } },
+  // 腳整小節沒有打:hideEmpty 不印整小節休止(Playback 1、2 級還沒有全休止符)
+  { id: "hide-empty", group: "grooves", spec: { time: "4/4", measures: [rock(), { voices: [rep(8, i => ev("8", i % 4 === 2 ? [N("hh"), N("snare")] : [N("hh")])), []], hideEmpty: true }, rock()] } },
   // 拍號:複拍子、不規則拍、2/2、換拍號(一份譜裡)
   ...[["3/4", 6], ["2/4", 4], ["2/2", 8], ["5/4", 10], ["7/4", 14]].map(([t, n]) => ({ id: "time-" + t.replace("/", "-"), group: "meters", spec: { time: t, measures: [{ voices: [
     rep(n, i => ev("8", i % 4 === 2 ? [N("hh"), N("snare")] : [N("hh")])), [ev("4", N("kick"))]] }] } })),
