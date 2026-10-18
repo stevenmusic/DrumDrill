@@ -74,33 +74,37 @@ for (const [name, w, h, mobile] of VPS) {
   await tab("tech");
   for (const c of ["roll", "diddle", "flam", "drag"]) { await sub(c); await expand("#t-picker"); await compare(page, name, "技巧 " + c); }
   await tab("sight"); await compare(page, name, "視奏"); await tab("ear"); await compare(page, name, "聽力");
-  // S8 視奏:RSL Debut、3 級 × 題目 / 準備中 / 作答中 / 結果 / 正確版本;RSL 6 級、Trinity 1 級的說明卡
+  // S8 + S9 + S10/S11 視奏:RSL Debut、3(小鼓)、4、5(整組鼓)、Trinity 0、4、8(Playback 看譜)× 題目 / 準備中 / 作答中 / 結果 / 正確版本;
+  // RSL 6 級(Quick Study Piece 說明卡)、檢定頁 RSL 4(規格卡的「練習這一級的視奏」)
   const sClick = id => page.evaluate(id => document.getElementById(id).click(), id);
-  const sightReady = () => page.waitForFunction(() => window.__sight.state.drawn > 0 && !window.__sight.state.pending && !document.querySelector("#s-score[aria-busy]"), null, { timeout: 20000 }).then(() => page.waitForTimeout(500));
-  for (const g of [0, 3]) {
-    await page.evaluate(g => { window.__shell.setExam("rsl", g); window.__shell.showView("sight", String(g)); }, g); await sightReady();
-    await compare(page, name, `視奏 ${g}`);
-    await sClick("s-prepare"); await page.waitForTimeout(500); await compare(page, name, `視奏 ${g} 準備中`);
+  const sightReady = () => page.waitForFunction(() => window.__sight.state.drawn > 0 && !window.__sight.state.pending && window.__sight.state.loading == null && !document.querySelector("#s-score[aria-busy]"), null, { timeout: 60000 }).then(() => page.waitForTimeout(500));
+  for (const [sys, g] of [["rsl", 0], ["rsl", 3], ["rsl", 4], ["rsl", 5], ["trinity", 0], ["trinity", 4], ["trinity", 8]]) {
+    const at = `視奏 ${sys} ${g}`;
+    await page.evaluate(([s, g]) => { window.__shell.setExam(s, g); window.__shell.showView("sight", String(g)); }, [sys, g]); await sightReady();
+    await compare(page, name, at);
+    await sClick("s-prepare"); await page.waitForTimeout(500); await compare(page, name, `${at} 準備中`);
     await sClick("s-prepare"); await page.waitForTimeout(200);
     await page.evaluate(() => window.__sight.setBpm(40));   // 慢一點:作答中比對完再停
     await sClick("s-playAlong"); await page.waitForFunction(() => window.__sight.state.phase === "perform", null, { timeout: 20000 }); await page.waitForTimeout(800);
-    await compare(page, name, `視奏 ${g} 作答中`);
+    await compare(page, name, `${at} 作答中`);
     await sClick("s-playAlong"); await page.waitForTimeout(200);
     await page.evaluate(() => window.__sight.setBpm(240));
     await sClick("s-playAlong"); await page.waitForFunction(() => window.__sight.state.phase === "perform", null, { timeout: 20000 });
-    for (let k = 0; k < 4; k++) { await page.keyboard.press("j"); await page.waitForTimeout(300); }
-    await page.waitForFunction(() => window.__sight.state.phase === "result", null, { timeout: 20000 }); await page.waitForTimeout(300);
-    await compare(page, name, `視奏 ${g} 結果`);
+    await page.waitForTimeout(1100);
+    for (let k = 0; k < 4; k++) { await page.keyboard.press(k % 2 ? "j" : "f"); await page.waitForTimeout(300); }
+    if (sys === "trinity") await page.evaluate(() => window.__sight.finishNow());
+    await page.waitForFunction(() => window.__sight.state.phase === "result", null, { timeout: 30000 }); await page.waitForTimeout(300);
+    await compare(page, name, `${at} 結果`);
     await page.evaluate(() => window.__sight.setBpm(30));
     await sClick("s-play"); await page.waitForFunction(() => window.__sight.state.kind === "listen", null, { timeout: 20000 }); await page.waitForTimeout(500);
-    await compare(page, name, `視奏 ${g} 正確版本`);
+    await compare(page, name, `${at} 正確版本`);
     await sClick("s-play"); await page.waitForTimeout(200);
     await page.evaluate(() => window.__sight.setBpm(window.__sight.test.bpm));
   }
-  for (const [sys, g] of [["rsl", 6], ["trinity", 1]]) {
-    await page.evaluate(([s, g]) => { window.__shell.setExam(s, g); window.__shell.showView("sight", String(g)); }, [sys, g]); await page.waitForTimeout(400);
-    await compare(page, name, `視奏 ${sys} ${g} 說明卡`);
-  }
+  await page.evaluate(() => { window.__shell.setExam("rsl", 6); window.__shell.showView("sight", "6"); }); await page.waitForTimeout(400);
+  await compare(page, name, "視奏 rsl 6 說明卡");
+  await page.evaluate(() => { window.__shell.setExam("rsl", 4); window.__shell.showView("exam", "sight"); }); await page.waitForTimeout(400);
+  await compare(page, name, "檢定 rsl 4 視奏");
   // 40 個打法的題目與標籤:中英文行數一樣
   await tab("tech");
   const diff = await page.evaluate(async () => {

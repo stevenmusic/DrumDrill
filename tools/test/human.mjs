@@ -57,9 +57,11 @@ const appActions = ({ page, tap, tapAny }) => [
     const ok = await page.evaluate(() => !document.getElementById("mod-sight").hidden && !document.getElementById("s-quiz").hidden && !!window.__sight.test);
     if (!ok) return false;
     await page.evaluate(() => { const S = window.__sight; if (S.state.phase === "perform") document.getElementById("s-playAlong").click(); S.setBpm(240); document.getElementById("s-playAlong").click(); });
-    try { await page.waitForFunction(() => window.__sight.state.phase === "perform", null, { timeout: 15000 }); } catch (e) { return false; }
+    try { await page.waitForFunction(() => window.__sight.state.phase === "perform", null, { timeout: 60000 }); } catch (e) { return false; }
     for (let k = 0; k < 5; k++) { if (!(await tapAny("#s-pads .tap-pad"))) await page.keyboard.press("j"); await page.waitForTimeout(250); }
-    try { await page.waitForFunction(() => window.__sight.state.phase !== "perform", null, { timeout: 15000 }); } catch (e) { fail("視奏 正式打 15 秒還沒結束"); return true; }
+    // Trinity Playback 一首很長(8 級 24 小節):打幾下就結束(測試用的 finishNow);RSL 照常打完
+    await page.evaluate(() => { if (window.__sight.state.mode === "playback") window.__sight.finishNow(); });
+    try { await page.waitForFunction(() => window.__sight.state.phase !== "perform", null, { timeout: 20000 }); } catch (e) { fail("視奏 正式打 20 秒還沒結束"); return true; }
     const r = await page.evaluate(() => ({ phase: window.__sight.state.phase, result: window.__sight.state.result, shown: !document.getElementById("s-alongResult").hidden, sight: !document.getElementById("mod-sight").hidden }));
     if (r.sight && (r.phase !== "result" || !r.result || !r.shown || !(r.result.taps > 0))) fail(`視奏 正式打完沒有練習回饋:${JSON.stringify({ phase: r.phase, shown: r.shown, taps: r.result && r.result.taps })}`);
     await page.evaluate(() => { const S = window.__sight; if (S.test) S.setBpm(S.test.bpm); });
@@ -100,6 +102,8 @@ const appCheck = async () => {
       if ((s.kind === "listen") !== document.getElementById("s-play").classList.contains("is-active")) out.push(`視奏播放鈕狀態不一致(${s.kind})`);
       if ((s.phase === "prep") !== s.timer) out.push(`視奏準備倒數不一致(${s.phase}, timer ${s.timer})`);
       if (s.drawn && !s.pending && !document.querySelector("#s-score svg")) out.push("視奏沒有譜");
+      if (s.mode && s.lanes !== (s.mode === "snare" ? 1 : 3)) out.push(`視奏 ${s.mode} 的鼓墊 ${s.lanes} 個`);
+      if (s.loading != null && (!document.getElementById("s-play").disabled || !document.getElementById("s-play").classList.contains("busy"))) out.push("整組鼓載入中,▶ 沒有進度環或還能按");
     }
   }
   return out;

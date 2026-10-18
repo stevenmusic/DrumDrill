@@ -116,7 +116,9 @@ export async function start(c){
       result: lastResult ? { ...lastResult.r, taps: lastResult.taps } : null, taps: perf ? perf.taps.length : 0, unloadPending: !!unloadTimer }; },
     get test(){ return cur && cur.test; }, get xml(){ return cur && cur.xml; }, get osmd(){ return osmd; }, get timeline(){ return cur && cur.test.tl; },
     eventsAt: b => (cur ? eventsAt(b) : []),
-    newTest, startPrep, startPerform, toggleListen, setBpm: v => setBpm(v), SS, get layout(){ return lastLayout; }, perfT0: () => (perf ? perf.t0 : null),
+    newTest, startPrep, startPerform, toggleListen, setBpm: v => setBpm(v), SS,
+    /* 測試用:正式打中馬上結束、照目前收到的敲擊出結果(Trinity 8 級一首要打很久;layout / bilingual / clip 看結果畫面用) */
+    finishNow(){ if (phase === "perform" && playKind === "perform") { playKind = null; player.stop(true); tempo.showBeat(null); finishPerform(); } }, get layout(){ return lastLayout; }, perfT0: () => (perf ? perf.t0 : null),
     get unloadMs(){ return unloadMs; }, set unloadMs(v){ unloadMs = Number(v) > 0 ? Number(v) : UNLOAD_MS; }
   };
   window.__playback = { get playing(){ return player.state.playing; } };   // human.mjs:「不在畫面上的模組沒有在播放」

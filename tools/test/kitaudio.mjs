@@ -187,6 +187,42 @@ async function run(label, limit){
 }
 
 await run("桌機", 170e6);
+
+// 8. 視奏(RSL 4 級整組鼓)載入整組鼓 → 離開視奏 60 秒後釋放(測試把等待改成 1.5 秒:__sight.unloadMs);
+//    時間到以前回來就取消;釋放後回到視奏會重新載入(▶ 外圈有進度、載完才能按)
+{
+  const n8 = bad;
+  await page.evaluate(() => { localStorage.clear(); localStorage.setItem("drumdrill-lang", "zh"); localStorage.setItem("drumdrill.v1", JSON.stringify({ onboarded: true, view: "tech", sub: { tech: "roll", exam: "tech" }, exam: { system: "rsl", grade: 4 } })); });
+  await page.reload(); await page.waitForFunction(() => window.__stageReady >= 1);
+  const A = "./js/shared/audio.js";
+  const pieces = () => page.evaluate(async A => Object.keys((await import(A)).kitStats().pieces).sort().join(","), A);
+  const toSight = async () => { await page.evaluate(() => window.__shell.showView("sight", "4")); await page.waitForFunction(() => window.__sight.state.loaded && window.__sight.state.loading == null, null, { timeout: 60000 }); };
+  await toSight();
+  const sawRing = await page.evaluate(() => document.getElementById("s-playRing") != null);
+  const p0 = await pieces();
+  if (!/kick/.test(p0) || p0 === "snare") fail(`視奏 RSL 4 級:整組鼓沒有載入(${p0})`);
+  if (!sawRing) fail("視奏的 ▶ 沒有進度環");
+  if (await page.evaluate(() => document.getElementById("s-play").disabled)) fail("視奏:整組鼓載完 ▶ 還不能按");
+  await page.evaluate(() => { window.__sight.unloadMs = 1500; window.__shell.showView("tech"); });
+  await page.waitForTimeout(700);
+  await page.evaluate(() => window.__shell.showView("sight", "4"));   // 時間到以前回來:取消
+  await page.waitForTimeout(400);
+  await page.evaluate(() => window.__shell.showView("tech"));
+  await page.waitForTimeout(1000);
+  const p1 = await pieces();   // 第二次離開才 1 秒:還在
+  if (p1 !== p0) fail(`視奏:回來又離開 1 秒(< 1.5 秒)整組鼓就被釋放了(${p1})`);
+  await page.waitForTimeout(1200);
+  const p2 = await pieces();
+  if (p2 !== "snare") fail(`視奏:離開超過等待時間,整組鼓沒有釋放(還有 ${p2})`);
+  const tech = await page.evaluate(async A => { const a = await import(A); a.ensureAudio(); return !!a.playDrum("snare", a.getCtx().currentTime + 0.05, 0.7); }, A);
+  if (!tech) fail("視奏釋放整組鼓後,技巧的小鼓不出聲");
+  // 一直沒離開的話不釋放:在視奏等 2 秒
+  await toSight();
+  await page.waitForTimeout(2000);
+  const p3 = await pieces();
+  if (!/kick/.test(p3)) fail(`視奏:回到視奏沒有重新載入整組鼓(${p3})`);
+  if (bad === n8) ok(`視奏 RSL 4 級:載入整組鼓(${p0.split(",").length} 個取樣鼓件)、離開到時間只剩小鼓、時間到以前回來不釋放、回來重新載入`);
+}
 await page.addInitScript(ua => { Object.defineProperty(Navigator.prototype, "userAgent", { configurable: true, get: () => ua }); }, IPHONE_UA);
 await run("iPhone UA", 85e6);
 if (errors.length) { bad++; console.log("✗ 錯誤:\n  " + errors.join("\n  ")); }
