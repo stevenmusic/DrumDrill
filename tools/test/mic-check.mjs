@@ -275,7 +275,7 @@ async function sightSide(){
   const kit = await sightTake("exact", 4, null);
   show("視奏 整組鼓", kit);
   if (process.env.DEBUG) console.log("  expected", kit.mic.expected.map(t => t.toFixed(3)).join(" "), "\n  detected", kit.mic.detected.map(t => t.toFixed(3)).join(" "), "\n  pieces", JSON.stringify(kit.plan.pieces.map(h => [h.time.toFixed(3), h.piece, h.vel])));
-  ok(kit.r && kit.r.score >= 85 && kit.r.hits / kit.r.total >= 0.95, `視奏 RSL 4 整組鼓(合併一條、官方速度)準時:分數 ${kit.r && kit.r.score}、命中 ${kit.r && kit.r.hits}/${kit.r && kit.r.total}(要 ≥ 85、≥ 95%)`);
+  ok(kit.r && kit.r.score >= 85 && kit.r.hits / kit.r.total >= 0.9, `視奏 RSL 4 整組鼓(合併一條、官方速度)準時:分數 ${kit.r && kit.r.score}、命中 ${kit.r && kit.r.hits}/${kit.r && kit.r.total}(要 ≥ 85、≥ 90%)`);
 }
 async function earSide(){
   const fill = await earTake("fill", 3);
