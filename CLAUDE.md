@@ -21,7 +21,7 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
   - 元素 id 加前綴:技巧 `t-`、視奏 `s-`、聽力 `e-`
 - 共用元件(`js/shared/`):`score.js`(技巧、聽力:一整行譜面 + 播放軸,看不到時延後重畫;視奏不用,考卷排法用 `js/sight/stage.js`)、`tempo.js`(速度 − / + / 滑桿 / 拍點燈號)、`landscape.js`(手機橫式)。
   **共用元件不寫死前綴**:一律接收模組自己的 `$`(`id => getElementById(前綴 + id)`)(`grep -n '"t-' js/shared/*.js` 要沒結果);
-  共用的 CSS 用 class,或在 `drum.css` 補 `#s-…`、`#e-…` 的規則,`app.css` 不動
+  共用的 CSS 用 class,或在 `drum.css` 補 `#s-…`、`#e-…` 的規則,`app.css` 不動(兩個 App 共用的規則例外:改了要兩邊同步,例如 S16 的焦點框、字級、對比)
 - 視奏(`js/sight/`,卡片 id 與流程照 PianoDrill 視奏;S8 + S9 + S10/S11 的介面):三種題目,都標「依 RSL N 級參數的練習 · 」或「依 Trinity Playback N 級參數的練習 · 」+ practiceOnly
   - RSL Debut–3 小鼓視奏:`gen.js` 出題(純函式,照 `data/exam-rsl.json` sight[g] 的白名單時值、休止符、小節數、速度;4/4 標推估;節奏格、結尾規則、混合格標練習設定;
     範圍速度隨機取整數;同種子同題、`fingerprint.js` 的歷史避免重複);單線譜、1 個鼓墊(J / F)
@@ -76,6 +76,18 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
 - **整組鼓所有權**(`js/shared/audio.js` 的 @app 區段):視奏、聽力 enter 時 `audio.holdKit(名字)`、leave 時 `audio.dropKit(名字)`;
   沒有人拿著才開始 60 秒計時,到時 `unloadKit()`(小鼓保留),計時中有人拿起來就取消(聽力 ↔ 視奏切換不釋放)。
   載入中被釋放("kit unloaded")不是失敗:在模組裡就靜靜重新載;模組記 `kitGeneration()`,變了就重新 loadKit
+- **無障礙**(S16;`js/shared/a11y.js`,`node tools/test/a11y.mjs` 檢查):
+  - 鼓譜(OSMD 的 SVG)讀不到 → 容器 `role="img"` + `aria-label`(`imgLabel(el, fn)`,fn 用 `tr()`,換語言自動重算;沒有譜時 `imgLabel(el, null)`):
+    技巧 `#t-osmd`(`score.js` 的 `label` 選項)= 標題 + 一輪的左右手(Flam / Drag、重音、多次反彈、休止)+ 反覆次數;
+    視奏 `#s-score`、聽力 `#e-osmd` = `describeSpec`(N 小節小鼓譜 / 整組鼓譜、拍號、速度、每小節的簡述);聽力選項按鈕「選項 A:…」帶譜的說明;圖例(`drawLegend`)= 鼓件清單
+  - 播報只用一個 `aria-live="polite"` 區(`#srLive`,`announce(text)`):播放 / 停止、準備與看譜開始(幾秒)/ 時間到、正式打 / 回打開始、結果摘要、模擬考結束 / 中止(`mock.js`);同一瞬間的幾句接在一起念(不互相蓋掉);
+    **不播報**倒數的每一秒、預備拍的每一下、每一句的進度、載入百分比(模組的 `say(fn, …, quiet)`);卡片、結果不要再加 `aria-live` / `role=status`
+  - 鼓墊 `aria-label` 帶按鍵(「小鼓(鍵盤 J / F)」)+ `aria-keyshortcuts`;▶ 播放中 `aria-label` = 停止;分段鈕、級數格、選擇器的列 = `role="group"` + 名稱 + `aria-pressed`
+  - 外框(main.js 共用部分,PianoDrill 同一份):分頁列 tablist / tab + `<main>` tabpanel、roving tabindex、方向鍵 / Home / End;第一次的問題:焦點進去、Tab 只在對話框 + 頂欄右邊的主題 / 語言鈕之間轉、Esc = 自由練習、背景(內容、分頁列)inert、關掉回原處;重畫一排按鈕時焦點留在同一顆(`keepFocus`);
+    鍵盤聚焦在按鈕上時空白鍵 / Enter 是按那個按鈕(`:focus-visible` 判斷;滑鼠點過的照舊是播放)
+  - `app.css`(兩邊同一份):`:focus-visible` 焦點框;字級代幣是 rem(根字級 17px,iOS 用 `-apple-system-body` 跟著系統文字大小;內文最多 2 倍、控制項最多 1.3 倍);
+    新的字級用 `var(--fs-…)`,不要寫死 px 也不要用 rem 當長度;控制項高度用 `min-height`、放不下換行不截字;分頁列、鼓墊的字級固定(不放大,跟 iOS 的分頁列一樣)。`layout.mjs` 有「字級 200%」的狀態
+  - 文字對比 ≥ 4.5:1(大字 3:1;深淺兩種主題,`a11y.mjs` 量實際背景);改顏色代幣要兩邊同步並看截圖
 - 中英雙語(預設英文,切過就記住):外框字串 `js/shared/i18n.js`、技巧 `js/tech/strings.js`(前綴 `tech.`)、視奏 `js/sight/strings.js`(前綴 `sight.`)、聽力 `js/ear/strings.js`(前綴 `ear.`);程式產生的文字用 `tr("中", "EN")`
 - 用詞:「檢定」「考試」,不用「考級」(只有 App Store 關鍵字可以放)
 - localStorage:`drumdrill.v1`(外框)、`drumdrill.tech.v1`(技巧:熟練度、速度、`log`、`goal`、`mockOneBar`、`mockRun`)、`drumdrill.sight.v1`(視奏:pick、節拍器 / 拍點開關、`bpmOverride` 每一級各自的練習速度(`rsl-3`、`trinity-4`)、
@@ -133,7 +145,7 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
     `checks/pattern.mjs`(RSL 練習型)、`checks/gen-sight.mjs`(視奏出題器:每級 1000 個種子)、`checks/sight-meter.mjs`(視奏拍點時間軸、指紋)、`checks/appsamples.mjs`(App 取樣數)、版本指紋、`sync.mjs`(跟 PianoDrill 的共用檔案;`PIANODRILL=…`)
   - 瀏覽器(`cd tools/test && npm i` 一次;Playwright):`node layout.mjs`(19 種尺寸)、`node bilingual.mjs`(中英版面)、`node clip.mjs`(文字被切掉)、
     `node human.mjs 150 3`(模擬真人操作)、`node playback.mjs`(播放排程與停止)、`node pad.mjs`(觸控鼓墊)、
-    `node notation.mjs`(OSMD 實際畫譜:40 個打法、鼓組樣張、視奏小鼓譜與整組鼓譜)、`node kitaudio.mjs`(整組鼓取樣;視奏、聽力離開 60 秒釋放、互相切換不釋放、載入訊息不蓋結果);
+    `node notation.mjs`(OSMD 實際畫譜:40 個打法、鼓組樣張、視奏小鼓譜與整組鼓譜)、`node a11y.mjs [尺寸]`(無障礙:譜的說明、名稱、重複 id、aria-live、群組與分頁、焦點、對話框、播報、對比)、`node kitaudio.mjs`(整組鼓取樣;視奏、聽力離開 60 秒釋放、互相切換不釋放、載入訊息不蓋結果);
     layout / bilingual / clip / human 都有模擬考的狀態(`mockTour`:技巧 RSL 3、視奏 RSL 3 / 4 與 Trinity 4、聽力 RSL 4 與 Trinity 4 × 進行中 / 結果 / 中止;human 的「模擬考中途中止」);
     layout / bilingual / clip / human 都有視奏、聽力的狀態(視奏:RSL 0、3、4、5、6,Trinity 0、4、8 × 準備 / 作答 / 結果 / 正確版本;Trinity 一首很長,測試用 `__sight.finishNow()` 提早出結果;
     聽力:human 的「照節奏回打」要「準」);playback.mjs 有視奏、聽力(換語言不停播、Trinity 空檔只有拍點)

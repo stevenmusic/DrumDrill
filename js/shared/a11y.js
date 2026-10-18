@@ -36,15 +36,17 @@ export function relabelAll(){
 // 換語言:等每個模組的 relang() 都跑完(標題等文字換好)再重算
 onLang(() => queueMicrotask(relabelAll));
 
-/* ── aria-live 區:同一句話連續講兩次也要念(先清空、下一格再寫)── */
-let liveTimer = 0;
+/* ── aria-live 區:同一句話連續講兩次也要念(先清空、下一格再寫);
+   同一瞬間(60ms 內)的幾句接在一起念(例如視奏的「打完了…」+ 模擬考的「模擬考結束」),不互相蓋掉 ── */
+let liveTimer = 0, livePending = [];
 export function announce(text){
   if (typeof document === "undefined") return;
   const el = document.getElementById("srLive");
   if (!el || !text) return;
   clearTimeout(liveTimer);
   el.textContent = "";
-  liveTimer = setTimeout(() => { el.textContent = text; }, 60);
+  if (!livePending.includes(text)) livePending.push(text);
+  liveTimer = setTimeout(() => { el.textContent = livePending.join(" "); livePending = []; }, 60);
 }
 
 /* ── 時值名稱 ── */

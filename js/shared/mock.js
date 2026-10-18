@@ -8,6 +8,7 @@
    - 結果只有各項的練習回饋(節奏吻合度、完成與否):不算總分、不出現等第字眼、不換算官方分數;practiceOnly
    不寫死前綴:元素用模組自己的 $ */
 import { tr, pairText, T } from "./i18n.js";
+import { announce } from "./a11y.js";
 
 export function createMock({ store, save, onAbort }){
   const m = { state: "idle", reason: null, id: 0, data: null, mark: null };
@@ -24,11 +25,12 @@ export function createMock({ store, save, onAbort }){
   m.begin = (data, mark) => { m.id++; m.state = "run"; m.reason = null; m.data = data; m.mark = mark ? { sys: mark.sys, grade: mark.grade } : null; store.mockRun = { at: Date.now(), ...(mark || {}) }; save(); return m.id; };
   m.alive = id => m.state === "run" && m.id === id;
   /* 正常結束(做完最後一項;視奏正式打中按停止也到這裡,記「中途停止」):標記拿掉。按「停止模擬考」是 close() */
-  m.finish = () => { m.id++; m.state = "result"; delete store.mockRun; save(); };
+  m.finish = () => { m.id++; m.state = "result"; delete store.mockRun; save(); announce(tr("模擬考結束,結果在模擬考卡。", "Mock exam finished; see the results on the mock exam card.")); };
   /* 中止(切分頁、背景、重新整理、旋轉、換考試):模組停掉播放與計時;標記留著,說明顯示過才拿掉(重新整理之後也看得到) */
   m.abort = reason => {
     if (m.state !== "run") return false;
     m.id++; m.state = "aborted"; m.reason = reason || "leave";
+    announce(tr("模擬考已中止。", "Mock exam stopped."));   // 無障礙:中止也要聽得到(切分頁、載入失敗…)
     try { onAbort && onAbort(m.reason); } catch (e) { console.error(e); }
     return true;
   };

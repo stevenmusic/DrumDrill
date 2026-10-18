@@ -7,7 +7,7 @@
 //  4. 子項目分段鈕、級數格、選擇器的列 = role="group" + 名稱,按鈕有 aria-pressed;分頁列 tablist / tab(只有一個 aria-selected、只有它 tabindex=0)
 //  5. 焦點:沒有 tabindex > 0;Tab 走過的元素都看得到、有焦點框(:focus-visible 的 outline);分頁列 ← → 換分頁
 //  6. 對話框(第一次的問題):打開時焦點在裡面、Tab 不跑出去、Esc 關掉、焦點回到分頁列
-//  7. 鼓墊的名稱有按鍵;播放 / 準備 / 結果會寫進 #srLive
+//  7. 鼓墊的名稱有按鍵;播放 / 準備 / 結果、模擬考結束 / 中止會寫進 #srLive(模擬考:技巧 RSL 3 進行中 / 結果 / 中止也跑 1–4、8)
 //  8. 文字對比(深淺兩種主題):一般大小的字 ≥ 4.5:1(大字 ≥ 3:1;停用的按鈕、樂譜紙上的字不算)→ 列出不足的地方
 // 用法:node tools/test/a11y.mjs [尺寸,預設 iphone-390](例如 desktop)
 import { open } from "./harness.mjs";
@@ -164,8 +164,8 @@ await page.reload(); await wait(() => window.__stageReady >= 1);
 await page.waitForTimeout(300);
 {
   const st = "對話框";
-  const inDlg = () => ev(() => !!document.activeElement.closest("#onboard"));
-  if (!(await inDlg())) fail(st, "打開時焦點不在對話框裡");
+  const inDlg = () => ev(() => !!document.activeElement.closest("#onboard, .header-right"));   // 頂欄右邊的主題 / 語言鈕在對話框上面,也在焦點循環裡
+  if (!(await ev(() => !!document.activeElement.closest("#onboard")))) fail(st, "打開時焦點不在對話框裡");
   for (let i = 0; i < 8; i++) { await page.keyboard.press("Tab"); if (!(await inDlg())) { fail(st, `Tab 第 ${i + 1} 下跑出對話框`); break; } }
   await page.keyboard.press("Shift+Tab"); if (!(await inDlg())) fail(st, "Shift+Tab 跑出對話框");
   if (!(await ev(() => document.querySelector("main").inert))) fail(st, "對話框打開時背景不是 inert");
@@ -273,12 +273,31 @@ await tabWalk("聽力 Tab");
 for (const p of ["tech", "sight", "ear"]) { await ev(p => window.__shell.showView("exam", p), p); await page.waitForTimeout(500); await audit(`檢定 ${p}`); }
 await tabWalk("檢定 Tab");
 
+// ── 模擬考(技巧 RSL 3):進行中 / 結果 / 中止的畫面;結束與中止寫進 #srLive ──
+{
+  await ev(() => { window.__shell.setExam("rsl", 3); window.__shell.showView("exam", "tech"); }); await page.waitForTimeout(400);
+  await ev(() => document.getElementById("t-mockBtn").click()); await page.waitForTimeout(700);
+  await audit("模擬考 進行中");
+  await ev(() => window.__tech.mockFinishRun());
+  for (let i = 0; i < 8 && (await ev(() => window.__tech.state.mock)) === "run"; i++) { await ev(() => window.__tech.mockNext()); await page.waitForTimeout(200); }
+  await page.waitForTimeout(300);
+  if (!/模擬考結束/.test(await ev(() => document.getElementById("srLive").textContent))) fail("模擬考 結果", "#srLive 沒有寫模擬考結束");
+  await audit("模擬考 結果");
+  await ev(() => document.getElementById("t-mockBtn").click()); await page.waitForTimeout(300);
+  await ev(() => window.__shell.showView("tech")); await page.waitForTimeout(300);
+  if (!/模擬考已中止/.test(await ev(() => document.getElementById("srLive").textContent))) fail("模擬考 中止", "#srLive 沒有寫模擬考已中止");
+  await ev(() => window.__shell.showView("exam", "tech")); await page.waitForTimeout(400);
+  await audit("模擬考 中止");
+  await ev(() => document.getElementById("t-mockClose").click()); await page.waitForTimeout(200);
+}
+
 // ── 淺色主題:對比 ──
 await ev(() => window.__shell.showView("tech", "flam")); await techReady();
 await page.click("#themeToggle"); await page.waitForTimeout(300);
 await audit("淺色 技巧", { tech: true });
 await ev(() => window.__shell.showView("exam", "tech")); await page.waitForTimeout(400); await audit("淺色 檢定");
 await eGo("rsl", 4, "fill"); await audit("淺色 聽力");
+await ev(() => { window.__shell.setExam("rsl", 4); window.__shell.showView("sight", "4"); }); await sightReady(); await audit("淺色 視奏", { sight: true });
 await page.click("#themeToggle"); await page.waitForTimeout(200);
 
 for (const e of errors) fail("console", e);

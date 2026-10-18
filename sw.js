@@ -12,7 +12,7 @@
 const APP = "drumdrill";
 // @app-end
 /*@precache-begin*/
-const CACHE = APP + "-app-29d3fe64";
+const CACHE = APP + "-app-b356d2d2";
 const PRECACHE = [
   "./",
   "manifest.webmanifest",
@@ -24,14 +24,14 @@ const PRECACHE = [
   "licenses.html",
   "privacy.html",
   "support.html",
-  "css/app.css?v=34d0b6b5e9",
-  "css/drum.css?v=d28bf448b6",
+  "css/app.css?v=fcd519dc8e",
+  "css/drum.css?v=31d6aea2d3",
   "vendor/opensheetmusicdisplay.min.js?v=4bfeb3d01c",
   "js/ear/app.js?v=419a1804d4",
   "js/ear/gen.js?v=ae372fb41e",
   "js/ear/strings.js?v=68aadd7791",
-  "js/main.js?v=1a7dff449a",
-  "js/shared/a11y.js?v=3f666bf940",
+  "js/main.js?v=642dacac7e",
+  "js/shared/a11y.js?v=a88a3682ab",
   "js/shared/audio.js?v=453f7237f3",
   "js/shared/examdata.js?v=48f1b46bf2",
   "js/shared/examview.js?v=b4959afa11",
@@ -41,7 +41,7 @@ const PRECACHE = [
   "js/shared/kitnotation.js?v=65e0d6b2cb",
   "js/shared/landscape.js?v=8ab1bab3eb",
   "js/shared/legend.js?v=2a0d16776c",
-  "js/shared/mock.js?v=479cfea6fb",
+  "js/shared/mock.js?v=2fe1efa3e4",
   "js/shared/onsets.js?v=d8df0b9ef2",
   "js/shared/pad.js?v=134cf8c3b2",
   "js/shared/playbackgen.js?v=25e49e3c09",
