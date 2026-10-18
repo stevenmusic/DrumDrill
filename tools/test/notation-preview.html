@@ -3,12 +3,13 @@
 <!-- ?n=1,2,3:基本打法(js/tech/notation.js),跟 PAS 官方表對照;?p=E4 換單線譜的位置
      ?kit=all:鼓組記譜樣張(js/shared/kitnotation.js;每個鼓件 × 每種修飾、拍號、連音、力度、斜線、單線譜)+ 圖例(js/shared/legend.js)
      ?kit=pieces / grooves / meters / tuplets / dyn / slash / line1、樣張 id、鼓件 id(逗號分開);&lang=zh|en 換語言
-     ?playback=all(或 0,3,8)&per=2&seed=1:Trinity Playback 產生器(js/shared/playbackgen.js)每一級畫幾題 -->
+     ?playback=all(或 0,3,8)&per=2&seed=1:Trinity Playback 產生器(js/shared/playbackgen.js)每一級畫幾題
+     ?rslkit=4,5:RSL 整組鼓視奏(js/shared/kitgen.js);?fill=0..8:RSL 聽力 Fill + 干擾選項;?groove=0..8:RSL 聽力 Groove(js/ear/gen.js);&per=&seed= 同上 -->
 <script src="../../vendor/opensheetmusicdisplay.min.js"></script>
 <script type="module">
 const Q = new URLSearchParams(location.search);
 /* ?n=1,2,3 = PAS 打法;?pattern=rsl-7-A(或 rsl-7 = 整級、可以逗號分隔多個)= RSL 的「依大綱時值」練習型(App 排的,不是官方譜),跟 PAS 官方表對照左右手、重音 */
-if (Q.get("kit") != null || Q.get("playback") != null) {
+if (["kit", "playback", "rslkit", "fill", "groove"].some(k => Q.get(k) != null)) {
   await import("./notation-preview-kit.mjs");
 } else {
   const { RUDIMENTS, pattern, strokes } = await import("../../js/tech/rudiments.js");

@@ -9,7 +9,8 @@
 //     不碰到力度、漸強線、重音、+、連桿、符桿、其他符頭與補畫記號(兩種縮放:0.8 與 1.3)
 //  3. 折疊機 280 寬:樣張不超出紙張、沒有橫向捲動;圖例中英版面一樣(每一格的位置、大小相同)、出處小字最多兩行、沒有 undefined
 //  4. Trinity Playback 產生器(notation-preview.html?playback=all):每一級 2 題做跟樣張一樣的檢查;320 寬不超出紙張
-// 截圖存到 tools/test/out/notation/(基本打法、樣張 1000 寬 + 每一張、280 寬中英、playback-0.png … playback-8.png)
+//  5. RSL 出題器(?rslkit=4,5&fill=0..8&groove=0..8):整組鼓視奏、聽力 Fill(含干擾選項)、Groove,跟樣張一樣的檢查;320 寬不超出紙張
+// 截圖存到 tools/test/out/notation/(基本打法、樣張 1000 寬 + 每一張、280 寬中英、playback-0.png … playback-8.png、rslkit-4/5.png、fill-0…8.png、groove-0…8.png)
 // 用法:node tools/test/notation.mjs
 import { open } from "./harness.mjs";
 import fs from "node:fs";
@@ -153,8 +154,13 @@ async function kitPage(width, lang, shots, { kit = "all", zoom = null, query = "
     const cellSrc = Object.fromEntries([...document.querySelectorAll("#legend5 .kl-cell, #legend1 .kl-cell")].map(c => [c.closest(".kit-legend").id + ":" + c.dataset.piece, c.querySelector(".kl-src").textContent]));
     return { out, legend, overflow, cellOverflow, srcIssues, cellSrc };
   }, { GLYPH });
-  if (shots === "playback") {
-    for (const id of await page.$$eval("[id^=pb-]", els => els.filter(e => !e.dataset.sample).map(e => e.id))) await (await page.$("#" + id)).screenshot({ path: OUT + `playback-${id.slice(3)}.png` });
+  if (shots === "groups") {
+    // 出題器每一級一個框:pb-N → playback-N.png、rk-N → rslkit-N.png、fill-N → fill-N.png、gr-N → groove-N.png
+    const NAME = { pb: "playback", rk: "rslkit", fill: "fill", gr: "groove" };
+    for (const id of await page.$$eval("#out > div[id]", els => els.filter(e => !e.dataset.sample).map(e => e.id))) {
+      const [, pre, g] = /^(\w+)-(\d)$/.exec(id) || [];
+      if (NAME[pre]) await (await page.$("#" + id)).screenshot({ path: OUT + `${NAME[pre]}-${g}.png` });
+    }
   } else if (shots) {
     await page.screenshot({ path: OUT + `kit-${width}${lang ? "-" + lang : ""}.png`, fullPage: true });
     if (shots === "each") for (const id of res.out.map(o => o.id)) { const el = await page.$(`[data-sample="${id}"]`); if (el) await el.screenshot({ path: OUT + `sample-${id}.png` }); }
@@ -209,7 +215,7 @@ async function kitPage(width, lang, shots, { kit = "all", zoom = null, query = "
   // 4. Trinity Playback 產生器(js/shared/playbackgen.js):每一級 2 題,跟樣張一樣的檢查(符頭數、形狀、高度、補畫記號、閉 HH、連音組數、開 HH 的 o、鬼音括號、不超出紙張)
   //    截圖 playback-0.png … playback-8.png(1000 寬);再用 320 寬檢查不超出紙張、沒有橫向捲動
   const n0 = bad;
-  const r = await kitPage(1000, "en", "playback", { kit: "", query: "&playback=all&per=2&seed=1" });
+  const r = await kitPage(1000, "en", "groups", { kit: "", query: "&playback=all&per=2&seed=1" });
   for (const o of r.out) { if (o.err) fail(`Playback ${o.id}:${o.err}`); for (const i of o.issues) fail(`Playback ${o.id}:${i}`); }
   for (const e of r.errors) fail("Playback console:" + e);
   if (r.overflow) fail(`Playback 1000 寬有橫向捲動 ${r.overflow}`);
@@ -218,6 +224,25 @@ async function kitPage(width, lang, shots, { kit = "all", zoom = null, query = "
   for (const e of n.errors) fail("Playback 320 寬 console:" + e);
   if (n.overflow) fail(`Playback 320 寬有橫向捲動 ${n.overflow}`);
   if (bad === n0) ok(`Playback 產生器 ${r.out.length} + ${n.out.length} 題:OSMD 畫出來沒有錯誤,符頭數、形狀、高度(${r.out.reduce((s, o) => s + (o.checked || 0), 0)} 個音)、補畫記號、連音組數、開 HH 的 o 都對;320 寬不超出紙張`);
+}
+
+{
+  // 5. RSL 出題器:整組鼓視奏(js/shared/kitgen.js;4、5 級各 2 題,最後 2 小節斜線)、聽力 Fill(js/ear/gen.js;每一級 1 題 + 干擾選項,單線譜)、
+  //    Groove(每一級 1 題):跟樣張一樣的檢查(符頭數、形狀含斜線、高度、補畫記號、閉 HH 的 +、連音組數、開 HH 的 o、不超出紙張)
+  //    截圖 rslkit-4/5.png、fill-0…8.png、groove-0…8.png(1000 寬);再用 320 寬(換種子)檢查不超出紙張、沒有橫向捲動
+  const n0 = bad;
+  const q = "&rslkit=4,5&fill=0..8&groove=0..8&seed=1";
+  const r = await kitPage(1000, "en", "groups", { kit: "", query: q });
+  for (const o of r.out) { if (o.err) fail(`RSL ${o.id}:${o.err}`); for (const i of o.issues) fail(`RSL ${o.id}:${i}`); }
+  for (const e of r.errors) fail("RSL console:" + e);
+  if (r.overflow) fail(`RSL 1000 寬有橫向捲動 ${r.overflow}`);
+  const want = 2 * 2 + [2, 2, 2, 2, 3, 3, 3, 3, 3].reduce((a, b) => a + b, 0) + 9;
+  if (r.out.length !== want) fail(`RSL 題目畫了 ${r.out.length} 張(應該 ${want})`);
+  const n = await kitPage(320, "zh", false, { kit: "", query: "&rslkit=4,5&fill=0..8&groove=0..8&per=1&seed=9" });
+  for (const o of n.out) { if (o.err) fail(`RSL 320 寬 ${o.id}:${o.err}`); for (const i of o.issues) fail(`RSL 320 寬 ${o.id}:${i}`); }
+  for (const e of n.errors) fail("RSL 320 寬 console:" + e);
+  if (n.overflow) fail(`RSL 320 寬有橫向捲動 ${n.overflow}`);
+  if (bad === n0) ok(`RSL 出題器 ${r.out.length} + ${n.out.length} 張(整組鼓視奏、Fill 含干擾選項、Groove):OSMD 畫出來沒有錯誤,符頭數、形狀(含斜線)、高度(${r.out.reduce((s, o) => s + (o.checked || 0), 0)} 個音)、補畫記號、連音組數、開 HH 的 o 都對;320 寬不超出紙張`);
 }
 
 console.log(bad ? `✗ ${bad} 項問題` : `✓ 全部通過(截圖在 ${OUT})`);

@@ -1,6 +1,6 @@
 # 出題器(產生器)設計說明
 
-> 這份寫的是 App 自己的出題設計(不是官方內容)。官方要求一律來自 `data/exam-*.json`(逐項有頁碼,`docs/sources/*.md` 逐頁核對過);
+> 這份寫的是 App 自己的出題設計(不是官方內容):§1 Trinity Playback、§2 RSL 整組鼓視奏、§3 RSL 聽力、§4 共用的播放事件、§5 RSL 的測試。官方要求一律來自 `data/exam-*.json`(逐項有頁碼,`docs/sources/*.md` 逐頁核對過);
 > 這裡的「拍型、組合方式、機率」都是 **練習設定**,大綱沒寫、App 先這樣解讀的是 **推估**。
 
 ## 1. Trinity Rock & Pop Playback 譜(`js/shared/playbackgen.js`;STAGES.md S10 + S11)
@@ -89,3 +89,113 @@
   1 級起每一句單獨的譜開頭有力度(而且跟整份譜在那裡的力度一樣);也檢查「檢查本身抓得到錯」(高一級的題目當低一級檢查一定有錯;同一拍內短音的連結線、一拍內 4t3 + 8t3)。
 - `tools/test/notation-preview.html?playback=all&per=2&seed=1`:每一級畫幾題;`node tools/test/notation.mjs` 用 OSMD 實際畫出來檢查(符頭、高度、記號、320 寬),
   截圖 `tools/test/out/notation/playback-0.png` … `playback-8.png`。
+
+## 2. RSL 4–5 級整組鼓視奏(`js/shared/kitgen.js`;STAGES.md S9)
+
+### 2.1 介面
+
+- `genRslKit(spec, seed, grade)` → `{ grade, seed, time, bars, bpm, bpmRange, develop:{ from, bars }, cyms, spec, measures, events, lenBeats, notes, src }`
+  - `spec` = `data/exam-rsl.json` 的 `sight[4]` / `sight[5]`(`type:"kit"`;小鼓視奏的參數會丟錯);同一個 spec + seed → 同一題(mulberry32,跟 playbackgen 同一個寫法)。
+  - 輸出的 `spec` 直接給 `kitnotation.scoreXML`(五線、手 / 腳兩個聲部);自由發展的小節是 `{ slash:true }`(每拍一個斜線符頭)。
+  - `events` = `kitevents.toEvents(spec, { bpm })`;自由發展的小節不出聲(播放器只打拍點)。
+  - `notes`:說明 key,文字在 `NOTES[key].text`,`kind` = `assumed` / `practice`(同 Playback)。
+- 也匯出 `maskVoice`(一拍 = 四個十六分格子 → 寫法)、`rng` / `wpick` / `randInt`(聽力的 Groove 共用)。
+
+### 2.2 白名單對照
+
+| 項目 | 官方 | 頁碼 | 出題器 |
+|---|---|---|---|
+| 長度 | 8 小節,含 2 小節自由發展(two bar development) | p.48、53 | 8 小節;第 7–8 小節是斜線(**推估**:位置大綱沒寫,NOTES.developEnd;資料檔 `develop.pos` assumed) |
+| 拍號 | 4/4 | p.48、53 | 4/4 |
+| 時值 | 四分、附點四分、八分、附點八分、十六分 | p.48、53 | 每一拍照 `MASK_CELL` 寫(`4`、`8 8`、`8. 16`、`16 8.`、`16 16 8`、`8 16 16`、`16 8 16`、`16 16 16 16`、`r8 8`、`r8 16 16`、`r4`)+ 第 1、3 拍的 `4. 8`;**附點八分只出現在「8. 16」「16 8.」**(同一拍配十六分) |
+| 休止符 | 四分、八分 | p.48、53 | 只有 `r4`、`r8`(不會出現二分、全休止符、十六分休止符:每個聲部每一拍都自己寫休止符,不交給 kitnotation 補) |
+| 鼓件 | 整組鼓(full kit) | p.48、53 | HH、小鼓、大鼓、高 / 中 / 落地鼓、Ride、Crash(**推估**:大綱沒列,NOTES.kitPieces)。不用 Ride 碗、cross stick、腳踩 HH |
+| 速度 | 4 級 ♩=80–90、5 級 ♩=80–120 | p.48、53 | 範圍內隨機取整數(練習設定,NOTES.tempoRandom) |
+| 記號 | 大綱沒列 | — | 不寫力度、重音、開閉 HH、鬼音、Flam / Drag、滾奏、連結線(NOTES.noMarks) |
+
+### 2.3 出題設計(練習設定)
+
+- **段落**:前段第 1–4 小節(律動,第 4 小節末過門)、後段第 5–6 小節(第 5 小節第 1 拍 Crash,第 6 小節末過門接自由發展)、第 7–8 小節自由發展。
+- **手**:鈸一段固定(前段 70% HH;後段一半機會換另一個),節奏型八分(大多)、四分、十六分(只在 5 級、♩ ≤ 100);小鼓在第 2、4 拍;
+  每小節 35%(4 級)/ 45%(5 級)機會多一下小鼓(第 4 拍的反拍或第 4 個十六分、第 2 拍的第 4 個十六分、第 3 拍的反拍)。第 1 小節第 1 拍 40% 是 Crash。
+- **大鼓**:兩拍一組的節奏格(`KICK_HALF`;前半一定有第 1 拍),同一段的下一小節每半 30% 換;5 級的權重比較偏切分。
+- **過門**:前段最後一小節 1 拍 / 2 拍 / 整小節,後段 1 或 2 拍;每拍一格(`FILL`,第一拍一定從拍點開始),鼓從小鼓(或高音鼓)往下走,
+  四個音以上的格子有時候分兩個鼓;有拍點的格子 35% 加大鼓。
+- 每一小節手、腳都至少一個音(腳整小節空白會變成全休止符,不在白名單)。
+
+## 3. RSL 聽力(`js/ear/gen.js`;STAGES.md S12、決定 6)
+
+### 3.1 介面
+
+- `genFill(spec, seed, grade)` → `{ kind:"fill", time, bars:1, bpm, cells, pool, spec(lines:1), measures, events, lenBeats, options, plays, countInBars, values, rests, notes, src }`
+- `distractors(fill, n = options − 1, seed)` → 干擾選項(同格式,另加 `changed` = 改了第幾拍);`fillOptions(fill, seed)` → `{ options(洗牌), answer }`
+- `genGroove(spec, seed, grade)` → `{ kind:"groove", bars:2, bpm, pieces, spec, measures, events, lenBeats, repeat, playEvents, playBeats, styleChoices, styleOptions:null, notes, src }`
+- `spec` = `ear[g]`(也可以直接給 `ear[g].fill` / `ear[g].groove`);級數一定要給(Fill 的格子權重照級數)。
+
+### 3.2 Fill 白名單對照(全部 1 小節、只用小鼓、♩=70、聽兩次、每次 1 小節預備拍)
+
+| 級數 | 官方時值 | 官方休止符 | 選項數 | 頁碼 |
+|---|---|---|---|---|
+| Debut | 四分、八分 | — | 2 | p.31 |
+| 1 | 四分、八分 | 四分 | 2 | p.35 |
+| 2 | 四分、八分、十六分 | 四分 | 2 | p.39 |
+| 3 | 四分、八分、八分三連音、十六分 | 四分 | 2 | p.43 |
+| 4 | 四分、八分、八分三連音、附點八分、十六分 | — | 3 | p.48 |
+| 5 | 同 4 級 | — | 3 | p.53 |
+| 6 | 「四分到十六分六連音的所有時值與組合」 | 四分、八分 | 3 | p.59 |
+| 7 | 同上 | 四分、八分、十六分 | 3 | p.64 |
+| 8 | 同上 | 四分、八分、十六分 | 3 | p.69 |
+
+- 6–8 級:**依官方範圍**,App 用 `RANGE_VALUES` = 四分、八分、八分三連音、十六分、十六分六連音(主持人決定;NOTES.fillRange,畫面標「推估」)。
+- 拍號 4/4:**推估**(大綱沒寫;NOTES.fillTime)。單線譜:App 的選擇(NOTES.fillLine;圖例的單線小鼓格也會標)。
+- **待核對**:`data/exam-rsl.json` 的 `conflicts`(id 1)寫「5 級過門速度照大綱 p.52 ♩=90」,但 `ear[5].fill.bpm` 與 docs/sources §5.2 是 70。出題器照 `fill.bpm`(70,主持人指定全部級數 70)。
+
+### 3.3 Fill 出題設計(練習設定)
+
+- 一拍一格(`FILL_CELLS`):`4`、`8 8`、`16 16 16 16`、`8 16 16`、`16 16 8`、`16 8 16`(3 級起)、`8t3 ×3`、`8. 16` / `16 8.`(4、5 級)、`16t6 ×6`(6 級起)、
+  `r4`(有四分休止符的級數)、`r8 8`、`8 r8`、`r8 16 16`、`16 16 r8`(6 級起)、`r16 16 8`、`r16 16 16 16`、`8 r16 16`、`16 r16 8`(7 級起);
+  格子裡每個時值 / 休止符都要在這一級的白名單裡。連音一組一拍、從拍點開始。
+- 一小節:至少 4 個音、整拍休止最多一個、四拍不全一樣;每題至少一格用到這一級最該練的時值(Debut–1 八分、2 十六分、3 八分三連音、4–5 附點八分、6–8 十六分六連音)。
+- **干擾選項**:每個只改一拍成這一級另一個合法的格子(音數相近的優先);整小節的擊打時間跟答案不同、彼此也不同
+  (`4` 換 `8 r8` 這種聽起來一樣的不算);先找也合乎一小節規則的,找不到才放寬(NOTES.distractor)。
+
+### 3.4 Groove 白名單對照(2 小節;播放時兩小節播兩遍 = **推估**,資料檔 `repeat` assumed、NOTES.grooveRepeat)
+
+| 級數 | 官方鼓件 | 速度 | 頁碼 |
+|---|---|---|---|
+| Debut、1 | hi-hat、小鼓、大鼓 | 80 | p.31、35 |
+| 2 | + hi-hat 開 / 閉 | 80 | p.39 |
+| 3 | + crash | 80 | p.43 |
+| 4 | + ride、ride 碗 | 80–120 | p.48 |
+| 5 | + cross stick | 80–120 | p.53 |
+| 6、7 | 整組鼓 | 80–140 | p.59、64 |
+| 8 | 整組鼓 | 80–160 | p.69 |
+
+- 6–8 級「整組鼓」= HH(開閉、腳踩)、小鼓、cross stick、大鼓、Ride、Ride 碗、Crash、三個筒鼓(**推估**,NOTES.kitPieces)。
+- 拍號 4/4:**推估**(NOTES.grooveTime)。速度在範圍內隨機取整數(練習設定)。
+- 4–8 級的「說出風格」**不出**:風格清單大綱沒寫(`styleOptions:null`、NOTES.noStyle)。
+- 節奏型(練習設定,NOTES.grooveDesign):鈸(HH;4 級起也可能 Ride 或 Ride 碗)八分 / 四分 / 十六分(3 級起、♩ ≤ 110)、小鼓 2、4 拍(5 級起有時候 cross stick)、
+  大鼓兩拍一組(級數越高格子越多);2 級起開 HH 一次(反拍八分,下一個 HH 寫閉);3 級起第 1 拍 Crash、偶爾多一下小鼓;
+  6–8 級第 2 小節最後一拍有時候筒鼓、Ride 律動有時候腳踩 HH 在 2、4 拍。不寫力度、重音、鬼音、裝飾音。
+
+## 4. 播放事件(`js/shared/kitevents.js`)
+
+- `toEvents(spec, { bpm, dyn = "mf" })` → `[{ beat, piece, vel, m, grace?, accent?, ghost? }]`:RSL 整組鼓視奏、RSL 聽力、Trinity Playback(`chart.spec`、`phraseSpec`)共用,給 `player.play({ events })`。
+- 音量(**練習設定**,EVENT_NOTES.velocity):pp .25 / p .4 / mp .55 / mf .7 / f .85 / ff 1.0(跟 `player.js` 的 `DYN_VEL` 一樣,gen-kit.mjs 核對);
+  漸強漸弱從開始的力度直線變到結束位置的下一個力度記號(後面沒有就變一級);sfz 1.0;重音 +0.2;幽靈音 ×0.4。
+- Flam / Drag:裝飾音照技巧模組(`js/tech/app.js` schedulePlay)在主音前 min(32 ms, 1/10 拍)(Drag 兩下),音量 = 那裡的力度 × 0.5,事件帶 `grace:true`;
+  評分前用 `hitsOnly(events)` 拿掉。拍子單位是四分音符,所以裝飾音的提前量跟 bpm 有關(改速度要重算)。
+- 手打 HH 寫了 open → `hhOpen`、closed → `hhClosed`;連結線接續的音、休止符、斜線小節不出聲。`repeatEvents(events, lenBeats, times)`:重複播。
+
+## 5. 測試(RSL)
+
+- `tools/test/checks/gen-kit.mjs`(verify 會跑;`KIT_SEEDS=100` 少跑一點):4、5 級各 1000 個種子。手抄大綱表(不從資料檔複製,反過來跟資料檔核對);
+  時值 / 休止符 / 鼓件白名單、附點八分配十六分、每小節每聲部 4 拍(自己的表 + `auditXML`)、MusicXML 收到的時值也在白名單、斜線剛好最後 2 小節(MusicXML 8 個斜線符頭)、
+  事件 = MusicXML(`checks/xmlevents.mjs` 只看 MusicXML 算拍位與鼓件)、自由發展不出聲、速度整數在範圍、同種子同題、白名單每個元素都出現過;
+  toEvents × Trinity Playback 每級 200 題(整份 + 每一句;連音、連結線、換拍號、裝飾音數量與提前量)、DYN_VEL = player.js、漸強漸弱 / sfz / 重音 / 幽靈音方向;
+  竄改(二分音符、十六分休止符、Ride 碗、附點八分跨拍、自由發展不在最後、事件錯位、自由發展出聲、4 級 ♩=95、重音、腳整小節空白;5 級快速題當 4 級檢查)一定抓到。
+- `tools/test/checks/gen-ear.mjs`(verify 會跑;`EAR_SEEDS=100`):Debut–8 級各 1000 個種子。Fill:手抄白名單、♩=70、單線只有小鼓、連音一組從拍點開始、事件 = MusicXML、
+  干擾選項數(2 / 3 選 1)、只改一拍、擊打時間(從 MusicXML 算)跟答案和彼此都不同、fillOptions 答案位置;Groove:鼓件不超過這一級、速度範圍、播兩遍、不出風格題、事件 = MusicXML;
+  竄改(3 級六連音、♩=90、筒鼓、干擾 = 答案 / 聽起來一樣 / 改兩拍、選項少一個、事件錯位、1 級 Crash、出風格題、5 級 cross stick 當 4 級)一定抓到。
+- 樣張:`tools/test/notation-preview.html?rslkit=4,5`、`?fill=0..8`(答案 + 干擾選項)、`?groove=0..8`(`&per=&seed=`);`node tools/test/notation.mjs` 第 5 段用 OSMD 實際畫
+  (符頭數、形狀含斜線、高度、開 HH 的 o、連音組數、320 寬),截圖 `tools/test/out/notation/rslkit-4.png`、`rslkit-5.png`、`fill-0.png` … `fill-8.png`、`groove-0.png` … `groove-8.png`。

@@ -46,3 +46,19 @@ export function evDiff(a, b, n = 3){
   for (const [k, v] of cb) if ((ca.get(k) || 0) < v) out.push("少 " + k);
   return out.slice(0, n);
 }
+
+const TYPE = { whole: "1", half: "2", quarter: "4", eighth: "8", "16th": "16", "32nd": "32" };
+/* MusicXML 用到的時值 / 休止符(不含斜線、不印的音;連音寫成 8t3、16t6 這種代號)*/
+export function xmlCodes(xml){
+  const values = new Set(), rests = new Set();
+  for (const m of xml.matchAll(/<note( print-object="no")?>([\s\S]*?)<\/note>/g)) {
+    const n = m[2];
+    if (m[1] || n.includes("<grace") || /slash<\/notehead>/.test(n)) continue;
+    if (/<rest measure="yes"/.test(n)) { rests.add("r1"); continue; }
+    const type = TYPE[(/<type>(\w+)<\/type>/.exec(n) || [])[1]], tm = /<actual-notes>(\d+)<\/actual-notes>/.exec(n);
+    const code = type + (n.includes("<dot/>") ? "." : "") + (tm ? "t" + tm[1] : "");
+    (n.includes("<rest") ? rests : values).add(n.includes("<rest") ? "r" + code : code);
+  }
+  return { values, rests };
+}
+

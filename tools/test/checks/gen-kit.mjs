@@ -17,7 +17,7 @@ import { toEvents, hitsOnly, graceBeats, DYN_VEL } from "../../../js/shared/kite
 import { genChart, playbackParams, phraseSpec } from "../../../js/shared/playbackgen.js";
 import { scoreXML } from "../../../js/shared/kitnotation.js";
 import { auditXML } from "./kitxml.mjs";
-import { xmlEvents, evKey, evDiff } from "./xmlevents.mjs";
+import { xmlEvents, xmlCodes, evKey, evDiff } from "./xmlevents.mjs";
 
 const root = new URL("../../../", import.meta.url).pathname;
 const data = JSON.parse(fs.readFileSync(root + "data/exam-rsl.json", "utf8"));
@@ -33,22 +33,7 @@ const WL = {
 const KIT = ["hh", "ride", "crash", "snare", "tomHi", "tomMid", "tomFloor", "kick"];   // 整組鼓(推估;NOTES.kitPieces)
 const D = 2520, QV = { "4": 1, "4.": 1.5, "8": 0.5, "8.": 0.75, "16": 0.25, "2": 2, "1": 4, "16.": 0.375, "32": 0.125 };
 const dur = c => Math.round(QV[c.replace(/^r/, "")] * D);
-const TYPE = { whole: "1", half: "2", quarter: "4", eighth: "8", "16th": "16", "32nd": "32" };
 const MARKS = ["accent", "ghost", "open", "closed", "flam", "drag"];
-
-/* MusicXML 用到的時值 / 休止符(不含斜線、不印的音) */
-function xmlCodes(xml){
-  const values = new Set(), rests = new Set();
-  for (const m of xml.matchAll(/<note( print-object="no")?>([\s\S]*?)<\/note>/g)) {
-    const n = m[2];
-    if (m[1] || n.includes("<grace") || /slash<\/notehead>/.test(n)) continue;
-    if (/<rest measure="yes"/.test(n)) { rests.add("r1"); continue; }
-    const type = TYPE[(/<type>(\w+)<\/type>/.exec(n) || [])[1]], tm = /<actual-notes>(\d+)<\/actual-notes>/.exec(n);
-    const code = type + (n.includes("<dot/>") ? "." : "") + (tm ? "t" + tm[1] : "");
-    (n.includes("<rest") ? rests : values).add(n.includes("<rest") ? "r" + code : code);
-  }
-  return { values, rests };
-}
 
 /* 一題的檢查 → 錯誤清單;used 收集用到的元素 */
 export function checkKit(g, q, used = { value: new Set(), rest: new Set(), piece: new Set() }){

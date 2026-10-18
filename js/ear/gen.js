@@ -145,13 +145,16 @@ export function fillOptions(fill, seed = 1){
 
 /* ── Groove(2 小節;App 的出題設計)──
    鈸:HH(或 4 級起 Ride / Ride 碗)固定節奏;小鼓反拍(5 級起有時候 cross stick);大鼓兩拍一組;2 級起開 HH(下一個 HH 寫閉);
-   3 級起第 1 小節第 1 拍 Crash;6–8 級:第 2 小節最後一拍有時候筒鼓、Ride 律動有時候腳踩 HH 在 2、4 拍 */
+   3 級起第 1 小節第 1 拍 Crash、偶爾多一下小鼓;6–8 級:大鼓節奏格比較多、第 2 小節最後一拍有時候筒鼓、Ride 律動有時候腳踩 HH 在 2、4 拍 */
 const G_WL = { values: new Set(["4", "4.", "8", "8.", "16"]), rests: new Set(["r4", "r8"]) };
 const G_OST = [{ mask: 5, w: g => 5 }, { mask: 1, w: g => (g <= 1 ? 1.5 : 1) }, { mask: 15, w: g => (g < 3 ? 0 : g < 6 ? 0.8 : 1.5) }];
 const G_KICK = [
   { m: [1, 0], w: g => 4 }, { m: [5, 0], w: g => 2 }, { m: [1, 4], w: g => (g ? 2.5 : 1) }, { m: [5, 4], w: g => (g >= 2 ? 1.2 : 0) },
-  { m: [9, 0], w: g => (g >= 2 ? 1.2 : 0) }, { m: [13, 0], w: g => (g >= 4 ? 0.8 : 0) }, { m: [1, 12], w: g => (g >= 4 ? 0.8 : 0) }, { m: [3, 0], w: g => (g >= 6 ? 0.6 : 0) }
+  { m: [9, 0], w: g => (g >= 2 ? 1.2 : 0) }, { m: [13, 0], w: g => (g >= 4 ? 0.8 : 0) }, { m: [1, 12], w: g => (g >= 4 ? 0.8 : 0) }, { m: [9, 4], w: g => (g >= 4 ? 0.8 : 0) },
+  { m: [3, 0], w: g => (g >= 6 ? 1 : 0) }, { m: [5, 12], w: g => (g >= 6 ? 1.2 : 0) }, { m: [13, 4], w: g => (g >= 6 ? 1 : 0) }, { m: [11, 0], w: g => (g >= 6 ? 0.8 : 0) }
 ];
+// 小鼓多一下(3 級起;[拍, 格子])
+const G_EXTRA = [[3, 2], [3, 3], [1, 3], [2, 2], [0, 3]];
 export const groovePieces = gr => {
   const ps = gr.pieces || [];
   return ps.includes("kit") ? [...KIT_GROOVE_PIECES] : [...ps];
@@ -174,7 +177,8 @@ export function genGroove(spec, seed = 1, grade = spec && spec.grade){
   const crash = P.has("crash") && R() < (g === 3 ? 0.8 : 0.55);
   const footHH = cym !== "hh" && P.has("hhFoot") && R() < 0.45;
   const toms = ["tomHi", "tomMid", "tomFloor"].filter(t => P.has(t));
-  const tomFill = toms.length && R() < 0.5;
+  const tomFill = toms.length && R() < 0.6;
+  const extra = g >= 3 ? (g >= 6 ? 0.55 : 0.3) : 0;
   const kickOK = first => G_KICK.filter(k => k.w(g) > 0 && (!first || (k.m[0] & 1)));
   let kick = [wpick(R, kickOK(true), k => k.w(g)), wpick(R, kickOK(false), k => k.w(g))];
   const measures = [];
@@ -189,6 +193,7 @@ export function genGroove(spec, seed = 1, grade = spec && spec.grade){
       }
       if (b === 1 || b === 3) hand[b][0].push({ piece: back });
     }
+    if (R() < extra) { const [b, i] = G_EXTRA[Math.floor(R() * G_EXTRA.length)]; if (b < fillBeat && !hand[b][i].some(n => n.piece === back)) hand[b][i].push({ piece: back }); }
     for (let h = 0; h < 2; h++) for (let k = 0; k < 2; k++) { const b = h * 2 + k; for (const i of [0, 1, 2, 3].filter(i => kick[h].m[k] & (1 << i))) feet[b][i].push({ piece: "kick" }); }
     if (footHH) for (const b of [1, 3]) feet[b][0].push({ piece: "hhFoot" });
     // 筒鼓:第 2 小節最後一拍(十六分或八分),大鼓留拍點

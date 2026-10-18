@@ -1,4 +1,4 @@
-// 不用瀏覽器的檢查:基本打法資料(照 PAS 官方表)、鼓譜 MusicXML(技巧的單線譜、鼓組譜)、RSL 依大綱時值的練習型、考試資料(照 RSL / Trinity 官方大綱)、Trinity Playback 譜產生器、節奏評分、版本指紋、兩個 App 的共用檔案(sync.mjs)
+// 不用瀏覽器的檢查:基本打法資料(照 PAS 官方表)、鼓譜 MusicXML(技巧的單線譜、鼓組譜)、RSL 依大綱時值的練習型、考試資料(照 RSL / Trinity 官方大綱)、Trinity Playback 譜產生器、RSL 整組鼓視奏與聽力出題器、節奏評分、版本指紋、兩個 App 的共用檔案(sync.mjs)
 // 執行:node tools/test/verify.mjs
 import { execFileSync } from "node:child_process";
 import { RUDIMENTS, CATEGORIES, strokes, cycleLength, mainStrokes, withLead, DIV } from "../../js/tech/rudiments.js";
@@ -9,6 +9,8 @@ import patterncheck from "./checks/pattern.mjs";
 import kitxml from "./checks/kitxml.mjs";
 import timing from "./checks/timing.mjs";
 import genplayback from "./checks/gen-playback.mjs";
+import genkit from "./checks/gen-kit.mjs";
+import genear from "./checks/gen-ear.mjs";
 let fails = 0, checks = 0;
 const ok = (cond, msg) => { checks++; if (!cond) { fails++; console.log("✗ " + msg); } };
 
@@ -70,6 +72,11 @@ try { kitxml(ok); } catch (e) { ok(false, "鼓組譜檢查出錯:" + e.stack); }
 try { timing(ok); } catch (e) { ok(false, "節奏評分檢查出錯:" + e.stack); }
 // 6e. Trinity Playback 譜產生器(js/shared/playbackgen.js):每級 1000 個種子,只用累積白名單、時值、長度、聲部數、換拍號(checks/gen-playback.mjs)
 try { genplayback(ok); } catch (e) { ok(false, "Playback 產生器檢查出錯:" + e.stack); }
+// 6f. RSL 4–5 級整組鼓視奏出題器(js/shared/kitgen.js)+ 共用播放事件 toEvents(js/shared/kitevents.js;也拿 Trinity Playback 的題目核對):
+//     每級 1000 個種子,白名單(手抄大綱表)、時值、自由發展在最後 2 小節、事件 = MusicXML、竄改一定抓到(checks/gen-kit.mjs)
+try { genkit(ok); } catch (e) { ok(false, "RSL 整組鼓視奏出題器檢查出錯:" + e.stack); }
+// 6g. RSL 聽力出題器(js/ear/gen.js):Fill(♩=70、小鼓單線、白名單、干擾選項只改一拍且聽起來不同)、Groove(鼓件照級數、速度範圍、播兩遍、不出風格題)(checks/gen-ear.mjs)
+try { genear(ok); } catch (e) { ok(false, "RSL 聽力出題器檢查出錯:" + e.stack); }
 // 7. 版本指紋與 sw.js 預快取清單
 try { execFileSync("node", [new URL("../build/stamp.mjs", import.meta.url).pathname, "--check"], { stdio: "pipe" }); checks++; }
 catch (e) { fails++; checks++; console.log("✗ " + (e.stdout || "").toString().trim()); }
