@@ -5,6 +5,9 @@ import { RUDIMENTS, CATEGORIES, byNo, withLead, strokes, cycleLength, DIV } from
 import { rudimentXML } from "./notation.js";
 import { tr, scoped, getLang, pairText } from "../shared/i18n.js";
 import * as audio from "../shared/audio.js";
+import { createScore } from "../shared/score.js";
+import { createTempo } from "../shared/tempo.js";
+import { fitLandZoom, createLandPlay } from "../shared/landscape.js";
 import "./strings.js";
 const T = scoped("tech");
 
@@ -13,7 +16,7 @@ const ROOT = document.getElementById("mod-tech");
 let active = false, ctx = null, exam = null;
 const S = store.load();
 let tab = S.cat;            // roll / diddle / flam / drag / exam
-let cur = null, groups = null, osmd = null;
+let cur = null, groups = null;
 let bpm = 60;
 
 /* ══ 外框呼叫 ══ */
@@ -146,54 +149,25 @@ function renderExam(){
     "This grade's technical requirements (rudiments, grooves, fills) are still being checked page by page against the official syllabus and will appear once verified. Until then, practise the 40 PAS rudiments in Technique."));
 }
 
-/* ══ 鼓譜:一整行 + 播放軸(照 PianoDrill / ScrollScore)══ */
-const PLAYLINE_RATIO = 0.25;
-let noteXs = [], renderSeq = 0, lastZoom = null, stageW = 0, pendingRender = false;
+/* ══ 鼓譜:一整行 + 播放軸(js/shared/score.js,照 PianoDrill / ScrollScore)══
+   看不到時延後重畫、短的放大填滿、長的左右捲、播放軸停在 25% 都在共用元件裡;這裡只給縮放、左右手字母、一輪的長度 */
 const scoreZoom = () => (window.innerWidth < 600 ? 1 : window.innerWidth < 1100 ? 1.15 : 1.35);
-async function renderScore(){
-  if (!cur) return;
-  const seq = ++renderSeq;
-  const xml = rudimentXML(groups, { reps: S.reps, title: cur.en });
-  if (!osmd) {
-    osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay($("osmd"), {
-      backend: "svg", autoResize: false, drawTitle: false, drawSubtitle: false, drawComposer: false, drawPartNames: false,
-      drawMeasureNumbers: false, drawingParameters: "compacttight", renderSingleHorizontalStaffline: true,
-      cursorsOptions: [{ type: 0, color: "#F2B94B", alpha: 0, follow: false }]
-    });
-    osmd.EngravingRules.TupletNumberLimitConsecutiveRepetitions = false;   // 每一組三連音都標「3」(官方表就是這樣)
-  }
-  setMsg("paperMsg", null);
-  try {
-    await osmd.load(xml);
-    if (seq !== renderSeq) return;
-    // 看不到的時候(在別的分頁)不畫:量不到位置,左右手字母會畫到奇怪的地方;回到這一頁時再畫
-    if (!active || !$("stage").clientWidth) { pendingRender = true; return; }
-    pendingRender = false;
-    osmd.zoom = scoreZoom(); lastZoom = osmd.zoom;
-    renderOsmd();
-    fitWidth();
-    measureNotes();
-  } catch (e) {
-    console.error(e);
-    setMsg("paperMsg", () => tr("鼓譜繪製失敗:", "Could not draw the score: ") + e.message);
-  }
-  window.__lastXml = xml;
-  window.__scoreReady = (window.__scoreReady || 0) + 1;
-}
-function renderOsmd(){ osmd.render(); drawSticking(); }
-/* 短的打法放大到大約填滿鼓譜卡(最多 1.6 倍);太長的照原本大小,左右捲動、播放軸跟著走 */
-function fitWidth(){
-  const svg = $("osmd").querySelector("svg"); if (!svg) return;
-  const w = svg.getBoundingClientRect().width, avail = $("stage").clientWidth - 16;
-  if (!w || !avail) return;
-  const z = Math.max(scoreZoom(), Math.min(1.6, osmd.zoom * avail * 0.94 / w));
-  if (Math.abs(z - osmd.zoom) < 0.03) return;
-  osmd.zoom = z; lastZoom = scoreZoom(); renderOsmd();
-}
+const score = createScore({
+  $, zoom: scoreZoom,
+  setup: osmd => { osmd.EngravingRules.TupletNumberLimitConsecutiveRepetitions = false; },   // 每一組三連音都標「3」(官方表就是這樣)
+  afterRender: drawSticking,
+  lenBeats: () => cycleLength(groups) / DIV,
+  playing: () => !!play, isActive: () => active,
+  msg: fn => setMsg("paperMsg", fn),
+  errorText: e => tr("鼓譜繪製失敗:", "Could not draw the score: ") + e.message,
+  onDrawn: xml => { window.__lastXml = xml; window.__scoreReady = (window.__scoreReady || 0) + 1; },
+  fitLand: () => fitLandZoom(score, { $ })
+});
+function renderScore(){ if (cur) score.load(rudimentXML(groups, { reps: S.reps, title: cur.en })); }
 
 /* 左右手(R / L)畫在每個音下面,裝飾音的字小一點(照 PAS 官方表);多次反彈畫 z(OSMD 不會畫) */
-function drawSticking(){
-  const svg = $("osmd").querySelector("svg"); if (!svg) return;
+function drawSticking(svg){
+  if (!svg) return;
   const NS = "http://www.w3.org/2000/svg", frag = document.createDocumentFragment();
   const mains = [...svg.querySelectorAll(".vf-measure > .vf-stavenote")];
   const notes = groups.flat();
@@ -239,72 +213,6 @@ function drawSticking(){
   }
 }
 
-/* 走一遍 OSMD 游標,記下每一步的拍點(四分音符)與 x;播放軸在兩步之間內插 */
-function measureNotes(){
-  noteXs = [];
-  const c = osmd.cursor;
-  c.show(); c.reset();
-  let guard = 0;
-  const ox = $("osmd").getBoundingClientRect().x;
-  while (!c.Iterator.EndReached && guard++ < 3000) {
-    const el = c.cursorElement;
-    let xs = [];
-    try {
-      xs = c.GNotesUnderCursor().map(n => { const g = n.getSVGGElement && n.getSVGGElement(); const h = g && [...g.querySelectorAll(".vf-notehead")].find(e => !e.closest(".vf-modifiers")); const r = h && h.getBoundingClientRect(); return r && r.width ? r.x - ox + r.width / 2 : null; }).filter(v => v != null);
-    } catch (e) {}
-    const x = xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : parseFloat(el.style.left) + (el.offsetWidth || 0) / 2;
-    const beat = c.Iterator.currentTimeStamp.RealValue * 4;
-    if (!noteXs.length || beat > noteXs[noteXs.length - 1].beat + 1e-6) noteXs.push({ beat, x });
-    c.next();
-  }
-  c.reset(); c.hide();
-  // 最後補一個「這一輪結束」的位置(右邊的小節線前面)
-  const svg = $("osmd").querySelector("svg");
-  if (svg && noteXs.length) {
-    const lastX = noteXs[noteXs.length - 1].x, len = cycleLength(groups) / DIV;
-    const sr = svg.getBoundingClientRect();
-    noteXs.push({ beat: len, x: Math.max(lastX + 10, sr.right - ox - 14) });
-  }
-  $("scroll").scrollLeft = 0;
-  placePlaylineExtent();
-  movePlayline(0, false);
-}
-function placePlaylineExtent(){
-  const stage = $("stage"), pl = $("playline"), svg = $("osmd").querySelector("svg");
-  if (!svg) { pl.hidden = true; return; }
-  const sr = stage.getBoundingClientRect();
-  let top = Infinity, bot = -Infinity;
-  svg.querySelectorAll(".vf-stavenote, .staffline").forEach(g => { const r = g.getBoundingClientRect(); if (r.height) { top = Math.min(top, r.top); bot = Math.max(bot, r.bottom); } });
-  if (!isFinite(top)) { pl.hidden = true; return; }
-  const pad = 10;
-  pl.style.top = Math.max(0, top - sr.top - pad) + "px";
-  pl.style.bottom = Math.max(0, sr.bottom - bot - pad) + "px";
-  pl.hidden = false;
-}
-function xAtBeat(beat){
-  if (!noteXs.length) return 0;
-  if (beat <= noteXs[0].beat) return noteXs[0].x;
-  for (let i = 0; i + 1 < noteXs.length; i++) {
-    const a = noteXs[i], b = noteXs[i + 1];
-    if (beat < b.beat) return a.x + (b.x - a.x) * (beat - a.beat) / (b.beat - a.beat);
-  }
-  return noteXs[noteXs.length - 1].x;
-}
-function movePlayline(beat, follow){
-  const scroll = $("scroll"), o = $("osmd"), pl = $("playline");
-  const x = o.offsetLeft + xAtBeat(beat);
-  if (follow) {
-    if (scroll.scrollLeft) scroll.scrollLeft = 0;
-    const max = Math.max(0, o.offsetLeft + o.offsetWidth - scroll.clientWidth);
-    const shift = Math.max(0, Math.min(max, x - scroll.clientWidth * PLAYLINE_RATIO));
-    o.style.transform = shift ? `translate3d(${-shift}px,0,0)` : "";
-    pl.style.transform = `translate3d(${x - shift - 1}px,0,0)`;
-    return;
-  }
-  if (o.style.transform) o.style.transform = "";
-  pl.style.transform = `translate3d(${x - scroll.scrollLeft - 1}px,0,0)`;
-}
-$("scroll").addEventListener("scroll", () => { if (!play) movePlayline(0, false); }, { passive: true });
 /* 題目固定一行:太長就把字縮小(中英文版面一樣) */
 function fitTitle(){
   const el = $("qTitle"); el.style.fontSize = ""; el.classList.remove("two");
@@ -327,56 +235,26 @@ function fitTitle(){
 const onStageResize = () => {
   if (!active) return;
   fitTitle();
-  if (!osmd || !cur) return;
-  if (pendingRender && $("stage").clientWidth) { renderScore(); return; }
-  const z = scoreZoom();
-  if (z !== lastZoom || Math.abs(($("stage").clientWidth || 0) - (stageW || 0)) > 24) { stageW = $("stage").clientWidth; lastZoom = z; osmd.zoom = z; renderOsmd(); fitWidth(); measureNotes(); return; }
-  placePlaylineExtent();
-  if (!play) movePlayline(0, false);
+  land.onResize();   // 播放中轉向(手機橫式 ↔ 直式)
+  if (!cur) return;
+  score.onResize();
 };
 window.addEventListener("resize", onStageResize);
 if (typeof ResizeObserver !== "undefined") new ResizeObserver(() => requestAnimationFrame(onStageResize)).observe($("stage"));
 
-/* ══ 速度(♩ = 每分鐘幾拍)══ */
+/* ══ 速度(♩ = 每分鐘幾拍;js/shared/tempo.js)══ */
 const MIN_BPM = 30, MAX_BPM = 240;
+const tempo = createTempo({ $, min: MIN_BPM, max: MAX_BPM, get: () => bpm, set: v => setBpm(v, true) });
 function syncTempoUI(){
-  $("bpmRange").min = MIN_BPM; $("bpmRange").max = MAX_BPM;
-  $("bpmVal").textContent = bpm; $("bpmRange").value = bpm;
-  $("bpmUnit").textContent = `♩ / ${tr("分", "min")}`;
+  tempo.sync(`♩ / ${tr("分", "min")}`);
   $("examTempo").textContent = tr("由慢到快、再由快到慢(PAS:open – close – open)", "Slow to fast to slow (PAS: open – close – open)");
   const beats = Math.max(1, Math.round(cycleLength(groups || [[{ dur: 4 * DIV }]]) / DIV));
-  $("beats").innerHTML = "<i class=\"first\"></i>" + "<i></i>".repeat(Math.min(8, beats) - 1);
+  tempo.setBeats(Math.min(8, beats));
 }
 function setBpm(v, fromUser){
   bpm = Math.max(MIN_BPM, Math.min(MAX_BPM, Math.round(v)));
   if (fromUser && cur) { S.bpm[cur.no] = bpm; store.save(); }
   syncTempoUI(); retempo();
-}
-function holdRepeat(btn, dir){
-  let timer = 0, t0 = 0, fired = false;
-  const step = () => { const held = performance.now() - t0; setBpm(bpm + dir * (held > 1600 ? 5 : held > 1000 ? 2 : 1), true); timer = setTimeout(step, held > 1000 ? 70 : 110); };
-  btn.addEventListener("pointerdown", e => {
-    if (e.button > 0) return;
-    e.preventDefault(); fired = true; t0 = performance.now();
-    setBpm(bpm + dir, true);
-    timer = setTimeout(() => { t0 = performance.now() - 400; step(); }, 400);
-    try { btn.setPointerCapture(e.pointerId); } catch (err) {}
-  });
-  const stop = () => { clearTimeout(timer); timer = 0; };
-  ["pointerup", "pointercancel", "lostpointercapture"].forEach(ev => btn.addEventListener(ev, stop));
-  btn.addEventListener("contextmenu", e => e.preventDefault());
-  btn.addEventListener("click", () => { if (fired) { fired = false; return; } setBpm(bpm + dir, true); });
-}
-holdRepeat($("bpmDown"), -1);
-holdRepeat($("bpmUp"), +1);
-{
-  const range = $("bpmRange");
-  const setFromX = e => { const r = range.getBoundingClientRect(); const t = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)); setBpm(Math.round(MIN_BPM + t * (MAX_BPM - MIN_BPM)), true); };
-  let dragging = false;
-  range.addEventListener("pointerdown", e => { dragging = true; try { range.setPointerCapture(e.pointerId); } catch {} setFromX(e); });
-  range.addEventListener("pointermove", e => { if (dragging) setFromX(e); });
-  range.addEventListener("pointerup", () => { dragging = false; }); range.addEventListener("pointercancel", () => { dragging = false; });
-  range.oninput = () => setBpm(Number(range.value), true);
 }
 
 /* ══ 音訊 ══ */
@@ -486,13 +364,13 @@ async function startInner(){
   const tick = () => {
     if (!play) return;
     const beat = (audio.audioNow() - play.t0) / play.beatSec;
-    showBeat(beat);
+    tempo.showBeat(beat, COUNT_IN);
     const len = play.cyc / DIV;
-    movePlayline(beat < 0 ? 0 : beat >= play.endBeat ? len : beat % len, true);
+    score.movePlayline(beat < 0 ? 0 : beat >= play.endBeat ? len : beat % len, true);
     if (beat > play.endBeat + 0.3) {
       const sec = play.endBeat * play.beatSec;
       lastEnd = { n: lastEnd.n + 1, scheduled: audio.scheduledCount(), at: audio.audioNow() };   // 測試用:自然播完時還排著的節點數(播完的會自己移除)與當時的時間
-      stopPlayback(true);
+      stopPlayback(true, !!(S.loop && cur));   // 循環的下一輪:手機橫式不捲回去
       logPractice(sec);
       if (!S.clickOnly && (!S.best[cur.no] || bpm > S.best[cur.no])) { S.best[cur.no] = bpm; store.save(); showBest(); }
       if (S.loop && cur) { if (S.ramp) setBpm(bpm + 4, true); startPlayback(); }
@@ -504,8 +382,9 @@ async function startInner(){
 }
 let lastEnd = { n: 0, scheduled: 0, at: 0 };
 function showBest(){ const b = cur && S.best[cur.no]; $("bestTempo").textContent = b ? `${T("bestLabel")} ♩=${b}` : ""; }
-function stopPlayback(natural){
+function stopPlayback(natural, keepView){
   starting = 0; $("playBtn").classList.remove("busy");
+  land.release(keepView);   // 手機橫式:播完(或停止)捲回播放前的位置、縮回;循環的下一輪不捲
   if (play) {
     cancelAnimationFrame(play.raf);
     // 中途停止(按停止、換題、切分頁、切到背景):已經播的秒數算進今天的練習時間,次數不加
@@ -513,13 +392,15 @@ function stopPlayback(natural){
     play = null;
     if (!natural) audio.stopAll();
   }
-  if (osmd && noteXs.length) { $("scroll").scrollLeft = 0; movePlayline(0, false); }
+  score.home();
   $("playLabel").textContent = T("play");
   $("playIcon").innerHTML = '<path d="M7 4v16l13-8z"/>';
-  showBeat(null);
+  tempo.showBeat(null);
 }
-/* 按播放時鼓譜要看得到(沒露出來就捲過去) */
+/* 按播放時鼓譜要看得到:手機橫式 → 樂譜卡貼到頂欄下、放大到滿版(landscape.js);其他 → 沒露出來就捲過去 */
+const land = createLandPlay({ $, score, playing: () => !!play, stop: () => stopPlayback(), reveal: () => revealScore() });
 function revealScore(){
+  if (land.reveal()) return;
   const r = $("scoreCard").getBoundingClientRect(), bar = document.querySelector(".tabbar");
   const bt = bar ? bar.getBoundingClientRect().top : innerHeight;
   const bottom = bt > innerHeight / 2 ? bt : innerHeight;
@@ -527,11 +408,6 @@ function revealScore(){
   else if (r.top < 0) window.scrollBy({ top: r.top - 8, behavior: "smooth" });
 }
 $("playBtn").onclick = () => { if (play) stopPlayback(); else if (!starting) startPlayback(); };
-function showBeat(beat){
-  const dots = $("beats").children, n = dots.length;
-  const k = beat == null ? -1 : beat < 0 ? ((Math.floor(beat + COUNT_IN) % n) + n) % n : Math.floor(beat + 1e-6) % n;
-  for (let i = 0; i < n; i++) dots[i].classList.toggle("on", i === k);
-}
 function syncPlayOpts(){
   $("optLoop").setAttribute("aria-pressed", String(!!S.loop));
   $("optRamp").setAttribute("aria-pressed", String(!!S.ramp));
@@ -572,6 +448,6 @@ function renderLog(){
 export async function start(c){
   ctx = c; exam = c.exam;
   renderLog();
-  window.__tech = { get cur(){ return cur; }, get groups(){ return groups; }, get osmd(){ return osmd; },
-    get state(){ return { play: !!play, starting: !!starting, bpm, scheduled: audio.scheduledCount(), noteXs: noteXs.length, lastEnd: { ...lastEnd } }; }, setRudiment, switchTab, setBpm, S };
+  window.__tech = { get cur(){ return cur; }, get groups(){ return groups; }, get osmd(){ return score.osmd; }, score,
+    get state(){ return { play: !!play, starting: !!starting, bpm, scheduled: audio.scheduledCount(), noteXs: score.noteXs.length, landZoom: score.landZoom, lastEnd: { ...lastEnd } }; }, setRudiment, switchTab, setBpm, S };
 }

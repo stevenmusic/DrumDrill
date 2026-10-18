@@ -31,3 +31,23 @@
 #t-bestTempo:empty{display:none}
 /* 題目太長(折疊機的英文名):同一個高度排兩行 */
 #t-qTitle.two{display:block;white-space:normal;line-height:1.15;overflow:hidden;text-overflow:clip;align-content:center}
+
+/* ══ 共用的譜面元件(js/shared/score.js)給視奏、聽力用:跟 app.css 的 #t-scroll、#t-osmd、#t-playline、手機橫式播放中一樣(app.css 不動) ══ */
+.paper:has(#s-osmd:empty),.paper:has(#e-osmd:empty){min-height:96px}
+#s-scroll,#e-scroll{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;display:flex}
+#s-scroll::-webkit-scrollbar,#e-scroll::-webkit-scrollbar{display:none}
+#s-osmd,#e-osmd{flex:none;width:auto;margin:0 auto;padding:0;position:relative;will-change:transform;color:#16130D}
+#s-playline,#e-playline{
+  position:absolute;width:2px;left:0;top:0;bottom:0;
+  background:linear-gradient(to bottom,transparent,#B8860B 12%,#B8860B 88%,transparent);
+  box-shadow:0 0 14px 2px rgba(184,134,11,.45);
+  opacity:.5;pointer-events:none;z-index:5;will-change:transform;
+}
+#s-playline::before,#e-playline::before{
+  content:"";position:absolute;top:-2px;left:50%;transform:translateX(-50%);
+  border:7px solid transparent;border-top:10px solid #B8860B;
+}
+body.land-play #s-scoreCard,body.land-play #e-scoreCard{display:flex;flex-direction:column;min-height:calc(100vh - 70px);min-height:calc(100dvh - 70px)}
+body.land-play #s-stage,body.land-play #e-stage{flex:1;display:flex;flex-direction:column;justify-content:center}
+/* 視奏的觸控鼓墊(S8 新增):照 PianoDrill 視奏的卡片順序,放在譜面下面、跟著打的結果同一層 */
+#s-pads{order:5}

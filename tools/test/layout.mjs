@@ -117,6 +117,16 @@ for (const [name, w, h, mobile] of VPS) {
   await audit(page, name, "技巧 選擇器展開 40×8"); await shot("picker");
   await sub("roll"); await page.click('#t-picker .opt[data-v="12"]').catch(() => {}); await page.waitForTimeout(400);
   await audit(page, name, "技巧 12 左手先選項");
+  // 手機橫式技巧播放中(land-play):樂譜卡貼到頂欄下、譜面放大到滿版;停止後收回
+  if (w > h && h <= 500) {
+    await sub("flam"); await page.waitForFunction(() => window.__tech.state.noteXs > 0);
+    await page.click("#t-playBtn");
+    await page.waitForFunction(() => window.__tech.state.play && document.body.classList.contains("land-play"), null, { timeout: 30000 });
+    await page.waitForTimeout(900);
+    await audit(page, name, "技巧 手機橫式播放中"); await shot("land-play");
+    await page.click("#t-playBtn"); await page.waitForTimeout(600);
+    if (await page.evaluate(() => document.body.classList.contains("land-play"))) report(name, "技巧 手機橫式播放中", "停止後 land-play 沒有拿掉");
+  }
   await tab("sight"); await audit(page, name, "視奏"); await tab("ear"); await audit(page, name, "聽力");
   // 英文(字比較長)
   await tab("tech"); await page.click("#langToggle"); await page.waitForTimeout(500);
