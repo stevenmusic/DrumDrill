@@ -294,3 +294,34 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
   #e-stepQ,#e-answers,#e-ansLegend,#mod-ear .q-foot,#e-practiceOnly{grid-column:1 / -1}
   #mod-ear .q-tag{font-size:14px;padding:0 8px;line-height:26px}
 }
+
+/* ══ 模擬考(S14;js/shared/mock.js)與練習紀錄 ══
+   卡片順序(一欄):技巧 = 本級要求 2 → 模擬考 4(進行中:題目 2、鼓譜 3、模擬考 4);
+   視奏 / 聽力 = 考試摘要 1 → 模擬考 2 → 規格卡 2(DOM 順序在後);進行中模擬考卡排到作答卡後面(.mock-run)。
+   兩欄(≥1100):模擬考卡在左欄(考試摘要下面;進行中左欄只剩它),題目、譜、鼓墊在右欄 */
+#t-mockCard{order:4}
+#s-mockCard,#e-mockCard{order:2}
+#mod-sight.mock-run #s-mockCard,#mod-ear.mock-run #e-mockCard{order:7}
+#s-statsCard,#e-statsCard{order:8}
+.mock-card .x-actions{margin-top:12px}
+.mock-card .x-actions:not(:has(> button:not([hidden]))){display:none}
+.mock-card .x-actions.one{grid-template-columns:1fr}
+.mock-card .spec-note:empty{display:none}
+.mock-card .mock-res{margin-top:10px}
+.mock-opts{display:grid;grid-template-columns:minmax(0, 1fr);margin-top:10px}
+.mock-opts .chip{justify-content:center;min-width:0;white-space:normal;height:auto;min-height:34px;padding:4px 10px;line-height:1.3}
+.mock-res .mr-text{display:flex;flex-direction:column;gap:2px;flex:1 1 auto;min-width:0}
+.mock-res .mr-name{overflow-wrap:anywhere}
+.mock-res .mr-detail{font-size:var(--fs-xs);color:var(--muted-bright);overflow-wrap:anywhere}
+.mock-res i{flex:none;min-width:1.2em;text-align:center}
+.mock-res i.skip,.mock-res i.todo{color:var(--muted)}
+.mock-res i.cur{color:var(--gold)}
+.mock-res div.cur{border-color:var(--gold)}
+#t-mockMsg{margin-top:8px;font-size:var(--fs-sm)}
+#t-mockFoot{margin-top:8px}
+.mock-step{font-size:var(--fs-xs);color:var(--muted-bright);font-variant-numeric:tabular-nums;min-width:0}
+/* 練習紀錄:每週目標(照 PianoDrill 聽音的 .goal;目標是分鐘)、各級 / 各題型的統計 */
+.goal .chip{white-space:nowrap}
+.stats-card .stats{margin-top:4px}
+.stats-card .srow{grid-template-columns:minmax(0, 8.5em) 1fr 5.4em}
+@media (max-width:360px){ .stats-card .srow{grid-template-columns:minmax(0, 7em) 1fr 5em} }

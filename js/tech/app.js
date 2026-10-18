@@ -10,6 +10,8 @@ import * as audio from "../shared/audio.js";
 import { createScore } from "../shared/score.js";
 import { createTempo } from "../shared/tempo.js";
 import { fitLandZoom, createLandPlay } from "../shared/landscape.js";
+import { addLog, renderLog as paintLog, today, nextGoal, cleanGoal } from "../shared/practicelog.js";
+import { createMock, abortText, paintCard, resultNote, mockLabel } from "../shared/mock.js";
 import "./strings.js";
 const T = scoped("tech");
 
@@ -24,6 +26,9 @@ let bpm = 60;
    pattern = { pas, sticking, value }:RSL 的「依大綱時值」練習型(rudiments.js pattern();no = 那個 PAS 編號,熟練度記在 PAS 編號上);
    換到別的打法(選擇器、別的類別)自動離開 */
 let target = null, lastKey = null;
+/* 模擬考(下面「模擬考」一段):中止時停止播放、速度還原,在檢定頁就重畫(說明「模擬考已中止」) */
+const mock = createMock({ store: S, save: store.save, onAbort: () => { stopPlayback(); mockRestore(); if (tab === "exam") renderExam(); } });
+let mockSaved = null;   // 開始模擬考前的速度(結束後還原;目標模式的速度也不受影響)
 
 /* ══ 外框呼叫 ══ */
 /* 換語言:只重寫文字(不停止播放、不重畫鼓譜) */
@@ -33,7 +38,8 @@ export function setExam(ex){
   const same = exam && ex && exam.system === ex.system && exam.grade === ex.grade && !!exam.auto === !!ex.auto;
   const moved = !exam || !ex || exam.system !== ex.system || exam.grade !== ex.grade;
   exam = ex;
-  // 系統或級數換了:之前那一級的目標(官方速度、組別)已經不適用 → 離開目標模式(速度回到自己的設定)
+  // 系統或級數換了:進行中的模擬考中止(結果、中止的說明收起來);之前那一級的目標(官方速度、組別)已經不適用 → 離開目標模式(速度回到自己的設定)
+  if (moved) { if (!mock.abort("exam") && mock.state === "result") mock.close(); }
   if (moved && target) leaveTarget();
   if (!same && active && tab === "exam") renderExam();
 }
@@ -42,11 +48,14 @@ export function onCtx(){ if (tab === "exam") renderExam(); if (ctx) ctx.examChan
 /* 進來:同一類、已經有題目就照原樣(回到前景、從別的分頁回來不會重新出題);換了類別或檢定頁才重畫 */
 export function enter(t){
   active = true;
+  // 模擬考進行中:離開檢定頁(到技巧分頁)= 中止;還在檢定頁(再點一次同一項)只重畫,不停止
+  if (mock.running() && t !== "exam") mock.abort("leave");
+  if (mock.running() && t === "exam" && tab === "exam") { renderExam(); requestAnimationFrame(onStageResize); return; }
   if (t !== tab || t === "exam" || !cur) switchTab(t);
   requestAnimationFrame(onStageResize);
 }
-/* 離開(切分頁、切到背景):停止播放,題目保留 */
-export function leave(){ active = false; stopPlayback(); }
+/* 離開(切分頁、切到背景):停止播放,題目保留;模擬考進行中就中止(回來時說明) */
+export function leave(){ active = false; mock.abort("leave"); stopPlayback(); }
 /* 檢定分頁的進度:RSL = 本級用到的 PAS 編號已經會了幾個(pattern 也算在它的 PAS 編號上);Trinity 沒有技巧項目 = 在 Song 3 評 */
 export function examStatus(){
   const ex = curExam(), d = dataOf(ex.system);
@@ -56,6 +65,11 @@ export function examStatus(){
   return tr(`已會 ${n}/${nos.length}`, `${n}/${nos.length} known`);
 }
 export function onKey(e){
+  if (tab === "exam" && mock.running()) {   // 模擬考:空白鍵 = 開始 / 停止、N = 下一組
+    if (e.code === "Space") { e.preventDefault(); if (cur) $("playBtn").click(); }
+    else if (e.key === "n" || e.key === "N") $("mockNext").click();
+    return;
+  }
   if (tab === "exam") {   // 檢定頁沒有播放鈕:N = 下一項
     if ((e.key === "n" || e.key === "N") && !$("nextBtn").hidden && !$("nextBtn").disabled) $("nextBtn").click();
     return;
@@ -95,8 +109,10 @@ function switchTab(t){
   ROOT.querySelectorAll(".pane").forEach(el => { el.hidden = !isExam; });
   $("picker").hidden = isExam;
   for (const id of ["quizCard", "scoreCard", "metroCard", "logCard"]) $(id).hidden = isExam;
+  $("mockFoot").hidden = $("mockMsg").hidden = true;
   syncTarget();
   if (isExam) { renderExam(); return; }
+  $("mockCard").hidden = true;
   S.cat = t; store.save();
   const list = RUDIMENTS.filter(r => r.cat === t);
   const no = S.pick[t] && list.some(r => r.no === S.pick[t]) ? S.pick[t] : list[0].no;
@@ -151,6 +167,7 @@ function setRudiment(no){
 }
 
 function renderTitle(){
+  if (mockOn()) { renderMockTitle(); return; }
   const pt = target && target.pattern;
   $("qTitle").textContent = pt ? patternName(pt) : `${cur.no}. ${name(cur)}`;
   // 中英文標籤數量一樣(版面才會一樣):中文 = 英文名,英文 = PAS 編號;左手先/右手先另加一個;練習型再加「App 練習型」(完整說明在目標橫幅)與「推估」(時值是推估的)。
@@ -194,6 +211,13 @@ const markOf = no => S.mastery[no] || "";
 
 function renderExam(){
   const ex = curExam(), sys = ex.system, g = ex.grade, d = dataOf(sys);
+  // 模擬考進行中、結果、中止的說明:考試摘要(配分、等第)與本級要求藏起來(練習回饋不跟等第放在同一個畫面)
+  const ms = mock.state, run = ms === "run", only = ms === "result" || ms === "aborted";
+  $("paneExam").hidden = $("listCard").hidden = run || only;
+  $("quizCard").hidden = $("scoreCard").hidden = $("mockFoot").hidden = $("mockMsg").hidden = !run;
+  if (run && !(mockStep() && mockStep().it)) $("scoreCard").hidden = true;   // 用檢定書練的組:沒有譜
+  renderMockCard(d, g);
+  if (run) { renderMockStep(); return; }
   renderSummary(sys, g, d);
   $("drawBtn").hidden = $("nextBtn").hidden = true; $("listActions").hidden = true;
   $("progress").hidden = true;
@@ -545,7 +569,7 @@ let play = null, starting = 0;
 function schedulePlay(p, from){
   const { t0, beatSec, reps, cyc } = p;
   const gap = Math.min(0.032, beatSec / 10);   // 裝飾音在主音前面多久(慢速時 32ms,快速時跟著縮短)
-  if (!S.clickOnly) for (let rep = 0; rep < reps; rep++) for (const s of p.list) {
+  if (!(p.mock || S.clickOnly)) for (let rep = 0; rep < reps; rep++) for (const s of p.list) {
     const on = t0 + (rep * cyc + s.at) / DIV * beatSec;
     if (s.kind === "grace") {
       const at = on - gap * s.grace;
@@ -566,7 +590,7 @@ function schedulePlay(p, from){
   const clicks = Math.ceil(reps * cyc / DIV);
   for (let b = -COUNT_IN; b < clicks; b++) {
     const at = t0 + b * beatSec;
-    if (at >= from) audio.playClick(at, b < 0 ? b === -COUNT_IN : (b * DIV) % p.acc === 0);
+    if (at >= from && !(p.oneBar && b >= 0)) audio.playClick(at, b < 0 ? b === -COUNT_IN : (b * DIV) % p.acc === 0);   // 模擬考「只聽一小節拍點」:預備拍之後沒有拍點
   }
 }
 let retempoTimer = 0;
@@ -612,7 +636,7 @@ async function startInner(){
   if (starting !== token || cur !== r0) { if (starting === token) { starting = 0; $("playLabel").textContent = T("play"); } $("playBtn").classList.remove("busy"); return "busy"; }
   starting = 0; $("playBtn").classList.remove("busy");
   if (!loaded) { $("playLabel").textContent = T("play"); return "failed"; }
-  const beatSec = 60 / bpm, cyc = cycleLength(groups), reps = S.reps;
+  const mk = mockPlay(), beatSec = 60 / bpm, cyc = cycleLength(groups), reps = mk ? mk.reps : S.reps;
   // 雙擊的第二下標記出來(播放時輕一點);RSL 雙擊練習型(RRLL)照 #6 雙擊開放滾奏的播法:每一對的第二下輕一點
   const dbl = !!(target && target.pattern && target.pattern.sticking === "double");
   const list = strokes(groups).map((s, i, a) => {
@@ -620,7 +644,7 @@ async function startInner(){
     return s.kind === "roll" && !s.first && a[i - 1] && a[i - 1].kind === "roll" && a[i - 1].hand === s.hand && !a[i - 1].second ? { ...s, second: true } : s;
   });
   const t0 = actx.currentTime + 0.15 + COUNT_IN * beatSec;
-  play = { t0, real0: t0, beatSec, reps, cyc, acc: accentEvery(cyc), list, raf: 0, endBeat: reps * cyc / DIV };
+  play = { t0, real0: t0, beatSec, reps, cyc, acc: accentEvery(cyc), list, raf: 0, endBeat: reps * cyc / DIV, mock: !!mk, oneBar: !!(mk && mk.oneBar), mockId: mk ? mock.id : 0 };
   schedulePlay(play, -Infinity);
   revealScore();
   $("playLabel").textContent = T("stop");
@@ -632,8 +656,9 @@ async function startInner(){
     const len = play.cyc / DIV;
     score.movePlayline(beat < 0 ? 0 : beat >= play.endBeat ? len : beat % len, true);
     if (beat > play.endBeat + 0.3) {
-      const sec = play.endBeat * play.beatSec;
+      const sec = play.endBeat * play.beatSec, wasMock = play.mock;
       lastEnd = { n: lastEnd.n + 1, scheduled: audio.scheduledCount(), at: audio.audioNow() };   // 測試用:自然播完時還排著的節點數(播完的會自己移除)與當時的時間
+      if (wasMock) { const id = play.mockId; stopPlayback(true); logPractice(sec); mockRunDone(id); return; }   // 模擬考:這一項跟拍點打完(不循環、不記示範最快)
       stopPlayback(true, !!(S.loop && cur));   // 循環的下一輪:手機橫式不捲回去
       logPractice(sec);
       // 示範最快只記自由練習(目標模式是官方速度的練習,不算)
@@ -654,8 +679,8 @@ function stopPlayback(natural, keepView){
   land.release(keepView);   // 手機橫式:播完(或停止)捲回播放前的位置、縮回;循環的下一輪不捲
   if (play) {
     cancelAnimationFrame(play.raf);
-    // 中途停止(按停止、換題、切分頁、切到背景):已經播的秒數算進今天的練習時間,次數不加
-    if (!natural) { const sec = audio.audioNow() - play.real0; if (sec >= 0.5) addPracticeSec(sec); }
+    // 中途停止(按停止、換題、切分頁、切到背景):已經播的秒數算進今天的練習時間,次數不加;模擬考的這一項記「中途停止」
+    if (!natural) { const sec = audio.audioNow() - play.real0; if (sec >= 0.5) addPracticeSec(sec); if (play.mock) mockRunStopped(play.mockId); }
     play = null;
     if (!natural) audio.stopAll();
   }
@@ -684,37 +709,200 @@ function syncPlayOpts(){
 for (const [id, k] of [["optLoop", "loop"], ["optRamp", "ramp"], ["optClick", "clickOnly"]]) $(id).onclick = () => { S[k] = !S[k]; store.save(); syncPlayOpts(); };
 syncPlayOpts();
 
-/* ══ 練習紀錄:示範完整播完算一次;中途停止只加秒數(熟練標記不算練習)══ */
-const dayKey = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+/* ══ 練習紀錄(js/shared/practicelog.js):示範(或模擬考的一項)完整播完算一次;中途停止只加秒數(熟練標記不算練習)。
+   秒數 = 真的播放的時間(預備拍之後);每週目標 = 最近 7 天的分鐘數(點一下換目標,存在 drumdrill.tech.v1 的 goal)══ */
 function logPractice(sec){ addPracticeSec(sec, 1); }
 function addPracticeSec(sec, n = 0){
-  const k = dayKey(new Date()), e = S.log[k] || (S.log[k] = { n: 0, sec: 0 });
-  e.n += n; e.sec += Math.round(sec || 0);
-  const keys = Object.keys(S.log).sort();
-  while (keys.length > 400) delete S.log[keys.shift()];
+  addLog(S.log, { sec, n });
   store.save(); renderLog();
 }
 function renderLog(){
-  const log = S.log || {}, today = new Date();
-  let streak = 0, d = new Date(today);
-  if (!(log[dayKey(d)] && log[dayKey(d)].n)) d.setDate(d.getDate() - 1);
-  while (log[dayKey(d)] && log[dayKey(d)].n) { streak++; d.setDate(d.getDate() - 1); }
-  const t = log[dayKey(today)] || { n: 0, sec: 0 };
-  $("logStreak").textContent = streak; $("logToday").textContent = t.n; $("logMin").textContent = Math.round(t.sec / 60);
-  const names = getLang() === "en" ? ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"] : ["日", "一", "二", "三", "四", "五", "六"];
-  let html = "";
-  for (let i = 6; i >= 0; i--) {
-    const x = new Date(today); x.setDate(x.getDate() - i);
-    const e = log[dayKey(x)];
-    html += `<span class="${i === 0 ? "today" : ""}"><i class="${e && e.n ? "on" : ""}"></i>${names[x.getDay()]}</span>`;
+  paintLog($, S.log, S.goal);
+  $("logMin").textContent = Math.floor(today(S.log).sec / 60);
+}
+$("goalBtn").onclick = () => { S.goal = nextGoal(S.goal); store.save(); renderLog(); };
+
+/* ══ 模擬考(S14;js/shared/mock.js):RSL 照考試形式,每一組抽一項(考官從每一組抽一部分考 [RSL §3.1]),依組的順序一項一項;
+   只抽 App 能直接練的(pas = PAS 原譜、pattern = 依大綱時值的練習型);只有檢定書譜的組(Fill 等)顯示「這一組請用檢定書練」並跳過。
+   每一項:官方速度 + 拍點(預備拍 1 小節);Debut–3 可以選「只聽一小節拍點」(p.30 等;之後沒有拍點),4–8 一定跟拍點(p.47 等)。
+   長度:MOCK_BEATS 拍(4 小節,練習設定;大綱沒寫,譜在檢定書),整數輪。App 只播拍點、不播示範(考的是你打)。
+   結果只有每一項「跟拍點打完 / 中途停止 / 沒有打 / 用檢定書練」與自己標的熟練度:不算總分、不出現等第、不換算官方分數。
+   Trinity Rock & Pop 沒有技巧項目(在 Song 3 評),沒有技巧模擬考 ══ */
+const MOCK_BEATS = 16;
+const mockOn = () => tab === "exam" && mock.running();
+const mockStep = () => (mock.running() && mock.data ? mock.data.steps[mock.data.i] : null);
+const mockGrade = () => (mock.data ? mock.data.grade : curExam().grade);
+const oneBarOK = g => { const d = dataOf("rsl"), t = d && d.tech && d.tech[g]; return !!t && t.click === "optional"; };
+/* 這一次播放是模擬考的一項:長度(整數輪,至少 MOCK_BEATS 拍)、只聽一小節拍點 */
+function mockPlay(){
+  const st = mockStep();
+  if (!mockOn() || !st || !st.it) return null;
+  return { reps: Math.max(1, Math.ceil(MOCK_BEATS * DIV / cycleLength(groups))), oneBar: !!S.mockOneBar && oneBarOK(mockGrade()) };
+}
+function startMock(){
+  const ex = curExam(), d = dataOf("rsl");
+  if (ex.system !== "rsl" || ex.auto || !d || !d.tech || !d.tech[ex.grade]) return;
+  stopPlayback();
+  const items = techItems(ex.grade, d);
+  const steps = d.tech[ex.grade].groups.map(gr => {
+    const pool = items.filter(x => x.group === gr.id && (x.kind === "pas" || x.kind === "pattern"));
+    return { gr, it: pool.length ? pool[Math.floor(Math.random() * pool.length)] : null, status: "todo" };
+  });
+  mockSaved = { bpm };
+  mock.begin({ sys: "rsl", grade: ex.grade, steps, i: 0 }, { sys: "rsl", grade: ex.grade });
+  goMockStep(0);
+  window.scrollTo({ top: 0 });
+}
+function goMockStep(i){
+  stopPlayback();
+  const m = mock.data; m.i = i;
+  const st = m.steps[i];
+  if (st.it) {
+    const it = st.it, no = pasNoOf(it);
+    cur = byNo(no);
+    groups = it.kind === "pattern" ? pattern({ pas: it.pas, sticking: it.sticking, value: it.value, lead: S.lead }) : withLead(cur, S.lead);
+    bpm = st.gr.bpm || 60;
+    $("playBtn").disabled = false;
+    syncMastery(); syncTempoUI(); showBest();
+    renderScore(); preloadSamples();
+  } else { cur = null; groups = null; $("playBtn").disabled = true; syncMastery(); }
+  st.status = st.it ? st.status : "skip";
+  renderExam();
+  if (active) requestAnimationFrame(() => { if (active && mock.running()) fitTitle(); onStageResize(); });
+}
+/* 這一項跟拍點打完 / 中途停止(同一場模擬考才算) */
+function mockRunDone(id){
+  if (!mock.alive(id)) return;
+  const st = mockStep(); if (st) st.status = "done";
+  renderExam();
+}
+function mockRunStopped(id){
+  if (!mock.alive(id)) return;
+  const st = mockStep(); if (st && st.status !== "done") st.status = "stopped";
+  if (tab === "exam") renderMockCard(dataOf("rsl"), mockGrade());
+}
+$("mockNext").onclick = () => {
+  if (!mock.running()) return;
+  stopPlayback();
+  const m = mock.data, st = m.steps[m.i];
+  if (st.status === "todo") st.status = "none";
+  if (m.i >= m.steps.length - 1) { finishMock(); return; }
+  goMockStep(m.i + 1);
+};
+function finishMock(){
+  stopPlayback();
+  mock.data.marks = mock.data.steps.map(s => (s.it ? S.mastery[pasNoOf(s.it)] || "" : ""));   // 結果畫面的熟練度(做完當下的)
+  mock.finish();
+  mockRestore();
+  renderExam();
+  window.scrollTo({ top: 0 });
+  if (ctx) ctx.examChanged();
+}
+/* 模擬考結束(做完、中止、停止):速度還原;技巧分頁回來時 switchTab 會照自己的選擇重設打法 */
+function mockRestore(){ if (mockSaved) { bpm = mockSaved.bpm; mockSaved = null; } syncTempoUI(); }
+$("mockBtn").onclick = () => {
+  if (mock.running()) { stopPlayback(); mock.close(); mockRestore(); renderExam(); return; }   // 停止(不算,回到檢定頁)
+  startMock();
+};
+$("mockClose").onclick = () => { mock.close(); renderExam(); window.scrollTo({ top: 0 }); };
+$("mockOneBar").onclick = () => { S.mockOneBar = !S.mockOneBar; store.save(); renderMockCard(dataOf("rsl"), mockGrade()); if (mock.running()) renderMockStep(); };
+
+const stepName = st => () => (st.it ? itemName(st.it) : L(st.gr.name));
+const stepDetail = (st, i) => () => {
+  const b = st.gr.bpm ? `♩=${st.gr.bpm}` : "";
+  const mk = mock.state === "result" && mock.data.marks ? mock.data.marks[i] : "";
+  const mark = mk === "good" ? tr(" · 已經會了", " · got it") : mk === "weak" ? tr(" · 待加強", " · needs work") : "";
+  if (st.status === "skip") return tr("這一組請用檢定書練(App 沒有譜)", "Use the grade book for this group (no part in the App)");
+  if (st.status === "done") return tr(`跟拍點打完 · ${b}`, `Played through with the click · ${b}`) + mark;
+  if (st.status === "stopped") return tr(`中途停止 · ${b}`, `Stopped part-way · ${b}`) + mark;
+  if (st.status === "none") return tr(`沒有打 · ${b}`, `Not played · ${b}`) + mark;
+  return mock.running() && mock.data.i === i ? tr(`進行中 · ${b}`, `Now · ${b}`) : b;
+};
+const stepMark = (st, i) => (st.status === "done" ? "ok" : st.status === "skip" ? "skip" : st.status === "stopped" || st.status === "none" ? "no" : mock.running() && mock.data.i === i ? "cur" : "todo");
+/* 模擬考卡:檢定頁的說明 + 開始 / 進行中的進度 / 結果 / 中止的說明 */
+function renderMockCard(d, g){
+  const ex = curExam(), card = $("mockCard"), ms = mock.state;
+  card.hidden = !(ms !== "idle" || ex.system === "rsl" || !ex.auto);
+  if (card.hidden) return;
+  const name = (sys, gg) => `${sys === "rsl" ? "RSL" : "Trinity"} ${ctx.gradeLabel(gg, sys)}`;
+  const g0 = mock.data ? mock.data.grade : g;
+  $("mockOpts").hidden = !((ms === "idle" || ms === "run") && ex.system === "rsl" && oneBarOK(g0));
+  if (!$("mockOpts").hidden) {
+    $("mockOneBar").setAttribute("aria-pressed", String(!!S.mockOneBar));
+    pairText($("mockOneBar"), () => tr(`只聽一小節拍點(${srcOf("rsl", d.tech[g0].src.p)})`, `One bar of click only (${srcOf("rsl", d.tech[g0].src.p)})`));
   }
-  $("logWeek").innerHTML = html;
+  const rows = mock.data && (ms === "run" || ms === "result") ? mock.data.steps.map((st, i) => ({ id: st.gr.id, name: stepName(st), detail: stepDetail(st, i), mark: stepMark(st, i) })) : null;
+  if (ms === "aborted") {
+    paintCard($, { title: () => tr("模擬考已中止", "Mock exam stopped"), sub: name("rsl", g0), text: () => abortText(mock.reason),
+      btn: ex.system === "rsl" && !ex.auto && d ? { label: () => mockLabel("aborted") } : null, close: { label: () => tr("回到本級要求", "Back to the list") } });
+    if (active) mock.seen();
+    return;
+  }
+  if (ms === "result") {
+    const steps = mock.data.steps, c = k => steps.filter(s => s.status === k).length;
+    paintCard($, { title: () => tr("模擬考結果", "Mock exam result"), sub: name("rsl", mock.data.grade),
+      text: () => [tr(`跟拍點打完 ${c("done")} 組`, `${c("done")} played through`), c("stopped") ? tr(`中途停止 ${c("stopped")} 組`, `${c("stopped")} stopped`) : "",
+        c("none") ? tr(`沒有打 ${c("none")} 組`, `${c("none")} not played`) : "", c("skip") ? tr(`用檢定書練 ${c("skip")} 組`, `${c("skip")} from the grade book`) : ""].filter(Boolean).join(tr(" · ", " · ")) +
+        tr("。熟練度是你自己標的。", ". Got it / needs work are your own marks."),
+      rows, btn: ex.system === "rsl" && !ex.auto && d ? { label: () => mockLabel("result") } : null, close: { label: () => tr("回到本級要求", "Back to the list") } });
+    return;
+  }
+  if (ms === "run") {
+    const m = mock.data;
+    paintCard($, { title: () => tr("模擬考 · 技巧", "Mock exam · Technique"), sub: tr(`${m.i + 1} / ${m.steps.length} 組`, `Group ${m.i + 1} / ${m.steps.length}`),
+      text: () => (oneBarOK(m.grade) ? tr("每一組抽一項,照官方速度;按 ▶ 開始(預備拍 1 小節)。", "One item per group at the official tempo; tap ▶ to start (1-bar count-in).")
+        : tr("每一組抽一項,照官方速度跟拍點打;按 ▶ 開始(預備拍 1 小節)。", "One item per group with the click at the official tempo; tap ▶ to start (1-bar count-in).")),
+      rows, btn: { label: () => mockLabel("run") }, note: () => tr(`每一項 ${MOCK_BEATS / 4} 小節(${TS("srcPractice")})。`, `${MOCK_BEATS / 4} bars each (${TS("srcPractice").toLowerCase()}).`) + " " + resultNote() });
+    return;
+  }
+  // idle(檢定頁):RSL 說明 + 開始;Trinity 沒有技巧模擬考
+  if (ex.system !== "rsl") {
+    paintCard($, { title: () => tr("模擬考", "Mock exam"), sub: name(ex.system, g),
+      text: () => tr("Trinity Rock & Pop 沒有獨立的技巧項目(技巧在 Song 3 評),所以沒有技巧模擬考。", "Trinity Rock & Pop has no separate technique test (it's assessed in Song 3), so there's no technique mock."), note: () => TS("practiceOnly") });
+    return;
+  }
+  const t = d && d.tech && d.tech[g];
+  paintCard($, { title: () => tr("模擬考", "Mock exam"), sub: name("rsl", g),
+    text: () => (!t ? tr("考試資料還沒載好。", "Exam data isn't loaded yet.") : (oneBarOK(g)
+      ? tr(`照考試形式:每一組抽一項,依組的順序,照官方速度打;可以跟著拍點打,或只聽一小節拍點(${srcOf("rsl", t.src.p)})。只有檢定書譜的組請用檢定書練。App 只放拍點,不放示範。`,
+        `Like the exam: one item from each group, in order, at the official tempo — with the click, or after one bar of it (${srcOf("rsl", t.src.p)}). Groups that are only in the grade book: use the book. Click only, no demo.`)
+      : tr(`照考試形式:每一組抽一項,依組的順序,照官方速度跟拍點打(一定要跟拍點,${srcOf("rsl", t.src.p)})。只有檢定書譜的組請用檢定書練。App 只放拍點,不放示範。`,
+        `Like the exam: one item from each group, in order, with the click at the official tempo (click required, ${srcOf("rsl", t.src.p)}). Groups that are only in the grade book: use the book. Click only, no demo.`))),
+    btn: t && !ex.auto ? { label: () => mockLabel("idle"), disabled: !techItems(g, d).some(x => x.kind === "pas" || x.kind === "pattern") } : null,
+    note: () => resultNote() });
+}
+/* 模擬考進行中的題目卡:這一組的項目(或「用檢定書練」)、第幾組、下一組 */
+function renderMockStep(){
+  const m = mock.data, st = m.steps[m.i], last = m.i >= m.steps.length - 1;
+  $("mockStep").textContent = tr(`${st.gr.id} 組 · ${m.i + 1} / ${m.steps.length}`, `Group ${st.gr.id} · ${m.i + 1} / ${m.steps.length}`);
+  pairText($("mockNextLabel"), () => (last ? tr("結束", "Finish") : tr("下一組", "Next group")));
+  renderMockTitle();
+  const one = !!S.mockOneBar && oneBarOK(m.grade);
+  pairText($("mockMsg"), () => (!st.it ? tr("這一組請用檢定書練(譜只在官方檢定書);按「下一組」繼續。", "Use the grade book for this group (the part is only in the book); tap Next group.")
+    : st.status === "done" ? tr("完成。可以標熟練度,再按「下一組」。", "Done. Mark it if you like, then tap Next group.")
+    : st.status === "stopped" ? tr("中途停止。可以再按 ▶ 打一次,或按「下一組」。", "Stopped. Tap ▶ to play it again, or Next group.")
+    : one ? tr("按 ▶:一小節拍點之後自己保持速度打。", "Tap ▶: one bar of click, then keep the tempo yourself.")
+    : tr("按 ▶:預備拍一小節,之後跟著拍點打。", "Tap ▶: a 1-bar count-in, then play with the click.")));
+  syncMastery();
+  if (active) fitTitle();
+}
+function renderMockTitle(){
+  const st = mockStep(); if (!st) return;
+  $("qTitle").textContent = st.it ? itemName(st.it) : L(st.gr.name);
+  const tags = [tr(`${st.gr.id} 組`, `Group ${st.gr.id}`), st.gr.bpm ? `♩=${st.gr.bpm}` : "♩ —", srcOf("rsl", st.it ? st.it.src.p : dataOf("rsl").tech[mockGrade()].src.p),
+    st.it && st.it.kind === "pattern" ? tr("App 練習型", "App drill") : null].filter(Boolean);
+  $("qTags").innerHTML = tags.map((t, i) => `<span class="q-tag${i ? "" : " fold"}" title="${t}">${t}</span>`).join("");
 }
 
 /* ── 啟動(外框呼叫)── */
 export async function start(c){
   ctx = c; exam = c.exam;
+  S.goal = cleanGoal(S.goal);
   renderLog();
   window.__tech = { get target(){ return target; }, get cur(){ return cur; }, get groups(){ return groups; }, get osmd(){ return score.osmd; }, score,
-    get state(){ return { play: !!play, starting: !!starting, bpm, scheduled: audio.scheduledCount(), noteXs: score.noteXs.length, landZoom: score.landZoom, lastEnd: { ...lastEnd } }; }, setRudiment, switchTab, setBpm, S };
+    get state(){ return { play: !!play, starting: !!starting, bpm, scheduled: audio.scheduledCount(), noteXs: score.noteXs.length, landZoom: score.landZoom, lastEnd: { ...lastEnd },
+      mock: mock.state, mockStep: mock.data ? mock.data.i : null, mockSteps: mock.data ? mock.data.steps.map(s => s.status) : null }; }, setRudiment, switchTab, setBpm, S,
+    startMock, mockNext: () => $("mockNext").click(),
+    /* 測試用:模擬考這一項馬上當作跟拍點打完 */
+    mockFinishRun(){ if (play && play.mock) { const id = play.mockId, sec = audio.audioNow() - play.real0; stopPlayback(true); audio.stopAll(); if (sec > 0) addPracticeSec(sec, 1); mockRunDone(id); return true; } return false; } };
 }
