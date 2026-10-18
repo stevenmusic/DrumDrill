@@ -9,7 +9,8 @@
 //     不碰到力度、漸強線、重音、+、連桿、符桿、其他符頭與補畫記號(兩種縮放:0.8 與 1.3);
 //     decorate 抬高的力度、漸強線、連音數字(kit-lift)不碰到上一行譜、不超出譜面與紙張的上緣
 //  3. 折疊機 280 寬:樣張不超出紙張、沒有橫向捲動;圖例中英版面一樣(每一格的位置、大小相同)、出處小字最多兩行、沒有 undefined
-// 截圖存到 tools/test/out/notation/(基本打法、樣張 1000 寬 + 每一張、280 寬中英)
+//  4. 視奏(S8):RSL Debut–3 的小鼓單線譜在視奏分頁實際畫出來(1000 / 280 寬,每級 4 題)
+// 截圖存到 tools/test/out/notation/(基本打法、樣張 1000 寬 + 每一張、280 寬中英、視奏)
 // 用法:node tools/test/notation.mjs
 import { open } from "./harness.mjs";
 import fs from "node:fs";
@@ -213,6 +214,58 @@ async function kitPage(width, lang, shots, { kit = "all", zoom = null } = {}){
     }
   }
   if (bad === n0) ok(`280 寬:樣張都在紙張裡、抬高的記號(${zh.out.reduce((s, o) => s + (o.liftChecked || 0), 0)} 個)不碰上一行、沒有橫向捲動;圖例中英版面一樣(${zh.legend.map(l => l.cells.length).join(" + ")} 格)`);
+}
+
+/* 4. 視奏(S8):RSL Debut–3 的小鼓單線譜(js/sight/gen.js → kitnotation lines:1 → 視奏分頁實際畫出來);1000 與 280 寬,每級 4 題
+   沒有繪製錯誤;符頭數 = MusicXML 的 <note> 數;每個符頭都在那一行的線上(單線譜);譜在紙張裡;每行幾小節照考卷規則(4、2,放不下才交給 OSMD);
+   縮放不小於 0.45(每行 4 小節時不小於 0.55);有圖例(小鼓,單線譜)*/
+for (const width of [1000, 280]) {
+  const n0 = bad;
+  const { page, errors, close } = await open({ viewport: { width, height: 900 }, mobile: width < 600 });
+  await page.evaluate(() => { localStorage.clear(); localStorage.setItem("drumdrill-lang", "zh"); localStorage.setItem("drumdrill.v1", JSON.stringify({ onboarded: true, view: "sight", sub: { sight: "0", tech: "roll", exam: "tech" } })); });
+  await page.reload(); await page.waitForFunction(() => window.__stageReady >= 1);
+  let tests = 0;
+  for (const g of [0, 1, 2, 3]) {
+    await page.evaluate(g => { window.__shell.setExam("rsl", g); window.__shell.showView("sight", String(g)); }, g);
+    for (let k = 0; k < 4; k++) {
+      if (k) { const d = await page.evaluate(() => window.__sight.state.drawn); await page.evaluate(() => window.__sight.newTest()); await page.waitForFunction(d => window.__sight.state.drawn > d, d, { timeout: 20000 }).catch(() => {}); }
+      await page.waitForFunction(() => window.__sight.state.drawn > 0 && !document.querySelector("#s-score[aria-busy]"), null, { timeout: 20000 }).catch(() => {});
+      await page.waitForTimeout(150);
+      const r = await page.evaluate(() => {
+        const S = window.__sight, svg = document.querySelector("#s-score svg"), issues = [];
+        if (!svg) return { issues: ["沒有譜"] };
+        const want = (S.xml.match(/<note>/g) || []).length, got = svg.querySelectorAll(".vf-notehead").length;
+        if (want !== got) issues.push(`符頭 ${got} 個,MusicXML 有 ${want} 個`);
+        if (/失敗/.test(document.getElementById("s-message").textContent)) issues.push("訊息:" + document.getElementById("s-message").textContent);
+        // 單線譜:每個音符(不含休止符)的符頭中心在那一行的線上
+        for (const line of svg.querySelectorAll(".staffline")) {
+          const ys = [...line.querySelectorAll(".vf-measure > path")].map(p => /^M\s*([\d.-]+)\s+([\d.-]+)\s*L\s*([\d.-]+)\s+([\d.-]+)$/.exec(p.getAttribute("d") || "")).filter(m => m && m[2] === m[4]).map(m => Number(m[2]));
+          const lineY = [...new Set(ys.map(y => Math.round(y)))];
+          if (lineY.length !== 1) { issues.push(`一行裡有 ${lineY.length} 條譜線`); continue; }
+          for (const n of line.querySelectorAll(".vf-stavenote")) {
+            if (/rest/.test(n.getAttribute("class") || "") || n.querySelector(".vf-rest")) continue;
+            const h = [...n.querySelectorAll(".vf-notehead")].find(e => !e.closest(".vf-modifiers")); if (!h) continue;
+            const b = h.getBBox(), cy = b.y + b.height / 2;
+            if (b.height < 20 && Math.abs(cy - ys[0]) > b.height * 0.3 && !/𝄽|rest/.test(h.textContent)) { issues.push(`符頭不在線上(差 ${(cy - ys[0]).toFixed(1)})`); break; }
+          }
+        }
+        const pr = document.getElementById("s-stage").getBoundingClientRect(), gr = svg.getBoundingClientRect();
+        if (gr.right > pr.right + 1 || gr.left < pr.left - 1) issues.push(`譜超出紙張(${Math.round(gr.left)}–${Math.round(gr.right)} / ${Math.round(pr.left)}–${Math.round(pr.right)})`);
+        const L = S.layout || {};
+        if (![4, 2, 0].includes(L.measuresPerLine)) issues.push(`每行 ${L.measuresPerLine} 小節`);
+        if (!(L.zoom >= 0.45 - 1e-9) || (L.measuresPerLine === 4 && L.zoom < 0.55 - 1e-9)) issues.push(`縮放 ${L.zoom}`);
+        const leg = document.querySelector("#s-legend .kl-cell[data-piece='snare']");
+        if (!leg) issues.push("沒有圖例");
+        return { issues, layout: L, grade: S.state.grade };
+      });
+      tests++;
+      for (const i of r.issues) fail(`視奏 ${width} 寬 ${g} 級 第 ${k + 1} 題:${i}`);
+    }
+    if (width === 1000 || g === 3) await page.locator("#s-scoreCard").screenshot({ path: OUT + `sight-${width}-g${g}.png` });
+  }
+  for (const e of errors) fail(`視奏 ${width} 寬 console:` + e);
+  if (bad === n0) ok(`視奏 ${width} 寬:${tests} 題小鼓單線譜都畫得出來、符頭數 = MusicXML、都在線上、在紙張裡、每行小節數與縮放照考卷規則、有圖例`);
+  await close();
 }
 
 console.log(bad ? `✗ ${bad} 項問題` : `✓ 全部通過(截圖在 ${OUT})`);

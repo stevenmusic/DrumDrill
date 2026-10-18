@@ -26,18 +26,21 @@ const S = (() => {
   saved = saved || {};
   if (saved.exam && !["trinity", "rsl"].includes(saved.exam.system)) saved.exam = null;
   return { view: "tech", exam: null, onboarded: false, theme: "dark", ...saved,
-    sub: { tech: "roll", exam: "tech", ...(saved.sub || {}) } };
+    sub: { tech: "roll", exam: "tech", sight: String(saved.exam ? saved.exam.grade : 0), ...(saved.sub || {}) } };
 })();
 /* ── 考試:Trinity Rock & Pop Drums(Initial、1–8 級)、RSL Rockschool Drums(Debut、1–8 級) ── */
 const SYSTEMS = { trinity: "Trinity", rsl: "RSL" };
 const DEFAULT_EXAM = { system: "trinity", grade: 1 };   // 第一次打開的問題、沒選考試時檢定分頁暫時看的
-const examSystem = () => (S.exam ? S.exam.system : autoExam.system);
+/* 視奏分頁沒選考試時用 RSL(只有 RSL 有視奏項目;Trinity Rock & Pop 沒有):子項目的第一格寫 D、aria-label 寫 Debut,跟 js/sight/app.js 一致 */
+const FREE_SIGHT_SYSTEM = "rsl";
+const examSystem = () => (S.exam ? S.exam.system : S.view === "sight" ? FREE_SIGHT_SYSTEM : autoExam.system);
 export const gradeLabel = (g, sys = examSystem()) => g === 0 ? (sys === "rsl" ? tr("入門(Debut)", "Debut") : tr("初級", "Initial")) : tr(g + " 級", "Grade " + g);
 /* 子項目分段鈕;檢定分頁三項的名稱 */
 const SUBS = {
   // 技巧:PAS 40 個基本打法的四大類
   tech: () => [["roll", tr("滾奏", "Rolls")], ["diddle", tr("複點", "Diddles")], ["flam", "Flam"], ["drag", "Drag"]],
-  sight: () => [],
+  // 視奏:子項目列放級數 0–8(跟技巧的四大類同一個位置);第一格 RSL 寫 D(Debut)、Trinity 寫 I(Initial),aria-label 寫完整級名
+  sight: () => [0, 1, 2, 3, 4, 5, 6, 7, 8].map(g => [String(g), g === 0 ? (examSystem() === "rsl" ? "D" : "I") : String(g)]),
   ear: () => [],
   exam: () => [["tech", tr("技巧", "Technique")], ["sight", tr("視奏", "Sight-reading")], ["ear", tr("聽力", "Aural")]]
 };

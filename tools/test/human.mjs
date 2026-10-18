@@ -13,7 +13,9 @@ let bad = 0; const fail = (m) => { bad++; console.log("✗ " + m); };
 // @app-begin
 // DrumDrill 技巧:點選擇器、播放/停止(含連點)、按住 ±、熟練標記、播放選項;檢查播放狀態跟按鈕文字一致、
 //   鼓譜跟題目一致(左右手字母都在)、速度在 30–240 且跟顯示一致
-const APP = "drumdrill", SYSTEMS = ["trinity", "rsl"], STORE_KEYS = ["drumdrill.v1", "drumdrill.tech.v1"];
+// DrumDrill 視奏(S8):準備 / 結束準備、正式打 / 停止、聽正確版本、點鼓墊、新題目、速度;「正式打到結果」:♩=240 打完要有練習回饋。
+//   檢查:視奏不在畫面上(或在檢定頁)時沒有在播放、準備的倒數停了、不在正式打;按鈕文字跟狀態一致
+const APP = "drumdrill", SYSTEMS = ["trinity", "rsl"], STORE_KEYS = ["drumdrill.v1", "drumdrill.tech.v1", "drumdrill.sight.v1"];
 const appActions = ({ page, tap, tapAny }) => [
   [10, "技巧選擇器", async () => tapAny("#t-picker .rows .opt")],
   [8, "技巧 播放/停止", async () => tap("#t-playBtn")],
@@ -44,6 +46,25 @@ const appActions = ({ page, tap, tapAny }) => [
     return true;
   }],
   [1, "離開目標", async () => tap("#t-targetClose")],
+  // S8 視奏
+  [3, "視奏 準備 / 結束準備", async () => tap("#s-prepare")],
+  [3, "視奏 正式打 / 停止", async () => tap("#s-playAlong")],
+  [3, "視奏 聽正確版本", async () => tap("#s-play")],
+  [3, "視奏 點鼓墊", async () => tapAny("#s-pads .tap-pad")],
+  [2, "視奏 新題目", async () => tap("#s-generate")],
+  [1, "視奏 速度 ±", async () => tap(pickOne(["#s-bpmUp", "#s-bpmDown"]))],
+  [2, "視奏 正式打到結果", async () => {
+    const ok = await page.evaluate(() => !document.getElementById("mod-sight").hidden && !document.getElementById("s-quiz").hidden && !!window.__sight.test);
+    if (!ok) return false;
+    await page.evaluate(() => { const S = window.__sight; if (S.state.phase === "perform") document.getElementById("s-playAlong").click(); S.setBpm(240); document.getElementById("s-playAlong").click(); });
+    try { await page.waitForFunction(() => window.__sight.state.phase === "perform", null, { timeout: 15000 }); } catch (e) { return false; }
+    for (let k = 0; k < 5; k++) { if (!(await tapAny("#s-pads .tap-pad"))) await page.keyboard.press("j"); await page.waitForTimeout(250); }
+    try { await page.waitForFunction(() => window.__sight.state.phase !== "perform", null, { timeout: 15000 }); } catch (e) { fail("視奏 正式打 15 秒還沒結束"); return true; }
+    const r = await page.evaluate(() => ({ phase: window.__sight.state.phase, result: window.__sight.state.result, shown: !document.getElementById("s-alongResult").hidden, sight: !document.getElementById("mod-sight").hidden }));
+    if (r.sight && (r.phase !== "result" || !r.result || !r.shown || !(r.result.taps > 0))) fail(`視奏 正式打完沒有練習回饋:${JSON.stringify({ phase: r.phase, shown: r.shown, taps: r.result && r.result.taps })}`);
+    await page.evaluate(() => { const S = window.__sight; if (S.test) S.setBpm(S.test.bpm); });
+    return true;
+  }],
 ];
 // 在頁面裡跑(不能用外面的變數)
 const appCheck = async () => {
@@ -65,6 +86,22 @@ const appCheck = async () => {
   }
   // 檢定頁沒有播放鈕:技巧在檢定頁也不能在播
   if (A && shown[0] === "tech" && view === "exam" && A.state.play) out.push("技巧在檢定頁卻還在播放");
+  // 視奏:不在畫面上(或在檢定頁)時不能在播、倒數要停、不能在正式打;在畫面上時按鈕跟狀態一致
+  const Sg = window.__sight;
+  if (Sg) {
+    const s = Sg.state, onScreen = shown[0] === "sight" && view !== "exam" && !document.getElementById("s-quiz").hidden;
+    if (!onScreen) {
+      if (s.play) out.push("視奏不在畫面上卻還在播放");
+      if (s.timer) out.push("視奏不在畫面上,準備的倒數還在跑");
+      if (s.phase === "perform" || s.phase === "prep") out.push(`視奏不在畫面上還在 ${s.phase}`);
+    } else {
+      const lbl = document.getElementById("s-playAlong").textContent;
+      if ((s.phase === "perform") !== ["停止", "Stop"].includes(lbl)) out.push(`視奏 ${s.phase} 但正式打按鈕寫「${lbl}」`);
+      if ((s.kind === "listen") !== document.getElementById("s-play").classList.contains("is-active")) out.push(`視奏播放鈕狀態不一致(${s.kind})`);
+      if ((s.phase === "prep") !== s.timer) out.push(`視奏準備倒數不一致(${s.phase}, timer ${s.timer})`);
+      if (s.drawn && !s.pending && !document.querySelector("#s-score svg")) out.push("視奏沒有譜");
+    }
+  }
   return out;
 };
 // @app-end

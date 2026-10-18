@@ -8,7 +8,7 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
 - 每次更新(每次 push)都要用中文條列解釋這次改了什麼、為什麼改
 
 ## 架構(照 PianoDrill)
-- 底部四個分頁:**技巧 / 視奏 / 聽力 / 檢定**。頂欄下面的子項目分段鈕:技巧 = 滾奏/複點/Flam/Drag(PAS 四大類)、檢定 = 技巧/視奏/聽力
+- 底部四個分頁:**技巧 / 視奏 / 聽力 / 檢定**。頂欄下面的子項目分段鈕:技巧 = 滾奏/複點/Flam/Drag(PAS 四大類)、視奏 = 級數 0–8(第一格 RSL 寫 D、Trinity 寫 I,aria-label 寫完整級名;沒選考試時用 RSL)、檢定 = 技巧/視奏/聽力
 - 檢定:考試系統 **Trinity Rock & Pop Drums**(初級 Initial、1–8 級)與 **RSL Rockschool Drums**(入門 Debut、1–8 級),在外框設一次(`js/main.js`)
   - Trinity 只採用 Rock & Pop 大綱;不用 Drum Kit & Percussion 系列的要求(記譜圖例用到 DK p.107 是例外,要標出處)
   - 檢定頁不顯示練習紀錄(練習回饋不跟配分、等第放在同一個畫面,也不換算成官方分數)
@@ -22,10 +22,17 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
 - 共用元件(`js/shared/`):`score.js`(一整行譜面 + 播放軸,看不到時延後重畫)、`tempo.js`(速度 − / + / 滑桿 / 拍點燈號)、`landscape.js`(手機橫式)。
   **共用元件不寫死前綴**:一律接收模組自己的 `$`(`id => getElementById(前綴 + id)`)(`grep -n '"t-' js/shared/*.js` 要沒結果);
   共用的 CSS 用 class,或在 `drum.css` 補 `#s-…`、`#e-…` 的規則,`app.css` 不動
-- 視奏、聽力目前是「準備中」說明卡:題目規則要先照 Trinity / RSL 官方大綱與範例整理才做
-- 中英雙語(預設英文,切過就記住):外框字串 `js/shared/i18n.js`、技巧 `js/tech/strings.js`(前綴 `tech.`);程式產生的文字用 `tr("中", "EN")`
+- 視奏(`js/sight/`,卡片 id 與流程照 PianoDrill 視奏;S8):RSL Debut–3 小鼓視奏由 `gen.js` 出題(純函式,照 `data/exam-rsl.json` sight[g] 的白名單時值、
+  休止符、小節數、速度;4/4 標推估;節奏格、結尾規則、混合格標練習設定;範圍速度隨機取整數;同種子同題、`fingerprint.js` 的歷史避免重複)。
+  流程:出題 → 準備 90 秒(官方;節拍器可開關;鼓墊可試打、不計分)→ 正式打(預備拍 1 小節,推估)→ 結果(觸控鼓墊的節奏「練習回饋」+ 自我檢查,
+  不出現等第字眼、不換算成官方分數)→ 聽正確版本(`js/shared/player.js` + `stage.js`)。使用者改了速度寫「練習速度(官方 ♩=…)」。
+  RSL 4–5(整組鼓,下一版)、6–8(Quick Study Piece、I&I 只列規格)、Trinity(Rock & Pop 沒有視奏;Playback 看譜練習下一版)只有說明卡 + 規格卡,不出題
+  - `stage.js`、`random.js` 跟 PianoDrill(`js/sight/stage.js`、`js/sight/generator/random.js`)一模一樣;`fingerprint.js` 只有 `@app` 區段不同(還沒列進 `sync.json`,要兩邊同時加)
+- 聽力目前是「準備中」說明卡:題目規則要先照 Trinity / RSL 官方大綱與範例整理才做
+- 中英雙語(預設英文,切過就記住):外框字串 `js/shared/i18n.js`、技巧 `js/tech/strings.js`(前綴 `tech.`)、視奏 `js/sight/strings.js`(前綴 `sight.`);程式產生的文字用 `tr("中", "EN")`
 - 用詞:「檢定」「考試」,不用「考級」(只有 App Store 關鍵字可以放)
-- localStorage:`drumdrill.v1`(外框)、`drumdrill.tech.v1`(技巧)、`drumdrill-lang`(語言)
+- localStorage:`drumdrill.v1`(外框)、`drumdrill.tech.v1`(技巧)、`drumdrill.sight.v1`(視奏:pick、節拍器 / 拍點開關、`bpmOverride` 每一級各自的練習速度、
+  出題歷史、各級練過幾題、練習紀錄、譜面排法)、`drumdrill-lang`(語言)
 
 ## 絕不能做的事
 - **不要有 build step**:多檔 ES modules,直接部署 GitHub Pages(main 根目錄);App 版只是把同樣的檔案複製到 `app/www`
@@ -63,6 +70,9 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
 - 適配所有尺寸:折疊機 280、SE 320 到 iPad、桌機、1080p,手機直式與橫式;沒有橫向捲動、元素不超出畫面、按鈕文字不被截斷、點擊區域至少 28×28、底部分頁列不蓋住內容
 - **手機橫式**(orientation:landscape 且高度 ≤ 500):分頁列是左邊的直欄、頂欄一行(`app.css`,跟 PianoDrill 共用);
   譜面依「譜面框到畫面底」放大(`landscape.js` 的 `fitLandZoom`),播放時 body 加 `land-play`:樂譜卡貼到頂欄下、放到滿版,停止後捲回、縮回;播放中點譜面 = 停止
+- **視奏譜面要像印出來的考卷**(照 PianoDrill 的 fitScore):每行目標 4 小節(整除優先、不留單獨一小節,太密才退到 2),再縮放到放得下寬度;
+  整份在「樂譜卡捲到頂欄下」時一眼看完,放不下再縮,但不小於 0.55(每行 2 小節的最後手段 0.45);同形狀的題目沿用同一個排法與大小(只縮不放大)。
+  單線譜用 `kitnotation.js`(lines:1)+ OSMD compacttight + `legend.js`(圖例一定要有)
 - **中英文版面要一模一樣**:英文長就縮短文字;段落用 `pairText`;標籤數量兩種語言一樣;打法清單用固定格子(最多兩行)
 - 快取:改了 css/js/data 一定要跑 `node tools/build/stamp.mjs`(index.html 的 importmap 與 ?v= 版本指紋;verify 會檢查)
 
@@ -71,9 +81,10 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
   - 雲端工作階段依指定分支(目前是 `claude/text-overflow-issue-52hnyj`,不推 main)
 - 測試:
   - `node tools/test/verify.mjs`(不用瀏覽器):基本打法照 PAS 官方表、MusicXML、`checks/examdata.mjs`(考試資料 + 手抄核對)、
-    `checks/pattern.mjs`(RSL 練習型)、`checks/appsamples.mjs`(App 取樣數)、版本指紋、`sync.mjs`(跟 PianoDrill 的共用檔案;`PIANODRILL=…`)
+    `checks/pattern.mjs`(RSL 練習型)、`checks/gen-sight.mjs`(視奏出題器:每級 1000 個種子)、`checks/appsamples.mjs`(App 取樣數)、版本指紋、`sync.mjs`(跟 PianoDrill 的共用檔案;`PIANODRILL=…`)
   - 瀏覽器(`cd tools/test && npm i` 一次;Playwright):`node layout.mjs`(19 種尺寸)、`node bilingual.mjs`(中英版面)、`node clip.mjs`(文字被切掉)、
-    `node human.mjs 150 3`(模擬真人操作)、`node playback.mjs`(播放排程與停止)、`node kitaudio.mjs`(整組鼓取樣)
+    `node human.mjs 150 3`(模擬真人操作)、`node playback.mjs`(播放排程與停止)、`node pad.mjs`(觸控鼓墊)、
+    `node notation.mjs`(OSMD 實際畫譜:40 個打法、鼓組樣張、視奏小鼓譜)、`node kitaudio.mjs`(整組鼓取樣);layout / bilingual / clip / human 都有視奏的狀態
   - 重構前後畫面要一樣:動手前 `node shots.mjs --save`,改完 `node shots.mjs --compare`(19 種尺寸 × 技巧四類 + #40×8 + 檢定頁 × 中英,逐像素比對)
   - `tools/test/notation-preview.html?n=1,2,3`:把指定的打法畫出來,跟官方表對照;`?pattern=rsl-7-A`(或 `rsl-7`):RSL 練習型
 - 上架:`docs/APPSTORE.md`;App Store 關鍵字不放 Trinity、RSL、Rockschool(考試機構的商標)

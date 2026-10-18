@@ -41,7 +41,8 @@ const scan = page => page.evaluate(() => {
 const APP = "drumdrill";
 const START = { onboarded: true, view: "tech", exam: { system: "rsl", grade: 5 } };
 // 子項目 "" = 這一頁沒有子項目
-const VIEWS = [["tech", ["roll", "diddle", "flam", "drag"]], ["sight", [""]], ["ear", [""]], ["exam", ["tech", "sight", "ear"]]];
+// 視奏:子項目 = 級數(Debut、3 級有題目;6 級是說明卡);more() 再看準備中 / 結果 / 正確版本與 Trinity 的說明卡
+const VIEWS = [["tech", ["roll", "diddle", "flam", "drag"]], ["sight", ["0", "3", "6"]], ["ear", [""]], ["exam", ["tech", "sight", "ear"]]];
 // 同一個畫面再多看幾種內容:技巧每一類的每個打法(不同長度、g j p y 的名稱)
 async function more(page, view, s, report){
   // 檢定頁:RSL 0/3/8、Trinity 0/4/8(最後回到 START 的考試)
@@ -51,6 +52,26 @@ async function more(page, view, s, report){
       await report(`${view}/${s} ${sys} ${g}`);
     }
     await page.evaluate(ex => window.__shell.setExam(ex.system, ex.grade), START.exam);
+    return;
+  }
+  if (view === "sight") {
+    const click = id => page.evaluate(id => document.getElementById(id).click(), id);
+    if (s === "6") {   // Trinity 1 級:說明卡(最後回到 START 的考試)
+      await page.evaluate(() => { window.__shell.setExam("trinity", 1); window.__shell.showView("sight", "1"); }); await page.waitForTimeout(500);
+      await report(`${view} trinity 1`);
+      await page.evaluate(ex => { window.__shell.setExam(ex.system, ex.grade); window.__shell.showView("sight", "6"); }, START.exam); await page.waitForTimeout(300);
+      return;
+    }
+    await page.waitForFunction(() => window.__sight.state.drawn > 0 && !window.__sight.state.pending, null, { timeout: 20000 }).catch(() => {});
+    await click("s-prepare"); await page.waitForTimeout(500); await report(`${view}/${s} 準備中`);
+    await click("s-prepare"); await page.waitForTimeout(200);
+    await page.evaluate(() => window.__sight.setBpm(240));
+    await click("s-playAlong"); await page.waitForFunction(() => window.__sight.state.phase === "perform", null, { timeout: 20000 });
+    for (let k = 0; k < 3; k++) { await page.keyboard.press("j"); await page.waitForTimeout(300); }
+    await page.waitForFunction(() => window.__sight.state.phase === "result", null, { timeout: 20000 }); await page.waitForTimeout(300);
+    await report(`${view}/${s} 結果`);
+    await click("s-play"); await page.waitForTimeout(600); await report(`${view}/${s} 正確版本`);
+    await click("s-play"); await page.evaluate(() => window.__sight.setBpm(window.__sight.test.bpm));
     return;
   }
   if (view !== "tech") return;

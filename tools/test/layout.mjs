@@ -149,6 +149,32 @@ for (const [name, w, h, mobile] of VPS) {
     if (await page.evaluate(() => document.body.classList.contains("land-play"))) report(name, "技巧 手機橫式播放中", "停止後 land-play 沒有拿掉");
   }
   await tab("sight"); await audit(page, name, "視奏"); await tab("ear"); await audit(page, name, "聽力");
+  // S8 視奏:RSL Debut、3 級 × 準備中 / 作答中 / 結果 / 正確版本;RSL 6 級與 Trinity 1 級的說明卡
+  const sightReady = () => page.waitForFunction(() => window.__sight.state.drawn > 0 && !window.__sight.state.pending && !document.querySelector("#s-score[aria-busy]"), null, { timeout: 20000 }).then(() => page.waitForTimeout(400));
+  const sClick = id => page.evaluate(id => document.getElementById(id).click(), id);
+  for (const g of [0, 3]) {
+    await page.evaluate(g => { window.__shell.setExam("rsl", g); window.__shell.showView("sight", String(g)); }, g); await sightReady();
+    await audit(page, name, `視奏 rsl ${g}`);
+    await sClick("s-prepare"); await page.waitForTimeout(700);
+    await audit(page, name, `視奏 rsl ${g} 準備中`); if (g === 3) await shot("sight-prep");
+    await sClick("s-prepare"); await page.waitForTimeout(200);
+    await page.evaluate(() => window.__sight.setBpm(240));
+    await sClick("s-playAlong");
+    await page.waitForFunction(() => window.__sight.state.phase === "perform", null, { timeout: 20000 }); await page.waitForTimeout(1200);
+    for (let k = 0; k < 4; k++) { await page.keyboard.press("j"); await page.waitForTimeout(150); }
+    await audit(page, name, `視奏 rsl ${g} 作答中`);
+    await page.waitForFunction(() => window.__sight.state.phase === "result", null, { timeout: 20000 }); await page.waitForTimeout(300);
+    await audit(page, name, `視奏 rsl ${g} 結果`); if (g === 3) await shot("sight-result");
+    await sClick("s-play"); await page.waitForFunction(() => window.__sight.state.kind === "listen", null, { timeout: 20000 }); await page.waitForTimeout(600);
+    await audit(page, name, `視奏 rsl ${g} 正確版本`);
+    await sClick("s-play"); await page.waitForTimeout(200);
+    await page.evaluate(() => window.__sight.setBpm(window.__sight.test.bpm));
+  }
+  for (const [sys, g] of [["rsl", 6], ["trinity", 1]]) {
+    await page.evaluate(([s, g]) => { window.__shell.setExam(s, g); window.__shell.showView("sight", String(g)); }, [sys, g]); await page.waitForTimeout(400);
+    await audit(page, name, `視奏 ${sys} ${g} 說明卡`);
+  }
+  await page.evaluate(() => window.__shell.setExam("trinity", 8));
   // 英文(字比較長)
   await tab("tech"); await page.click("#langToggle"); await page.waitForTimeout(500);
   await audit(page, name, "英文 技巧"); await shot("english");

@@ -1,4 +1,4 @@
-// 不用瀏覽器的檢查:基本打法資料(照 PAS 官方表)、鼓譜 MusicXML(技巧的單線譜、鼓組譜)、RSL 依大綱時值的練習型、考試資料(照 RSL / Trinity 官方大綱)、節奏評分、版本指紋、兩個 App 的共用檔案(sync.mjs)
+// 不用瀏覽器的檢查:基本打法資料(照 PAS 官方表)、鼓譜 MusicXML(技巧的單線譜、鼓組譜)、RSL 依大綱時值的練習型、考試資料(照 RSL / Trinity 官方大綱)、節奏評分、視奏出題器、版本指紋、兩個 App 的共用檔案(sync.mjs)
 // 執行:node tools/test/verify.mjs
 import { execFileSync } from "node:child_process";
 import { RUDIMENTS, CATEGORIES, strokes, cycleLength, mainStrokes, withLead, DIV } from "../../js/tech/rudiments.js";
@@ -8,6 +8,7 @@ import appsamples from "./checks/appsamples.mjs";
 import patterncheck from "./checks/pattern.mjs";
 import kitxml from "./checks/kitxml.mjs";
 import timing from "./checks/timing.mjs";
+import gensight from "./checks/gen-sight.mjs";
 let fails = 0, checks = 0;
 const ok = (cond, msg) => { checks++; if (!cond) { fails++; console.log("✗ " + msg); } };
 
@@ -67,6 +68,8 @@ try { appsamples(ok); } catch (e) { ok(false, "App 取樣數檢查出錯:" + e.s
 try { kitxml(ok); } catch (e) { ok(false, "鼓組譜檢查出錯:" + e.stack); }
 // 6d. 觸控鼓墊的節奏評分(js/shared/timing.js + onsets.js 的 scoreRhythm):已知偏移、漏打 / 多打、偏移超過上限、三個鼓墊各自評分
 try { timing(ok); } catch (e) { ok(false, "節奏評分檢查出錯:" + e.stack); }
+// 6e. 視奏出題器(js/sight/gen.js,RSL Debut–3 小鼓):每級 1000 個種子只出現白名單時值、每小節 4 拍、同種子同題、速度在範圍內(checks/gen-sight.mjs)
+try { gensight(ok); } catch (e) { ok(false, "視奏出題器檢查出錯:" + e.stack); }
 // 7. 版本指紋與 sw.js 預快取清單
 try { execFileSync("node", [new URL("../build/stamp.mjs", import.meta.url).pathname, "--check"], { stdio: "pipe" }); checks++; }
 catch (e) { fails++; checks++; console.log("✗ " + (e.stdout || "").toString().trim()); }

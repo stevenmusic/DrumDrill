@@ -32,29 +32,88 @@
 /* 題目太長(折疊機的英文名):同一個高度排兩行 */
 #t-qTitle.two{display:block;white-space:normal;line-height:1.15;overflow:hidden;text-overflow:clip;align-content:center}
 
-/* ══ 共用的譜面元件(js/shared/score.js)給視奏、聽力用:跟 app.css 的 #t-scroll、#t-osmd、#t-playline、手機橫式播放中一樣(app.css 不動) ══ */
-.paper:has(#s-osmd:empty),.paper:has(#e-osmd:empty){min-height:96px}
-#s-scroll,#e-scroll{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;display:flex}
-#s-scroll::-webkit-scrollbar,#e-scroll::-webkit-scrollbar{display:none}
-#s-osmd,#e-osmd{flex:none;width:auto;margin:0 auto;padding:0;position:relative;will-change:transform;color:#16130D}
-#s-playline,#e-playline{
+/* ══ 共用的譜面元件(js/shared/score.js)給聽力用:跟 app.css 的 #t-scroll、#t-osmd、#t-playline、手機橫式播放中一樣(app.css 不動)。
+   視奏的譜像考卷(多行),用 PianoDrill 視奏的 stage.js(#s-stage / #s-score / #s-highlight / #s-playline,樣式在下面「視奏」) ══ */
+.paper:has(#e-osmd:empty){min-height:96px}
+#e-scroll{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;display:flex}
+#e-scroll::-webkit-scrollbar{display:none}
+#e-osmd{flex:none;width:auto;margin:0 auto;padding:0;position:relative;will-change:transform;color:#16130D}
+#e-playline{
   position:absolute;width:2px;left:0;top:0;bottom:0;
   background:linear-gradient(to bottom,transparent,#B8860B 12%,#B8860B 88%,transparent);
   box-shadow:0 0 14px 2px rgba(184,134,11,.45);
   opacity:.5;pointer-events:none;z-index:5;will-change:transform;
 }
-#s-playline::before,#e-playline::before{
+#e-playline::before{
   content:"";position:absolute;top:-2px;left:50%;transform:translateX(-50%);
   border:7px solid transparent;border-top:10px solid #B8860B;
 }
-body.land-play #s-scoreCard,body.land-play #e-scoreCard{display:flex;flex-direction:column;min-height:calc(100vh - 70px);min-height:calc(100dvh - 70px)}
-body.land-play #s-stage,body.land-play #e-stage{flex:1;display:flex;flex-direction:column;justify-content:center}
-/* 視奏的觸控鼓墊(S8 新增):照 PianoDrill 視奏的卡片順序,放在譜面下面、跟著打的結果同一層 */
-#s-pads{order:5}
+body.land-play #e-scoreCard{display:flex;flex-direction:column;min-height:calc(100vh - 70px);min-height:calc(100dvh - 70px)}
+body.land-play #e-stage{flex:1;display:flex;flex-direction:column;justify-content:center}
+
+/* ══ 視奏(S8;照 PianoDrill css/sight.css,一律限定在 #mod-sight / #s-…)══
+   卡片順序(app.css:設定 1、說明 2、題目 3、譜 4、正式打 5、紀錄 6):觸控鼓墊放在「正式打」卡裡(譜的下面) */
+:root{ --paper-gold:#856418; }
+#mod-sight .countdown{font-family:"Noto Serif TC",serif;font-variant-numeric:tabular-nums;font-size:24px;font-weight:700;line-height:1;
+  color:var(--gold);margin-left:6px;transition:color .2s;white-space:nowrap}
+#mod-sight .countdown .unit{font-family:"Noto Sans TC",sans-serif;font-size:var(--fs-xs);font-weight:400;color:var(--muted);margin-left:2px}
+#mod-sight .countdown.running{color:var(--gold-bright)}
+#mod-sight .countdown.done{color:var(--muted-bright)}
+@media (max-width:340px){ #s-prepare .btn-label{display:none} }
+#s-practiceOnly{grid-column:1 / -1;margin-top:0}
+/* 譜:白紙(深淺主題都一樣);播放時目前小節上淡金色、播放軸照 ScrollScore */
+#mod-sight .stage{position:relative;background:var(--paper);border-radius:var(--radius-sm);padding:4px 6px 6px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06);min-height:0}
+@media (max-width:600px){ #mod-sight .stage{padding:2px 2px 4px} }
+#mod-sight .measure-highlight{position:absolute;display:none;background:var(--paper-gold);opacity:.16;border-radius:3px;pointer-events:none;z-index:0;
+  transition:left .12s linear, width .12s linear, top .25s ease}
+#mod-sight .playline{position:absolute;top:0;left:0;width:2px;display:none;
+  background:linear-gradient(to bottom,transparent,#B8860B 12%,#B8860B 88%,transparent);box-shadow:0 0 14px 2px rgba(184,134,11,.45);
+  opacity:.5;pointer-events:none;z-index:5;transition:transform .12s linear}
+#mod-sight .playline::before{content:"";position:absolute;top:-2px;left:50%;transform:translateX(-50%);border:7px solid transparent;border-top:10px solid #B8860B}
+#mod-sight .score{position:relative;z-index:1;min-height:6rem;color:#16130D;opacity:1;transform:translateY(0);transition:opacity .22s ease-out, transform .22s ease-out}
+#mod-sight .score.entering{opacity:0;transform:translateY(4px);transition:none}
+#mod-sight .score .kit-mark{fill:#16130D}
+@media (prefers-reduced-motion:reduce){ #mod-sight .score{transition:none} }
+#s-legend{margin-top:10px}
+#s-confidence{padding:0 4px}
+/* 看譜重點 / 自我檢查 */
+#mod-sight .s-checkbox{margin-top:12px}
+#mod-sight .s-check-title{font-size:var(--fs-xs);letter-spacing:.08em;color:var(--gold);line-height:1.5}
+#mod-sight .checklist{margin:4px 0 0;padding-left:1.4em;color:var(--muted-bright);font-size:var(--fs-sm);line-height:1.6;columns:2;column-gap:28px}
+#mod-sight .checklist li{break-inside:avoid}
+#mod-sight .checklist li > span{display:block}   /* pairText 的高度(min-height)要在區塊上才有用 */
+#mod-sight .checklist.self{list-style:none;padding-left:0}
+#mod-sight .checklist.self label{display:flex;align-items:flex-start;gap:8px;min-height:30px;cursor:pointer;overflow-wrap:anywhere}
+#mod-sight .checklist.self input{flex:none;width:20px;height:20px;margin:2px 0 0;accent-color:var(--gold)}
+@media (max-width:600px){ #mod-sight .checklist{columns:1} }
+/* 準備的浮動倒數(譜捲到畫面上時,題目卡的倒數看不到) */
+#mod-sight .prep-float{position:fixed;right:12px;z-index:55;display:flex;align-items:baseline;gap:2px;padding:6px 14px;border-radius:var(--radius-pill);
+  background:var(--gold-fill);color:var(--on-fill);font-family:"Noto Serif TC",serif;font-size:22px;font-weight:700;line-height:1.2;
+  box-shadow:0 4px 14px rgba(0,0,0,.35);font-variant-numeric:tabular-nums;pointer-events:none}
+#mod-sight .prep-float .unit{font-size:12px;font-family:inherit}
+#mod-sight .prep-float.low{animation:prep-pulse 1s ease-in-out infinite}
+@keyframes prep-pulse{50%{transform:scale(1.12)}}
+@media (prefers-reduced-motion:reduce){ #mod-sight .prep-float.low{animation:none} }
+#mod-sight .prep-float[hidden]{display:none}
+/* 正式打:鼓墊 + 按鈕 + 預備拍說明 + 練習回饋 */
+#mod-sight .along{display:flex;flex-direction:column;gap:12px}
+#mod-sight .along .pads{width:100%}
+#mod-sight .along-row{display:flex;align-items:center;gap:8px 14px;flex-wrap:wrap}
+#mod-sight .along-row .btn{height:44px;padding:0 22px;flex:none}
+#mod-sight .along-note{flex:1 1 180px;min-width:0;color:var(--muted);font-size:var(--fs-xs);line-height:1.5;overflow-wrap:anywhere}
+@media (max-width:600px){ #mod-sight .along-row .btn{width:100%} }
+#mod-sight .along-result{border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 14px;line-height:1.5;background:var(--surface-inset)}
+#mod-sight .along-result .r-head{font-size:var(--fs-xs);letter-spacing:.08em;color:var(--gold)}
+#mod-sight .along-result .big{font-family:"Noto Serif TC",serif;font-size:30px;font-weight:700;color:var(--gold-bright);line-height:1.25}
+#mod-sight .along-result .big small{font-family:"Noto Sans TC",sans-serif;font-size:var(--fs-sm);font-weight:400;color:var(--muted-bright);margin-left:4px}
+#mod-sight .along-result p{margin-top:4px;color:var(--muted-bright);font-size:var(--fs-sm);overflow-wrap:anywhere}
+#mod-sight .along-result .disclaimer{color:var(--muted);font-size:var(--fs-xs)}
+#s-tempoNote{min-width:0;overflow-wrap:anywhere}
+#s-unsupported .card-title b{white-space:normal}
 
 /* ══ 檢定頁(S3):考試摘要(.setup,手機收成一行)、本級要求清單、規格卡、技巧的目標橫幅 ══
    中英版面一樣:會換行的文字都是區塊 + pairText;出處(RSL p.42)跟語言無關,用 data-src 由 ::after 小字接在後面 */
-#s-paneExam{order:1} #s-soonCard,#s-specCards{order:2} #e-soonCard,#e-specCards{order:2}
+#s-paneExam{order:1} #s-specCards{order:2} #e-soonCard,#e-specCards{order:2}
 .spec-cards{display:flex;flex-direction:column;gap:14px;min-width:0}
 @media (max-width:600px){ .spec-cards{gap:10px} }
 @media (orientation:landscape) and (max-height:500px){

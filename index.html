@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/app.css?v=9f6af68d07">
-<link rel="stylesheet" href="css/drum.css?v=22207aa55d">
+<link rel="stylesheet" href="css/drum.css?v=d86889fd9b">
 </head>
 <body>
 <header>
@@ -150,9 +150,31 @@
     </div>
   </div>
 
-  <!-- 視奏(練習準備中;檢定頁有考試摘要與規格) -->
+  <!-- 視奏(照 PianoDrill 視奏的卡片與流程):子項目 = 級數 0–8;RSL Debut–3 小鼓視奏出題(js/sight/gen.js),其他級數 / Trinity 只有說明卡;
+       檢定頁:考試摘要 + 規格卡(不放練習紀錄、練習回饋) -->
   <div class="mod" id="mod-sight" data-mod="sight" hidden>
+    <!-- 寬螢幕(≥1100)分兩欄:左 = 設定、紀錄;右 = 題目、譜、鼓墊。窄螢幕兩個容器都 display:contents,卡片照 order 排成一欄 -->
     <div class="mod-side">
+        <section class="card picker" id="s-setup">
+          <button class="setup-summary" aria-expanded="false"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span class="sum" id="s-sum"></span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+          <div class="setup-body">
+            <div class="metro">
+              <button class="btn round" id="s-bpmDown" data-i18n-attr="aria-label:sight.bpmDown,title:sight.bpmDown" aria-label="慢 1(按住連續減少)" title="慢 1(按住連續減少)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
+              <div class="bpm"><b id="s-bpmVal">80</b><small id="s-bpmUnit">♩ / 分</small></div>
+              <button class="btn round" id="s-bpmUp" data-i18n-attr="aria-label:sight.bpmUp,title:sight.bpmUp" aria-label="快 1(按住連續增加)" title="快 1(按住連續增加)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+              <input type="range" id="s-bpmRange" min="30" max="240" step="1" value="80" data-i18n-attr="aria-label:sight.tempo" aria-label="速度" style="grid-column:1 / -1">
+              <div class="row2"><div class="beats" id="s-beats"><i class="first"></i><i></i><i></i><i></i></div><p class="info" id="s-tempoNote"></p></div>
+              <div class="play-opts">
+                <button class="chip" id="s-optMetro" aria-pressed="true" data-i18n="sight.optMetro">準備時節拍器</button>
+                <button class="chip" id="s-optClick" aria-pressed="true" data-i18n="sight.optClick">正式打的拍點</button>
+                <button class="chip" id="s-bpmReset" data-i18n="sight.bpmReset">官方速度</button>
+              </div>
+            </div>
+          </div>
+        </section>
+        <!-- 檢定頁:考試摘要(手機收成一行) -->
         <section class="card setup pane" data-pane="exam" id="s-paneExam" hidden>
           <button class="setup-summary" aria-expanded="false"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6l1 2h3v15H5V6h3z"/><path d="M9 11h6M9 15h4"/></svg><span class="sum" id="s-examSummary"></span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
           <div class="setup-body">
@@ -161,11 +183,66 @@
             <p class="practice-only" id="s-sumNote"></p>
           </div>
         </section>
+        <section class="card" id="s-logCard">
+          <div class="card-title"><b data-i18n="sight.logTitle">練習紀錄</b></div>
+          <div class="log-stats">
+            <div><b id="s-logStreak">0</b><small data-i18n="sight.logStreak">連續天數</small></div>
+            <div><b id="s-logToday">0</b><small data-i18n="sight.logToday">今天題數</small></div>
+            <div><b id="s-logTotal">0</b><small data-i18n="sight.logTotal">練過的題目</small></div>
+          </div>
+          <div class="log-week" id="s-logWeek"></div>
+        </section>
     </div>
     <div class="mod-main">
-      <section class="card" id="s-soonCard"><div class="card-title"><b data-i18n="soonTitle">準備中</b></div><p class="soon" id="s-soonText"></p></section>
-      <!-- 檢定頁:規格卡(照官方大綱;練習在之後的 Stage) -->
-      <div class="spec-cards" id="s-specCards" hidden></div>
+        <!-- 這一級 / 這個考試還沒有視奏練習(RSL 4–8、Trinity):說明 + 規格卡(#s-specCards) -->
+        <section class="card notice" id="s-unsupported" hidden><div class="card-title"><b id="s-unsupportedTitle"></b></div><p id="s-unsupportedText"></p></section>
+        <!-- 題目卡(跟技巧、聽力同一個排法):大標題 = 級數,右邊 ▶(聽正確版本);標籤 = 拍號、小節、速度;左下:準備 90 秒 + 倒數,右下:新題目 -->
+        <section class="card quiz" id="s-quiz" aria-live="polite">
+          <div class="q-head">
+            <div class="q-title empty" id="s-title"></div>
+            <button class="play-round" id="s-play" disabled data-i18n-attr="aria-label:sight.playAria,title:sight.playAria" aria-label="聽正確版本" title="聽正確版本">
+              <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path id="s-playIcon" d="M8 5v14l11-7z"/></svg></button>
+          </div>
+          <div class="q-row"><div class="q-tags" id="s-meta"></div></div>
+          <p class="feedback" id="s-message"></p>
+          <div class="q-foot">
+            <button class="btn ghost small" id="s-prepare" disabled>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></svg>
+              <span class="btn-label" id="s-prepareLabel"></span></button>
+            <div class="countdown" id="s-countdown" hidden><span id="s-countdownValue">90</span><span class="unit" data-i18n="sight.countdownUnit">秒</span></div>
+            <span style="flex:1"></span>
+            <button class="btn primary" id="s-generate" disabled>
+              <span class="btn-label" data-i18n="sight.generate">新題目</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+          </div>
+          <p class="practice-only" id="s-practiceOnly"></p>
+        </section>
+        <!-- 譜(白紙,像印出來的考卷:每行 4 小節,放不下再縮、最後才每行 2 小節;js/sight/stage.js 畫目前小節的底色與播放軸) -->
+        <section class="card" id="s-scoreCard">
+          <div class="score-head"><div class="card-title" style="margin:0"><b data-i18n="sight.scoreTitle">小鼓譜</b><span class="sub" id="s-scoreSub"></span></div></div>
+          <div class="stage paper" id="s-stage">
+            <div class="measure-highlight" id="s-highlight"></div>
+            <div id="s-score" class="score"></div>
+            <div class="playline" id="s-playline"></div>
+          </div>
+          <!-- 準備時:看譜重點;結果出來後:自我檢查(放在譜下面,譜不會被推出畫面) -->
+          <div class="s-checkbox" id="s-checkWrap" hidden><p class="s-check-title" id="s-checkTitle"></p><ol class="checklist" id="s-checklist"></ol></div>
+          <div class="prep-float" id="s-prepFloat" hidden><span id="s-prepFloatValue">90</span><span class="unit" data-i18n="sight.countdownUnit">秒</span></div>
+          <!-- 推估 / 練習設定的說明(拍號、預備拍、節奏格) -->
+          <p class="score-note" id="s-confidence"></p>
+          <div id="s-legend"></div>
+        </section>
+        <!-- 正式打:觸控鼓墊(鍵盤 J / F)+ 練習回饋(不是考試分數) -->
+        <section class="card along" id="s-along">
+          <div class="pads" id="s-pads"></div>
+          <div class="along-row">
+            <button class="btn primary" id="s-playAlong" type="button" disabled></button>
+            <p class="along-note" id="s-alongNote"></p>
+          </div>
+          <div class="along-result" id="s-alongResult" hidden aria-live="polite"></div>
+        </section>
+        <!-- 規格卡(檢定頁;自由練習時沒有練習的級數也放這裡) -->
+        <div class="spec-cards" id="s-specCards" hidden></div>
     </div>
   </div>
   <!-- 聽力(練習準備中;檢定頁有考試摘要與規格) -->
@@ -220,9 +297,9 @@
   </div>
 </div>
 
-<script type="importmap">{"imports":{"./js/ear/app.js":"./js/ear/app.js?v=e7c7005d2c","./js/main.js":"./js/main.js?v=4a3930106f","./js/shared/audio.js":"./js/shared/audio.js?v=94dcfa09e5","./js/shared/examdata.js":"./js/shared/examdata.js?v=48f1b46bf2","./js/shared/examview.js":"./js/shared/examview.js?v=b4959afa11","./js/shared/i18n.js":"./js/shared/i18n.js?v=a561423d5b","./js/shared/kitnotation.js":"./js/shared/kitnotation.js?v=0b1c17e643","./js/shared/landscape.js":"./js/shared/landscape.js?v=8ab1bab3eb","./js/shared/legend.js":"./js/shared/legend.js?v=ea60776dd0","./js/shared/onsets.js":"./js/shared/onsets.js?v=d8df0b9ef2","./js/shared/pad.js":"./js/shared/pad.js?v=bd127fa82e","./js/shared/player.js":"./js/shared/player.js?v=3b242c7289","./js/shared/score.js":"./js/shared/score.js?v=626f4a4e45","./js/shared/tempo.js":"./js/shared/tempo.js?v=1e38af7d3f","./js/shared/timing.js":"./js/shared/timing.js?v=3ff7813241","./js/sight/app.js":"./js/sight/app.js?v=d46c0626a6","./js/tech/app.js":"./js/tech/app.js?v=f61dc3b4dd","./js/tech/notation.js":"./js/tech/notation.js?v=5bee65ac3d","./js/tech/rudiments.js":"./js/tech/rudiments.js?v=cc1a2635ff","./js/tech/store.js":"./js/tech/store.js?v=c27b27f99c","./js/tech/strings.js":"./js/tech/strings.js?v=fa3be55e9c"}}</script>
+<script type="importmap">{"imports":{"./js/ear/app.js":"./js/ear/app.js?v=e7c7005d2c","./js/main.js":"./js/main.js?v=3eaabf5de1","./js/shared/audio.js":"./js/shared/audio.js?v=94dcfa09e5","./js/shared/examdata.js":"./js/shared/examdata.js?v=48f1b46bf2","./js/shared/examview.js":"./js/shared/examview.js?v=b4959afa11","./js/shared/i18n.js":"./js/shared/i18n.js?v=a561423d5b","./js/shared/kitnotation.js":"./js/shared/kitnotation.js?v=0b1c17e643","./js/shared/landscape.js":"./js/shared/landscape.js?v=8ab1bab3eb","./js/shared/legend.js":"./js/shared/legend.js?v=ea60776dd0","./js/shared/onsets.js":"./js/shared/onsets.js?v=d8df0b9ef2","./js/shared/pad.js":"./js/shared/pad.js?v=bd127fa82e","./js/shared/player.js":"./js/shared/player.js?v=3b242c7289","./js/shared/score.js":"./js/shared/score.js?v=626f4a4e45","./js/shared/tempo.js":"./js/shared/tempo.js?v=1e38af7d3f","./js/shared/timing.js":"./js/shared/timing.js?v=3ff7813241","./js/sight/app.js":"./js/sight/app.js?v=abd357a4f7","./js/sight/fingerprint.js":"./js/sight/fingerprint.js?v=3101dabdf7","./js/sight/gen.js":"./js/sight/gen.js?v=fc4874bad0","./js/sight/random.js":"./js/sight/random.js?v=3b9b511386","./js/sight/stage.js":"./js/sight/stage.js?v=9ca7fb07ed","./js/sight/strings.js":"./js/sight/strings.js?v=1b1baccc51","./js/tech/app.js":"./js/tech/app.js?v=f61dc3b4dd","./js/tech/notation.js":"./js/tech/notation.js?v=5bee65ac3d","./js/tech/rudiments.js":"./js/tech/rudiments.js?v=cc1a2635ff","./js/tech/store.js":"./js/tech/store.js?v=c27b27f99c","./js/tech/strings.js":"./js/tech/strings.js?v=fa3be55e9c"}}</script>
 <script type="application/json" id="pdVersions">{"data/drumkey.json":"503a6ff974","data/exam-rsl.json":"898187a596","data/exam-trinity.json":"33070e658b"}</script>
 <script src="vendor/opensheetmusicdisplay.min.js?v=4bfeb3d01c"></script>
-<script type="module" src="js/main.js?v=4a3930106f"></script>
+<script type="module" src="js/main.js?v=3eaabf5de1"></script>
 </body>
 </html>
