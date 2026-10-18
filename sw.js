@@ -12,7 +12,7 @@
 const APP = "drumdrill";
 // @app-end
 /*@precache-begin*/
-const CACHE = APP + "-app-5300bc33";
+const CACHE = APP + "-app-0e422a2b";
 const PRECACHE = [
   "./",
   "manifest.webmanifest",
@@ -37,7 +37,7 @@ const PRECACHE = [
   "js/shared/legend.js?v=0d8943f084",
   "js/shared/onsets.js?v=d8df0b9ef2",
   "js/shared/pad.js?v=bd127fa82e",
-  "js/shared/playbackgen.js?v=45c25275e1",
+  "js/shared/playbackgen.js?v=b2625d42ea",
   "js/shared/player.js?v=3b242c7289",
   "js/shared/score.js?v=626f4a4e45",
   "js/shared/tempo.js?v=1e38af7d3f",

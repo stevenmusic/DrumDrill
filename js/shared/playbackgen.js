@@ -253,7 +253,7 @@ function grooveSetup(C, R){
     ghost: C.ghost && R() < 0.6,
     open: C.openClose && cym === "hh" && R() < 0.6,
     foot: C.footHH && cym === "ride" && R() < 0.75,
-    feetPlan: []
+    feetPlan: {}
   };
 }
 function grooveGroups(C, R, meter, b, S, o, hand, feet, upto){
@@ -276,13 +276,14 @@ function grooveGroups(C, R, meter, b, S, o, hand, feet, upto){
     }, "groove");
     hand.push(...evs);
     // 腳
-    let plan = S.feetPlan[gi];
+    const pk = gi + (bb ? "b" : "");   // 3/8 一小節一拍:反拍是單數的小節,分開記
+    let plan = S.feetPlan[pk];
     if (!plan || o.vary && R() < 0.3 || crash) {
       if (crash && C.kick) plan = { piece: "kick", cell: kickCell(C, R, meter, gi, evs, { need0: true, startOnly: !C.offbeatBD }) };
       else if (bb && S.foot) plan = { piece: "hhFoot", cell: mk(kind === "dq" ? "4." : "4") };
       else if (bb) plan = C.maxV >= 3 && C.kick && R() < (C.indep ? 0.5 : 0.3) ? { piece: "kick", cell: kickCell(C, R, meter, gi, evs, { startOnly: !C.offbeatBD }) } : { rest: true };
       else plan = C.kick && R() < 0.85 ? { piece: "kick", cell: kickCell(C, R, meter, gi, evs, { startOnly: !C.offbeatBD }) } : { rest: true };
-      if (!crash) S.feetPlan[gi] = plan;
+      if (!crash) S.feetPlan[pk] = plan;
     }
     const hs = strikes(evs);
     const fits = plan.cell && plan.cell.len === meter.groups[gi] && cellOK(C, plan.cell, meter) && plan.cell.onsets.every(x => (hs.get(pos + x) || 0) + 1 <= C.maxV);
