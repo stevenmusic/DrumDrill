@@ -31,6 +31,7 @@ import { createPads } from "../shared/pad.js";
 import { LANES, expectedByLane, scoreLanes, offsetNote, laneNote } from "../shared/timing.js";
 import { scoreXML, osmdXML, piecesUsed } from "../shared/kitnotation.js";
 import { setupKit, decorate, drawLegend } from "../shared/legend.js";
+import { imgLabel, announce, describeSpec } from "../shared/a11y.js";
 import { toEvents, hitsOnly, specBeats, EVENT_NOTES } from "../shared/kitevents.js";
 import { genRslKit, SIGHT_KIT_GRADES, NOTES as KIT_NOTES } from "../shared/kitgen.js";
 import { genChart, playbackParams, NOTES as PB_NOTES } from "../shared/playbackgen.js";
@@ -178,6 +179,7 @@ export function onCtx(){ if (active) render(); if (ctx) ctx.examChanged(); }
 /* 換語言:只重寫文字(不停止播放、不重新出題) */
 export function relang(){
   if (mode === "exam" || !cur || $("quiz").hidden) { if (active || mode === "exam") renderStatic(); }
+  $("play").setAttribute("aria-label", playKind === "listen" ? tr("停止", "Stop") : T("playAria"));
   refreshTexts();
   pads.relang();
   relangPairs($("legend"));
@@ -576,6 +578,7 @@ function renderMeta(){
   const metre = cur.kind === "snare" ? `4/4 · ${TS("srcAssumed")}` : pb ? t.times.join(" ") : t.time;
   const tags = [metre, tr(`${t.bars} 小節`, `${t.bars} bars`), pb ? `♩=${b} · ${custom() ? tr("練習", "Practice") : TS("srcPractice")}` : overridden() ? `♩=${b} · ${tr("練習", "Practice")}` : `♩=${b}`];
   $("meta").innerHTML = tags.map(x => `<span class="q-tag">${x}</span>`).join("");
+  imgLabel($("score"), scoreLabel);   // 速度改了:譜的說明跟著改
   if (active) fitTags();
 }
 function renderSum(){
@@ -592,7 +595,12 @@ function renderPrepareLabel(){
 }
 function renderAlongLabel(){ $("playAlong").textContent = phase === "perform" ? tr("停止", "Stop") : T("perform"); }
 /* 狀態訊息:記住產生文字的函式,換語言時重寫;兩種語言保留比較高的高度 */
-function say(fn){ lastMsg = fn; pairText($("message"), fn); }
+/* 無障礙:同一個訊息重寫(換語言)、載入百分比、預備拍的每一下(quiet)不播報;其他的寫進共用的 aria-live 區(a11y.js) */
+function say(fn, quiet){
+  const again = fn === lastMsg;
+  lastMsg = fn; pairText($("message"), fn);
+  if (!again && !quiet && !fn.loadMsg) announce(fn());
+}
 /* 題目固定一行:太長就把字縮小(中英文版面一樣);標籤先縮字(最多到 0.6) */
 function fitTitle(){
   const el = $("title"); el.style.fontSize = "";
@@ -719,6 +727,11 @@ async function drawOnce(c){
     const pieces = piecesUsed({ ...c.test.score, key }), lk = c.test.lines + ":" + pieces.join(",");
     if (lk !== legendKey) { legendKey = lk; drawLegend($("legend"), { pieces, lines: c.test.lines, key }).catch(e => { console.error(e); legendKey = ""; }); }
   }
+}
+/* 無障礙:譜的文字說明(N 小節小鼓譜 / 整組鼓譜、拍號、速度、每小節的簡述;a11y.js) */
+function scoreLabel(){
+  if (!cur) return "";
+  return describeSpec(cur.test.score, { key: drumKey(), bpm: bpmNow(), title: `${sysName(cur.sys)} ${gl(cur.grade, cur.sys)}` });
 }
 /* 寬度分級:同一級的手機共用一個排法 */
 function widthClass(){ const w = innerWidth; return w < 500 ? "phone" : w < 900 ? "compact" : w < 1280 ? "medium" : "wide"; }
@@ -866,7 +879,7 @@ function setLoading(p){
     if (!(lastMsg && lastMsg.loadMsg)) msgBeforeLoad = lastMsg;
     const fn = () => tr(`載入整組鼓取樣… ${Math.round((loading || 0) * 100)}%`, `Loading the kit… ${Math.round((loading || 0) * 100)}%`);
     fn.loadMsg = true; say(fn);
-  } else if (!on && was != null && lastMsg && lastMsg.loadMsg) { say(msgBeforeLoad || startMsg); msgBeforeLoad = null; }
+  } else if (!on && was != null && lastMsg && lastMsg.loadMsg) { say(msgBeforeLoad || startMsg, true); msgBeforeLoad = null; }
 }
 function syncButtons(){
   const ok = !!(cur && cur.xml), busy = loading != null, mk = mockOn();
@@ -922,7 +935,7 @@ const player = createPlayer({
       const x = q + tl.countIn.len, ps = tl.countIn.pulses;
       let i = 0; ps.forEach((p, j) => { if (x >= p - 1e-6) i = j; });
       const n = ps.length - i;
-      if (n !== countShown) { countShown = n; say(() => tr(`預備拍 ${n}`, `Count-in ${n}`)); }
+      if (n !== countShown) { countShown = n; say(() => tr(`預備拍 ${n}`, `Count-in ${n}`), true); }
       return;
     }
     if (countShown !== 0) { countShown = 0; say(() => (playKind === "perform" ? tr("正式打中…", "Performing…") : tr("正確版本播放中…", "Playing the correct version…"))); }
@@ -968,7 +981,8 @@ function startPrep(){
   $("alongResult").hidden = true;
   renderPrepareLabel();
   say(() => (cur && cur.kind === "playback" ? tr("看譜中:可以在鼓墊上試打(不計分)。", "Studying: you may try it on the pads (not scored).")
-    : tr("準備中:看譜,在鼓墊上試打(不計分)。", "Preparing: read it and try it on the pad (not scored).")));
+    : tr("準備中:看譜,在鼓墊上試打(不計分)。", "Preparing: read it and try it on the pad (not scored).")), true);
+  announce((cur && cur.kind === "playback" ? tr(`開始看譜 ${left} 秒`, `Study started: ${left} seconds`) : tr(`開始準備 ${left} 秒`, `Prep started: ${left} seconds`)) + tr(";可以在鼓墊上試打(不計分)。", "; you may try it on the pads (not scored)."));
   bringScoreIntoView();
   clearInterval(countdown);
   countdown = setInterval(() => {
@@ -1085,10 +1099,18 @@ function finishPerform(){
   renderAlongLabel(); renderPrepareLabel(); syncButtons();
   renderResult();
   showChecklist("self");
-  say(() => tr("打完了。看下面的練習回饋與自我檢查;可以按 ▶ 聽正確版本對照。", "Done. See the feedback and self-check below; tap ▶ to hear the correct version."));
+  say(() => tr("打完了。看下面的練習回饋與自我檢查;可以按 ▶ 聽正確版本對照。", "Done. See the feedback and self-check below; tap ▶ to hear the correct version."), true);
+  announce(tr("打完了。", "Done. ") + resultSpeech(lastResult));
   if (mockOn()) { mock.data.result = lastResult; mock.finish(); render(); cardToTop($("mockCard")); }   // 模擬考:正式打完 = 結果
   renderStats();
   if (ctx) ctx.examChanged();
+}
+/* 無障礙:結果的一句話摘要(aria-live 播報;詳細的在 #s-alongResult) */
+function resultSpeech(R){
+  if (!R) return "";
+  if (!R.taps) return tr("沒有收到鼓墊的敲擊。", "No pad hits came in.");
+  const r = R.r;
+  return tr(`練習回饋:節奏吻合度 ${r.score == null ? "—" : r.score} / 100,命中 ${r.hits} / ${r.total}。`, `Practice feedback: rhythm match ${r.score == null ? "—" : r.score} / 100, hit ${r.hits} of ${r.total}.`);
 }
 /* 練習回饋(不是考試分數,不出現等第字眼,也不換算成官方分數) */
 function renderResult(){
@@ -1157,7 +1179,10 @@ function retempoListen(){ player.retempo(bpmNow() / unitNow()); }
 function stopListening(){ if (playKind === "listen") stopPlayer(); endListenUI(); }
 function endListenUI(){ setPlayState(false); if (stage) stage.end(); }
 function setPlayState(on){
+  const was = $("play").classList.contains("is-active");
   $("play").classList.toggle("is-active", on);
+  $("play").setAttribute("aria-label", on ? tr("停止", "Stop") : T("playAria"));
+  if (was && !on && active) announce(tr("停止播放", "Playback stopped"));
   $("playIcon").setAttribute("d", on ? "M6 5h4v14H6zM14 5h4v14h-4z" : "M8 5v14l11-7z");
 }
 $("play").onclick = () => toggleListen();

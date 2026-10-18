@@ -8,6 +8,7 @@ import { techItems, techPasNos } from "../shared/examdata.js";
 import { L, srcOf, assumed, fillSpec, para, valueName, bandsText, summaryRows, notInApp, dataRow, pairStack } from "../shared/examview.js";
 import * as audio from "../shared/audio.js";
 import { createScore } from "../shared/score.js";
+import { announce } from "../shared/a11y.js";
 import { createTempo } from "../shared/tempo.js";
 import { fitLandZoom, createLandPlay } from "../shared/landscape.js";
 import { addLog, renderLog as paintLog, today, nextGoal, cleanGoal } from "../shared/practicelog.js";
@@ -129,7 +130,7 @@ function renderPicker(){
   ].filter(Boolean);
   const val = { no: cur.no, lead: S.lead, reps: S.reps };
   $("picker").querySelector(".rows").innerHTML = rows.map(([k, lbl, opts]) =>
-    `<div class="prow"><span class="lbl">${lbl}</span><div class="opts" data-k="${k}">` +
+    `<div class="prow"><span class="lbl">${lbl}</span><div class="opts" data-k="${k}" role="group" aria-label="${lbl}">` +
     opts.map(([v, t]) => `<button class="opt${k === "no" ? " rud" : ""}" data-v="${v}" aria-pressed="${String(v) === String(val[k])}">${t}</button>`).join("") + `</div></div>`).join("");
   // 練習型(目標模式):摘要寫練習型的名稱(跟題目一樣),不寫 PAS 原譜的名稱
   const pt = target && target.pattern;
@@ -436,9 +437,24 @@ const score = createScore({
   msg: fn => setMsg("paperMsg", fn),
   errorText: e => tr("鼓譜繪製失敗:", "Could not draw the score: ") + e.message,
   onDrawn: xml => { window.__lastXml = xml; window.__scoreReady = (window.__scoreReady || 0) + 1; },
-  fitLand: () => fitLandZoom(score, { $ })
+  fitLand: () => fitLandZoom(score, { $ }),
+  label: () => scoreLabel()
 });
 function renderScore(){ if (cur) score.load(rudimentXML(groups, { reps: S.reps, title: cur.en })); }
+/* 無障礙:鼓譜的文字說明 = 標題(打法名稱 / 練習型名稱)+ 一輪的左右手(Flam / Drag、重音、多次反彈、休止標出來)+ 反覆次數 */
+function scoreLabel(){
+  if (!cur || !groups) return "";
+  const title = $("qTitle").textContent.trim() || `${cur.no}. ${name(cur)}`;
+  const words = [];
+  for (const n of groups.flat()) {
+    if (n.rest) { words.push(tr("休止", "rest")); continue; }
+    const orn = n.flam ? "Flam " : n.drag ? "Drag " : "";
+    if (n.buzz) { words.push(orn + tr("多次反彈滾奏(z,兩手交替)", "multiple-bounce roll (z, alternating hands)")); continue; }
+    const hands = strokes([[n]]).filter(x => x.kind !== "grace").map(x => x.hand);
+    hands.forEach((h, i) => words.push((i ? "" : orn) + h + (i === 0 && n.accent ? tr("(重音)", " accent") : "")));
+  }
+  return tr(`${title}:${words.join(" ")};反覆 ${S.reps} 次`, `${title}: ${words.join(" ")}; repeat ×${S.reps}`);
+}
 
 /* 左右手(R / L)畫在每個音下面,裝飾音的字小一點(照 PAS 官方表);多次反彈畫 z(OSMD 不會畫) */
 function drawSticking(svg){
@@ -647,6 +663,8 @@ async function startInner(){
   play = { t0, real0: t0, beatSec, reps, cyc, acc: accentEvery(cyc), list, raf: 0, endBeat: reps * cyc / DIV, mock: !!mk, oneBar: !!(mk && mk.oneBar), mockId: mk ? mock.id : 0 };
   schedulePlay(play, -Infinity);
   revealScore();
+  if (!loopNext) announce(mk ? tr("開始:跟拍點打", "Started: play along with the click") : tr("開始播放示範", "Playing the demo"));
+  loopNext = false;
   $("playLabel").textContent = T("stop");
   $("playIcon").innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1.5"/>';
   const tick = () => {
@@ -659,6 +677,7 @@ async function startInner(){
       const sec = play.endBeat * play.beatSec, wasMock = play.mock;
       lastEnd = { n: lastEnd.n + 1, scheduled: audio.scheduledCount(), at: audio.audioNow() };   // 測試用:自然播完時還排著的節點數(播完的會自己移除)與當時的時間
       if (wasMock) { const id = play.mockId; stopPlayback(true); logPractice(sec); mockRunDone(id); return; }   // 模擬考:這一項跟拍點打完(不循環、不記示範最快)
+      loopNext = !!(S.loop && cur);   // 循環的下一輪不再播報「開始 / 播完」
       stopPlayback(true, !!(S.loop && cur));   // 循環的下一輪:手機橫式不捲回去
       logPractice(sec);
       // 示範最快只記自由練習(目標模式是官方速度的練習,不算)
@@ -672,6 +691,7 @@ async function startInner(){
   return "started";
 }
 let lastEnd = { n: 0, scheduled: 0, at: 0 };
+let loopNext = false;   // 循環播放的下一輪(無障礙:不重複播報)
 /* 示範最快:PAS 原譜自由練習的紀錄;目標模式(官方速度、練習型)不顯示(那是別的譜、別的速度) */
 function showBest(){ const b = cur && !target && S.best[cur.no]; $("bestTempo").textContent = b ? `${T("bestLabel")} ♩=${b}` : ""; }
 function stopPlayback(natural, keepView){
@@ -681,6 +701,7 @@ function stopPlayback(natural, keepView){
     cancelAnimationFrame(play.raf);
     // 中途停止(按停止、換題、切分頁、切到背景):已經播的秒數算進今天的練習時間,次數不加;模擬考的這一項記「中途停止」
     if (!natural) { const sec = audio.audioNow() - play.real0; if (sec >= 0.5) addPracticeSec(sec); if (play.mock) mockRunStopped(play.mockId); }
+    if (!keepView) announce(natural ? tr("播完了", "Finished") : tr("停止了", "Stopped"));
     play = null;
     if (!natural) audio.stopAll();
   }

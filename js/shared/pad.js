@@ -32,6 +32,7 @@ const CODE_KEY = /^Key([A-Z])$/;
 
 export function createPads(el, lanes, onHit){
   el.classList.add("pads");
+  el.setAttribute("role", "group");
   el.dataset.n = String(lanes.length);
   el.innerHTML = "";
   const btns = new Map(), timers = new Map();
@@ -49,8 +50,12 @@ export function createPads(el, lanes, onHit){
       // 名稱兩種語言保留比較高的高度(窄畫面「大鼓・腳踩」會換行、「Kick · HH」不會:中英版面一樣)
       pairText(b.querySelector(".pad-name"), () => tr(l.label[0], l.label[1]));
       b.querySelector(".pad-key").textContent = [].concat(l.key || [])[0] ? [].concat(l.key)[0].toUpperCase() : "";
-      b.setAttribute("aria-label", name);
+      // 無障礙:名稱 + 鍵盤按鍵(VoiceOver 念得到;aria-keyshortcuts 給輔助工具)
+      const keys = [].concat(l.key || []).map(k => k.toUpperCase());
+      b.setAttribute("aria-label", keys.length ? name + tr(`(鍵盤 ${keys.join(" / ")})`, ` (key${keys.length > 1 ? "s" : ""} ${keys.join(" / ")})`) : name);
+      if (keys.length) b.setAttribute("aria-keyshortcuts", keys.join(" "));
     }
+    el.setAttribute("aria-label", tr("觸控鼓墊", "Touch pads"));
   }
   function flash(id){
     const b = btns.get(id); if (!b) return;

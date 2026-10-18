@@ -18,6 +18,7 @@
      onPending()  因為看不到而延後時
      fitLand()    手機橫式依高度放大;回傳 true 表示已經重畫
      setup(osmd)  第一次建立 OSMD 時(EngravingRules 之類)
+     label()      無障礙:譜的文字說明(用 tr();a11y.js 的 imgLabel 換語言自動重算)。$("osmd") 加 role="img" + aria-label;clear() 拿掉
    回傳的物件(實際 API;沒有 setActive,看不看得到一律問 opts.isActive()):
      landZoom             手機橫式的縮放(fitLandZoom 設定;null = 用 zoom())
      osmd / noteXs / pending   目前的 OSMD(沒有譜時 null)、每一步的拍點與 x、是不是因為看不到而延後
@@ -34,6 +35,7 @@
      clear()              清掉譜面(osmd 變 null、landZoom 歸零、延後的不畫了)
      onResize()           畫面大小改了 / 回到畫面:延後的先畫;縮放或寬度改了就重畫 */
 import { tr } from "./i18n.js";
+import { imgLabel } from "./a11y.js";
 const PLAYLINE_RATIO = 0.25;
 export function createScore(opts){
   const { $ } = opts;
@@ -64,6 +66,7 @@ export function createScore(opts){
       if (opts.setup) opts.setup(osmd);
     }
     msg(null);
+    if (opts.label) imgLabel($("osmd"), opts.label);   // 看不到(延後畫)也先標:螢幕閱讀器不用等畫好
     try {
       await osmd.load(xml);
       if (my !== seq) return false;
@@ -169,7 +172,7 @@ export function createScore(opts){
   /* 停止播放後:捲回開頭、播放軸回到第一個音 */
   function home(){ if (osmd && noteXs.length) { $("scroll").scrollLeft = 0; movePlayline(0, false); } }
   /* 清掉譜面(沒有題目時) */
-  function clear(){ if (osmd) { try { osmd.clear(); } catch (e) {} } $("osmd").innerHTML = ""; osmd = null; noteXs = []; $("playline").hidden = true; seq++; pending = false; api.landZoom = null; lastXml = null; }
+  function clear(){ if (osmd) { try { osmd.clear(); } catch (e) {} } $("osmd").innerHTML = ""; imgLabel($("osmd"), null); osmd = null; noteXs = []; $("playline").hidden = true; seq++; pending = false; api.landZoom = null; lastXml = null; }
   /* 畫面大小改了 / 回到畫面:延後的先畫;縮放或紙張寬度改了就重畫;不然只重量播放軸 */
   function onResize(){
     if (!osmd) return;

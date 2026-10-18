@@ -33,6 +33,7 @@ import { createPads } from "../shared/pad.js";
 import { LANES, expectedByLane, scoreLanes, offsetNote, laneNote } from "../shared/timing.js";
 import { scoreXML, osmdXML, parseTime, piecesUsed, DIV } from "../shared/kitnotation.js";
 import { setupKit, decorate, drawLegend } from "../shared/legend.js";
+import { imgLabel, announce, describeSpec } from "../shared/a11y.js";
 import { createTempo } from "../shared/tempo.js";
 import { createScore } from "../shared/score.js";
 import { fitLandZoom, createLandPlay } from "../shared/landscape.js";
@@ -174,6 +175,7 @@ export function onCtx(){ if (active) render(); if (ctx) ctx.examChanged(); }
 /* 換語言:只重寫文字(不停止播放、不重新出題) */
 export function relang(){
   if (mode === "exam" || !cur || $("quizCard").hidden) { if (active || mode === "exam") renderStatic(); }
+  $("playBtn").setAttribute("aria-label", playKind === "listen" ? tr("停止", "Stop") : T("playAria"));
   renderSetup();
   refreshTexts();
   pads.relang();
@@ -400,6 +402,7 @@ function setBpm(v){
 function tempoUI(){
   tempo.sync(`♩ / ${tr("分", "min")}`);
   lockTempo();
+  if ($("osmd").hasAttribute("role")) imgLabel($("osmd"), scoreLabel);   // 無障礙:譜的說明裡有速度
   if (!cur) { pairText($("tempoNote"), () => ""); return; }
   const src = cur.sys === "rsl" ? V.srcOf("rsl", cur.q.src && cur.q.src.p) : "";
   pairText($("tempoNote"), () => (cur.type === "fill" ? tr(`官方速度 ${V.bpmText(cur.q.bpm)}(固定)· ${src}`, `Official ${V.bpmText(cur.q.bpm)} (fixed) · ${src}`)
@@ -439,7 +442,7 @@ function newQuestion(seed = newSeed(), force = null){
   $("countdown").hidden = t !== "playback"; $("countdown").className = "countdown";
   $("countdownValue").textContent = String(studySec());
   // 譜:RSL 揭曉才出現;Trinity 的 song chart 一開始就在
-  score.clear(); $("legend").innerHTML = "";
+  score.clear(); $("legend").innerHTML = ""; imgLabel($("legend"), null);
   $("scoreCard").hidden = sys === "rsl";
   if (sys !== "rsl") showScore();
   setBeatsFor(firstBar());
@@ -561,15 +564,15 @@ function segMsg(seg, n){
   const k = playKind, ph = seg.phrase != null ? seg.phrase + 1 : 0, nph = cur && cur.q.phrases ? cur.q.phrases.length : 0;
   if (seg.kind === "ci") {
     const c = n || 1;
-    if (k === "listen" && isRsl()) say(() => tr(`第 ${seg.take} 次 · 預備拍 ${c}`, `Play ${seg.take} · count-in ${c}`));
-    else say(() => tr(`預備拍 ${c}`, `Count-in ${c}`));
+    if (k === "listen" && isRsl()) say(() => tr(`第 ${seg.take} 次 · 預備拍 ${c}`, `Play ${seg.take} · count-in ${c}`), false, true);
+    else say(() => tr(`預備拍 ${c}`, `Count-in ${c}`), false, true);
     return;
   }
-  if (k === "listen") say(() => (isRsl() ? tr(`第 ${seg.take} 次播放中…`, `Play ${seg.take}…`) : tr("整份譜播放中…", "Playing the whole chart…")));
+  if (k === "listen") say(() => (isRsl() ? tr(`第 ${seg.take} 次播放中…`, `Play ${seg.take}…`) : tr("整份譜播放中…", "Playing the whole chart…")), false, seg.take > 1);
   else if (k === "perform") say(() => tr("回打中:照聽到的打…", "Your turn: play what you heard…"));
   else if (k === "pass") {
     const p = perf ? perf.pass : 1, lbl = p === 1 ? tr("第一次(練習)", "Play 1 (practice)") : tr("第二次(評時間)", "Play 2 (assessed)");
-    say(() => (seg.kind === "app" ? tr(`${lbl} · 第 ${ph} / ${nph} 句:聽`, `${lbl} · phrase ${ph} / ${nph}: listen`) : tr(`${lbl} · 第 ${ph} / ${nph} 句:換你打`, `${lbl} · phrase ${ph} / ${nph}: your turn`)));
+    say(() => (seg.kind === "app" ? tr(`${lbl} · 第 ${ph} / ${nph} 句:聽`, `${lbl} · phrase ${ph} / ${nph}: listen`) : tr(`${lbl} · 第 ${ph} / ${nph} 句:換你打`, `${lbl} · phrase ${ph} / ${nph}: your turn`)), false, true);
   }
 }
 
@@ -616,6 +619,7 @@ function finishListen(){
 }
 function setPlayState(on){
   $("playBtn").classList.toggle("is-active", on);
+  $("playBtn").setAttribute("aria-label", on ? tr("停止", "Stop") : T("playAria"));
   $("playIcon").setAttribute("d", on ? "M6 5h4v14H6zM14 5h4v14h-4z" : "M8 5v14l11-7z");
 }
 
@@ -633,6 +637,7 @@ async function startPerform(){
   if (!(t0 > 0)) return;
   phase = "perform";
   perf = { t0, bpm, taps: [], startedAt: performance.now(), tl: t };
+  announce(tr("回打開始:預備拍 1 小節後照聽到的打。", "Play back started: after a 1-bar count-in, play what you heard."));
   cur.result = null; $("alongResult").hidden = true;
   syncButtons();
   bringIntoView($("pads"));
@@ -672,11 +677,13 @@ function finishPerform(){
   if (cur.type === "fill" && cur.chosen == null && !cur.revealed) {
     phase = "choose";
     showOptions();
-    say(() => tr("打完了。從下面的譜選一個。", "Done. Pick the matching chart below."));
+    say(() => tr("打完了。從下面的譜選一個。", "Done. Pick the matching chart below."), false, true);
+    announce(tr("打完了。", "Done. ") + resultSpeech(cur.result) + tr("從下面的譜選一個。", " Pick the matching chart below."));
   } else {
     phase = "result";
     doReveal();
-    say(() => tr("打完了。看下面的正確的譜與練習回饋。", "Done. See the correct chart and the feedback below."));
+    say(() => tr("打完了。看下面的正確的譜與練習回饋。", "Done. See the correct chart and the feedback below."), false, true);
+    announce(tr("打完了。", "Done. ") + resultSpeech(cur.result));
   }
   renderResult(); syncButtons(); renderStats();
   if (mr) { renderMockCard(); if (mr.stage === "done") mockDoneMsg(); }
@@ -717,7 +724,8 @@ function markOptions(){
     b.classList.toggle("right", done && i === cur.answer);
     b.classList.toggle("wrong", done && i === cur.chosen && i !== cur.answer);
     b.disabled = done;
-    b.setAttribute("aria-label", tr(`選項 ${"ABC"[i]}`, `Option ${"ABC"[i]}`) + (done && i === cur.answer ? tr("(正確)", " (correct)") : ""));
+    b.setAttribute("aria-label", tr(`選項 ${"ABC"[i]}`, `Option ${"ABC"[i]}`) + (done && i === cur.answer ? tr("(正確)", " (correct)") : "")
+      + tr(":", ": ") + describeSpec(cur.opts[i].spec, { key: drumKey() }));   // 無障礙:選項的譜(單線小鼓譜:每個音的時值)
   });
 }
 /* 選項的譜:一個選項一個 OSMD(單線譜,一小節);畫完照比例縮到格子寬(viewBox) */
@@ -787,7 +795,8 @@ function startStudy(){
   phase = "study"; left = studySec(); studyStarted = performance.now(); studyEnd = studyStarted + left * 1000;
   $("countdown").hidden = false; $("countdown").className = "countdown running"; $("countdownValue").textContent = String(left);
   showFloat(left);
-  say(() => tr("看譜中:可以在鼓墊上試打(不計分)。", "Study the chart; try it on the pads (not scored)."));
+  say(() => tr("看譜中:可以在鼓墊上試打(不計分)。", "Study the chart; try it on the pads (not scored)."), false, true);
+  announce(tr(`開始看譜 ${left} 秒;可以在鼓墊上試打(不計分)。`, `Study started: ${left} seconds; try it on the pads (not scored).`));
   bringIntoView($("scoreCard"));
   clearInterval(countdown);
   countdown = setInterval(() => {
@@ -853,6 +862,8 @@ async function startPass(){
   if (!(t0 > 0)) return;
   phase = "pass";
   perf = { t0, bpm, taps: [], startedAt: performance.now(), tl: t, pass: k, phs };
+  announce(k === 1 ? tr("第一次(練習)開始:App 播一句,接著換你打。", "Play 1 (practice) started: the App plays a phrase, then it's your turn.")
+    : tr("第二次(評時間)開始:App 播一句,接著換你打。", "Play 2 (assessed) started: the App plays a phrase, then it's your turn."));
   syncButtons();
   bringIntoView($("pads"));   // 輪到你打時鼓墊要在畫面上
 }
@@ -873,7 +884,8 @@ function finishPass(){
   if (cur.result.taps) { st.hits += cur.result.all.hits; st.total += cur.result.all.total; addSec(0, 0, cur.result.all.hits, cur.result.all.total); }
   save(); renderLog(); renderStats();
   renderResult(); syncButtons();
-  say(() => tr("第二次完成:下面是每一句的節奏練習回饋。", "Play 2 done: rhythm feedback for each phrase below."));
+  say(() => tr("第二次完成:下面是每一句的節奏練習回饋。", "Play 2 done: rhythm feedback for each phrase below."), false, true);
+  announce(tr("第二次完成。", "Play 2 done. ") + resultSpeech(cur.result));
   if (mockRes()) { mockRes().r = cur.result; mockRes().stage = "done"; finishMock(); }   // 模擬考:第二次完成 = 結果
   if (ctx) ctx.examChanged();
 }
@@ -941,8 +953,15 @@ const score = createScore({
   isActive: () => active,
   msg: fn => { $("paperMsg").textContent = fn ? fn() : ""; },
   onDrawn: () => { drawn++; coverChart(); },
-  fitLand: () => fitLandZoom(score, { $ })
+  fitLand: () => fitLandZoom(score, { $ }),
+  label: () => scoreLabel()
 });
+/* 無障礙:譜的文字說明(a11y.js;N 小節小鼓譜 / 整組鼓譜、拍號、速度、每小節的簡述) */
+function scoreLabel(){
+  if (!cur) return "";
+  if ($("stage").classList.contains("covered")) return tr("譜蓋起來了", "Chart hidden");
+  return describeSpec(cur.q.spec, { key: drumKey(), bpm: bpmNow(), title: `${sysName(cur.sys)} ${gl(cur.grade, cur.sys)}` });
+}
 function showScore(){
   if (!cur || !cur.xml || $("scoreCard").hidden) return;
   if (score.osmd) setupKit(score.osmd, cur.lines, cur.xml);
@@ -954,6 +973,7 @@ function showScore(){
 function coverChart(){
   const on = !!cur && cur.sys === "trinity" && SS.hideChart && playKind === "pass";
   $("stage").classList.toggle("covered", on);
+  if ($("osmd").hasAttribute("role")) imgLabel($("osmd"), scoreLabel);
   if (on) $("paperMsg").textContent = tr("譜蓋起來了(看不看譜自己決定)", "Chart hidden (reading is optional)");
   else if ($("paperMsg").textContent && /蓋起來|hidden/.test($("paperMsg").textContent)) $("paperMsg").textContent = "";
 }
@@ -1146,6 +1166,14 @@ function feedbackPick(){
   fb.classList.add(ok ? "ok" : "no");
   say(() => (ok ? tr(`選對了:${"ABC"[cur.answer]}。`, `Right: ${"ABC"[cur.answer]}.`) : tr(`不是 ${"ABC"[cur.chosen]};答案是 ${"ABC"[cur.answer]}。`, `Not ${"ABC"[cur.chosen]}; it was ${"ABC"[cur.answer]}.`)), true);
 }
+/* 無障礙:結果的一句話摘要(aria-live 播報;詳細的在 #e-alongResult) */
+function resultSpeech(R){
+  if (!R) return "";
+  if (!R.taps) return tr("沒有收到鼓墊的敲擊。", "No pad hits came in.");
+  const r = R.kind === "rsl" ? R.r : R.all;
+  return tr(`練習回饋:${R.kind === "rsl" ? `節奏吻合度 ${r.score == null ? "—" : r.score} / 100,` : ""}命中 ${r.hits} / ${r.total}。`,
+    `Practice feedback: ${R.kind === "rsl" ? `rhythm match ${r.score == null ? "—" : r.score} / 100, ` : ""}hit ${r.hits} of ${r.total}.`);
+}
 /* 練習回饋(不是考試分數,不出現等第字眼,也不換算成官方分數) */
 function renderResult(){
   const box = $("alongResult"), R = cur && cur.result;
@@ -1189,7 +1217,9 @@ function renderResult(){
 }
 const summary = R => (R.kind === "rsl" ? { score: R.r.score, hits: R.r.hits, total: R.r.total, taps: R.taps } : { rows: R.rows.map(x => x.r.score), hits: R.all.hits, total: R.all.total, taps: R.taps });
 /* 狀態訊息:記住產生文字的函式,換語言時重寫;keep = 保留 ok / no 的顏色 */
-function say(fn, keep){
+function say(fn, keep, quiet){
+  const again = fn === lastMsg;
+  if (!again && !quiet) announce(fn());   // 無障礙:換語言重寫、預備拍與每一句的進度(quiet)不播報
   lastMsg = fn;
   if (!keep) $("feedback").classList.remove("ok", "no");
   pairText($("feedback"), fn);

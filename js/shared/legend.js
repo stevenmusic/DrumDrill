@@ -1,5 +1,5 @@
 /* 鼓組譜的圖例(drum key)與 OSMD 畫不出來的記號(補畫);瀏覽器用(要 DOM 與 OSMD)。
-   - drawLegend(el, { pieces, lines, key }):依用到的鼓件畫一排格子,每格 = OSMD 畫一個音 + 底下名稱(中英)+ 出處小字(最多兩行);
+   - drawLegend(el, { pieces, lines, key }):el 加 role="img" + aria-label(鼓件清單,a11y.js);依用到的鼓件畫一排格子,每格 = OSMD 畫一個音 + 底下名稱(中英)+ 出處小字(最多兩行);
      出處用 drumkey.json srcs[…].short(「Trinity DK p.107」「Trinity 勘誤」「RSL p.31–43」;不是官方的寫「待核對」,
      官方只確認符頭、位置待核對的第二行寫「位置待核對」;單線譜的小鼓第二行寫「單線譜為 App 的選擇」,那一格佔兩格寬)→ kitnotation.js 的 legendSrc
      每一份鼓組譜旁邊一定要有圖例(STAGES.md 決定 3),圖例的說明不能說是官方圖例:「App 採用的記譜方式;考試用書可能不同,以書上圖例為準」。
@@ -13,6 +13,7 @@
 import { tr, pairText } from "./i18n.js";
 import { legendXML, legendSrc, osmdXML, DIV } from "./kitnotation.js";
 import { drumKeyCached } from "./examdata.js";
+import { imgLabel, pieceNames } from "./a11y.js";
 
 const NS = "http://www.w3.org/2000/svg";
 
@@ -226,8 +227,10 @@ const OSMD_OPTS = { backend: "svg", autoResize: false, drawTitle: false, drawSub
 export async function drawLegend(el, { pieces, lines = 5, key = drumKeyCached() } = {}){
   el.innerHTML = "";
   el.classList.add("kit-legend");
-  if (!key) return;
+  if (!key) { imgLabel(el, null); return; }
   const order = Object.keys(key.pieces), list = (pieces || order).filter(p => key.pieces[p]).sort((a, b) => order.indexOf(a) - order.indexOf(b));
+  // 無障礙:圖例整塊當一張圖,說明 = 鼓件清單(格子裡畫的音符螢幕閱讀器讀不到)
+  imgLabel(el, () => tr(`圖例:${pieceNames(list, key)}(${lines === 1 ? "單線譜" : "五線譜"})`, `Drum key: ${pieceNames(list, key)} (${lines === 1 ? "single-line staff" : "five-line staff"})`));
   const head = document.createElement("div"); head.className = "kl-head";
   el.appendChild(head); pairText(head, () => tr("圖例", "Drum key"));
   const cells = document.createElement("div"); cells.className = "kl-cells"; el.appendChild(cells);
