@@ -325,3 +325,11 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 .stats-card .stats{margin-top:4px}
 .stats-card .srow{grid-template-columns:minmax(0, 8.5em) 1fr 5.4em}
 @media (max-width:360px){ .stats-card .srow{grid-template-columns:minmax(0, 7em) 1fr 5em} }
+/* 用麥克風評分節奏(選用;視奏的正式打、聽力的回打共用;照 PianoDrill 視奏的 .along-opt;js/shared/micrhythm.js) */
+.along .mic-row{display:flex;flex-direction:column;align-items:stretch;gap:0;border-top:1px solid var(--line);padding-top:6px}
+.along .along-opt{display:inline-flex;align-items:center;gap:8px;min-height:44px;max-width:100%;align-self:flex-start;color:var(--muted-bright);font-size:var(--fs-sm);cursor:pointer}
+.along .along-opt input{width:20px;height:20px;flex:none;margin:0;accent-color:var(--gold)}
+.along .along-opt input:disabled + span{opacity:.6}
+.along .along-opt span{min-width:0;overflow-wrap:anywhere}
+#mod-sight .mic-row .along-note,#mod-ear .mic-row .along-note{flex:none}
+#mod-sight .mic-row .along-note.warn,#mod-ear .mic-row .along-note.warn{color:var(--gold-bright)}

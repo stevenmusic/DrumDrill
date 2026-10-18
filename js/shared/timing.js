@@ -11,7 +11,82 @@
    - 偏移超過 OFFSET_LIMIT 就不扣(多半是整段晚了一拍,或藍牙耳機延遲太大):照原本的時間只算命中 / 漏 / 多,不給分數,改提醒
    容許範圍沿用 PianoDrill(max(70 ms, ¼ 拍),上限 160 ms)、OFFSET_LIMIT、lane 旗標門檻、合併分數的算法都是「練習設定」(大綱沒有規定)。
    結果是練習回饋,不是考試分數(不換算成 Pass / Merit / Distinction)。 */
-import { scoreRhythm } from "./onsets.js";
+import { scoreRhythm, detectOnsets } from "./onsets.js";
+
+/* 麥克風錄到的一段 → 起音時間(秒,從第一個取樣算起)。用 onsets.js 的 detectOnsets(兩個 App 同一份,不能改),
+   鼓比較密(十六分音符、Flam 之後馬上接下一下),參數照 docs/STAGES.md S15:hop 5 ms、refractory 0.05 秒(練習設定)。
+   - detectOnsets 固定「10 毫秒一格、回傳格數 × 0.01 秒」:把取樣率乘上 hop / 0.01 傳進去(每格 = hop 秒的取樣數),
+     回傳的秒數再乘回來;refractory 照同一個比例換。onsets.js 的預設(10 ms、0.09 秒)與內容不動(PianoDrill 照舊)
+   - 整組鼓直接整段丟進去不夠(tools/test/mic-check.mjs 的 node 側,App 真的題目混音:漏 12%、多 7%):
+     大鼓、筒鼓的低頻在打下去之後約 75 ms 還會再脹一次(多偵);鈸一直在響、輕的段落(pp)被整段最大聲的那一下定的門檻蓋掉(漏偵)。
+     所以先分成兩個頻帶(MIC_BANDS:400–3000 Hz、3000 Hz 以上;低頻只有大鼓的「脹」,不用),每個頻帶切成一段一段
+     (前後多帶 0.5 秒)各自找(門檻跟著那一段的音量走),再合起來(refractory 內算一下)。濾波器是兩個一階低通串接,沒有相位問題要管:
+     起音的位置照 detectOnsets 的格子。整段的音量太小(最大的一格 RMS < 0.004,跟 detectOnsets 一樣)= 沒有聲音
+   - 每一段後面補 30% 長度的靜音(MIC_PAD)再丟進去:detectOnsets 的底噪門檻 = 整段的中位數 × 4(照鋼琴設計);鼓一直打的時候中位數
+     就是前一下的尾音,重音中間的輕音(十六分音符、hi-hat)會被蓋掉。補靜音讓中位數落在比較低的位置(約 38 百分位),門檻跟著降
+     (node 側混音:漏 3.1% → 0%;代價是多偵變多:大鼓、筒鼓打下去約 60 ms 後低中頻再脹一次的被多算)
+   - 所以緊接在前一下後面(< MIC_BLOOM_GAP 0.12 秒)、高頻(3000 Hz 以上)沒有跟著變大(< 1.5 倍)的不算:真的敲擊一定有鼓棒 / 鼓槌的高頻;
+     小鼓取樣約 110 ms 的房間反射也是這樣濾掉
+     (node 側混音:多偵 5.7% → 3.1%)
+   - 已知限制:crash / ride 還在響的時候,同時的輕 hi-hat(只有高頻、沒有變大兩倍)會漏(mic-check 的 RSL 4:官方速度 ♩=89 沒有漏;拉到 ♩=150 約漏兩成);
+     全部鼓件合併成一條,分不出是哪個鼓。這些門檻都是練習設定,要用實機的錄音再調(docs/STAGES.md S15) */
+export const MIC_HOP = 0.005, MIC_REFRACTORY = 0.05;
+export const MIC_BANDS = [{ lo: 400, hi: 3000, chunk: 1 }, { lo: 3000, hi: 0, chunk: 3 }];
+export const MIC_OVERLAP = 0.5, MIC_PAD = 0.3, MIC_BLOOM_GAP = 0.12, MIC_BLOOM_RISE = 1.5;
+const SILENT_RMS = 0.004;
+function lowpass2(x, fc, sr){   // 兩個一階低通串接
+  const a = Math.exp(-2 * Math.PI * fc / sr), y = new Float32Array(x.length);
+  let p = 0, q = 0;
+  for (let i = 0; i < x.length; i++) { p = (1 - a) * x[i] + a * p; q = (1 - a) * p + a * q; y[i] = q; }
+  return y;
+}
+function band(x, lo, hi, sr){
+  const top = hi ? lowpass2(x, hi, sr) : x, bot = lo ? lowpass2(x, lo, sr) : null;
+  if (!bot) return top;
+  const y = new Float32Array(x.length);
+  for (let i = 0; i < x.length; i++) y[i] = top[i] - bot[i];
+  return y;
+}
+export function detectHits(samples, sampleRate, { hop = MIC_HOP, refractory = MIC_REFRACTORY, bands = MIC_BANDS, overlap = MIC_OVERLAP, pad = MIC_PAD,
+  bloomGap = MIC_BLOOM_GAP, bloomRise = MIC_BLOOM_RISE } = {}){
+  const k = hop / 0.01, n = Math.round(sampleRate * hop);
+  if (!samples || samples.length < n * 5) return [];
+  let peak = 0;
+  for (let f = 0; f + n <= samples.length; f += n) { let s = 0; for (let i = f; i < f + n; i++) s += samples[i] * samples[i]; peak = Math.max(peak, Math.sqrt(s / n)); }
+  if (peak < SILENT_RMS) return [];
+  const find = x => {
+    if (pad > 0) { const y = new Float32Array(x.length + Math.round(x.length * pad)); y.set(x); x = y; }   // 後面補靜音(上面的說明)
+    return detectOnsets(x, sampleRate * k, { refractory: refractory / k }).map(t => t * k);
+  };
+  const all = [];
+  let high = null;
+  for (const b of bands) {
+    const x = band(samples, b.lo, b.hi, sampleRate);
+    if (!b.hi && b.lo) high = x;
+    if (!b.chunk) { all.push(...find(x)); continue; }
+    const N = Math.round(b.chunk * sampleRate), O = Math.round(overlap * sampleRate);
+    for (let a = 0; a < x.length; a += N) {
+      const from = Math.max(0, a - O), to = Math.min(x.length, a + N + O);
+      for (const t of find(x.subarray(from, to))) { const T = t + from / sampleRate; if (T >= a / sampleRate && T < (a + N) / sampleRate) all.push(T); }
+    }
+  }
+  all.sort((a, b) => a - b);
+  const merged = [];
+  for (const t of all) if (!merged.length || t - merged[merged.length - 1] >= refractory - 1e-9) merged.push(t);
+  // 緊接在前一下後面(< bloomGap)、高頻沒有跟著變大的 = 大鼓、筒鼓的低中頻再脹一次或房間反射,不是新的一下(真的敲擊一定有鼓棒 / 鼓槌的高頻)
+  const out = [];
+  const rms = (x, a, b) => { let s = 0, c = 0; for (let i = Math.max(0, a); i < Math.min(x.length, b); i++) { s += x[i] * x[i]; c++; } return c ? Math.sqrt(s / c) : 0; };
+  for (const t of merged) {
+    const prev = out.length ? out[out.length - 1] : -Infinity;
+    if (high && t - prev < bloomGap) {
+      const i = Math.round(t * sampleRate), w = Math.round(sampleRate * 0.005);
+      const before = Math.min(rms(high, i - 4 * w, i - 2 * w), rms(high, i - 3 * w, i - w)), after = Math.max(rms(high, i, i + w), rms(high, i + w, i + 2 * w));
+      if (after < before * bloomRise) continue;
+    }
+    out.push(Math.round(t * 1e6) / 1e6);
+  }
+  return out;
+}
 
 /* 鼓墊的分組(鼓件 id 照 data/drumkey.json):1 個鼓墊 = 小鼓(所有事件都算在這一個);3 個 = 鈸 / 鼓 / 大鼓與腳踩 HH。
    key = 鍵盤(F / J / K;不用 Space,Space 是播放) */

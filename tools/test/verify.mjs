@@ -7,7 +7,7 @@ import examdata from "./checks/examdata.mjs";
 import appsamples from "./checks/appsamples.mjs";
 import patterncheck from "./checks/pattern.mjs";
 import kitxml from "./checks/kitxml.mjs";
-import timing from "./checks/timing.mjs";
+import timing, { checkMic } from "./checks/timing.mjs";
 import gensight from "./checks/gen-sight.mjs";
 import genplayback from "./checks/gen-playback.mjs";
 import genkit from "./checks/gen-kit.mjs";
@@ -72,6 +72,8 @@ try { appsamples(ok); } catch (e) { ok(false, "App 取樣數檢查出錯:" + e.s
 try { kitxml(ok); } catch (e) { ok(false, "鼓組譜檢查出錯:" + e.stack); }
 // 6d. 觸控鼓墊的節奏評分(js/shared/timing.js + onsets.js 的 scoreRhythm):已知偏移、漏打 / 多打、偏移超過上限、三個鼓墊各自評分
 try { timing(ok); } catch (e) { ok(false, "節奏評分檢查出錯:" + e.stack); }
+// 6d(續). 麥克風的起音偵測(S15;timing.js 的 detectHits,合成訊號;Naked Drums 取樣的混音在 tools/test/mic-check.mjs)
+try { checkMic(ok); } catch (e) { ok(false, "麥克風偵測檢查出錯:" + e.stack); }
 // 6e. 視奏出題器(js/sight/gen.js,RSL Debut–3 小鼓):每級 1000 個種子只出現白名單時值、每小節 4 拍、同種子同題、速度在範圍內(checks/gen-sight.mjs)
 try { gensight(ok); } catch (e) { ok(false, "視奏出題器檢查出錯:" + e.stack); }
 // 6f. Trinity Playback 譜產生器(js/shared/playbackgen.js):每級 1000 個種子,只用累積白名單、時值、長度、聲部數、換拍號(checks/gen-playback.mjs)

@@ -12,7 +12,10 @@
 //     兩條 lane 一條晚 300 ms(分不出是誰):不說 laneNote;
 //     隨機音型(固定種子 400 次,♩=60–160、十六分 / 三連音 / 八分 / 四分,整體 ±100 ms、抖動 ≤ 30 ms):
 //     沒有單獨晚的 → 不能有旗標;一條單獨晚超過容許範圍 → 那條一定有旗標、別條沒有
-import { expectedByLane, scoreLanes, offsetNote, laneNote, LANES, OFFSET_LIMIT } from "../../../js/shared/timing.js";
+//  8. 麥克風的 detectHits(S15;用合成的「敲擊」:寬頻雜訊 + 指數衰減,♩=150 十六分音符 100 ms 一下、輕重交錯):
+//     每一下都找到、誤差 ≤ 6 ms、沒有多的;hop 換算(5 ms 的格子 → 時間不是 10 ms 的倍數也找得到);整段很小聲 = 沒有聲音([]);
+//     detectOnsets(onsets.js)的預設照舊(PianoDrill 不受影響)。用 Naked Drums 取樣的混音另外在 tools/test/mic-check.mjs(要瀏覽器)
+import { expectedByLane, scoreLanes, offsetNote, laneNote, LANES, OFFSET_LIMIT, detectHits } from "../../../js/shared/timing.js";
 import { scoreRhythm } from "../../../js/shared/onsets.js";
 
 function rng(seed){   // mulberry32:固定種子,每次結果一樣
@@ -185,9 +188,28 @@ export default function check(ok){
   }
 }
 
+/* 8. 麥克風的起音偵測(合成訊號) */
+export function checkMic(ok){
+  const SR = 48000, r = rng(3), times = [];
+  for (let t = 0.3; t < 4.3; t += 0.1) times.push(Math.round((t + 0.0023) * SR) / SR);   // 不在 5 ms 格子上
+  const x = new Float32Array(SR * 5);
+  times.forEach((t, i) => {
+    const a = i % 2 ? 0.25 : 0.8, s0 = Math.round(t * SR);
+    for (let k = 0; k < SR * 0.3 && s0 + k < x.length; k++) x[s0 + k] += a * (r() * 2 - 1) * Math.exp(-k / (SR * 0.03));
+  });
+  const det = detectHits(x, SR);
+  const errs = times.map(t => Math.min(...det.map(d => Math.abs(d - t))));
+  ok(det.length === times.length, `麥克風:${times.length} 下,找到 ${det.length}`);
+  ok(Math.max(...errs) <= 0.006, `麥克風:最大誤差 ${(Math.max(...errs) * 1000).toFixed(1)} ms(應該 ≤ 6)`);
+  const quiet = x.map(v => v * 0.002);
+  ok(detectHits(quiet, SR).length === 0, "麥克風:整段很小聲(最大的一格 RMS < 0.004)應該當作沒有聲音");
+  ok(detectHits(new Float32Array(100), SR).length === 0, "麥克風:太短的錄音 = 沒有");
+}
+
 if (import.meta.url === `file://${process.argv[1]}`) {
   let fails = 0, n = 0;
   check((c, m) => { n++; if (!c) { fails++; console.log("✗ " + m); } });
+  checkMic((c, m) => { n++; if (!c) { fails++; console.log("✗ " + m); } });
   console.log(fails ? `✗ ${fails} 項失敗(共 ${n} 項)` : `✓ 節奏評分全部通過(${n} 項)`);
   process.exit(fails ? 1 : 0);
 }

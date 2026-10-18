@@ -19,6 +19,9 @@
      → 時間到自動正式打一次(RSL 用這一題的官方速度;Trinity 官方沒寫速度,用自己的練習速度)→ 結果(.mock-res:準備、正式打的練習回饋;不算總分、不出現等第、不換算官方分數)。
      進行中考試摘要與規格卡藏起來;中途切分頁、背景、重新整理、旋轉 = 中止(回來時說明)
    - 練習紀錄(js/shared/practicelog.js):連續天數、今天題數、今天分鐘 + 每週目標 + 最近 7 天;秒數 = 準備、正式打、聽正確版本的時間;各級練過題數(#s-statsCard)
+   - 用麥克風評分節奏(選用,S15;js/shared/micrhythm.js;開關 = 外框 drumdrill.v1 的 mic,經 ctx.micPref / setMicPref,聽力共用):
+     勾了以後正式打先開麥克風(拿到才開始預備拍),這一次鼓墊不出聲、不計分,正式打只有預備拍的拍點(拍點跟真的鼓同時響分不開);
+     打完整段在裝置上找起音(全部鼓件合併成一條,只評時間),預備拍的拍點被收進去的拿掉(dropBleed);拒絕權限 / 沒有麥克風:這一次照鼓墊評分、說明原因
    - localStorage drumdrill.sight.v1:{ pick, metroPractice, clickPerform, bpmOverride:{ "rsl-3": 75, "trinity-4": 96 }, history(出過的題目指紋),
      stats:{ "rsl-3": {n, hits, total} }, log:{ 日期: {n, sec} }, goal(每週目標分鐘), mockRun(進行中的模擬考標記), layout:{ 形狀: {measuresPerLine, zoom} } }
      讀進來先消毒:bpmOverride 夾在 30–240、不是有限數的刪掉;layout 每一項 zoom 夾在 0.45–1、每行小節數不對的刪掉;stats、log 的數字 */
@@ -42,6 +45,7 @@ import { createHistory, generateUnique } from "./fingerprint.js";
 import { randomSeed } from "./random.js";
 import { addLog, cleanLog, renderLog as paintLog, today, nextGoal, cleanGoal } from "../shared/practicelog.js";
 import { createMock, abortText, paintCard, resultNote, mockLabel, cardToTop } from "../shared/mock.js";
+import { createMicTake, dropBleed, MIC_LANES, MIC_TEXT, micFailText } from "../shared/micrhythm.js";
 import "./strings.js";
 const T = scoped("sight");
 
@@ -91,6 +95,10 @@ let playKind = null;          // 播放器正在播的:"metro"(準備時節拍�
 let lastResult = null;
 let lastMsg = null;
 let starting = 0;
+const mic = createMicTake();  // 麥克風(選用):正式打時錄一整段
+let micFail = null;           // 上一次打開麥克風失敗的原因(denied / none / error;下一次成功或改開關時清掉)
+let lastMic = null;           // 測試用(tools/test/mic-check.mjs):上一次麥克風的 { expected, detected, removed, lagMs }(從第一拍算起的秒數)
+const micOn = () => !!(ctx && ctx.micPref && ctx.micPref());
 
 const curExam = () => exam || { system: "trinity", grade: 1, auto: true };
 /* 自由練習:沒選考試時用 RSL(外框的子項目列也照這個寫 D);檢定頁照考試 */
@@ -127,12 +135,16 @@ const lanesOf = c => (c && isKitKind(c.kind) ? LANES[3] : LANES[1]);
 /* ══ 外框呼叫 ══ */
 export async function start(c){
   ctx = c; exam = c.exam;
-  renderLog(); renderStats();
+  renderLog(); renderStats(); renderMic();
   window.__sight = {
     get state(){ const p = player.state; return { phase, play: p.playing, kind: playKind, timer: !!countdown, left, key: cur && cur.key, grade: cur && cur.grade, mode: cur && cur.kind,
       bpm: cur ? bpmNow() : null, drawn, pending: pendingDraw, systems: stage ? stage.systems : 0, loading, loaded: sampleOk, lanes: pads.lanes.length,
       result: lastResult ? { ...lastResult.r, taps: lastResult.taps } : null, taps: perf ? perf.taps.length : 0, unloadPending: audio.kitRelease.pending,
-      sent: p.sent, failed: p.failed, dropped: p.dropped }; },
+      sent: p.sent, failed: p.failed, dropped: p.dropped, mic: micOn(), micFail, micActive: mic.active }; },
+    get lastMic(){ return lastMic; },
+    /* 測試用(tools/test/mic-check.mjs):正式打時麥克風要聽到的(從第一拍算起的秒數;全部鼓件一條)、預備拍幾秒 */
+    micPlan(){ if (!cur) return null; const b = bpmNow(); return { bpm: b, expected: expectedByLane(hitsOnly(eventsAt(b)), b, MIC_LANES)[MIC_LANES[0].id],
+      pieces: hitsOnly(eventsAt(b)).map(e => ({ time: e.beat * 60 / b, piece: e.piece, vel: e.vel })), countIn: cur.test.tl.countIn.len * 60 / b }; },
     get test(){ return cur && cur.test; }, get xml(){ return cur && cur.xml; }, get osmd(){ return osmd; }, get timeline(){ return cur && cur.test.tl; },
     eventsAt: b => (cur ? eventsAt(b) : []),
     newTest, startPrep, startPerform, toggleListen, setBpm: v => setBpm(v), SS,
@@ -153,6 +165,7 @@ export function enter(t){
   mode = t === "exam" ? "exam" : "free";
   if (mode === "free" && /^[0-8]$/.test(String(t))) freeGrade = Number(t);
   const had = cur;
+  renderMic();   // 開關跟聽力共用:在聽力改過就照新的
   render();
   // 同一題:在別的分頁時延後的譜、寬度變了的,回到畫面再畫(新題目 render 裡已經畫了);整組鼓被釋放過就重新載
   if ((mode === "free" || mockOn()) && cur && cur === had && !$("quiz").hidden) {
@@ -174,12 +187,12 @@ export function setExam(ex){
   if (!same && active) render();
 }
 /* 外框的 appCtx(考試資料、圖例)晚到 */
-export function onCtx(){ if (active) render(); if (ctx) ctx.examChanged(); }
+export function onCtx(){ renderMic(); if (active) render(); if (ctx) ctx.examChanged(); }
 /* 換語言:只重寫文字(不停止播放、不重新出題) */
 export function relang(){
   if (mode === "exam" || !cur || $("quiz").hidden) { if (active || mode === "exam") renderStatic(); }
   refreshTexts();
-  pads.relang();
+  pads.relang(); renderMic();
   relangPairs($("legend"));
   renderLog(); renderStats();
   if (mode === "exam") renderMockCard();
@@ -590,7 +603,18 @@ function renderPrepareLabel(){
   pairText($("prepareLabel"), fn);
   $("prepare").setAttribute("aria-label", fn());   // 窄畫面(≤340)只剩圖示時,螢幕閱讀器還是念得到
 }
-function renderAlongLabel(){ $("playAlong").textContent = phase === "perform" ? tr("停止", "Stop") : T("perform"); }
+function renderAlongLabel(){ $("playAlong").textContent = phase === "perform" ? tr("停止", "Stop") : T("perform"); renderMic(); }
+/* 麥克風開關(選用):正式打中不能改;說明 = 用法,打開失敗時改成原因 */
+function renderMic(){
+  const box = $("alongMic");
+  box.checked = micOn();
+  box.disabled = !(ctx && ctx.setMicPref) || phase === "perform" || !!starting;
+  pairText($("alongMicLabel"), () => tr(...MIC_TEXT.label));
+  const note = $("alongMicNote");
+  note.classList.toggle("warn", !!micFail);
+  pairText(note, () => tr(...(micFail ? micFailText(micFail) : MIC_TEXT.note)));
+}
+$("alongMic").onchange = () => { if (ctx && ctx.setMicPref) ctx.setMicPref($("alongMic").checked); micFail = null; renderMic(); };
 /* 狀態訊息:記住產生文字的函式,換語言時重寫;兩種語言保留比較高的高度 */
 function say(fn){ lastMsg = fn; pairText($("message"), fn); }
 /* 題目固定一行:太長就把字縮小(中英文版面一樣);標籤先縮字(最多到 0.6) */
@@ -954,6 +978,13 @@ function playTimeline({ events, bpm, tail = 0, clickFn }){
     click: x => clickFn(x * u, clickAt(tl, x)) });
 }
 
+/* 正式打的預備拍裡真的響的拍點(從第一拍算起的秒數;麥克風會收進去,dropBleed 用) */
+function countInClicks(p){
+  const tl = cur.test.tl, u = tl.unit, n = Math.round(tl.countIn.len / u), out = [];
+  for (let x = -n; x < 0; x++) if (p.clickFn(x * u, clickAt(tl, x))) out.push(x * u * 60 / p.bpm);
+  return out;
+}
+
 /* ── 準備(RSL 90 秒:準備加練習 / Trinity 看譜 30 秒,可以試打;節拍器可開可關;鼓墊可以試打,不計分)── */
 function startPrep(){
   if (!cur) return;
@@ -1036,11 +1067,29 @@ async function startPerform(){
   const mk = mockOn() ? mock.id : 0;
   if (!(await ready())) { if (mk && mock.alive(mk)) syncButtons(); return; }
   if (playKind || phase === "perform" || (mk && !mock.alive(mk))) return;
+  // 用麥克風評分(選用):先打開麥克風(第一次會問權限),拿到才開始預備拍;拿不到 = 這一次照鼓墊評分(說明原因)
+  let useMic = false;
+  if (micOn()) {
+    const c0 = cur, tok = starting = Date.now() + Math.random();
+    micFail = null; renderMic(); say(() => tr(...MIC_TEXT.starting));
+    const fail = await mic.start();
+    const still = starting === tok && active && cur === c0 && !playKind && phase !== "perform" && !(mk && !mock.alive(mk));
+    if (starting === tok) starting = 0;
+    if (!still) { mic.cancel(); renderMic(); return; }
+    if (fail) micFail = fail; else useMic = true;
+    renderMic();
+    // 開麥克風時 iOS 會切換音訊工作階段,AudioContext 可能停一下:叫醒再開始
+    const actx = audio.ensureAudio();
+    if (actx.state !== "running") await within(actx.resume().catch(() => {}), 1500);
+    if (!active || cur !== c0 || playKind || phase === "perform") { mic.cancel(); return; }
+  }
   const b = bpmNow(), len = cur.test.tl.len;
-  const t0 = playTimeline({ events: [], bpm: b, tail: TAIL, clickFn: (q, c) => (q >= len - 1e-6 ? 0 : q < 0 ? c : SS.clickPerform ? c : 0) });
-  if (!(t0 > 0)) return;   // 看不到(背景)時 play() 回 NaN:不切按鈕
+  // 拍點:預備拍一定有;正式打中照「拍點」開關。用麥克風時正式打中不放拍點(拍點跟真的鼓同時響,麥克風分不開)
+  const clickFn = (q, c) => (q >= len - 1e-6 ? 0 : q < 0 ? c : SS.clickPerform && !useMic ? c : 0);
+  const t0 = playTimeline({ events: [], bpm: b, tail: TAIL, clickFn });
+  if (!(t0 > 0)) { mic.cancel(); return; }   // 看不到(背景)時 play() 回 NaN:不切按鈕
   playKind = "perform"; phase = "perform"; countShown = null;
-  perf = { t0, bpm: b, taps: [], startedAt: performance.now() };
+  perf = { t0, bpm: b, taps: [], startedAt: performance.now(), mic: useMic, clickFn };
   lastResult = null; $("alongResult").hidden = true; showChecklist(null);
   renderAlongLabel(); renderPrepareLabel(); syncButtons();
   if (stage) stage.begin();
@@ -1054,6 +1103,7 @@ function stopPerform(){
 }
 function abortPerform(){
   if (phase !== "perform") return;
+  mic.cancel();   // 中途停止:丟掉這次錄音,不評分
   if (perf) addSec((performance.now() - perf.startedAt) / 1000);
   perf = null; phase = "idle"; stage && stage.end();
   renderAlongLabel(); renderPrepareLabel(); syncButtons();
@@ -1064,11 +1114,20 @@ function abortPerform(){
    整組鼓:3 個鼓墊各自配對(鈸 / 鼓 / 大鼓與腳踩 HH);裝飾音不算(hitsOnly);自由發展的小節不評分(那裡的敲擊不算多打) */
 function finishPerform(){
   if (!perf || !cur) return;
-  const p = perf, beatSec = 60 / p.bpm, lanes = lanesOf(cur);
+  const p = perf, beatSec = 60 / p.bpm;
+  let lanes = lanesOf(cur), raw = p.taps, silent = false;
   perf = null; phase = "result"; if (stage) stage.end();
   const events = hitsOnly(eventsAt(p.bpm));
+  if (p.mic) {
+    // 麥克風:整段錄完才找起音(全部鼓件一條);預備拍的拍點被收進去的拿掉
+    const take = mic.finish(), hits = take ? take.hits.map(t => t - p.t0) : [];
+    const d = dropBleed(hits, countInClicks(p));
+    lanes = MIC_LANES; silent = !hits.length;
+    raw = d.hits.map(time => ({ lane: MIC_LANES[0].id, time }));
+    lastMic = { expected: expectedByLane(events, p.bpm, MIC_LANES)[MIC_LANES[0].id], detected: d.hits, all: hits, removed: d.removed, lagMs: d.lagMs, filled: take ? take.filled : 0 };
+  }
   const expected = expectedByLane(events, p.bpm, lanes);
-  let taps = p.taps.filter(x => x.time >= -beatSec / 2);   // 預備拍裡太早的不算
+  let taps = raw.filter(x => x.time >= -beatSec / 2);   // 預備拍裡太早的不算
   let devTaps = 0;
   if (cur.test.develop && cur.test.develop.bars) {
     const devStart = cur.test.tl.bars[cur.test.develop.from].start * beatSec, tol = Math.min(0.16, Math.max(0.07, beatSec / 4));
@@ -1076,11 +1135,13 @@ function finishPerform(){
     const keep = taps.filter(x => x.time < devStart - 1e-3 || near(x.time));
     devTaps = taps.length - keep.length; taps = keep;
   }
-  const r = scoreLanes(expected, taps, { tempoBpm: p.bpm });
-  lastResult = { r, taps: taps.length, devTaps, bpm: p.bpm, practice: !officialBpm(p.bpm), pb: cur.kind === "playback", lanes };
+  // 麥克風:整體偏移(裝置的輸入、輸出延遲)不設上限,跟 PianoDrill 視奏的 scoreRhythm 一樣
+  const r = scoreLanes(expected, taps, { tempoBpm: p.bpm, ...(p.mic ? { offsetLimit: Infinity } : {}) });
+  lastResult = { r, taps: taps.length, devTaps, bpm: p.bpm, practice: !officialBpm(p.bpm), pb: cur.kind === "playback", lanes,
+    src: p.mic ? "mic" : "pad", silent, micFail: p.mic ? null : micFail };
   const st = SS.stats[cur.key] || (SS.stats[cur.key] = { n: 0, hits: 0, total: 0 });
   st.n++;
-  if (taps.length) { st.hits += r.hits; st.total += r.total; }   // 沒有敲鼓墊(例如在真的鼓上打):只算題數,不算進命中率
+  if (taps.length) { st.hits += r.hits; st.total += r.total; }   // 沒有敲鼓墊、麥克風沒聽到(例如在真的鼓上打、沒開麥克風):只算題數,不算進命中率
   addSec((performance.now() - p.startedAt) / 1000, 1);
   renderAlongLabel(); renderPrepareLabel(); syncButtons();
   renderResult();
@@ -1094,11 +1155,14 @@ function finishPerform(){
 function renderResult(){
   const box = $("alongResult"), R = lastResult;
   if (!R) { box.hidden = true; return; }
-  const r = R.r, multi = R.lanes.length > 1;
+  const r = R.r, multi = R.lanes.length > 1, byMic = R.src === "mic";
   box.innerHTML = "";
   const add = (cls, fn) => { const p = document.createElement("p"); if (cls) p.className = cls; box.appendChild(p); pairText(p, fn); return p; };
-  add("r-head", () => tr("練習回饋 · 節奏(觸控鼓墊)", "Practice feedback · rhythm (touch pads)"));
-  if (!R.taps) {
+  add("r-head", () => (byMic ? tr(...MIC_TEXT.head) : tr("練習回饋 · 節奏(觸控鼓墊)", "Practice feedback · rhythm (touch pads)")));
+  if (R.micFail) add("", () => tr(...micFailText(R.micFail)));
+  if (byMic && (R.silent || !R.taps)) {
+    add("", () => tr(...MIC_TEXT.silent));
+  } else if (!R.taps) {
     add("", () => tr(`沒有收到鼓墊的敲擊。正式打時點鼓墊,或用鍵盤 ${keysText(R.lanes)}。`,
       `No pad hits came in. Tap the pads while you perform, or use keys ${keysText(R.lanes)}.`));
   } else {
@@ -1114,8 +1178,11 @@ function renderResult(){
     if (ln) add("", () => tr(ln[0], ln[1]));
   }
   if (R.devTaps || (cur && cur.test.develop)) add("", () => tr("自由發展的小節不評分(那裡的敲擊不算多打)。", "Development bars aren't scored (hits there don't count as extra)."));
-  add("disclaimer", () => tr(`只看敲擊的時間,不看力度與音色${multi ? "(鬼音也算一下:鼓墊沒有力度)" : ""};容許範圍是練習設定。這是練習回饋,不是考試分數,也不能換算成官方分數。${R.pb ? `速度 ♩=${R.bpm}(練習設定;官方沒寫速度)。` : R.practice ? `這一次用練習速度 ♩=${R.bpm}。` : ""}`,
-    `Timing only (not dynamics or tone${multi ? "; ghost notes count as hits — the pads have no dynamics" : ""}); the tolerance is a practice setting. This is practice feedback, not an exam mark, and it doesn't convert to one.${R.pb ? ` Tempo ♩=${R.bpm} (practice setting; not in the syllabus).` : R.practice ? ` Practice tempo ♩=${R.bpm} this time.` : ""}`));
+  const tempoZh = R.pb ? `速度 ♩=${R.bpm}(練習設定;官方沒寫速度)。` : R.practice ? `這一次用練習速度 ♩=${R.bpm}。` : "";
+  const tempoEn = R.pb ? ` Tempo ♩=${R.bpm} (practice setting; not in the syllabus).` : R.practice ? ` Practice tempo ♩=${R.bpm} this time.` : "";
+  if (byMic) add("disclaimer", () => tr(MIC_TEXT.disclaimer[0] + tempoZh, MIC_TEXT.disclaimer[1] + tempoEn));
+  else add("disclaimer", () => tr(`只看敲擊的時間,不看力度與音色${multi ? "(鬼音也算一下:鼓墊沒有力度)" : ""};容許範圍是練習設定。這是練習回饋,不是考試分數,也不能換算成官方分數。${tempoZh}`,
+    `Timing only (not dynamics or tone${multi ? "; ghost notes count as hits — the pads have no dynamics" : ""}); the tolerance is a practice setting. This is practice feedback, not an exam mark, and it doesn't convert to one.${tempoEn}`));
   box.hidden = false;
 }
 $("playAlong").onclick = () => startPerform();
@@ -1128,6 +1195,7 @@ function ensurePads(){
   if (pads) pads.destroy();
   pads = createPads($("pads"), lanes, ({ lane, time }) => {
     if (time == null) return;
+    if (phase === "perform" && perf && perf.mic) return;   // 用麥克風評分的這一次:鼓墊不出聲(會被麥克風收進去)、不計分
     audio.playKit(padPiece(lane), Math.max(time, audio.audioNow()), 0.72);
     if (phase === "perform" && perf) perf.taps.push({ lane, time: time - perf.t0 });
   });
@@ -1195,7 +1263,7 @@ function renderStats(){
     return `<div class="srow"><span>${gl(g, sys)}</span><div class="bar"><i class="${p != null && p < 70 ? "low" : ""}" style="width:${p || 0}%"></i></div><small>${tr(`${st.n} 題`, `${st.n}`)}${p != null ? ` · ${p}%` : ""}</small></div>`;
   }).join("") : `<p class="stats-empty"></p>`;
   const empty = box.querySelector(".stats-empty");
-  if (empty) pairText(empty, () => tr("正式打完一題之後,這裡會顯示各級練過幾題(長條 = 鼓墊的節奏命中率)。", "Perform a test to see how many you've done per grade (bar = pad hit rate)."));
+  if (empty) pairText(empty, () => tr("正式打完一題之後,這裡會顯示各級練過幾題(長條 = 鼓墊或麥克風的節奏命中率)。", "Perform a test to see how many you've done per grade (bar = pad / mic hit rate)."));
 }
 
 /* ══ 模擬考(S14;js/shared/mock.js):一題,照官方準備時間計時(不能暫停、不能提早結束)→ 時間到自動正式打一次 → 結果 ══ */
@@ -1246,14 +1314,16 @@ function renderMockCard(){
     const r2 = { id: "2", name: () => tr("正式打一次", "Perform once") };
     if (ms === "run") { r2.detail = () => (st === "perform" ? tr("進行中", "Now") : tr("準備時間到自動開始", "Starts when the time is up")); r2.mark = st === "perform" ? "cur" : "todo"; }
     else if (d.stopped) { r2.detail = () => tr("中途停止(這一次沒有打完)", "Stopped part-way (not finished)"); r2.mark = "no"; }
-    else if (R && R.taps) { const r = R.r; r2.detail = () => tr(`打完了 · 節奏吻合度 ${r.score == null ? "—" : r.score} / 100 · 命中 ${r.hits} / ${r.total}${R.practice && !R.pb ? ` · 練習速度 ♩=${R.bpm}` : ` · ♩=${R.bpm}`}`,
+    else if (R && R.taps && !R.silent) { const r = R.r; r2.detail = () => tr(`打完了 · 節奏吻合度 ${r.score == null ? "—" : r.score} / 100 · 命中 ${r.hits} / ${r.total}${R.practice && !R.pb ? ` · 練習速度 ♩=${R.bpm}` : ` · ♩=${R.bpm}`}`,
       `Finished · rhythm match ${r.score == null ? "—" : r.score} / 100 · hit ${r.hits} / ${r.total} · ♩=${R.bpm}`); r2.mark = "ok"; }
+    else if (R && R.src === "mic") { r2.detail = () => tr("打完了 · 麥克風沒有聽到鼓聲,沒有節奏回饋", "Finished · the mic heard no drums, so no rhythm feedback"); r2.mark = "ok"; }
     else { r2.detail = () => tr("打完了 · 沒有收到鼓墊的敲擊,沒有節奏回饋", "Finished · no pad hits, so no rhythm feedback"); r2.mark = "ok"; }
     return [r1, r2];
   };
   if (ms === "result") {
     paintCard($, { title: () => tr("模擬考結果", "Mock exam result"), sub: name,
-      text: () => tr("節奏吻合度只看觸控鼓墊的敲擊時間(練習設定的容許範圍)。", "Rhythm match is pad timing only (practice-setting tolerance)."),
+      text: () => (mock.data.result && mock.data.result.src === "mic" ? tr("節奏吻合度只看麥克風聽到的敲擊時間(全部鼓件一條;練習設定的容許範圍)。", "Rhythm match is mic timing only (all drums as one; practice-setting tolerance).")
+        : tr("節奏吻合度只看觸控鼓墊的敲擊時間(練習設定的容許範圍)。", "Rhythm match is pad timing only (practice-setting tolerance).")),
       rows: rows(), btn: practicable(ex.system, ex.grade) && !ex.auto ? { label: () => mockLabel("result") } : null, close: { label: () => tr("看譜、聽正確版本", "See the chart & hear it") } });
     return;
   }
