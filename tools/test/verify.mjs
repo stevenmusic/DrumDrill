@@ -1,8 +1,9 @@
-// 不用瀏覽器的檢查:基本打法資料(照 PAS 官方表)、鼓譜 MusicXML、版本指紋、兩個 App 的共用檔案(sync.mjs)
+// 不用瀏覽器的檢查:基本打法資料(照 PAS 官方表)、鼓譜 MusicXML、考試資料(照 RSL / Trinity 官方大綱)、版本指紋、兩個 App 的共用檔案(sync.mjs)
 // 執行:node tools/test/verify.mjs
 import { execFileSync } from "node:child_process";
 import { RUDIMENTS, CATEGORIES, strokes, cycleLength, mainStrokes, withLead, DIV } from "../../js/tech/rudiments.js";
 import { rudimentXML } from "../../js/tech/notation.js";
+import examdata from "./checks/examdata.mjs";
 let fails = 0, checks = 0;
 const ok = (cond, msg) => { checks++; if (!cond) { fails++; console.log("✗ " + msg); } };
 
@@ -52,10 +53,12 @@ for (const r of RUDIMENTS) {
   ok((xml.match(/<note>/g) || []).length >= r.groups.flat().length, `${r.no} 音符數不對`);
   ok(!/undefined|NaN/.test(xml), `${r.no} MusicXML 有 undefined`);
 }
-// 6. 版本指紋與 sw.js 預快取清單
+// 6. 考試資料(data/exam-rsl.json、exam-trinity.json、drumkey.json;細項在 checks/examdata.mjs,裡面另外手抄了一份大綱的表互相核對)
+try { examdata(ok); } catch (e) { ok(false, "考試資料檢查出錯:" + e.stack); }
+// 7. 版本指紋與 sw.js 預快取清單
 try { execFileSync("node", [new URL("../build/stamp.mjs", import.meta.url).pathname, "--check"], { stdio: "pipe" }); checks++; }
 catch (e) { fails++; checks++; console.log("✗ " + (e.stdout || "").toString().trim()); }
-// 7. 兩個 App 的共用檔案(PIANODRILL=…;找不到 PianoDrill 就略過)
+// 8. 兩個 App 的共用檔案(PIANODRILL=…;找不到 PianoDrill 就略過)
 try { console.log(execFileSync("node", [new URL("./sync.mjs", import.meta.url).pathname], { stdio: "pipe" }).toString().trim()); checks++; }
 catch (e) { fails++; checks++; console.log((e.stdout || "").toString().trim()); }
 

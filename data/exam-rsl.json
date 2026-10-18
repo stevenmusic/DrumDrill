@@ -1,0 +1,497 @@
+{
+  "system": "rsl",
+  "schema": 1,
+  "doc": {
+    "title": "Rockschool Drums Syllabus Specification 2018 (rev. 2026-06-02)",
+    "url": "https://www.rslawards.com/wp-content/uploads/dlm_uploads/2026/06/RSL_Drums_Syllabus_Specification_June_2026.pdf",
+    "checked": "2026-10-18",
+    "notes": "docs/sources/rsl-drums.md",
+    "docs": {
+      "ig": { "title": "Instrument Guides Drums D-8 2024 (Graded Certificate)", "url": "https://www.rslawards.com/wp-content/uploads/dlm_uploads/2024/09/Instrument-Guides-Drums-D-8-2024.pdf" }
+    },
+    "legend": "src.p = page of the main syllabus PDF; src.doc = key in doc.docs when another document. assumed:true = not stated in the syllabus, the App's assumption. null = not stated (do not fill)."
+  },
+  "gradeNames": {
+    "0": ["入門(Debut)", "Debut"],
+    "1": ["1 級", "Grade 1"],
+    "2": ["2 級", "Grade 2"],
+    "3": ["3 級", "Grade 3"],
+    "4": ["4 級", "Grade 4"],
+    "5": ["5 級", "Grade 5"],
+    "6": ["6 級", "Grade 6"],
+    "7": ["7 級", "Grade 7"],
+    "8": ["8 級", "Grade 8"]
+  },
+  "structure": {
+    "src": { "p": "9–10, 15, 18" },
+    "gradeExam": ["3 首演奏曲 + 技巧 + 視奏或即興(Debut–5;Debut 只有視奏)/ Quick Study Piece(6–8)+ 聽力 + 樂理問答", "3 pieces + technical exercises + sight reading or I&I (Debut–5; Debut: sight reading only) / Quick Study Piece (6–8) + ear tests + GMQ"],
+    "gradedCert": ["3 首演奏曲 + 全部技巧練習;只能錄影考", "3 pieces + all technical exercises; recorded digital exam only"],
+    "perfCert": ["5 首演奏曲(Premiere–8 級)", "5 pieces (Premiere–Grade 8)"],
+    "order": [
+      ["演奏曲或技巧(考生選先考哪一個)", "Pieces or technical exercises (candidate's choice of order)"],
+      ["另一項", "The other one"],
+      ["視奏或即興(Debut–5)/ Quick Study Piece(6–8)", "Sight reading or I&I (Debut–5) / QSP (6–8)"],
+      ["聽力", "Ear tests"],
+      ["樂理問答", "General musicianship questions"]
+    ]
+  },
+  "marks": {
+    "gradeExam": {
+      "src": { "p": "16" },
+      "items": [
+        { "id": "piece1", "name": ["演奏曲 1", "Performance piece 1"], "max": 20, "bands": { "pass": 12, "merit": 15, "dist": 18 } },
+        { "id": "piece2", "name": ["演奏曲 2", "Performance piece 2"], "max": 20, "bands": { "pass": 12, "merit": 15, "dist": 18 } },
+        { "id": "piece3", "name": ["演奏曲 3", "Performance piece 3"], "max": 20, "bands": { "pass": 12, "merit": 15, "dist": 18 } },
+        { "id": "tech", "name": ["技巧", "Technical exercises"], "max": 15, "bands": { "pass": 9, "merit": 11, "dist": 13 } },
+        { "id": "sight", "name": ["視奏或即興 / QSP", "Sight/Improv/QSP"], "max": 10, "bands": { "pass": 6, "merit": 7, "dist": 9 }, "note": ["Debut–5 級:視奏或即興(Debut 只有視奏);6–8 級:Quick Study Piece", "Debut–5: sight reading or I&I (Debut: sight reading only); 6–8: Quick Study Piece"] },
+        { "id": "ear", "name": ["聽力", "Ear tests"], "max": 10, "bands": { "pass": 6, "merit": 7, "dist": 9 } },
+        { "id": "gmq", "name": ["樂理問答", "General musicianship"], "max": 5, "bands": { "pass": 3, "merit": 4, "dist": 5 } }
+      ],
+      "total": { "max": 100, "bands": { "pass": 60, "merit": 74, "dist": 90 }, "unit": "%" },
+      "note": ["Grade Exam 的 Merit 是 74%(另外兩種證書是 75%),照 PDF 原文", "Grade Exam Merit is 74% (75% for the two certificates), as printed"]
+    },
+    "perfCert": {
+      "src": { "p": "16" },
+      "items": [
+        { "id": "piece", "name": ["演奏曲(每首)", "Each piece"], "max": 20, "count": 5 }
+      ],
+      "total": { "max": 100, "bands": { "pass": 60, "merit": 75, "dist": 90 }, "unit": "%" }
+    },
+    "gradedCert": {
+      "src": { "p": "17" },
+      "items": [
+        { "id": "piece", "name": ["演奏曲(每首)", "Each piece"], "max": 20, "count": 3 },
+        { "id": "tech", "name": ["技巧", "Technical exercises"], "max": 20, "bands": { "pass": 12, "merit": 15, "dist": 18 } }
+      ],
+      "total": { "bands": { "pass": 60, "merit": 75, "dist": 90 }, "unit": "%" },
+      "note": ["錄影考:每一組技巧都要打,開始前要有聽得到的 4 下 click 預備拍(錄影考清單 p.1、p.5)", "Recorded: every technical group is played, after an audible 4-click count-in (Instrument Guides p.1, p.5)"]
+    },
+    "belowPass": {
+      "src": { "p": "22–23" },
+      "piece": { "bp1": [6, 11], "bp2": [0, 5] },
+      "tech": { "bp1": [4, 8], "bp2": [0, 3] },
+      "sight": { "bp1": [3, 5], "bp2": [0, 2] },
+      "ear": { "bp1": [3, 5], "bp2": [0, 2] },
+      "gmq": { "bp1": [2, 2], "bp2": [0, 1] }
+    },
+    "criteria": {
+      "src": { "p": "22–25" },
+      "piece": [["樂器掌控、穩定拍感、準確與理解、風格與表情", "Command, sync/pulse, accuracy, style & expression"]],
+      "tech": [["樂器掌控、穩定拍感、準確與理解(沒有風格與表情)", "Command, sync/pulse, accuracy (no style & expression)"]],
+      "ear": [["只評準確與理解", "Accuracy & understanding only"]]
+    }
+  },
+  "minutes": {
+    "src": { "p": "15" },
+    "gradeExam": { "0": 15, "1": 20, "2": 20, "3": 23, "4": 25, "5": 25, "6": 30, "7": 30, "8": 30 },
+    "perfCert": { "premiere": 10, "0": 12, "1": 15, "2": 15, "3": 18, "4": 20, "5": 20, "6": 23, "7": 23, "8": 26 },
+    "gradedCert": null,
+    "note": ["錄影考沒有規定時間;3 級照 p.15 是 23 分(p.42 誤寫成 Grade 2,官網寫 25 分)", "Recorded exam: no set time. Grade 3 = 23 min per p.15 (p.42 misprint; website says 25)"]
+  },
+  "other": {
+    "pieces": { "count": 3, "src": { "p": "16" } },
+    "pieceMaxSec": {
+      "0": { "v": 60, "src": { "p": "30" } },
+      "1": { "v": 75, "src": { "p": "34" } },
+      "2": { "v": 90, "src": { "p": "38" } },
+      "3": { "v": 120, "src": { "p": "42" } },
+      "4": { "v": 135, "src": { "p": "46" } },
+      "5": { "v": 150, "src": { "p": "51" } },
+      "6": { "v": 165, "src": { "p": "57" } },
+      "7": { "v": 190, "src": { "p": "62" } },
+      "8": { "v": 225, "src": { "p": "67" } }
+    },
+    "freeChoice": {
+      "src": { "p": "20" },
+      "gradeExam": 2,
+      "perfCert": 3,
+      "note": ["Grade Exam 最多 2 首自選曲(至少 1 首出自檢定書)", "Grade Exam: up to 2 free-choice pieces (at least 1 from the book)"]
+    },
+    "notInApp": [
+      ["演奏曲(配伴奏音軌)", "Performance pieces (with backing tracks)"],
+      ["樂理問答只列範圍,不出題", "GMQ: scope only, no questions"]
+    ]
+  },
+  "tech": {
+    "0": {
+      "src": { "p": "30" },
+      "click": "optional",
+      "rule": ["考官從每一組抽一部分考;可以跟著 click 打,或只聽一小節 click 就開始", "Examiner picks part of each group; play with the click or after one bar of click"],
+      "groups": [
+        { "id": "A", "name": ["單擊", "Single strokes"], "bpm": 70, "bpmSrc": null, "items": [
+          { "kind": "pattern", "pas": 1, "value": "8", "sticking": "single" }
+        ] },
+        { "id": "B", "name": ["雙擊", "Double strokes"], "bpm": 70, "bpmSrc": null, "items": [
+          { "kind": "pattern", "pas": 6, "value": "8", "sticking": "double" }
+        ] },
+        { "id": "C", "name": ["複點", "Paradiddles"], "bpm": 70, "bpmSrc": null, "items": [
+          { "kind": "pattern", "pas": 16, "value": "8" }
+        ] },
+        { "id": "D", "name": ["過門", "Fill"], "bpm": null, "bpmSrc": "backing", "items": [
+          { "kind": "book", "label": ["過門(配伴奏)", "Fill with backing"], "related": [], "note": ["第 1–3 小節 groove,第 4 小節考官從 4 個過門選 1 個;譜見官方檢定書", "Bars 1–3 groove, bar 4 one of 4 fills (examiner's pick); see the grade book"] }
+        ] }
+      ]
+    },
+    "1": {
+      "src": { "p": "34" },
+      "click": "optional",
+      "rule": ["考官從每一組抽一部分考;可以跟著 click 打,或只聽一小節 click 就開始", "Examiner picks part of each group; play with the click or after one bar of click"],
+      "groups": [
+        { "id": "A", "name": ["單擊/雙擊 八分", "Singles/doubles 8ths"], "bpm": 70, "bpmSrc": null, "note": ["官方是隔小節交替;小節長度、拍號見檢定書", "Officially alternating by bar; bar length and metre: see the grade book"], "items": [
+          { "kind": "pattern", "pas": 1, "value": "8", "sticking": "single" },
+          { "kind": "pattern", "pas": 6, "value": "8", "sticking": "double" }
+        ] },
+        { "id": "B", "name": ["單擊/雙擊 十六分", "Singles/doubles 16ths"], "bpm": 70, "bpmSrc": null, "note": ["官方是隔小節交替;小節長度、拍號見檢定書", "Officially alternating by bar; bar length and metre: see the grade book"], "items": [
+          { "kind": "pattern", "pas": 1, "value": "16", "sticking": "single" },
+          { "kind": "pattern", "pas": 6, "value": "16", "sticking": "double" }
+        ] },
+        { "id": "C", "name": ["單複點", "Single paradiddle"], "bpm": 70, "bpmSrc": null, "items": [
+          { "kind": "pas", "no": 16 }
+        ] },
+        { "id": "D", "name": ["過門", "Fill"], "bpm": null, "bpmSrc": "backing", "items": [
+          { "kind": "book", "label": ["過門(配伴奏)", "Fill with backing"], "related": [], "note": ["第 1–3 小節 groove,第 4 小節考官從 4 個過門選 1 個;譜見官方檢定書", "Bars 1–3 groove, bar 4 one of 4 fills (examiner's pick); see the grade book"] }
+        ] }
+      ]
+    },
+    "2": {
+      "src": { "p": "38" },
+      "click": "optional",
+      "rule": ["考官從每一組抽一部分考;可以跟著 click 打,或只聽一小節 click 就開始", "Examiner picks part of each group; play with the click or after one bar of click"],
+      "groups": [
+        { "id": "A", "name": ["單擊/雙擊 八分與十六分", "Singles/doubles 8/16"], "bpm": 70, "bpmSrc": null, "note": ["官方是八分與十六分隔小節交替;小節長度、拍號見檢定書", "Officially 8ths and 16ths alternating by bar; bar length and metre: see the grade book"], "items": [
+          { "kind": "pattern", "pas": 1, "value": "8", "sticking": "single" },
+          { "kind": "pattern", "pas": 6, "value": "8", "sticking": "double" },
+          { "kind": "pattern", "pas": 1, "value": "16", "sticking": "single" },
+          { "kind": "pattern", "pas": 6, "value": "16", "sticking": "double" }
+        ] },
+        { "id": "B", "name": ["單複點(整組鼓)", "Paradiddle on kit"], "bpm": 70, "bpmSrc": null, "items": [
+          { "kind": "pas", "no": 16, "note": ["官方要求用整組鼓,怎麼配置見檢定書;App 只在小鼓上練左右手", "Officially around the kit (see the grade book); the App practises the sticking on snare"] }
+        ] },
+        { "id": "C", "name": ["Flam(四分)", "Flams"], "bpm": 70, "bpmSrc": null, "items": [
+          { "kind": "pas", "no": 20 }
+        ] },
+        { "id": "D", "name": ["三連音", "Triplets"], "bpm": 70, "bpmSrc": null, "items": [
+          { "kind": "pattern", "pas": 1, "value": "8t3", "sticking": "single", "note": ["官方:八分三連音,左右交替", "Officially: 8th-note triplets, alternating hands"] }
+        ] },
+        { "id": "E", "name": ["過門", "Fill"], "bpm": null, "bpmSrc": "backing", "items": [
+          { "kind": "book", "label": ["過門(配伴奏)", "Fill with backing"], "related": [], "note": ["第 1–3 小節 groove,第 4 小節考官從 4 個過門選 1 個;譜見官方檢定書", "Bars 1–3 groove, bar 4 one of 4 fills (examiner's pick); see the grade book"] }
+        ] }
+      ]
+    },
+    "3": {
+      "src": { "p": "42" },
+      "click": "optional",
+      "rule": ["考官從每一組抽一部分考;可以跟著 click 打,或只聽一小節 click 就開始", "Examiner picks part of each group; play with the click or after one bar of click"],
+      "groups": [
+        { "id": "A", "name": ["單擊", "Single strokes"], "bpm": 75, "bpmSrc": null, "items": [
+          { "kind": "pattern", "pas": 1, "value": "8", "sticking": "single" },
+          { "kind": "pattern", "pas": 1, "value": "8t3", "sticking": "single" },
+          { "kind": "pattern", "pas": 1, "value": "16", "sticking": "single" }
+        ] },
+        { "id": "B", "name": ["雙擊", "Double strokes"], "bpm": 75, "bpmSrc": null, "note": ["官方用小鼓和 Tom,怎麼配置見檢定書;App 只在小鼓上練左右手", "Officially on snare and toms (see the grade book); the App practises the sticking on snare"], "items": [
+          { "kind": "pattern", "pas": 6, "value": "8", "sticking": "double" },
+          { "kind": "pattern", "pas": 6, "value": "16", "sticking": "double" }
+        ] },
+        { "id": "C", "name": ["單複點(整組鼓)", "Paradiddle on kit"], "bpm": 75, "bpmSrc": null, "items": [
+          { "kind": "pas", "no": 16, "note": ["官方要求用整組鼓,怎麼配置見檢定書;App 只在小鼓上練左右手", "Officially around the kit (see the grade book); the App practises the sticking on snare"] }
+        ] },
+        { "id": "D", "name": ["Flam 與 Drag", "Flams & drags"], "bpm": 75, "bpmSrc": null, "items": [
+          { "kind": "pas", "no": 20 },
+          { "kind": "pas", "no": 31 }
+        ] },
+        { "id": "E", "name": ["三連音", "Triplets"], "bpm": 75, "bpmSrc": null, "items": [
+          { "kind": "pattern", "pas": 1, "value": "8t3", "sticking": "single", "note": ["官方的重音打在小鼓和 Tom,重音位置見檢定書;App 不加重音", "Officially accents on snare and toms (positions: see the grade book); the App adds no accents"] }
+        ] },
+        { "id": "F", "name": ["過門", "Fill"], "bpm": 80, "bpmSrc": null, "items": [
+          { "kind": "book", "label": ["過門(配伴奏)", "Fill with backing"], "related": [], "note": ["第 1–3 小節 groove,第 4 小節考官從 4 個過門選 1 個;譜見官方檢定書", "Bars 1–3 groove, bar 4 one of 4 fills (examiner's pick); see the grade book"] }
+        ] }
+      ]
+    },
+    "4": {
+      "src": { "p": "47" },
+      "click": "required",
+      "rule": ["全部的技巧練習都要跟著 click 打", "All technical exercises are played to a click"],
+      "groups": [
+        { "id": "A", "name": ["單擊/雙擊", "Singles/doubles"], "bpm": 75, "bpmSrc": null, "note": ["官方:第一次打單擊、反覆打雙擊;小節長度、拍號見檢定書", "Officially singles first time, doubles on the repeat; bar length and metre: see the grade book"], "items": [
+          { "kind": "pattern", "pas": 1, "value": "8", "sticking": "single" },
+          { "kind": "pattern", "pas": 1, "value": "8t3", "sticking": "single" },
+          { "kind": "pattern", "pas": 1, "value": "16", "sticking": "single" },
+          { "kind": "pattern", "pas": 6, "value": "8", "sticking": "double" },
+          { "kind": "pattern", "pas": 6, "value": "8t3", "sticking": "double" },
+          { "kind": "pattern", "pas": 6, "value": "16", "sticking": "double" }
+        ] },
+        { "id": "B", "name": ["複點(整組鼓)", "Paradiddles on kit"], "bpm": 75, "bpmSrc": null, "note": ["官方要求用整組鼓,怎麼配置見檢定書;App 只在小鼓上練左右手", "Officially around the kit (see the grade book); the App practises the sticking on snare"], "items": [
+          { "kind": "pas", "no": 16 },
+          { "kind": "pas", "no": 18 }
+        ] },
+        { "id": "C", "name": ["Flam tap 與 ruff", "Flam tap & ruffs"], "bpm": 75, "bpmSrc": null, "items": [
+          { "kind": "pattern", "pas": 22, "value": "4", "assumed": true, "note": ["大綱寫「四分音符」,是否也適用 Flam tap 不明(推估)", "Syllabus says crotchets; unclear whether this covers the flam tap (assumed)"] },
+          { "kind": "book", "label": ["Ruff", "Ruffs"], "related": [], "note": ["Ruff 不是 PAS 名稱;譜見官方檢定書", "Ruffs are not a PAS rudiment name; see the grade book"] }
+        ] },
+        { "id": "D", "name": ["手腳配合", "Hands & feet"], "bpm": 75, "bpmSrc": null, "items": [
+          { "kind": "book", "label": ["手腳配合(4 種)", "Hands & feet (4)"], "related": [], "note": ["4 種,譜見官方檢定書(錄影考清單:1、2 是十六分音符,3、4 是八分三連音)", "4 patterns, see the grade book (Graded Certificate list: 1–2 in 16ths, 3–4 in 8th triplets)"] }
+        ] },
+        { "id": "E", "name": ["過門", "Fill"], "bpm": 80, "bpmSrc": null, "items": [
+          { "kind": "book", "label": ["過門(配伴奏)", "Fill with backing"], "related": [], "note": ["第 1–3 小節 groove,第 4 小節考官從 4 個過門選 1 個;要打反覆;譜見官方檢定書", "Bars 1–3 groove, bar 4 one of 4 fills; play the repeat; see the grade book"] }
+        ] }
+      ]
+    },
+    "5": {
+      "src": { "p": "52" },
+      "click": "required",
+      "rule": ["全部的技巧練習都要跟著 click 打", "All technical exercises are played to a click"],
+      "groups": [
+        { "id": "A", "name": ["單擊/雙擊", "Singles/doubles"], "bpm": 80, "bpmSrc": null, "note": ["官方:第一次打單擊、反覆打雙擊;小節長度、拍號見檢定書", "Officially singles first time, doubles on the repeat; bar length and metre: see the grade book"], "items": [
+          { "kind": "pattern", "pas": 1, "value": "8", "sticking": "single" },
+          { "kind": "pattern", "pas": 1, "value": "8t3", "sticking": "single" },
+          { "kind": "pattern", "pas": 1, "value": "16", "sticking": "single" },
+          { "kind": "pattern", "pas": 6, "value": "8", "sticking": "double" },
+          { "kind": "pattern", "pas": 6, "value": "8t3", "sticking": "double" },
+          { "kind": "pattern", "pas": 6, "value": "16", "sticking": "double" }
+        ] },
+        { "id": "B", "name": ["複點(整組鼓)", "Paradiddles on kit"], "bpm": 80, "bpmSrc": null, "note": ["官方要求用整組鼓、大鼓跟右手,怎麼配置見檢定書;App 只在小鼓上練左右手", "Officially around the kit with bass drum on the right hand (see the grade book); the App practises the sticking on snare"], "items": [
+          { "kind": "pas", "no": 16 },
+          { "kind": "pas", "no": 18 }
+        ] },
+        { "id": "C", "name": ["Flam accent / drag tap", "Flam accent, drag tap"], "bpm": 80, "bpmSrc": null, "items": [
+          { "kind": "pas", "no": 21 },
+          { "kind": "pas", "no": 32 }
+        ] },
+        { "id": "D", "name": ["五擊滾奏樂句", "5-stroke roll phrase"], "bpm": 75, "bpmSrc": null, "items": [
+          { "kind": "book", "label": ["五擊滾奏樂句", "5-stroke roll phrase"], "related": [7], "note": ["樂句本身見官方檢定書", "The phrase itself is in the grade book"] }
+        ] },
+        { "id": "E", "name": ["手腳配合", "Hands & feet"], "bpm": 90, "bpmSrc": null, "items": [
+          { "kind": "book", "label": ["手腳配合(4 種)", "Hands & feet (4)"], "related": [], "note": ["4 種,譜見官方檢定書", "4 patterns, see the grade book"] }
+        ] },
+        { "id": "F", "name": ["過門", "Fill"], "bpm": 90, "bpmSrc": null, "items": [
+          { "kind": "book", "label": ["過門(配伴奏)", "Fill with backing"], "related": [], "note": ["第 1–3 小節 groove,第 4 小節考官從 4 個過門選 1 個;要打反覆;譜見官方檢定書。速度照大綱 p.52(官網頁面寫 80)", "Bars 1–3 groove, bar 4 one of 4 fills; play the repeat; see the grade book. Tempo per syllabus p.52 (website says 80)"] }
+        ] }
+      ]
+    },
+    "6": {
+      "src": { "p": "58" },
+      "click": "required",
+      "rule": ["全部的技巧練習都要跟著 click 打", "All technical exercises are played to a click"],
+      "groups": [
+        { "id": "A", "name": ["單擊/雙擊", "Singles/doubles"], "bpm": 80, "bpmSrc": null, "note": ["官方:三種時值連續交替,第一次打單擊、反覆打雙擊;小節長度、拍號見檢定書", "Officially the three values in continuous alternation, singles first time, doubles on the repeat; see the grade book"], "items": [
+          { "kind": "pattern", "pas": 1, "value": "8t3", "sticking": "single" },
+          { "kind": "pattern", "pas": 1, "value": "16", "sticking": "single" },
+          { "kind": "pattern", "pas": 1, "value": "16t6", "sticking": "single" },
+          { "kind": "pattern", "pas": 6, "value": "8t3", "sticking": "double" },
+          { "kind": "pattern", "pas": 6, "value": "16", "sticking": "double" },
+          { "kind": "pattern", "pas": 6, "value": "16t6", "sticking": "double" }
+        ] },
+        { "id": "B", "name": ["複點類", "Paradiddles"], "bpm": 80, "bpmSrc": null, "items": [
+          { "kind": "pas", "no": 24 },
+          { "kind": "pattern", "pas": 19, "value": "16t6", "note": ["官方:六連音", "Officially in sextuplets"] }
+        ] },
+        { "id": "C", "name": ["單 Ratamacue", "Single ratamacue"], "bpm": 80, "bpmSrc": null, "items": [
+          { "kind": "pas", "no": 38 }
+        ] },
+        { "id": "D", "name": ["滾奏樂句", "Roll phrases"], "bpm": 80, "bpmSrc": null, "items": [
+          { "kind": "book", "label": ["五擊滾奏樂句", "5-stroke roll phrase"], "related": [7], "note": ["重音在 Tom;樂句本身見官方檢定書", "Accents on toms; the phrase itself is in the grade book"] },
+          { "kind": "book", "label": ["九擊滾奏樂句", "9-stroke roll phrase"], "related": [10], "note": ["樂句本身見官方檢定書", "The phrase itself is in the grade book"] }
+        ] },
+        { "id": "E", "name": ["風格練習曲", "Stylistic Study"], "bpm": null, "bpmSrc": "backing", "items": [
+          { "kind": "book", "label": ["風格練習曲(三選一)", "Style study (1 of 3)"], "related": [], "note": ["選的風格同時決定 Quick Study Piece 的風格;譜見官方檢定書", "The style chosen also sets the Quick Study Piece style; see the grade book"] }
+        ], "styles": [
+          { "name": ["Rock/Metal", "Rock/Metal"], "focus": ["半開 hi-hat、密集的十六分大鼓", "Half-open hi-hat, busy 16th bass drum"] },
+          { "name": ["Funk", "Funk"], "focus": ["小鼓 ghost note、快速開合 hi-hat", "Snare ghost notes, fast hi-hat open/close"] },
+          { "name": ["Jazz/Samba/Blues", "Jazz/Samba/Blues"], "focus": ["Polyrhythm、進階協調(2026-06 起 Latin 改為 Samba)", "Polyrhythm, advanced coordination (Latin renamed Samba, 2026-06)"] }
+        ] }
+      ]
+    },
+    "7": {
+      "src": { "p": "63" },
+      "click": "required",
+      "rule": ["全部的技巧練習都要跟著 click 打", "All technical exercises are played to a click"],
+      "groups": [
+        { "id": "A", "name": ["單擊", "Single strokes"], "bpm": 65, "bpmSrc": null, "note": ["組名寫 Single and Double Strokes,內容只列單擊;照內容", "Group title says singles and doubles but only singles are listed; the App follows the list"], "items": [
+          { "kind": "pattern", "pas": 1, "value": "4", "sticking": "single" },
+          { "kind": "pattern", "pas": 1, "value": "8", "sticking": "single" },
+          { "kind": "pattern", "pas": 1, "value": "8t3", "sticking": "single" },
+          { "kind": "pattern", "pas": 1, "value": "16", "sticking": "single" },
+          { "kind": "pattern", "pas": 1, "value": "16t5", "sticking": "single" },
+          { "kind": "pattern", "pas": 1, "value": "16t6", "sticking": "single" },
+          { "kind": "pattern", "pas": 1, "value": "16t7", "sticking": "single" },
+          { "kind": "pas", "no": 1, "note": ["三十二分音符的單擊就是 PAS #1 原譜", "32nd-note singles = PAS #1 as printed"] }
+        ] },
+        { "id": "B", "name": ["複點類", "Paradiddles"], "bpm": 80, "bpmSrc": null, "items": [
+          { "kind": "pas", "no": 24 },
+          { "kind": "pattern", "pas": 19, "value": "16t6", "note": ["官方:六連音,重音在 Tom;App 只在小鼓上練", "Officially sextuplets with accents on toms; the App practises on snare"] }
+        ] },
+        { "id": "C", "name": ["Pataflafla", "Pataflafla"], "bpm": 80, "bpmSrc": null, "items": [
+          { "kind": "pas", "no": 27 }
+        ] },
+        { "id": "D", "name": ["Ratamacue", "Ratamacues"], "bpm": 80, "bpmSrc": null, "items": [
+          { "kind": "pas", "no": 38 },
+          { "kind": "pas", "no": 39 }
+        ] },
+        { "id": "E", "name": ["滾奏樂句", "Roll phrases"], "bpm": 85, "bpmSrc": null, "items": [
+          { "kind": "book", "label": ["七擊滾奏樂句", "7-stroke roll phrase"], "related": [9], "note": ["樂句本身見官方檢定書", "The phrase itself is in the grade book"] },
+          { "kind": "book", "label": ["九擊滾奏樂句", "9-stroke roll phrase"], "related": [10], "note": ["重音在 Tom;樂句本身見官方檢定書", "Accents on toms; the phrase itself is in the grade book"] }
+        ] },
+        { "id": "F", "name": ["風格練習曲", "Stylistic Study"], "bpm": null, "bpmSrc": "backing", "items": [
+          { "kind": "book", "label": ["風格練習曲(三選一)", "Style study (1 of 3)"], "related": [], "note": ["選的風格同時決定 Quick Study Piece 的風格;譜見官方檢定書", "The style chosen also sets the Quick Study Piece style; see the grade book"] }
+        ], "styles": [
+          { "name": ["Rock/Metal", "Rock/Metal"], "focus": ["Ride 碗 7/8 節奏、五擊滾奏", "Ride bell 7/8 pattern, 5-stroke rolls"] },
+          { "name": ["Funk", "Funk"], "focus": ["Linear funk、九擊滾奏", "Linear funk, 9-stroke rolls"] },
+          { "name": ["Jazz/Latin/Blues", "Jazz/Latin/Blues"], "focus": ["Ride 碗 6/8 節奏、splashed hi-hat", "Ride bell 6/8 pattern, splashed hi-hat"] }
+        ] }
+      ]
+    },
+    "8": {
+      "src": { "p": "68" },
+      "click": "required",
+      "rule": ["全部的技巧練習都要跟著 click 打", "All technical exercises are played to a click"],
+      "groups": [
+        { "id": "A", "name": ["單擊", "Single strokes"], "bpm": 65, "bpmSrc": null, "items": [
+          { "kind": "pattern", "pas": 1, "value": "4", "sticking": "single" },
+          { "kind": "pattern", "pas": 1, "value": "8", "sticking": "single" },
+          { "kind": "pattern", "pas": 1, "value": "8t3", "sticking": "single" },
+          { "kind": "pattern", "pas": 1, "value": "16", "sticking": "single" },
+          { "kind": "pattern", "pas": 1, "value": "16t5", "sticking": "single" },
+          { "kind": "pattern", "pas": 1, "value": "16t6", "sticking": "single" },
+          { "kind": "pattern", "pas": 1, "value": "16t7", "sticking": "single" },
+          { "kind": "pas", "no": 1, "note": ["三十二分音符的單擊就是 PAS #1 原譜", "32nd-note singles = PAS #1 as printed"] },
+          { "kind": "pattern", "pas": 1, "value": "32t9", "sticking": "single" },
+          { "kind": "pattern", "pas": 1, "value": "32t10", "sticking": "single", "note": ["官方:double quintuplet(三十二分十連音)", "Officially a double quintuplet"] }
+        ] },
+        { "id": "B", "name": ["複點加雙擊", "Paradiddle-diddles"], "bpm": 90, "bpmSrc": null, "note": ["官方:六連音,繞整組鼓;App 只在小鼓上練左右手", "Officially sextuplets around the kit; the App practises the sticking on snare"], "items": [
+          { "kind": "pattern", "pas": 19, "value": "16t6" },
+          { "kind": "book", "label": ["另一種複點加雙擊", "Alt. paradiddle-diddle"], "related": [], "note": ["不是 PAS 名稱;譜見官方檢定書", "Not a PAS rudiment name; see the grade book"] }
+        ] },
+        { "id": "C", "name": ["三連音類", "Triplets"], "bpm": 85, "bpmSrc": null, "items": [
+          { "kind": "pas", "no": 28 },
+          { "kind": "pas", "no": 27 }
+        ] },
+        { "id": "D", "name": ["三 Ratamacue", "Triple ratamacue"], "bpm": 85, "bpmSrc": null, "items": [
+          { "kind": "pas", "no": 40 }
+        ] },
+        { "id": "E", "name": ["滾奏", "Rolls"], "bpm": 90, "bpmSrc": null, "items": [
+          { "kind": "book", "label": ["七擊滾奏樂句", "7-stroke roll phrase"], "related": [9], "note": ["重音在 Tom;樂句本身見官方檢定書", "Accents on toms; the phrase itself is in the grade book"] },
+          { "kind": "book", "label": ["組合滾奏", "Combined rolls"], "related": [], "note": ["不是 PAS 名稱;譜見官方檢定書", "Not a PAS rudiment name; see the grade book"] }
+        ] },
+        { "id": "F", "name": ["風格練習曲", "Stylistic Study"], "bpm": null, "bpmSrc": "backing", "items": [
+          { "kind": "book", "label": ["風格練習曲(三選一)", "Style study (1 of 3)"], "related": [], "note": ["選的風格同時決定 Quick Study Piece 的風格;譜見官方檢定書", "The style chosen also sets the Quick Study Piece style; see the grade book"] }
+        ], "styles": [
+          { "name": ["Rock/Metal", "Rock/Metal"], "focus": ["節奏移位、5/4 協調", "Rhythmic displacement, 5/4 coordination"] },
+          { "name": ["Funk", "Funk"], "focus": ["三十二分音符 linear funk、stepped hi-hat", "32nd-note linear funk, stepped hi-hat"] },
+          { "name": ["Jazz/Latin/Blues", "Jazz/Latin/Blues"], "focus": ["3–2 與 2–3 clave", "3–2 and 2–3 clave"] }
+        ] }
+      ]
+    }
+  },
+  "sight": {
+    "0": { "type": "snare", "bars": 4, "time": { "v": "4/4", "assumed": true }, "values": ["2", "4"], "rests": ["r4"], "pieces": ["snare"], "bpm": [80, 80], "prepSec": 90, "metroOption": true, "countIn": null, "develop": null, "src": { "p": "31" } },
+    "1": { "type": "snare", "bars": 4, "time": { "v": "4/4", "assumed": true }, "values": ["8", "4"], "rests": ["r4"], "pieces": ["snare"], "bpm": [80, 80], "prepSec": 90, "metroOption": true, "countIn": null, "develop": null, "src": { "p": "35" } },
+    "2": { "type": "snare", "bars": 4, "time": { "v": "4/4", "assumed": true }, "values": ["4", "8", "16"], "rests": ["r4", "r8"], "pieces": ["snare"], "bpm": [70, 70], "prepSec": 90, "metroOption": true, "countIn": null, "develop": null, "src": { "p": "39" } },
+    "3": { "type": "snare", "bars": 4, "time": { "v": "4/4", "assumed": true }, "values": ["4", "8", "16"], "rests": ["r4", "r8"], "pieces": ["snare"], "bpm": [70, 80], "prepSec": 90, "metroOption": true, "countIn": null, "develop": null, "src": { "p": "43" } },
+    "4": { "type": "kit", "bars": 8, "time": { "v": "4/4", "assumed": false }, "values": ["4", "4.", "8", "8.", "16"], "rests": ["r4", "r8"], "pieces": ["kit"], "bpm": [80, 90], "prepSec": 90, "metroOption": true, "countIn": null, "develop": { "bars": 2, "pos": { "v": "end", "assumed": true } }, "src": { "p": "48" } },
+    "5": { "type": "kit", "bars": 8, "time": { "v": "4/4", "assumed": false }, "values": ["4", "4.", "8", "8.", "16"], "rests": ["r4", "r8"], "pieces": ["kit"], "bpm": [80, 120], "prepSec": 90, "metroOption": true, "countIn": null, "develop": { "bars": 2, "pos": { "v": "end", "assumed": true } }, "src": { "p": "53" } },
+    "6": { "type": "qsp", "bars": 12, "form": ["Lead sheet;標示即興的小節自己詮釋", "Lead sheet; improvised bars are your own"], "studySec": 180, "plays": 2, "demoFirst": true, "style": "stylistic", "time": null, "values": null, "bpm": null, "src": { "p": "57, 59" } },
+    "7": { "type": "qsp", "bars": 12, "form": ["Lead sheet;標示即興的小節自己詮釋", "Lead sheet; improvised bars are your own"], "studySec": 180, "plays": 2, "demoFirst": true, "style": "stylistic", "time": null, "values": null, "bpm": null, "src": { "p": "62, 64" } },
+    "8": { "type": "qsp", "bars": 12, "form": ["Lead sheet;標示即興的小節自己詮釋", "Lead sheet; improvised bars are your own"], "studySec": 180, "plays": 2, "demoFirst": true, "style": "stylistic", "time": null, "values": null, "bpm": null, "src": { "p": "67, 69" } }
+  },
+  "sightNote": {
+    "src": { "p": "31, 35, 39, 43, 48, 53, 59, 64, 69" },
+    "snare": ["大綱沒寫 Debut–3 級的拍號,App 用 4/4(推估);預備拍、伴奏大綱沒寫", "Metre for Debut–3 not stated; the App uses 4/4 (assumed). Count-in/backing not stated"],
+    "kit": ["8 小節含 2 小節自由發展;位置大綱沒寫,App 放在最後兩小節(推估)", "8 bars incl. a 2-bar development; position not stated, the App uses the last 2 bars (assumed)"],
+    "qsp": ["先看譜並聽有示範鼓聲的音軌,3 分鐘研讀,再播兩次(第一次練習、第二次考);風格跟 Stylistic Study 一樣;拍號、時值、速度大綱沒寫", "View chart with a demo track, 3 min study, then 2 plays (practice, assessed); style = Stylistic Study; metre, values, tempo not stated"],
+    "examples": ["範例只在付費檢定書裡", "Examples are only in the grade books"]
+  },
+  "improv": {
+    "0": null,
+    "1": { "bars": 4, "form": ["譜上 1 小節 groove,發展下去,加 1 小節過門", "1 written groove bar, develop it, add a 1-bar fill"], "bpm": [70, 80], "prepSec": 30, "backing": true, "src": { "p": "35" } },
+    "2": { "bars": 4, "form": ["譜上 1 小節 groove,發展下去,加 1 小節過門", "1 written groove bar, develop it, add a 1-bar fill"], "bpm": [70, 80], "prepSec": 30, "backing": true, "src": { "p": "39" } },
+    "3": { "bars": 4, "form": ["譜上 1 小節 groove,發展下去,加 1 小節過門", "1 written groove bar, develop it, add a 1-bar fill"], "bpm": [80, 100], "prepSec": 30, "backing": true, "src": { "p": "43" } },
+    "4": { "bars": 8, "form": ["開頭 2 小節照譜打,接著發展,最後 2 小節鼓 solo", "2 written bars, then develop, last 2 bars drum solo"], "bpm": [80, 120], "prepSec": null, "backing": true, "src": { "p": "48" } },
+    "5": { "bars": 8, "form": ["開頭 2 小節照譜打,接著發展,最後 2 小節鼓 solo", "2 written bars, then develop, last 2 bars drum solo"], "bpm": [80, 120], "prepSec": null, "backing": true, "src": { "p": "53" } },
+    "6": null,
+    "7": null,
+    "8": null
+  },
+  "improvNote": {
+    "src": { "p": "35, 39, 43, 48, 53" },
+    "text": ["跟視奏二選一(1–5 級);配伴奏音軌,App 不提供,只列規格", "Alternative to sight reading (Grades 1–5); needs a backing track, so the App lists the spec only"]
+  },
+  "ear": {
+    "0": {
+      "fill": { "bars": 1, "pieces": ["snare"], "bpm": 70, "values": ["4", "8"], "rests": [], "options": 2, "plays": 2, "countInBars": 1, "metro": true },
+      "groove": { "bars": 2, "pieces": ["hh", "snare", "kick"], "bpm": [80, 80], "repeat": { "v": 2, "assumed": true }, "styleChoices": 0, "styleOptions": null },
+      "src": { "p": "31" }
+    },
+    "1": {
+      "fill": { "bars": 1, "pieces": ["snare"], "bpm": 70, "values": ["4", "8"], "rests": ["r4"], "options": 2, "plays": 2, "countInBars": 1, "metro": true },
+      "groove": { "bars": 2, "pieces": ["hh", "snare", "kick"], "bpm": [80, 80], "repeat": { "v": 2, "assumed": true }, "styleChoices": 0, "styleOptions": null },
+      "src": { "p": "35" }
+    },
+    "2": {
+      "fill": { "bars": 1, "pieces": ["snare"], "bpm": 70, "values": ["4", "8", "16"], "rests": ["r4"], "options": 2, "plays": 2, "countInBars": 1, "metro": true },
+      "groove": { "bars": 2, "pieces": ["hh", "hhOpen", "snare", "kick"], "bpm": [80, 80], "repeat": { "v": 2, "assumed": true }, "styleChoices": 0, "styleOptions": null },
+      "src": { "p": "39" }
+    },
+    "3": {
+      "fill": { "bars": 1, "pieces": ["snare"], "bpm": 70, "values": ["4", "8", "8t3", "16"], "rests": ["r4"], "options": 2, "plays": 2, "countInBars": 1, "metro": true },
+      "groove": { "bars": 2, "pieces": ["crash", "hh", "hhOpen", "snare", "kick"], "bpm": [80, 80], "repeat": { "v": 2, "assumed": true }, "styleChoices": 0, "styleOptions": null },
+      "src": { "p": "43" }
+    },
+    "4": {
+      "fill": { "bars": 1, "pieces": ["snare"], "bpm": 70, "values": ["4", "8", "8t3", "8.", "16"], "rests": [], "options": 3, "plays": 2, "countInBars": 1, "metro": true },
+      "groove": { "bars": 2, "pieces": ["crash", "hh", "hhOpen", "ride", "rideBell", "snare", "kick"], "bpm": [80, 120], "repeat": { "v": 2, "assumed": true }, "styleChoices": 3, "styleOptions": null },
+      "src": { "p": "48" }
+    },
+    "5": {
+      "fill": { "bars": 1, "pieces": ["snare"], "bpm": 70, "values": ["4", "8", "8t3", "8.", "16"], "rests": [], "options": 3, "plays": 2, "countInBars": 1, "metro": true },
+      "groove": { "bars": 2, "pieces": ["crash", "hh", "hhOpen", "ride", "rideBell", "snare", "kick", "xstick"], "bpm": [80, 120], "repeat": { "v": 2, "assumed": true }, "styleChoices": 3, "styleOptions": null },
+      "src": { "p": "53" }
+    },
+    "6": {
+      "fill": { "bars": 1, "pieces": ["snare"], "bpm": 70, "values": null, "valueRange": ["4", "16t6"], "rests": ["r4", "r8"], "options": 3, "plays": 2, "countInBars": 1, "metro": true },
+      "groove": { "bars": 2, "pieces": ["kit"], "bpm": [80, 140], "repeat": { "v": 2, "assumed": true }, "styleChoices": 4, "styleOptions": null },
+      "src": { "p": "59" }
+    },
+    "7": {
+      "fill": { "bars": 1, "pieces": ["snare"], "bpm": 70, "values": null, "valueRange": ["4", "16t6"], "rests": ["r4", "r8", "r16"], "options": 3, "plays": 2, "countInBars": 1, "metro": true },
+      "groove": { "bars": 2, "pieces": ["kit"], "bpm": [80, 140], "repeat": { "v": 2, "assumed": true }, "styleChoices": 4, "styleOptions": null },
+      "src": { "p": "64" }
+    },
+    "8": {
+      "fill": { "bars": 1, "pieces": ["snare"], "bpm": 70, "values": null, "valueRange": ["4", "16t6"], "rests": ["r4", "r8", "r16"], "options": 3, "plays": 2, "countInBars": 1, "metro": true },
+      "groove": { "bars": 2, "pieces": ["kit"], "bpm": [80, 160], "repeat": { "v": 2, "assumed": true }, "styleChoices": 4, "styleOptions": null },
+      "src": { "p": "69" }
+    }
+  },
+  "earNote": {
+    "src": { "p": "31, 35, 39, 43, 48, 53, 59, 64, 69" },
+    "flow": ["配 metronome 聽兩次,每次前面 1 小節預備拍;練習一下;考官數拍後配 metronome 打出來。Fill 再從印出來的選項指出是哪一個;4–8 級 Groove 還要說出風格", "Played twice with metronome, 1-bar count-in each; short practice; play it back to the metronome. Fill: pick it from printed options; Groove (4–8): name the style"],
+    "repeat": ["「a two bar groove that is repeated」意思不清楚,App 播放時兩小節播兩遍(推估)", "\"Two bar groove that is repeated\" is unclear; the App plays the 2 bars twice (assumed)"],
+    "styles": ["風格選項大綱沒寫,App 不出這一題", "Style options are not listed, so the App skips that question"],
+    "fillValues": ["6–8 級大綱寫「四分到十六分六連音的所有時值與組合」,沒有逐一列出", "Grades 6–8: \"all values from crotchets to sextuplets\"; not listed one by one"],
+    "names": ["Debut p.31 第一句寫 Rhythmic Recall、官網 4、6 級寫 Harmonic Recall;App 用 Groove Recall", "Debut p.31 says Rhythmic Recall once, website says Harmonic Recall for 4 and 6; the App uses Groove Recall"]
+  },
+  "gmq": {
+    "0": { "questions": 5, "music": ["譜上的鼓件;四分、八分音符時值", "Drum voices on the stave; crotchet and quaver values"], "instrument": ["認鼓件:小鼓、高鼓、中鼓、落地鼓、hi-hat、ride、crash", "Snare, high/mid/floor tom, hi-hat, ride, crash"], "note": ["p.30 同時寫 5 題與 4 題;照配分表(p.16)以 5 題計", "p.30 says both 5 and 4 questions; the mark scheme (p.16) counts 5"], "src": { "p": "30–31" } },
+    "1": { "questions": 5, "music": ["同 Debut,加上曲中的一個休止符", "As Debut, plus one rest in the piece"], "instrument": ["加大鼓;兩個主要的爵士鼓品牌", "Plus bass drum; two main drum brands"], "src": { "p": "35" } },
+    "2": { "questions": 5, "music": ["鼓件;拍號;四分、附點八分、八分、十六分與休止符時值;反覆記號(含第一、第二結尾)", "Drum voices; time signature; note and rest values; repeats incl. 1st/2nd endings"], "instrument": ["鼓件;鼓棒部位 tip、neck、shaft、butt;兩個鼓品牌", "Drum parts; stick tip, neck, shaft, butt; two drum brands"], "src": { "p": "39" } },
+    "3": { "questions": 5, "music": ["同 2 級,時值再加八分三連音", "As Grade 2, plus 8th-note triplets"], "instrument": ["同 2 級,加兩個主要的鈸品牌", "As Grade 2, plus two main cymbal brands"], "src": { "p": "43" } },
+    "4": { "questions": 5, "music": ["鼓件;拍號;bpm;反覆、第一第二結尾、D.C.、D.S. al Coda、al Fine;曲中所有時值與休止符;solo 段可用的 rudiment 與鼓件、節奏、技巧", "Voices, metre, bpm, repeats, D.C./D.S./Coda/Fine, all values and rests, a rudiment and the solo's parts/rhythms/technique"], "instrument": ["鼓組與鼓棒的任何部位;調音;cross stick、choke、ride 碗、重音", "Any kit/stick part; tuning; cross stick, choke, ride bell, accent"], "src": { "p": "48" } },
+    "5": { "questions": 5, "music": ["4 級全部,加風格記譜", "All of Grade 4, plus stylistic drum notation"], "instrument": ["同 4 級", "As Grade 4"], "src": { "p": "54" } },
+    "6": { "questions": 5, "music": ["曲中任何記譜與力度;這個 groove 為什麼符合這個風格;solo 段的鼓件、節奏、技巧", "Any notation and dynamics; why the groove fits the style; the solo's parts, rhythms, technique"], "instrument": ["說明並示範:保養;依曲風調音;cross stick、choke、ride 碗、rim-shot、ghost note、半開 hi-hat、重音", "Explain and show: care, tuning to style, cross stick, choke, ride bell, rim-shot, ghost note, half-open HH, accent"], "src": { "p": "59" } },
+    "7": { "questions": 5, "music": ["同 6 級", "As Grade 6"], "instrument": ["同 6 級", "As Grade 6"], "src": { "p": "64" } },
+    "8": { "questions": 5, "music": ["同 6 級", "As Grade 6"], "instrument": ["同 6 級", "As Grade 6"], "src": { "p": "69" } }
+  },
+  "gmqNote": {
+    "src": { "p": "23, 31" },
+    "text": ["4 題音樂知識 + 1 題樂器知識,根據考生指定的一首演奏曲;App 只列範圍,不出題", "4 music + 1 instrument questions on a piece you choose; the App lists the scope only"]
+  },
+  "conflicts": [
+    { "id": 1, "about": ["5 級過門速度", "Grade 5 fill tempo"], "use": ["照大綱 p.52 ♩=90(官網寫 80)", "Syllabus p.52: 90 (website: 80)"], "src": { "p": "52" } },
+    { "id": 2, "about": ["3 級考試時間", "Grade 3 exam length"], "use": ["照 p.15 是 23 分(p.42 誤寫 Grade 2,官網寫 25)", "p.15: 23 min (p.42 misprint, website 25)"], "src": { "p": "15, 42" } },
+    { "id": 4, "about": ["Debut 聽力題名", "Debut ear test name"], "use": ["用 Groove Recall", "Use Groove Recall"], "src": { "p": "31" } },
+    { "id": 5, "about": ["Debut 樂理問答題數", "Debut GMQ count"], "use": ["照配分表 5 題", "5, per the mark scheme"], "src": { "p": "16, 30–31" } },
+    { "id": 6, "about": ["7 級技巧 A 組", "Grade 7 group A"], "use": ["照內容只有單擊", "Singles only, as listed"], "src": { "p": "63" } },
+    { "id": 11, "about": ["6 級風格名稱", "Grade 6 style name"], "use": ["用現行版 Jazz/Samba/Blues(7、8 級仍是 Latin)", "Current: Jazz/Samba/Blues (7–8 still Latin)"], "src": { "p": "58, 72" } },
+    { "id": 12, "about": ["Merit 門檻", "Merit threshold"], "use": ["Grade Exam 74%,兩種證書 75%,照原文", "Grade Exam 74%, certificates 75%, as printed"], "src": { "p": "16–17" } }
+  ]
+}

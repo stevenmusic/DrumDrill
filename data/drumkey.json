@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "doc": {
+    "title": "DrumDrill drum key (where each kit piece is written)",
+    "checked": "2026-10-18",
+    "notes": "docs/STAGES.md decision 3; docs/sources/trinity-drums.md §5; docs/sources/rsl-drums.md §7",
+    "legend": "Neither syllabus prints a drum key. Only the items whose src is not pending-pas-weinberg are confirmed by public official documents; the rest is a common convention, to be checked against the PAS Weinberg guide."
+  },
+  "srcs": {
+    "pending-pas-weinberg": { "pending": true, "label": ["常見寫法(待依 PAS 指南核對)", "Pending PAS check"], "ref": "Norman Weinberg, Guide to Standardized Drumset Notation (PAS, Hal Leonard HL06620063)" },
+    "trinity-dk-p107": { "pending": false, "label": ["Trinity 鼓組大綱 p.107", "Trinity Drum Kit p.107"], "ref": "Trinity Drum Kit & Percussion Syllabus from 2020 (Online edition, March 2026)", "url": "https://www.trinitycollege.com/resource/?id=8828", "p": "107" },
+    "trinity-errata": { "pending": false, "label": ["Trinity 勘誤(Sweet Emotion)", "Trinity errata"], "ref": "Trinity Rock & Pop errata, Drums, Sweet Emotion (2018 Grade 3, p.32, bar 17)", "url": "https://www.trinitycollege.com/qualifications/music/rock-and-pop/rock-and-pop-errata", "p": "32" },
+    "rsl-p31-43": { "pending": false, "label": ["RSL p.31–43", "RSL p.31–43"], "ref": "Rockschool Drums Syllabus Specification (rev. 2026-06-02)", "url": "https://www.rslawards.com/wp-content/uploads/dlm_uploads/2026/06/RSL_Drums_Syllabus_Specification_June_2026.pdf", "p": "31–43" }
+  },
+  "singleLine": {
+    "piece": "snare",
+    "src": "rsl-p31-43",
+    "note": ["RSL Debut–3 級視奏只用小鼓:單線譜就夠", "RSL Debut–3 sight reading is snare only: a single line is enough"]
+  },
+  "pieces": {
+    "kick": { "name": ["大鼓", "Bass drum"], "abbr": "BD", "step": "F", "oct": 4, "head": "normal", "src": "pending-pas-weinberg" },
+    "tomFloor": { "name": ["落地鼓", "Floor tom"], "abbr": "FT", "step": "A", "oct": 4, "head": "normal", "src": "pending-pas-weinberg", "note": ["Trinity Playback 表的 LT(低筒鼓)也用這個", "Also used for Trinity Playback LT (low tom)"] },
+    "snare": { "name": ["小鼓", "Snare"], "abbr": "SD", "step": "C", "oct": 5, "head": "normal", "src": "pending-pas-weinberg" },
+    "tomMid": { "name": ["中鼓", "Mid tom"], "abbr": "MT", "step": "D", "oct": 5, "head": "normal", "src": "pending-pas-weinberg" },
+    "tomHi": { "name": ["高鼓", "High tom"], "abbr": "HT", "step": "E", "oct": 5, "head": "normal", "src": "pending-pas-weinberg" },
+    "hhFoot": { "name": ["腳踩 HH", "Foot hi-hat"], "abbr": "HH", "step": "D", "oct": 4, "head": "x", "src": "trinity-dk-p107", "note": ["官方只寫 × 符頭寫在線下;D4 是 App 選的位置", "Official: × below the staff; D4 is the App's choice"] },
+    "hh": { "name": ["Hi-hat", "Hi-hat"], "abbr": "HH", "step": "G", "oct": 5, "head": "x", "src": "pending-pas-weinberg" },
+    "hhClosed": { "name": ["閉 HH", "Closed hi-hat"], "abbr": "HH", "step": "G", "oct": 5, "head": "x", "mark": "+", "src": "trinity-dk-p107", "posSrc": "pending-pas-weinberg" },
+    "hhOpen": { "name": ["開 HH", "Open hi-hat"], "abbr": "HH", "step": "G", "oct": 5, "head": "x", "mark": "o", "src": "trinity-dk-p107", "posSrc": "pending-pas-weinberg" },
+    "ride": { "name": ["Ride", "Ride"], "abbr": "RC", "step": "F", "oct": 5, "head": "x", "src": "pending-pas-weinberg" },
+    "rideBell": { "name": ["Ride 碗", "Ride bell"], "abbr": "RC", "step": "F", "oct": 5, "head": "diamond", "src": "trinity-errata" },
+    "crash": { "name": ["Crash", "Crash"], "abbr": "CR", "step": "A", "oct": 5, "head": "x", "src": "pending-pas-weinberg" },
+    "xstick": { "name": ["Cross stick", "Cross stick"], "abbr": "SD", "step": "C", "oct": 5, "head": "circle-x", "src": "pending-pas-weinberg" }
+  },
+  "groups": {
+    "kit": { "name": ["整組鼓", "Full kit"], "note": ["大綱只寫「整組鼓」,沒有列鼓件", "The syllabus says full kit without listing pieces"] }
+  }
+}

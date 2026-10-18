@@ -12,7 +12,7 @@
 const APP = "drumdrill";
 // @app-end
 /*@precache-begin*/
-const CACHE = APP + "-app-afd32446";
+const CACHE = APP + "-app-51501897";
 const PRECACHE = [
   "./",
   "manifest.webmanifest",
@@ -27,8 +27,9 @@ const PRECACHE = [
   "css/drum.css?v=56419077f1",
   "vendor/opensheetmusicdisplay.min.js?v=4bfeb3d01c",
   "js/ear/app.js?v=0632b92d3f",
-  "js/main.js?v=afa1c5aa02",
+  "js/main.js?v=398d81f426",
   "js/shared/audio.js?v=52b4c1f8a6",
+  "js/shared/examdata.js?v=b8a3920450",
   "js/shared/i18n.js?v=7990fd2bf5",
   "js/shared/landscape.js?v=2ef8ffc5b3",
   "js/shared/score.js?v=eade38d023",
@@ -38,7 +39,10 @@ const PRECACHE = [
   "js/tech/notation.js?v=ffe8ac66c4",
   "js/tech/rudiments.js?v=5e7d24246c",
   "js/tech/store.js?v=c27b27f99c",
-  "js/tech/strings.js?v=d34b22fcde"
+  "js/tech/strings.js?v=d34b22fcde",
+  "data/drumkey.json?v=b43090321a",
+  "data/exam-rsl.json?v=fede1a310c",
+  "data/exam-trinity.json?v=3646cfc676"
 ];
 /*@precache-end*/
 self.addEventListener("install", e => {

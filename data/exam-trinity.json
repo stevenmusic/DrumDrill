@@ -1,0 +1,196 @@
+{
+  "system": "trinity",
+  "schema": 1,
+  "doc": {
+    "title": "Trinity Rock & Pop Drums Syllabus, graded exams from 2018 (Online edition, April 2026)",
+    "url": "https://www.trinitycollege.com/resource/?id=7898",
+    "checked": "2026-10-18",
+    "notes": "docs/sources/trinity-drums.md",
+    "docs": {
+      "DG": { "title": "Digital Grades: Rock & Pop Syllabus, from November 2020 (Online edition, February 2026)", "url": "https://www.trinitycollege.com/resource/?id=9167" },
+      "WEB": { "title": "Trinity Rock & Pop Grades page", "url": "https://www.trinitycollege.com/qualifications/music/rock-and-pop/grades" }
+    },
+    "legend": "src.p = page of the Rock & Pop Drums syllabus PDF; src.doc = key in doc.docs when another document. assumed:true = not stated, the App's assumption. null = not stated (do not fill)."
+  },
+  "gradeNames": {
+    "0": ["初級", "Initial"],
+    "1": ["1 級", "Grade 1"],
+    "2": ["2 級", "Grade 2"],
+    "3": ["3 級", "Grade 3"],
+    "4": ["4 級", "Grade 4"],
+    "5": ["5 級", "Grade 5"],
+    "6": ["6 級", "Grade 6"],
+    "7": ["7 級", "Grade 7"],
+    "8": ["8 級", "Grade 8"]
+  },
+  "marks": {
+    "faceToFace": {
+      "src": { "p": "46–47" },
+      "items": [
+        { "id": "song1", "name": ["Song 1", "Song 1"], "max": 25 },
+        { "id": "song2", "name": ["Song 2", "Song 2"], "max": 25, "note": ["清單裡另一首、自選曲或自己寫的歌", "Another listed song, own choice or own song"] },
+        { "id": "session", "name": ["Session skills", "Session skills"], "max": 20, "note": ["Playback 或 Improvising 擇一", "Playback or Improvising"] },
+        { "id": "song3", "name": ["Song 3(技巧重點曲)", "Song 3 (tech focus)"], "max": 30 }
+      ],
+      "total": { "max": 100 },
+      "note": ["考試項目順序可以自己選,沒寫就照上表順序(p.48)", "You may choose the order; otherwise as listed (p.48)"]
+    },
+    "digital": {
+      "src": { "p": "31–32" },
+      "items": [
+        { "id": "song1", "name": ["Song 1", "Song 1"], "max": 25 },
+        { "id": "song2", "name": ["Song 2", "Song 2"], "max": 25 },
+        { "id": "song3", "name": ["Song 3(技巧重點曲)", "Song 3 (tech focus)"], "max": 30 },
+        { "id": "overall", "name": ["整體表現", "Overall performance"], "max": 20 }
+      ],
+      "total": { "max": 100 }
+    },
+    "total": {
+      "src": { "p": "6, 22" },
+      "bands": { "pass": 60, "merit": 75, "dist": 87 },
+      "belowPass": { "bp1": [45, 59], "bp2": [0, 44] },
+      "note": ["只看總分,不用每項都及格;沒有嘗試的項目是 0 分", "Only the total counts; an item not attempted scores 0"]
+    },
+    "songParts": {
+      "src": { "p": "22" },
+      "parts": [
+        { "id": "fluency", "name": ["流暢與穩定", "Fluency & security"], "song12": 8, "song3": 8 },
+        { "id": "technical", "name": ["技巧控制", "Technical control"], "song12": 8, "song3": 12 },
+        { "id": "communication", "name": ["表達與風格", "Communication & style"], "song12": 9, "song3": 10 }
+      ]
+    },
+    "overallParts": {
+      "src": { "p": "28" },
+      "parts": [
+        { "id": "delivery", "name": ["演出與專注", "Delivery & focus"], "max": 10 },
+        { "id": "awareness", "name": ["音樂感知", "Musical awareness"], "max": 10 }
+      ]
+    }
+  },
+  "songBands": {
+    "src": { "p": "23" },
+    "song12": { "max": 25, "bands": { "pass": 15, "merit": 19, "dist": 22 }, "belowPass": { "bp1": [11, 14], "bp2": [0, 10] } },
+    "song3": { "max": 30, "bands": { "pass": 18, "merit": 22, "dist": 26 }, "belowPass": { "bp1": [14, 17], "bp2": [0, 13] } }
+  },
+  "sessionBands": {
+    "src": { "p": "23" },
+    "max": 20,
+    "bands": { "pass": 12, "merit": 15, "dist": 17 },
+    "belowPass": { "bp1": [9, 11], "bp2": [0, 8] }
+  },
+  "overallBands": {
+    "src": { "p": "28–29" },
+    "max": 10,
+    "bands": { "pass": 6, "merit": 8, "dist": 9 },
+    "belowPass": { "bp1": [4, 5], "bp2": [1, 3] }
+  },
+  "minutes": {
+    "src": { "p": "48" },
+    "faceToFace": { "0": 13, "1": 13, "2": 15, "3": 15, "4": 20, "5": 20, "6": 25, "7": 25, "8": 30 }
+  },
+  "techNote": {
+    "src": { "p": "22–23, 35, 53" },
+    "text": ["Rock & Pop 沒有獨立的技巧項目:技巧在 Song 3(技巧重點曲)裡評,Technical control 滿分 12(Song 1、2 是 8);每首標了哪兩個技巧重點在曲本裡", "Rock & Pop has no separate technical work: technique is marked in Song 3 (Technical control 12, Songs 1–2: 8); its two technical focuses are in the song book"]
+  },
+  "sightNote": {
+    "src": { "p": "60" },
+    "text": ["Rock & Pop 沒有視奏項目;最接近的是 Session skills 的 Playback(有譜,可以看也可以不看)", "Rock & Pop has no sight reading; the nearest is Session skills Playback (a chart you may read)"]
+  },
+  "earNote": {
+    "src": { "p": "60" },
+    "text": ["Rock & Pop 沒有聽力項目;Playback 就是聽一句、馬上打回來。官方配伴奏音軌,App 只有鼓和拍點", "Rock & Pop has no aural test; Playback is listen-and-repeat. The exam uses a backing track; the App has drums and click only"]
+  },
+  "digitalNote": {
+    "src": { "p": "28, 31–32" },
+    "text": ["數位考試沒有 Session skills,改成整體表現 20 分(演出與專注 10、音樂感知 10)", "Digital exams have no Session skills; Overall performance 20 (delivery 10, awareness 10) instead"]
+  },
+  "playback": {
+    "flow": {
+      "src": { "p": "60" },
+      "studySec": 30,
+      "countIn": true,
+      "plays": 2,
+      "backing": true,
+      "readOptional": true,
+      "cumulative": true,
+      "bpm": null,
+      "style": null,
+      "text": ["拿到沒看過的 song chart,看譜 30 秒(可以試打);播音軌,每一句聽完馬上打回來;開頭有 count-in,一直有伴奏;播兩次(練習、評分);照抄奏法與力度,不要變化", "Unseen chart, 30 s to study (may try out); listen and repeat each phrase; count-in and backing throughout; 2 plays (practice, assessed); copy articulation and dynamics, no variation"]
+    },
+    "legend": ["每一級只列「新增」的要求;表上斜線的格子沿用前一級(官方:要求是累積的)", "Each grade lists only new requirements; blank cells carry over (requirements are cumulative)"],
+    "grades": {
+      "0": { "total": [8, 8], "phrase": [2, 2], "time": ["4/4", "2/4"], "values": ["2", "4", "8"], "rests": ["r2", "r4"], "dyn": [], "pieces": ["snare", "kick", "tomHi", "tomFloor", "crash"], "voices": 1, "voicesAmount": "only", "extra": [], "src": { "p": "62–63" } },
+      "1": { "dyn": ["p", "f"], "pieces": ["tomMid"], "voices": 2, "voicesAmount": "some", "src": { "p": "62–63" } },
+      "2": { "time": ["3/4"], "values": ["2."], "dyn": ["accent"], "pieces": ["hh", "ride"], "voices": 2, "voicesAmount": "mostly", "extra": ["ties"], "src": { "p": "62–63" } },
+      "3": { "total": [8, 12], "phrase": [2, 4], "values": ["16", "4."], "rests": ["r8", "r1"], "dyn": ["mp", "mf"], "pieces": ["hhFoot"], "voices": 3, "voicesAmount": null, "extra": ["footHH", "offbeatBD"], "src": { "p": "62–63" } },
+      "4": { "time": ["6/8"], "values": ["8t3"], "rests": ["r4."], "dyn": ["cresc", "dim"], "pieces": ["hhOpen"], "extra": ["fullKit", "hhOpenClose", "rimclick", "roll", "flam", "drag", "ruff"], "src": { "p": "62–63" } },
+      "5": { "total": [12, 16], "time": ["12/8"], "values": ["8.", "16t3", "16t6"], "rests": ["r2.", "r8."], "dyn": ["pp", "ff", "sfz"], "extra": ["independence"], "src": { "p": "62–63" } },
+      "6": { "total": [16, 20], "phrase": [4, 8], "time": ["2/2", "9/8", "3/8"], "values": ["1", "16.", "32"], "rests": ["r8.", "r16.", "r16"], "extra": ["ghost"], "src": { "p": "62–63" } },
+      "7": { "time": ["7/4", "7/8", "5/4", "5/8"], "values": ["4t3", "dup"], "extra": ["anyTerms"], "src": { "p": "62–63" } },
+      "8": { "total": [20, 24], "extra": ["meterChange"], "src": { "p": "62–63" } }
+    },
+    "codes": {
+      "voicesAmount": { "only": ["只有單線", "single line only"], "some": ["部分 2 聲部", "some 2-part"], "mostly": ["大多 2 聲部", "mostly 2-part"] },
+      "extra": {
+        "ties": ["連結線", "Ties"],
+        "footHH": ["腳踩 HH", "Foot hi-hat"],
+        "offbeatBD": ["反拍大鼓", "Off-beat bass drum"],
+        "fullKit": ["全套鼓", "Full kit"],
+        "hhOpenClose": ["開/閉 HH", "Open/closed HH"],
+        "rimclick": ["Rim-click", "Rim-click"],
+        "roll": ["滾奏", "Rolls"],
+        "flam": ["Flam", "Flam"],
+        "drag": ["Drag", "Drag"],
+        "ruff": ["Ruff", "Ruff"],
+        "independence": ["進階手腳獨立", "Extended independence"],
+        "ghost": ["幽靈音", "Ghost notes"],
+        "anyTerms": ["任何常見術語與記號", "Any common terms/signs"],
+        "meterChange": ["會換拍號", "Changes of metre"]
+      }
+    },
+    "note": ["速度、伴奏風格:參數表沒有這兩欄(查不到)", "Tempo and backing style: not in the parameter table"]
+  },
+  "improvising": {
+    "flow": {
+      "src": { "p": "61" },
+      "studySec": 30,
+      "countIn": true,
+      "plays": 2,
+      "loops": 4,
+      "backing": true,
+      "bpm": null,
+      "text": ["在沒聽過的伴奏上用指定風格即興;拿 chord chart,先聽一小段,30 秒看譜試打;伴奏播四遍後淡出;播兩次(練習、評分)。需要伴奏音軌,App 只列規格", "Improvise in a given style over an unheard backing; chord chart, a short preview, 30 s to study; the loop plays 4 times and fades; 2 plays. Needs a backing track, so the App lists the spec only"]
+    },
+    "legend": ["每一級只列「新增」的要求;總小節數推論是循環的長度", "Each grade lists only new requirements; total bars are taken as the loop length (inferred)"],
+    "grades": {
+      "0": { "bars": 4, "time": ["4/4"], "chordsPerBar": 1, "solo": null, "styles": [["簡單搖滾", "Simple rock"], ["流行", "Pop"]], "src": { "p": "64–65" } },
+      "1": { "styles": [["抒情", "Ballad"], ["重搖滾", "Heavy rock"]], "src": { "p": "64–65" } },
+      "2": { "time": ["3/4"], "styles": [["鄉村", "Country"]], "src": { "p": "64–65" } },
+      "3": { "bars": 8, "time": ["2/2"], "feel": [["搖擺八分", "Swung quavers"]], "styles": [["藍調", "Blues"]], "src": { "p": "64–65" } },
+      "4": { "time": ["6/8"], "feel": [["切分", "Syncopation"]], "harmony": ["有時每小節 2 個和弦", "Sometimes 2 chords a bar"], "styles": [["雷鬼", "Reggae"], ["R'n'B", "R'n'B"]], "src": { "p": "64–65" } },
+      "5": { "bars": 12, "time": ["12/8"], "styles": [["放克", "Funk"], ["Shuffle", "Shuffle"], ["迪斯可", "Disco"]], "src": { "p": "64–65" } },
+      "6": { "bars": 16, "time": ["9/8"], "solo": { "maxBars": 2 }, "styles": [["拉丁", "Latin"], ["金屬", "Metal"]], "src": { "p": "64–65" } },
+      "7": { "time": ["5/4", "7/8"], "harmony": ["和聲變化更多樣", "More varied harmonic rhythm"], "styles": [["爵士", "Jazz"], ["Boogie-woogie", "Boogie-woogie"], ["Boogie 風格搖滾", "Boogie-style rock"]], "src": { "p": "64–65" } },
+      "8": { "meterChange": true, "solo": { "maxBars": 4 }, "styles": [["任何常見風格(含混合風格)", "Any style, incl. mixed"]], "src": { "p": "64–65" } }
+    }
+  },
+  "ownChoice": {
+    "legend": ["自選曲參數表:官方說只是一般參考(general guide),技巧是累積的", "Own-choice song parameters: a general guide only; techniques are cumulative"],
+    "grades": {
+      "0": { "lengthSec": [45, 120], "bpm": [60, 130], "techniques": ["Cross stick、響弦開/關、短的記譜獨奏或過門、trashy/tight HH;五件式鼓、鼓棒", "Cross stick, snares on/off, short notated solos/fills, trashy/tight HH; 5-piece kit, sticks"], "practice": [], "src": { "p": "55–59" } },
+      "1": { "lengthSec": [60, 150], "bpm": [60, 160], "techniques": ["同初級,加重音、slash 記譜 / cont. sim.", "As Initial, plus accents, slash notation / cont. sim."], "practice": [], "src": { "p": "55–59" } },
+      "2": { "lengthSec": [90, 180], "bpm": [50, 160], "techniques": ["開/閉 HH、含裝飾音 rudiment 的過門、很簡單的 swing;鼓刷(不刷圈)、hot rods", "Open/closed HH, fills with grace-note rudiments, very simple swing; brushes (no sweeps), hot rods"], "practice": [{ "cat": "flam" }, { "cat": "drag" }], "src": { "p": "55–59" } },
+      "3": { "lengthSec": [90, 210], "bpm": null, "bpmText": ["全範圍,曲中可以變速", "Full range; may change in the song"], "techniques": ["簡單的滾奏、HH 上雙手交替的 16-beat;軟槌", "Simple rolls, 16-beat on HH with alternating hands; soft mallets"], "practice": [{ "cat": "roll" }], "src": { "p": "55–59" } },
+      "4": { "lengthSec": [150, 240], "techniques": ["幽靈音、鼓刷 scrub/swish、3 對 2", "Ghost notes, brush scrub/swish, 3 against 2"], "practice": [], "src": { "p": "55–59" } },
+      "5": { "lengthSec": [150, 240], "techniques": ["快速 HH 可能要用 Moeller/多重動作;圍繞樂句/合奏重音的獨奏;完整的鼓刷 swing", "Fast HH may need Moeller/multiple motions; solos around phrases and hits; full brush swing"], "practice": [], "src": { "p": "55–59" } },
+      "6": { "lengthSec": [180, 270], "techniques": ["更快的反彈大鼓、choked HH;可選雙踏", "Faster rebound bass drum, choked HH; optional double pedal"], "practice": [], "src": { "p": "55–59" } },
+      "7": { "lengthSec": [180, 270], "techniques": ["雙踏、筒鼓上更快的雙擊滾奏、更多左手帶領", "Double pedal, faster double-stroke rolls on toms, more left-hand lead"], "practice": [{ "pas": 6 }], "src": { "p": "55–59" } },
+      "8": { "lengthSec": [210, 300], "techniques": ["加長的獨奏段、更難的雙踏、多樣的音色", "Extended solos, harder double pedal, varied tones"], "practice": [], "src": { "p": "55–59" } }
+    },
+    "practiceNote": ["「去練」按鈕是 App 依類別對到技巧分頁;官方只寫類別,沒有指定是哪一個打法", "Practice links are the App's mapping; the syllabus names a category, not a specific rudiment"]
+  },
+  "notInApp": [
+    ["三首歌(配伴奏音軌)", "The three songs (with backing tracks)"],
+    ["Improvising(需要伴奏音軌,只列規格)", "Improvising (needs backing; spec only)"]
+  ]
+}
