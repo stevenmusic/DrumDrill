@@ -103,6 +103,18 @@ for (const [name, w, h, mobile] of VPS) {
   await page.waitForTimeout(300);
   // 檢定:技巧(本級要求還沒有)、視奏、聽力
   await audit(page, name, "檢定 技巧"); await shot("exam");
+  // S3:檢定頁 RSL 0/3/8、Trinity 0/4/8 × 技巧/視奏/聽力;考試摘要收著時,技巧的本級要求清單開頭要在第一個畫面
+  for (const [sys, g] of [["rsl", 0], ["rsl", 3], ["rsl", 8], ["trinity", 0], ["trinity", 4], ["trinity", 8]]) {
+    await page.evaluate(([s, g]) => window.__shell.setExam(s, g), [sys, g]); await page.waitForTimeout(250);
+    for (const p of ["tech", "sight", "ear"]) {
+      await sub(p); await audit(page, name, `檢定 ${sys} ${g} ${p}`);
+      if (p !== "tech") continue;
+      const top = await page.evaluate(() => (document.querySelector(".setup.open") ? null : Math.round(document.getElementById("t-listCard").getBoundingClientRect().top + scrollY)));
+      if (top != null && top + 40 > h) report(name, `檢定 ${sys} ${g} 技巧`, `本級要求清單被擠到第一個畫面以下(${top} > ${h - 40})`);
+      if (sys === "trinity" && g === 4) await shot("exam-trinity4");
+    }
+  }
+  await sub("tech"); await page.evaluate(() => window.__shell.setExam("rsl", 8)); await page.waitForTimeout(250);
   await expand("#examSetup"); await page.click('#systemSeg button[data-v="trinity"]'); await page.waitForTimeout(300);
   await audit(page, name, "檢定 Trinity 設定展開");
   await sub("sight"); await audit(page, name, "檢定 視奏");

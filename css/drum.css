@@ -1,7 +1,7 @@
 /* DrumDrill 專屬的樣式(共用的設計代幣、卡片、分頁在 css/app.css,照 PianoDrill) */
 
 /* 窄螢幕一欄時卡片的順序:選擇器 → 題目 → 鼓譜 → 速度 → 紀錄 */
-#t-picker,#t-examCard{order:1} #t-quizCard{order:2} #t-scoreCard{order:3} #t-metroCard{order:4} #t-logCard{order:5}
+#t-picker,#t-paneExam{order:1} #t-target,#t-listCard{order:2} #t-quizCard{order:2} #t-scoreCard{order:3} #t-metroCard{order:4} #t-logCard{order:5}
 
 /* 打法清單:固定格子(號碼 + 名稱,最多兩行),中英文每列個數、高度都一樣 */
 #mod-tech .picker .opts[data-k="no"]{display:grid;grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));gap:6px}
@@ -51,3 +51,56 @@ body.land-play #s-scoreCard,body.land-play #e-scoreCard{display:flex;flex-direct
 body.land-play #s-stage,body.land-play #e-stage{flex:1;display:flex;flex-direction:column;justify-content:center}
 /* 視奏的觸控鼓墊(S8 新增):照 PianoDrill 視奏的卡片順序,放在譜面下面、跟著打的結果同一層 */
 #s-pads{order:5}
+
+/* ══ 檢定頁(S3):考試摘要(.setup,手機收成一行)、本級要求清單、規格卡、技巧的目標橫幅 ══
+   中英版面一樣:會換行的文字都是區塊 + pairText;出處(RSL p.42)跟語言無關,用 data-src 由 ::after 小字接在後面 */
+#s-paneExam{order:1} #s-soonCard,#s-specCards{order:2} #e-soonCard,#e-specCards{order:2}
+.spec-cards{display:flex;flex-direction:column;gap:14px;min-width:0}
+@media (max-width:600px){ .spec-cards{gap:10px} }
+@media (orientation:landscape) and (max-height:500px){
+  .spec-cards{gap:8px}
+  body.view-exam #s-paneExam{grid-column:2 !important;grid-row:1}
+}
+.spec{display:grid;grid-template-columns:minmax(5.4em, 32%) minmax(0, 1fr);gap:6px 10px;font-size:var(--fs-sm);line-height:1.5}
+.spec-k{color:var(--muted-bright);overflow-wrap:anywhere}
+.spec-v{color:var(--ivory);overflow-wrap:anywhere}
+.spec-v[data-src]::after,.spec-note[data-src]::after{content:attr(data-src);margin-left:6px;font-size:var(--fs-2xs);color:var(--muted);white-space:nowrap}
+.spec-note,.xnote,.xi-note{font-size:var(--fs-xs);color:var(--muted-bright);line-height:1.6;margin-top:8px;overflow-wrap:anywhere}
+.spec-card .spec{margin-top:8px}
+.practice-only{font-size:var(--fs-xs);color:var(--gold);line-height:1.6;margin-top:10px}
+#t-listCard .progress{margin-top:0}
+/* RSL 每組一列:組別字母、名稱、♩、頁碼;下面是這一組的項目(PAS 原譜可以點「練習」) */
+.xgroup{border-top:1px solid var(--line);padding-top:10px;margin-top:10px}
+.xhead{display:flex;align-items:center;gap:8px}
+.xid{flex:none;width:24px;height:24px;border-radius:50%;background:var(--gold-fill);color:var(--on-fill);display:inline-flex;align-items:center;justify-content:center;font-size:var(--fs-sm)}
+.xname{flex:1 1 auto;min-width:0;font-weight:700;color:var(--gold-bright);font-size:var(--fs-md);line-height:1.4;overflow-wrap:anywhere}
+.xbpm,.xsrc{flex:none;font-size:var(--fs-xs);color:var(--muted-bright);font-variant-numeric:tabular-nums;white-space:nowrap}
+.xitems{display:grid;grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));gap:8px;margin-top:8px}
+.xwrap{min-width:0}
+.xitem{display:flex;align-items:center;gap:8px;width:100%;min-height:40px;padding:6px 10px;border-radius:var(--radius-sm);border:1px solid var(--line);
+  background:var(--surface-inset);color:var(--ivory);font-family:inherit;font-size:var(--fs-sm);text-align:left}
+button.xitem{cursor:pointer;border-color:var(--gold)}
+.xitem svg{flex:none;color:var(--gold)}
+.xitem.off{opacity:.62}
+.xitem.off svg,.xitem.book svg{color:var(--muted-bright)}
+.xi-name{flex:1 1 auto;min-width:0;line-height:1.35;overflow-wrap:anywhere}
+.xi-note{margin-top:4px}
+.xi-rel{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.xi-rel .chip{gap:6px;font-variant-numeric:tabular-nums}
+.xnote.strong{color:var(--ivory);font-size:var(--fs-sm)}
+.xcats{display:grid;grid-template-columns:repeat(auto-fill, minmax(180px, 1fr));gap:6px;margin-top:8px}
+.xcat{display:flex;align-items:center;gap:8px;min-height:40px;padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--gold);background:transparent;
+  color:var(--gold);font-family:inherit;font-size:var(--fs-sm);text-align:left;cursor:pointer;min-width:0}
+.xcat span{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
+.xcat svg{flex:none}
+.x-actions{display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:8px;margin-top:14px}
+.x-actions .btn{width:100%;min-width:0}
+/* 技巧分頁的目標橫幅(從檢定清單點「練習」):目標文字 + 回清單 + × */
+.target{display:flex;align-items:center;gap:8px;padding:8px 12px;border-color:var(--gold)}
+.target-ico{flex:none;color:var(--gold)}
+.target-text{flex:1 1 auto;min-width:0;font-size:var(--fs-sm);font-weight:700;color:var(--gold-bright);line-height:1.4;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.btn.icon{width:36px;height:36px;padding:0;flex:none}
+/* 兩種語言疊在同一格(examview.js pairStack):高度 = 比較高的那個語言 */
+.pstack{display:grid}
+.pstack > span{grid-area:1 / 1;min-width:0}
+.pstack > .ps-off{visibility:hidden}

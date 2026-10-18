@@ -22,6 +22,25 @@ const appActions = ({ page, tap, tapAny }) => [
   [2, "按住 +", async () => { const el = await page.$("#t-bpmUp"); if (!el || !(await el.isVisible())) return false; const b = await el.boundingBox(); await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2); await page.mouse.down(); await page.waitForTimeout(900); await page.mouse.up(); return true; }],
   [3, "熟練/待加強", async () => tapAny("#mod-tech .mbtn")],
   [3, "播放選項", async () => tapAny("#mod-tech .play-opts .chip")],
+  // S3:檢定清單 → 練習:跳到技巧分頁的打法編號、速度要等於 data/exam-rsl.json(另外讀一次 JSON 核對)
+  [4, "檢定清單→練習", async () => {
+    await page.evaluate(g => { const sh = window.__shell; if (sh.S.view !== "exam" || sh.S.sub.exam !== "tech" || !sh.S.exam || sh.S.exam.system !== "rsl") { sh.setExam("rsl", g); sh.showView("exam", "tech"); } }, pickOne([1, 2, 3, 4, 5, 6, 7, 8]));
+    await page.waitForTimeout(300);
+    const els = []; for (const e of await page.$$('#t-qGroups button.xitem[data-act="pas"]')) if (await e.isVisible()) els.push(e);
+    if (!els.length) return false;
+    const e = pickOne(els), key = await e.getAttribute("data-key");
+    try { if (page.viewportSize().width < 1000) await e.tap({ timeout: 3000 }); else await e.click({ timeout: 3000 }); } catch (er) { return false; }
+    await page.waitForTimeout(500);
+    const r = await page.evaluate(async key => {
+      const [, g, gid, i] = key.split("-"), d = await (await fetch("data/exam-rsl.json")).json();
+      const gr = d.tech[g].groups.find(x => x.id === gid), it = gr.items[Number(i) - 1];
+      const T = window.__tech;
+      return { view: window.__shell.S.view, no: T.cur && T.cur.no, bpm: T.state.bpm, wantNo: it.no, wantBpm: gr.bpm, banner: !document.getElementById("t-target").hidden };
+    }, key);
+    if (r.view !== "tech" || r.no !== r.wantNo || r.bpm !== r.wantBpm || !r.banner) fail(`清單→練習 ${key}:${JSON.stringify(r)}`);
+    return true;
+  }],
+  [1, "離開目標", async () => tap("#t-targetClose")],
 ];
 // 在頁面裡跑(不能用外面的變數)
 const appCheck = async () => {

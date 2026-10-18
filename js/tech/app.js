@@ -3,7 +3,9 @@
 import * as store from "./store.js";
 import { RUDIMENTS, CATEGORIES, byNo, withLead, strokes, cycleLength, DIV } from "./rudiments.js";
 import { rudimentXML } from "./notation.js";
-import { tr, scoped, getLang, pairText } from "../shared/i18n.js";
+import { tr, T as TS, scoped, getLang, pairText } from "../shared/i18n.js";
+import { techItems, techPasNos } from "../shared/examdata.js";
+import { L, srcOf, assumed, fillSpec, para, valueName, bandsText, summaryRows, notInApp, dataRow, pairStack } from "../shared/examview.js";
 import * as audio from "../shared/audio.js";
 import { createScore } from "../shared/score.js";
 import { createTempo } from "../shared/tempo.js";
@@ -18,11 +20,21 @@ const S = store.load();
 let tab = S.cat;            // roll / diddle / flam / drag / exam
 let cur = null, groups = null;
 let bpm = 60;
+/* 從檢定清單點「練習」的目標:{ system, grade, group, no, bpm, p, key }。目標速度只放在 bpm,不寫進 S.bpm(× 離開就回到自己的速度);
+   換到別的打法(選擇器、別的類別)自動離開 */
+let target = null, lastKey = null;
 
 /* ══ 外框呼叫 ══ */
 /* 換語言:只重寫文字(不停止播放、不重畫鼓譜) */
 export function relang(){ relabel(); }
-export function setExam(ex){ exam = ex; if (active && tab === "exam") renderExam(); }
+/* 外框改了考試(系統、級數):沒變就不重設(外框重送同一個考試、晚到的資料不能把畫面洗掉) */
+export function setExam(ex){
+  const same = exam && ex && exam.system === ex.system && exam.grade === ex.grade && !!exam.auto === !!ex.auto;
+  exam = ex;
+  if (!same && active && tab === "exam") renderExam();
+}
+/* 外框的 appCtx(考試資料)晚到:只重畫用得到資料的地方 */
+export function onCtx(){ if (tab === "exam") renderExam(); if (ctx) ctx.examChanged(); }
 /* 進來:同一類、已經有題目就照原樣(回到前景、從別的分頁回來不會重新出題);換了類別或檢定頁才重畫 */
 export function enter(t){
   active = true;
@@ -31,12 +43,19 @@ export function enter(t){
 }
 /* 離開(切分頁、切到背景):停止播放,題目保留 */
 export function leave(){ active = false; stopPlayback(); }
-/* 檢定分頁的進度:已經會了幾個(S3 之後改成本級的進度) */
+/* 檢定分頁的進度:RSL = 本級用到的 PAS 編號已經會了幾個(pattern 也算在它的 PAS 編號上);Trinity 沒有技巧項目 = 在 Song 3 評 */
 export function examStatus(){
-  const n = RUDIMENTS.filter(r => S.mastery[r.no] === "good").length;
-  return tr(`已會 ${n}/40`, `${n}/40 known`);
+  const ex = curExam(), d = dataOf(ex.system);
+  if (ex.system === "trinity") return tr("在 Song 3 評", "Assessed in Song 3");
+  const nos = d ? techPasNos(ex.grade, d) : RUDIMENTS.map(r => r.no);
+  const n = nos.filter(no => S.mastery[no] === "good").length;
+  return tr(`已會 ${n}/${nos.length}`, `${n}/${nos.length} known`);
 }
 export function onKey(e){
+  if (tab === "exam") {   // 檢定頁沒有播放鈕:N = 下一項
+    if ((e.key === "n" || e.key === "N") && !$("nextBtn").hidden && !$("nextBtn").disabled) $("nextBtn").click();
+    return;
+  }
   if (e.code === "Space") { e.preventDefault(); $("playBtn").click(); }
   else if (e.key === "ArrowUp") { e.preventDefault(); setBpm(bpm + 1, true); }
   else if (e.key === "ArrowDown") { e.preventDefault(); setBpm(bpm - 1, true); }
@@ -48,6 +67,7 @@ const subOf = r => catOf(r.cat).sub.find(s => r.no >= s.from && r.no <= s.to);
 
 /* 換語言時重寫的文字:選擇器、題目、標籤、速度單位、按鈕、紀錄卡;在檢定頁時重畫檢定說明 */
 function relabel(){
+  syncTarget();
   if (tab === "exam") renderExam();
   else if (cur) {
     renderPicker(); renderTitle();
@@ -67,8 +87,11 @@ function switchTab(t){
   tab = t;
   const isExam = t === "exam";
   ROOT.classList.toggle("exam-view", isExam);
-  $("picker").hidden = isExam; $("examCard").hidden = !isExam;
-  for (const id of ["quizCard", "scoreCard", "metroCard"]) $(id).hidden = isExam;
+  // 檢定頁:考試摘要 + 本級要求(練習的卡片、練習紀錄都藏起來:練習回饋不跟等第放在同一個畫面)
+  ROOT.querySelectorAll(".pane").forEach(el => { el.hidden = !isExam; });
+  $("picker").hidden = isExam;
+  for (const id of ["quizCard", "scoreCard", "metroCard", "logCard"]) $(id).hidden = isExam;
+  syncTarget();
   if (isExam) { renderExam(); return; }
   S.cat = t; store.save();
   const list = RUDIMENTS.filter(r => r.cat === t);
@@ -103,6 +126,7 @@ $("picker").querySelector(".rows").onclick = e => {
 /* ══ 題目 ══ */
 function setRudiment(no){
   stopPlayback();
+  if (target && target.no !== no) { target = null; syncTarget(); }   // 換到別的打法:離開檢定目標
   cur = byNo(no);
   groups = withLead(cur, S.lead);
   renderPicker();
@@ -111,7 +135,7 @@ function setRudiment(no){
   fitTitle();
   $("playBtn").disabled = false;
   syncMastery();
-  bpm = S.bpm[cur.no] || 60;
+  bpm = target && target.bpm ? target.bpm : S.bpm[cur.no] || 60;   // 檢定目標:官方速度(不寫進 S.bpm)
   syncTempoUI();
   renderScore();
   preloadSamples();
@@ -136,18 +160,212 @@ ROOT.querySelectorAll(".mbtn").forEach(b => b.onclick = () => {
   const m = b.dataset.m;
   if (S.mastery[cur.no] === m) delete S.mastery[cur.no]; else S.mastery[cur.no] = m;
   store.save(); syncMastery();
-  if (ctx) ctx.examChanged();   // 檢定分頁「已會 n/40」
+  if (ctx) ctx.examChanged();   // 檢定分頁「已會 n/m」
 });
 
-/* ══ 檢定分頁:本級要求(還沒照官方大綱整理之前,只說明還沒有,不自己編) ══ */
+/* ══ 檢定分頁(照 PianoDrill 的 t-paneExam:考試摘要 + 本級要求 + 抽一項 / 下一項)══
+   資料:data/exam-rsl.json、exam-trinity.json(外框經 ctx.examData 給;還沒載好是 null)。只列官方大綱寫的,不自己編:
+   - RSL:每組一列(組別、名稱、♩、頁碼、已會狀態)。
+       pas = PAS 原譜 → 「練習」跳到技巧分頁那個打法,速度設成官方 ♩(目標模式,#t-target);
+       pattern = PAS 左右手 + 大綱時值 → 下一版(S4)才做,先停用;book = 譜只在官方檢定書 → 只列名稱 + 相關 PAS 打法
+   - Trinity:Rock & Pop 沒有獨立的技巧項目(在 Song 3 評)→ 說明 + 這一級自選曲參數表的 Techniques + 類別按鈕(官方只寫類別) */
+const curExam = () => exam || { system: "trinity", grade: 1 };
+const dataOf = sys => (ctx && ctx.examData ? ctx.examData(sys) : null);
+const el = (tag, cls, attrs) => { const e = document.createElement(tag); if (cls) e.className = cls; if (attrs) for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); return e; };
+const ICON = {
+  play: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16l13-8z"/></svg>',
+  later: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  book: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5"/></svg>',
+  go: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>'
+};
+const markOf = no => S.mastery[no] || "";
+
 function renderExam(){
-  const ex = exam || { system: "trinity", grade: 1 };
-  const sys = ex.system === "rsl" ? "RSL Rockschool Drums" : "Trinity Rock & Pop Drums";
-  $("examTitle").textContent = `${sys} · ${ctx.gradeLabel(ex.grade, ex.system)}`;
-  pairText($("examText"), () => tr(
-    "這一級的技巧要求(基本打法、節奏型、過門)還在照官方大綱逐頁核對,核對完才會放上來,不會先用猜的。在那之前,可以先到「技巧」分頁練 PAS 40 個基本打法。",
-    "This grade's technical requirements (rudiments, grooves, fills) are still being checked page by page against the official syllabus and will appear once verified. Until then, practise the 40 PAS rudiments in Technique."));
+  const ex = curExam(), sys = ex.system, g = ex.grade, d = dataOf(sys);
+  renderSummary(sys, g, d);
+  $("drawBtn").hidden = $("nextBtn").hidden = true; $("listActions").hidden = true;
+  $("progress").hidden = true;
+  $("qGroups").innerHTML = "";
+  delete $("listRule").dataset.src;
+  if (!d) {
+    $("listSub").textContent = "";
+    para($("listRule"), () => tr("考試資料還沒載好(第一次要連網路,之後會存在裝置上)。", "Exam data isn't loaded yet (needs internet once; then it's cached)."));
+    return;
+  }
+  if (sys === "rsl") renderRsl(d, g); else renderTrinity(d, g);
 }
+
+/* ── 考試摘要(手機收成一行):這一項的配分與等第、整場門檻、考試時間、本 App 不提供的、資料版本;最後一行固定是 practiceOnly ── */
+function renderSummary(sys, g, d){
+  $("sumSub").textContent = `${sys === "rsl" ? "RSL" : "Trinity"} · ${ctx.gradeLabel(g, sys)}`;
+  pairText($("sumNote"), () => TS("practiceOnly"));
+  if (!d) { fillSpec($("sumSpec"), []); $("examSummary").textContent = TS("sumTitle"); return; }
+  const rows = [];
+  if (sys === "rsl") {
+    const it = d.marks.gradeExam.items.find(i => i.id === "tech");
+    rows.push({ k: () => tr("本項配分", "This section"), v: () => tr(`技巧 ${it.max} 分:`, `Technique, ${it.max} marks: `) + bandsText(it.bands), src: srcOf(sys, d.marks.gradeExam.src.p) });
+    $("examSummary").textContent = tr(`考試摘要 · 技巧 ${it.max} 分`, `Exam summary · Technique ${it.max} marks`);
+  } else {
+    const sp = d.marks.songParts.parts.find(p => p.id === "technical"), b = d.songBands.song3;
+    rows.push({ k: () => tr("本項配分", "This section"), v: () => tr(`在 Song 3 評:Technical control ${sp.song3} 分(Song 3 滿分 ${b.max};Song 1、2 的 Technical control 是 ${sp.song12})`,
+      `Marked in Song 3: Technical control ${sp.song3} (Song 3 out of ${b.max}; Songs 1–2: ${sp.song12})`), src: srcOf(sys, d.marks.songParts.src.p) });
+    rows.push({ k: () => tr("Song 3 等第", "Song 3 bands"), v: () => bandsText(b.bands), src: srcOf(sys, d.songBands.src.p) });
+    $("examSummary").textContent = tr("考試摘要 · 技巧在 Song 3 評", "Exam summary · Technique in Song 3");
+  }
+  rows.push(...summaryRows(sys, d, g));
+  if (sys === "trinity") rows.push({ k: () => tr("數位考試", "Digital exam"), v: () => L(d.digitalNote.text), src: srcOf(sys, d.digitalNote.src.p) });
+  rows.push(notInApp(sys, d), dataRow(d));
+  fillSpec($("sumSpec"), rows);
+}
+
+/* ── RSL:每組一列 ── */
+const patternName = it => {
+  const st = it.sticking === "single" ? tr("單擊", "Singles") : it.sticking === "double" ? tr("雙擊", "Doubles") : `${it.pas}. ${name(byNo(it.pas))}`;
+  return `${st} · ${valueName(it.value)}`;
+};
+const itemName = it => (it.kind === "pas" ? `${it.no}. ${name(byNo(it.no))}` : it.kind === "pattern" ? patternName(it) : L(it.label));
+function renderRsl(d, g){
+  const t = d.tech[g], items = techItems(g, d), nos = techPasNos(g, d);
+  const good = nos.filter(no => S.mastery[no] === "good").length;
+  $("listSub").textContent = tr(`已會 ${good}/${nos.length}`, `${good}/${nos.length} known`);
+  $("progress").hidden = false;
+  $("progressBar").style.width = (nos.length ? 100 * good / nos.length : 0) + "%";
+  $("listRule").dataset.src = srcOf("rsl", t.src.p);
+  // 規則(click 一定要跟 / 可以不跟,照各級頁面);有 pattern 的級數另外說明 ◷ 的意思(只寫一次,不每一項重複)
+  const hasPattern = items.some(x => x.kind === "pattern");
+  para($("listRule"), () => L(t.rule) + (hasPattern ? tr("。◷ = App 依大綱時值排的練習型(不是官方譜),下一版提供。", ". ◷ = the App's drill in the syllabus note values (not the official part), coming next.") : ""));
+  const box = $("qGroups");
+  for (const gr of t.groups) {
+    const G = el("div", "xgroup"), head = el("div", "xhead");
+    head.innerHTML = `<b class="xid">${gr.id}</b><span class="xname"></span><small class="xbpm">${gr.bpm ? "♩=" + gr.bpm : "♩ —"}</small><small class="xsrc">p.${t.src.p}</small>`;
+    G.appendChild(head); box.appendChild(G);
+    pairText(head.querySelector(".xname"), () => L(gr.name));
+    const its = el("div", "xitems"); G.appendChild(its);
+    for (const it of items.filter(x => x.group === gr.id)) {
+      let row;
+      if (it.kind === "pas") {
+        row = el("button", "xitem", { "data-key": it.key, "data-act": "pas" });
+        row.innerHTML = `<i class="dot ${markOf(it.no)}"></i><span class="xi-name"></span>${ICON.play}`;
+      } else if (it.kind === "pattern") {
+        row = el("div", "xitem off", { "data-key": it.key });
+        row.innerHTML = `<i class="dot ${markOf(it.pas)}"></i><span class="xi-name"></span>${ICON.later}`;
+      } else {
+        row = el("div", "xitem book", { "data-key": it.key });
+        row.innerHTML = `${ICON.book}<span class="xi-name"></span>`;
+      }
+      const w = el("div", "xwrap"); its.appendChild(w); w.appendChild(row);
+      pairText(row.querySelector(".xi-name"), () => itemName(it));
+      if (it.kind === "pas") row.setAttribute("aria-label", tr("練習 ", "Practise ") + itemName(it));
+      // 這一項的說明:pattern = 下一版才有;book = 譜見官方檢定書(+ 相關 PAS 打法);項目自己的備註、推估
+      const note = () => [
+        it.kind === "book" && !(it.note && it.note !== gr.note) ? tr("譜見官方檢定書。", "See the official grade book.") : "",
+        it.note && it.note !== gr.note ? L(it.note) + tr("。", ".") : "",
+        it.assumed ? TS("srcAssumed") + tr("。", ".") : "",
+        it.kind === "book" && it.related.length ? tr("可以先練相關的 PAS 打法:", "Related PAS rudiments:") : ""
+      ].filter(Boolean).join(" ");
+      if (note()) { const p = el("p", "xi-note"); w.appendChild(p); pairText(p, note); }
+      if (it.kind === "book" && it.related.length) {
+        const rel = el("div", "xi-rel"); w.appendChild(rel);
+        for (const no of it.related) {
+          const b = el("button", "chip", { "data-act": "rel", "data-no": String(no) });
+          b.innerHTML = `<i class="dot ${markOf(no)}"></i>PAS #${no}`;
+          b.setAttribute("aria-label", tr(`相關 PAS 打法 ${no}. ${byNo(no).zh}`, `Related PAS ${no}. ${byNo(no).en}`));
+          rel.appendChild(b);
+        }
+      }
+    }
+    // 這一組的說明:速度跟伴奏音軌(推估)、組的備註、風格練習曲的三種風格
+    const gnote = () => [
+      gr.bpmSrc === "backing" ? tr("速度:跟伴奏音軌(大綱沒寫數字)", "Tempo: the backing track (no number given)") + assumed(gr.bpmSrcAssumed) + tr("。", ".") : "",
+      gr.note ? L(gr.note) : "",
+      gr.styles ? gr.styles.map(x => L(x.name) + tr(":", ": ") + L(x.focus)).join(tr(";", "; ")) : ""
+    ].filter(Boolean).join(" ");
+    if (gnote()) { const p = el("p", "xnote"); G.appendChild(p); pairText(p, gnote); }
+  }
+  // 抽一項 / 下一項:只在連到 PAS 原譜的項目裡(pattern 下一版才能練)
+  const pool = items.filter(x => x.kind === "pas");
+  $("drawBtn").hidden = $("nextBtn").hidden = false; $("listActions").hidden = false;
+  $("drawBtn").disabled = $("nextBtn").disabled = !pool.length;
+}
+/* 從清單去練:跳到技巧分頁的那個打法、速度設成官方 ♩(目標模式) */
+function practiceItem(it){
+  const ex = curExam(), r = byNo(it.no);
+  target = { system: ex.system, grade: ex.grade, group: it.group, no: it.no, bpm: it.bpm, p: it.src.p, key: it.key };
+  lastKey = it.key;
+  S.pick[r.cat] = r.no; store.save();
+  ctx.showView("tech", r.cat);   // → enter(類別) → switchTab → setRudiment(S.pick[類別]):同一個打法,保留目標
+  if (!cur || cur.no !== r.no) setRudiment(r.no);
+  syncTarget();
+}
+/* 相關 PAS 打法、Trinity 的類別按鈕:只是帶過去練(沒有官方速度,不設目標) */
+function openRudiment(no){
+  target = null;
+  const r = byNo(no);
+  S.pick[r.cat] = r.no; store.save();
+  ctx.showView("tech", r.cat);
+  if (!cur || cur.no !== r.no) setRudiment(r.no);
+  syncTarget();
+}
+function openCategory(cat){ target = null; ctx.showView("tech", cat); syncTarget(); }
+const pasItems = () => { const ex = curExam(); return ex.system === "rsl" ? techItems(ex.grade, dataOf("rsl")).filter(x => x.kind === "pas") : []; };
+$("drawBtn").onclick = () => {
+  const all = pasItems(); if (!all.length) return;
+  // 先抽還沒標「已經會了」的(全部都會了就全部);不連續抽到同一項
+  let pool = all.filter(x => S.mastery[x.no] !== "good"); if (!pool.length) pool = all;
+  if (pool.length > 1) pool = pool.filter(x => x.key !== lastKey);
+  practiceItem(pool[Math.floor(Math.random() * pool.length)]);
+};
+$("nextBtn").onclick = () => {
+  const all = pasItems(); if (!all.length) return;
+  const i = all.findIndex(x => x.key === lastKey);
+  practiceItem(all[(i + 1) % all.length]);
+};
+$("qGroups").onclick = e => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  if (b.dataset.act === "pas") { const it = pasItems().find(x => x.key === b.dataset.key); if (it) practiceItem(it); }
+  else if (b.dataset.act === "rel") openRudiment(Number(b.dataset.no));
+  else if (b.dataset.act === "cat") openCategory(b.dataset.cat);
+  else if (b.dataset.act === "pasno") openRudiment(Number(b.dataset.no));
+};
+
+/* ── Trinity:說明 + 自選曲參數表的 Techniques(官方說只是一般參考)+ 類別按鈕 ── */
+function renderTrinity(d, g){
+  $("listSub").textContent = tr("在 Song 3 評", "Assessed in Song 3");
+  $("listRule").dataset.src = srcOf("trinity", d.techNote.src.p);
+  para($("listRule"), () => L(d.techNote.text));
+  const oc = d.ownChoice.grades[g], box = $("qGroups"), G = el("div", "xgroup"), head = el("div", "xhead");
+  head.innerHTML = `<span class="xname"></span><small class="xsrc">p.${oc.src.p}</small>`;
+  G.appendChild(head); box.appendChild(G);
+  pairText(head.querySelector(".xname"), () => tr("自選曲參數表:技巧", "Own-choice songs: techniques"));
+  const t1 = el("p", "xnote strong"); G.appendChild(t1); pairText(t1, () => L(oc.techniques));
+  const t2 = el("p", "xnote"); G.appendChild(t2); pairText(t2, () => L(d.ownChoice.legend));
+  if (oc.practice.length) {
+    const cats = el("div", "xcats"); G.appendChild(cats);
+    for (const x of oc.practice) {
+      const b = el("button", "xcat", x.cat ? { "data-act": "cat", "data-cat": x.cat } : { "data-act": "pasno", "data-no": String(x.pas) });
+      b.innerHTML = `<span></span>${ICON.go}`;
+      cats.appendChild(b);
+      pairText(b.querySelector("span"), () => (x.cat ? tr("去練 ", "Practise ") + L([catOf(x.cat).zh, catOf(x.cat).en]) : tr("去練 ", "Practise ") + `${x.pas}. ${name(byNo(x.pas))}`));
+    }
+    const n = el("p", "xnote"); G.appendChild(n); pairText(n, () => L(d.ownChoice.practiceNote));
+  }
+  const f = el("p", "xnote"); G.appendChild(f);
+  pairText(f, () => tr("技巧分頁的 PAS 40 個基本打法照常可以自由練習。", "The 40 PAS rudiments in Technique are always free to practise."));
+}
+
+/* ── 目標橫幅(技巧分頁):「RSL 3 級 · D 組 · ♩=75 · p.42」;清單鈕回檢定頁、× 離開目標(速度回到自己的) ── */
+function syncTarget(){
+  const show = !!target && tab !== "exam";
+  $("target").hidden = !show;
+  if (!show) return;
+  const t = target, sysName = t.system === "rsl" ? "RSL" : "Trinity", gl = () => ctx.gradeLabel(t.grade, t.system);   // 級名要在 fn 裡算(兩種語言各算一次)
+  pairStack($("targetText"), () => tr(`${sysName} ${gl()} · ${t.group} 組 · ♩=${t.bpm} · p.${t.p}`, `${sysName} ${gl()} · Group ${t.group} · ♩=${t.bpm} · p.${t.p}`));
+}
+$("targetClose").onclick = () => {
+  target = null; syncTarget();
+  if (cur) { stopPlayback(); bpm = S.bpm[cur.no] || 60; syncTempoUI(); }
+};
+$("targetList").onclick = () => ctx.showView("exam", "tech");
 
 /* ══ 鼓譜:一整行 + 播放軸(js/shared/score.js,照 PianoDrill / ScrollScore)══
    看不到時延後重畫、短的放大填滿、長的左右捲、播放軸停在 25% 都在共用元件裡;這裡只給縮放、左右手字母、一輪的長度 */
@@ -253,7 +471,7 @@ function syncTempoUI(){
 }
 function setBpm(v, fromUser){
   bpm = Math.max(MIN_BPM, Math.min(MAX_BPM, Math.round(v)));
-  if (fromUser && cur) { S.bpm[cur.no] = bpm; store.save(); }
+  if (fromUser && cur && !target) { S.bpm[cur.no] = bpm; store.save(); }   // 檢定目標模式:只改這一次的速度,× 離開就回到自己的
   syncTempoUI(); retempo();
 }
 
@@ -455,6 +673,6 @@ function renderLog(){
 export async function start(c){
   ctx = c; exam = c.exam;
   renderLog();
-  window.__tech = { get cur(){ return cur; }, get groups(){ return groups; }, get osmd(){ return score.osmd; }, score,
+  window.__tech = { get target(){ return target; }, get cur(){ return cur; }, get groups(){ return groups; }, get osmd(){ return score.osmd; }, score,
     get state(){ return { play: !!play, starting: !!starting, bpm, scheduled: audio.scheduledCount(), noteXs: score.noteXs.length, landZoom: score.landZoom, lastEnd: { ...lastEnd } }; }, setRudiment, switchTab, setBpm, S };
 }

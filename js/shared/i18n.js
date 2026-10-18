@@ -30,6 +30,10 @@ const STR = {
   examNone: ["還沒選考試", "No exam chosen"],
   examClear: ["不考試", "No exam"],
   soonTitle: ["準備中", "Coming soon"],
+  // 檢定頁(STAGES.md §0 的固定標示文字):免責、出處的兩種非官方標記
+  practiceOnly: ["僅供練習;實際要求以官方大綱為準", "Practice only — the official syllabus is final."],
+  srcAssumed: ["推估", "Assumed"], srcPractice: ["練習設定", "Practice setting"],
+  sumTitle: ["考試摘要", "Exam summary"], specTitle: ["考試規格", "Exam spec"],
   licenses: ["授權與出處", "Licenses"],
   privacy: ["隱私權政策", "Privacy"],
   footer: ["鼓聲:Naked Drums(Wilkinson Audio,CC BY 4.0),經 ScrollScore 整理,播放時加上殘響與壓縮 · 鼓譜:OpenSheetMusicDisplay(BSD-3-Clause)。基本打法照 Percussive Arts Society《International Drum Rudiments》(© 1984 PAS)整理,鼓譜由 App 依官方寫法重新繪製,僅供練習。Trinity、RSL Rockschool、PAS 為各自的商標,本 App 與其無關。",

@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/app.css?v=9f6af68d07">
-<link rel="stylesheet" href="css/drum.css?v=56419077f1">
+<link rel="stylesheet" href="css/drum.css?v=1c4d6eb3d5">
 </head>
 <body>
 <header>
@@ -63,9 +63,14 @@
           <button class="setup-summary" aria-expanded="false"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span class="sum"></span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
           <div class="setup-body"><div class="rows"></div></div>
         </section>
-        <section class="card" id="t-examCard" hidden>
-          <div class="card-title"><b data-i18n="tech.examTitle">本級要求</b><span class="sub" id="t-examTitle"></span></div>
-          <p class="soon" id="t-examText"></p>
+        <!-- 檢定頁:考試摘要(手機收成一行;照 PianoDrill 的 t-paneExam) -->
+        <section class="card setup pane" data-pane="exam" id="t-paneExam" hidden>
+          <button class="setup-summary" aria-expanded="false"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6l1 2h3v15H5V6h3z"/><path d="M9 11h6M9 15h4"/></svg><span class="sum" id="t-examSummary"></span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+          <div class="setup-body">
+            <div class="card-title"><b data-i18n="sumTitle">考試摘要</b><span class="sub" id="t-sumSub"></span></div>
+            <div id="t-sumSpec"></div>
+            <p class="practice-only" id="t-sumNote"></p>
+          </div>
         </section>
         <section class="card" id="t-logCard">
           <div class="card-title"><b data-i18n="tech.logTitle">練習紀錄</b></div>
@@ -78,6 +83,28 @@
         </section>
     </div>
     <div class="mod-main">
+        <!-- 從檢定清單點「練習」:目標(哪一級哪一組、官方速度、頁碼);× 離開(速度回到自己的設定) -->
+        <section class="card target" id="t-target" hidden>
+          <svg class="target-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
+          <p class="target-text" id="t-targetText"></p>
+          <button class="btn ghost icon" id="t-targetList" data-i18n-attr="aria-label:tech.targetList,title:tech.targetList"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></button>
+          <button class="btn ghost icon" id="t-targetClose" data-i18n-attr="aria-label:tech.targetClose,title:tech.targetClose"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+        </section>
+        <!-- 檢定頁:本級要求(RSL 每組一列;Trinity 說明 + 自選曲技巧) -->
+        <section class="card pane" data-pane="exam" id="t-listCard" hidden>
+          <div class="card-title"><b id="t-listTitle" data-i18n="tech.examTitle">本級要求</b><span class="sub" id="t-listSub"></span></div>
+          <div class="progress" id="t-progress"><i id="t-progressBar" style="width:0"></i></div>
+          <p class="spec-note" id="t-listRule"></p>
+          <div id="t-qGroups"></div>
+          <div class="x-actions" id="t-listActions">
+            <button class="btn primary" id="t-drawBtn" hidden>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.3" fill="currentColor"/><circle cx="16" cy="16" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/></svg>
+              <span class="btn-label" id="t-drawLabel" data-i18n="tech.draw">隨機抽一項</span></button>
+            <button class="btn" id="t-nextBtn" hidden>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+              <span class="btn-label" id="t-nextLabel" data-i18n="tech.next">下一項</span></button>
+          </div>
+        </section>
         <section class="card quiz" id="t-quizCard" aria-live="polite">
           <span class="loading" id="t-loadingMsg"></span>
           <div class="q-head">
@@ -121,16 +148,40 @@
     </div>
   </div>
 
-  <!-- 視奏(準備中) -->
+  <!-- 視奏(練習準備中;檢定頁有考試摘要與規格) -->
   <div class="mod" id="mod-sight" data-mod="sight" hidden>
+    <div class="mod-side">
+        <section class="card setup pane" data-pane="exam" id="s-paneExam" hidden>
+          <button class="setup-summary" aria-expanded="false"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6l1 2h3v15H5V6h3z"/><path d="M9 11h6M9 15h4"/></svg><span class="sum" id="s-examSummary"></span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+          <div class="setup-body">
+            <div class="card-title"><b data-i18n="sumTitle">考試摘要</b><span class="sub" id="s-sumSub"></span></div>
+            <div id="s-sumSpec"></div>
+            <p class="practice-only" id="s-sumNote"></p>
+          </div>
+        </section>
+    </div>
     <div class="mod-main">
-      <section class="card"><div class="card-title"><b data-i18n="soonTitle">準備中</b></div><p class="soon" id="s-soonText"></p></section>
+      <section class="card" id="s-soonCard"><div class="card-title"><b data-i18n="soonTitle">準備中</b></div><p class="soon" id="s-soonText"></p></section>
+      <!-- 檢定頁:規格卡(照官方大綱;練習在之後的 Stage) -->
+      <div class="spec-cards" id="s-specCards" hidden></div>
     </div>
   </div>
-  <!-- 聽力(準備中) -->
+  <!-- 聽力(練習準備中;檢定頁有考試摘要與規格) -->
   <div class="mod" id="mod-ear" data-mod="ear" hidden>
+    <div class="mod-side">
+        <section class="card setup pane" data-pane="exam" id="e-paneExam" hidden>
+          <button class="setup-summary" aria-expanded="false"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6l1 2h3v15H5V6h3z"/><path d="M9 11h6M9 15h4"/></svg><span class="sum" id="e-examSummary"></span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+          <div class="setup-body">
+            <div class="card-title"><b data-i18n="sumTitle">考試摘要</b><span class="sub" id="e-sumSub"></span></div>
+            <div id="e-sumSpec"></div>
+            <p class="practice-only" id="e-sumNote"></p>
+          </div>
+        </section>
+    </div>
     <div class="mod-main">
-      <section class="card"><div class="card-title"><b data-i18n="soonTitle">準備中</b></div><p class="soon" id="e-soonText"></p></section>
+      <section class="card" id="e-soonCard"><div class="card-title"><b data-i18n="soonTitle">準備中</b></div><p class="soon" id="e-soonText"></p></section>
+      <!-- 檢定頁:規格卡(照官方大綱;練習在之後的 Stage) -->
+      <div class="spec-cards" id="e-specCards" hidden></div>
     </div>
   </div>
 
@@ -167,9 +218,9 @@
   </div>
 </div>
 
-<script type="importmap">{"imports":{"./js/ear/app.js":"./js/ear/app.js?v=0632b92d3f","./js/main.js":"./js/main.js?v=f7ada50408","./js/shared/audio.js":"./js/shared/audio.js?v=52b4c1f8a6","./js/shared/examdata.js":"./js/shared/examdata.js?v=48f1b46bf2","./js/shared/i18n.js":"./js/shared/i18n.js?v=7990fd2bf5","./js/shared/landscape.js":"./js/shared/landscape.js?v=8ab1bab3eb","./js/shared/score.js":"./js/shared/score.js?v=626f4a4e45","./js/shared/tempo.js":"./js/shared/tempo.js?v=1e38af7d3f","./js/sight/app.js":"./js/sight/app.js?v=d7972f3155","./js/tech/app.js":"./js/tech/app.js?v=b6dd20631a","./js/tech/notation.js":"./js/tech/notation.js?v=ffe8ac66c4","./js/tech/rudiments.js":"./js/tech/rudiments.js?v=5e7d24246c","./js/tech/store.js":"./js/tech/store.js?v=c27b27f99c","./js/tech/strings.js":"./js/tech/strings.js?v=d34b22fcde"}}</script>
+<script type="importmap">{"imports":{"./js/ear/app.js":"./js/ear/app.js?v=66e6065b2d","./js/main.js":"./js/main.js?v=4a3930106f","./js/shared/audio.js":"./js/shared/audio.js?v=52b4c1f8a6","./js/shared/examdata.js":"./js/shared/examdata.js?v=48f1b46bf2","./js/shared/examview.js":"./js/shared/examview.js?v=b4959afa11","./js/shared/i18n.js":"./js/shared/i18n.js?v=a561423d5b","./js/shared/landscape.js":"./js/shared/landscape.js?v=8ab1bab3eb","./js/shared/score.js":"./js/shared/score.js?v=626f4a4e45","./js/shared/tempo.js":"./js/shared/tempo.js?v=1e38af7d3f","./js/sight/app.js":"./js/sight/app.js?v=b48ef82b62","./js/tech/app.js":"./js/tech/app.js?v=3e305fac9b","./js/tech/notation.js":"./js/tech/notation.js?v=ffe8ac66c4","./js/tech/rudiments.js":"./js/tech/rudiments.js?v=5e7d24246c","./js/tech/store.js":"./js/tech/store.js?v=c27b27f99c","./js/tech/strings.js":"./js/tech/strings.js?v=fa3be55e9c"}}</script>
 <script type="application/json" id="pdVersions">{"data/drumkey.json":"990a00639b","data/exam-rsl.json":"2d89d69753","data/exam-trinity.json":"33070e658b"}</script>
 <script src="vendor/opensheetmusicdisplay.min.js?v=4bfeb3d01c"></script>
-<script type="module" src="js/main.js?v=f7ada50408"></script>
+<script type="module" src="js/main.js?v=4a3930106f"></script>
 </body>
 </html>

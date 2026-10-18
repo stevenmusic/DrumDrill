@@ -53,6 +53,16 @@ for (const [name, w, h, mobile] of VPS) {
   await compare(page, name, "檢定 RSL");
   await sub("sight"); await compare(page, name, "檢定 視奏");
   await sub("ear"); await compare(page, name, "檢定 聽力");
+  // S3:檢定頁 RSL 0/3/8、Trinity 0/4/8 × 技巧/視奏/聽力
+  for (const [sys, g] of [["rsl", 0], ["rsl", 3], ["rsl", 8], ["trinity", 0], ["trinity", 4], ["trinity", 8]]) {
+    await page.evaluate(([s, g]) => window.__shell.setExam(s, g), [sys, g]); await page.waitForTimeout(250);
+    for (const p of ["tech", "sight", "ear"]) { await sub(p); await compare(page, name, `檢定 ${sys} ${g} ${p}`); }
+  }
+  // 從清單點練習:技巧分頁的目標橫幅
+  await page.evaluate(() => window.__shell.setExam("rsl", 3)); await sub("tech");
+  await page.click('#t-qGroups button.xitem[data-act="pas"]'); await page.waitForTimeout(700);
+  await compare(page, name, "技巧 目標橫幅");
+  await page.click("#t-targetClose"); await page.waitForTimeout(200);
   await tab("tech");
   for (const c of ["roll", "diddle", "flam", "drag"]) { await sub(c); await expand("#t-picker"); await compare(page, name, "技巧 " + c); }
   await tab("sight"); await compare(page, name, "視奏"); await tab("ear"); await compare(page, name, "聽力");

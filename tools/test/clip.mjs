@@ -44,6 +44,15 @@ const START = { onboarded: true, view: "tech", exam: { system: "rsl", grade: 5 }
 const VIEWS = [["tech", ["roll", "diddle", "flam", "drag"]], ["sight", [""]], ["ear", [""]], ["exam", ["tech", "sight", "ear"]]];
 // 同一個畫面再多看幾種內容:技巧每一類的每個打法(不同長度、g j p y 的名稱)
 async function more(page, view, s, report){
+  // 檢定頁:RSL 0/3/8、Trinity 0/4/8(最後回到 START 的考試)
+  if (view === "exam") {
+    for (const [sys, g] of [["rsl", 0], ["rsl", 3], ["rsl", 8], ["trinity", 0], ["trinity", 4], ["trinity", 8]]) {
+      await page.evaluate(([s, g]) => window.__shell.setExam(s, g), [sys, g]); await page.waitForTimeout(300);
+      await report(`${view}/${s} ${sys} ${g}`);
+    }
+    await page.evaluate(ex => window.__shell.setExam(ex.system, ex.grade), START.exam);
+    return;
+  }
   if (view !== "tech") return;
   const nos = await page.evaluate(() => [...document.querySelectorAll('#t-picker .opts[data-k="no"] .opt')].map(b => Number(b.dataset.v)));
   for (const no of nos) {
