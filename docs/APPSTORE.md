@@ -6,7 +6,7 @@
 |---|---|
 | Bundle ID | `io.github.stevenmusic.drumdrill`(`app/capacitor.config.json`) |
 | 把網頁複製成 App 內容 | `cd app && npm install && npx cap add ios`(第一次),之後 `npm run sync` |
-| 取樣打包進 App | `tools/build/app-samples.mjs`:小鼓 5 層力度 × 10 個 round-robin + 拍點 + 鼓房殘響,約 3.7MB(第一次要連網下載到 `tools/build/samples/`) |
+| 取樣打包進 App | `tools/build/app-samples.mjs`:技巧的小鼓 5 層力度 × 10 個 round-robin + 整組鼓 12 個鼓件(鼓皮每層前 6 個、鈸每層前 4 個 round-robin)+ 拍點 + 鼓房殘響,197 個檔、21.0MB(S6 實際跑出來;原本只有小鼓時 3.7MB,**增加 17.3MB**:ride 4.6、crash 3.6、hhOpen 1.8、tom5 1.4、kick 1.3、tom3 1.3、rideBell 1.2、tom1 1.0、hhClosed 0.7、xstick 0.3、hhPedal 0.2)。第一次要連網下載到 `tools/build/samples/`。iPhone / iPad 執行時每層只用前 3 / 2 個(`js/shared/audio.js` 的 `KIT_RR`),多帶的是給之後放寬上限用 |
 | App 圖示 | `icons/icon-1024.png`(金底小鼓 + 勾)、`icon-1024-dark.png`、`icon-1024-tinted.png` |
 | 隱私權政策 | `privacy.html` → `https://stevenmusic.github.io/DrumDrill/privacy.html` |
 | 麥克風 | 目前沒有用到,不用加 `NSMicrophoneUsageDescription` |
