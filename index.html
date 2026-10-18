@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/app.css?v=9f6af68d07">
-<link rel="stylesheet" href="css/drum.css?v=d86889fd9b">
+<link rel="stylesheet" href="css/drum.css?v=d408d0ace9">
 </head>
 <body>
 <header>
@@ -194,14 +194,15 @@
         </section>
     </div>
     <div class="mod-main">
-        <!-- 這一級 / 這個考試還沒有視奏練習(RSL 4–8、Trinity):說明 + 規格卡(#s-specCards) -->
+        <!-- 這一級沒有視奏練習(RSL 6–8 Quick Study Piece)、資料還沒載好:說明 + 規格卡(#s-specCards) -->
         <section class="card notice" id="s-unsupported" hidden><div class="card-title"><b id="s-unsupportedTitle"></b></div><p id="s-unsupportedText"></p><p class="practice-only" id="s-unsupportedNote"></p></section>
-        <!-- 題目卡(跟技巧、聽力同一個排法):大標題 = 級數,右邊 ▶(聽正確版本);標籤 = 拍號、小節、速度;左下:準備 90 秒 + 倒數,右下:新題目 -->
+        <!-- 題目卡(跟技巧、聽力同一個排法):大標題 = 級數,右邊 ▶(聽正確版本;載入整組鼓時外圈畫進度);標籤 = 拍號、小節、速度;左下:準備 90 秒(Trinity 看譜 30 秒)+ 倒數,右下:新題目 -->
         <section class="card quiz" id="s-quiz" aria-live="polite">
           <div class="q-head">
             <div class="q-title empty" id="s-title"></div>
             <button class="play-round" id="s-play" disabled data-i18n-attr="aria-label:sight.playAria,title:sight.playAria" aria-label="聽正確版本" title="聽正確版本">
-              <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path id="s-playIcon" d="M8 5v14l11-7z"/></svg></button>
+              <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path id="s-playIcon" d="M8 5v14l11-7z"/></svg>
+              <svg class="play-ring" id="s-playRing" viewBox="0 0 64 64" aria-hidden="true"><circle class="ring-bg" cx="32" cy="32" r="30" pathLength="1"/><circle class="ring-fg" cx="32" cy="32" r="30" pathLength="1"/></svg></button>
           </div>
           <div class="q-row"><div class="q-tags" id="s-meta"></div></div>
           <p class="feedback" id="s-message"></p>
@@ -215,11 +216,13 @@
               <span class="btn-label" data-i18n="sight.generate">新題目</span>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
           </div>
+          <!-- 整組鼓:自由發展的小節;Trinity:這是 Playback 的看譜練習(Rock & Pop 沒有視奏)、官方配伴奏、App 只有拍點 -->
+          <p class="mode-note" id="s-modeNote" hidden></p>
           <p class="practice-only" id="s-practiceOnly"></p>
         </section>
         <!-- 譜(白紙,像印出來的考卷:每行 4 小節,放不下再縮、最後才每行 2 小節;js/sight/stage.js 畫目前小節的底色與播放軸) -->
         <section class="card" id="s-scoreCard">
-          <div class="score-head"><div class="card-title" style="margin:0"><b data-i18n="sight.scoreTitle">小鼓譜</b><span class="sub" id="s-scoreSub"></span></div></div>
+          <div class="score-head"><div class="card-title" style="margin:0"><b id="s-scoreTitle">小鼓譜</b><span class="sub" id="s-scoreSub"></span></div></div>
           <div class="stage paper" id="s-stage">
             <div class="measure-highlight" id="s-highlight"></div>
             <div id="s-score" class="score"></div>
@@ -232,7 +235,7 @@
           <p class="score-note" id="s-confidence"></p>
           <div id="s-legend"></div>
         </section>
-        <!-- 正式打:觸控鼓墊(鍵盤 J / F)+ 練習回饋(不是考試分數) -->
+        <!-- 正式打:觸控鼓墊(小鼓 1 個,鍵盤 J / F;整組鼓 3 個,鍵盤 F / J / K)+ 練習回饋(不是考試分數) -->
         <section class="card along" id="s-along">
           <div class="pads" id="s-pads"></div>
           <div class="along-row">
@@ -297,7 +300,7 @@
   </div>
 </div>
 
-<script type="importmap">{"imports":{"./js/ear/app.js":"./js/ear/app.js?v=e7c7005d2c","./js/ear/gen.js":"./js/ear/gen.js?v=ae372fb41e","./js/main.js":"./js/main.js?v=752ab02578","./js/shared/audio.js":"./js/shared/audio.js?v=94dcfa09e5","./js/shared/examdata.js":"./js/shared/examdata.js?v=48f1b46bf2","./js/shared/examview.js":"./js/shared/examview.js?v=b4959afa11","./js/shared/i18n.js":"./js/shared/i18n.js?v=a561423d5b","./js/shared/kitevents.js":"./js/shared/kitevents.js?v=e5c4705e6c","./js/shared/kitgen.js":"./js/shared/kitgen.js?v=091dc4de5b","./js/shared/kitnotation.js":"./js/shared/kitnotation.js?v=65e0d6b2cb","./js/shared/landscape.js":"./js/shared/landscape.js?v=8ab1bab3eb","./js/shared/legend.js":"./js/shared/legend.js?v=ea60776dd0","./js/shared/onsets.js":"./js/shared/onsets.js?v=d8df0b9ef2","./js/shared/pad.js":"./js/shared/pad.js?v=bd127fa82e","./js/shared/playbackgen.js":"./js/shared/playbackgen.js?v=25e49e3c09","./js/shared/player.js":"./js/shared/player.js?v=3b242c7289","./js/shared/score.js":"./js/shared/score.js?v=f50e900a94","./js/shared/tempo.js":"./js/shared/tempo.js?v=1e38af7d3f","./js/shared/timing.js":"./js/shared/timing.js?v=3ff7813241","./js/sight/app.js":"./js/sight/app.js?v=44f486e194","./js/sight/fingerprint.js":"./js/sight/fingerprint.js?v=3101dabdf7","./js/sight/gen.js":"./js/sight/gen.js?v=6633bf6b2e","./js/sight/random.js":"./js/sight/random.js?v=3b9b511386","./js/sight/stage.js":"./js/sight/stage.js?v=9ca7fb07ed","./js/sight/strings.js":"./js/sight/strings.js?v=1b1baccc51","./js/tech/app.js":"./js/tech/app.js?v=f61dc3b4dd","./js/tech/notation.js":"./js/tech/notation.js?v=5bee65ac3d","./js/tech/rudiments.js":"./js/tech/rudiments.js?v=cc1a2635ff","./js/tech/store.js":"./js/tech/store.js?v=c27b27f99c","./js/tech/strings.js":"./js/tech/strings.js?v=fa3be55e9c"}}</script>
+<script type="importmap">{"imports":{"./js/ear/app.js":"./js/ear/app.js?v=e7c7005d2c","./js/ear/gen.js":"./js/ear/gen.js?v=ae372fb41e","./js/main.js":"./js/main.js?v=752ab02578","./js/shared/audio.js":"./js/shared/audio.js?v=94dcfa09e5","./js/shared/examdata.js":"./js/shared/examdata.js?v=48f1b46bf2","./js/shared/examview.js":"./js/shared/examview.js?v=b4959afa11","./js/shared/i18n.js":"./js/shared/i18n.js?v=a561423d5b","./js/shared/kitevents.js":"./js/shared/kitevents.js?v=e5c4705e6c","./js/shared/kitgen.js":"./js/shared/kitgen.js?v=091dc4de5b","./js/shared/kitnotation.js":"./js/shared/kitnotation.js?v=65e0d6b2cb","./js/shared/landscape.js":"./js/shared/landscape.js?v=8ab1bab3eb","./js/shared/legend.js":"./js/shared/legend.js?v=ea60776dd0","./js/shared/onsets.js":"./js/shared/onsets.js?v=d8df0b9ef2","./js/shared/pad.js":"./js/shared/pad.js?v=bd127fa82e","./js/shared/playbackgen.js":"./js/shared/playbackgen.js?v=25e49e3c09","./js/shared/player.js":"./js/shared/player.js?v=3b242c7289","./js/shared/score.js":"./js/shared/score.js?v=f50e900a94","./js/shared/tempo.js":"./js/shared/tempo.js?v=1e38af7d3f","./js/shared/timing.js":"./js/shared/timing.js?v=3ff7813241","./js/sight/app.js":"./js/sight/app.js?v=59919346f6","./js/sight/fingerprint.js":"./js/sight/fingerprint.js?v=c0cdf7916e","./js/sight/gen.js":"./js/sight/gen.js?v=6633bf6b2e","./js/sight/meter.js":"./js/sight/meter.js?v=94d1b94ae1","./js/sight/random.js":"./js/sight/random.js?v=3b9b511386","./js/sight/stage.js":"./js/sight/stage.js?v=9ca7fb07ed","./js/sight/strings.js":"./js/sight/strings.js?v=1b1baccc51","./js/tech/app.js":"./js/tech/app.js?v=f61dc3b4dd","./js/tech/notation.js":"./js/tech/notation.js?v=5bee65ac3d","./js/tech/rudiments.js":"./js/tech/rudiments.js?v=cc1a2635ff","./js/tech/store.js":"./js/tech/store.js?v=c27b27f99c","./js/tech/strings.js":"./js/tech/strings.js?v=fa3be55e9c"}}</script>
 <script type="application/json" id="pdVersions">{"data/drumkey.json":"7b58a38cef","data/exam-rsl.json":"d4a099542c","data/exam-trinity.json":"33070e658b"}</script>
 <script src="vendor/opensheetmusicdisplay.min.js?v=4bfeb3d01c"></script>
 <script type="module" src="js/main.js?v=752ab02578"></script>

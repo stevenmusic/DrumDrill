@@ -6,16 +6,25 @@
  */
 
 // @app-begin
-/* DrumDrill:題目 = js/sight/gen.js 的小鼓譜(級數、拍號、小節數、每一個時值與休止符);速度不算(同樣的節奏換速度還是同一題)。
+/* DrumDrill:題目 = 視奏的鼓譜(js/sight/gen.js 小鼓、js/shared/kitgen.js 整組鼓、js/shared/playbackgen.js Trinity Playback):
+   系統、級數、拍號、小節數、每一個時值與休止符;整組鼓另外看鼓件與記號(開閉 HH、重音、鬼音、Flam / Drag、連結線)、自由發展的斜線、換拍號、力度。
+   速度不算(同樣的節奏換速度還是同一題)。小鼓視奏的寫法跟以前一樣(只看時值,存著的出題歷史照樣有效)。
    PianoDrill 的版本在這一段看調性、音高(兩邊這一段不同,其他相同) */
+const MARKS = ['open', 'closed', 'accent', 'ghost', 'flam', 'drag'];
+const noteKey = (n) => n.piece + MARKS.filter((k) => n[k]).map((k) => k[0]).join('');
 export function fingerprintOf(score) {
-  const parts = [score.grade, score.time, score.bars];
+  const parts = score.system ? [score.system, score.grade, score.time, score.bars] : [score.grade, score.time, score.bars];
+  const kit = !!score.system;
   for (const measure of score.measures) {
+    if (measure.slash) { parts.push('/', '|'); continue; }
+    if (measure.time) parts.push('T' + measure.time);
     for (const voice of measure.voices) {
-      for (const event of voice) parts.push(event.value);
+      for (const event of voice) parts.push(kit && event.notes ? event.value + ':' + event.notes.map(noteKey).join('+') + (event.tie ? '~' : '') : event.value);
+      if (kit) parts.push(';');
     }
     parts.push('|');
   }
+  if (kit && score.dyn) for (const d of score.dyn) parts.push(`${d.m}@${d.beat}${d.mark}`);
   return hash(parts.join('|'));
 }
 // @app-end
