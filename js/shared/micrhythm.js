@@ -28,26 +28,36 @@ export function failReason(e){
 /* 一次錄音:start() → null(開始了)| 失敗原因;finish() → { hits:[音訊時間(秒)], seconds } | null;cancel() 丟掉。
    opening = 正在打開(等權限、iOS 切換音訊工作階段);bumped = 打開的時候 AudioContext 被「打斷」過(audio.onInterrupt):
    iOS 開麥克風會切換工作階段(play-and-record),AudioContext 可能短暫變成 interrupted,外框會把模組 leave() + enter()。
-   模組在 opening 時不要 cancel(stopAll 跳過),打開之後 bumped 而且還在同一題就照樣開始(不是使用者離開);實機要確認(docs/IOS.md 第 8 節) */
+   模組在 opening 時不要 cancel(stopAll 跳過),打開之後 bumped 而且還在同一題就照樣開始(不是使用者離開);實機要確認(docs/IOS.md 第 8 節)
+   錄完(finish / cancel 一段正在錄的)iOS 會再切回只播放的工作階段,也可能「打斷」一下:之後 SETTLE_MS 內的打斷跟 opening 一樣當作自己造成的。
+   shielded = 這一次的打斷是自己造成的(只在打斷的同一輪事件有效;外框的 onInterrupt 同步呼叫模組的 leave(),模組用它決定模擬考不要中止) */
+export const SETTLE_MS = 1500;   // 錄完之後忽略打斷的時間(練習設定;實機要確認,docs/IOS.md 第 8 節)
 export function createMicTake(){
   const rec = createRecorder({ context: () => audio.ensureAudio() });
-  let opening = false, bumped = false;
-  audio.onInterrupt(() => { if (opening) bumped = true; });
+  let opening = false, bumped = false, settleUntil = 0, shielded = false;
+  // 這個監聽在外框的 onInterrupt 之前登記(模組先載入),所以外框呼叫 leave() 時 shielded 已經是這一次的值
+  audio.onInterrupt(() => {
+    if (opening) bumped = true;
+    if (opening || performance.now() < settleUntil) { shielded = true; setTimeout(() => { shielded = false; }, 0); }
+  });
+  const settle = () => { settleUntil = performance.now() + SETTLE_MS; };
   return {
     async start(){
       opening = true; bumped = false;
       try { await rec.start(); return null; } catch (e) { return failReason(e); } finally { opening = false; }
     },
     finish(){
+      if (rec.active) settle();
       const take = rec.finish();
       if (!take || take.contextTime == null) return null;
       const hits = detectHits(take.samples, take.sampleRate).map(t => take.contextTime + t);
       return { hits, seconds: take.samples.length / take.sampleRate, filled: take.filled || 0 };
     },
-    cancel(){ rec.cancel(); },
+    cancel(){ if (rec.active) settle(); rec.cancel(); },
     get active(){ return rec.active; },
     get opening(){ return opening; },
-    get bumped(){ return bumped; }
+    get bumped(){ return bumped; },
+    get shielded(){ return shielded; }
   };
 }
 
@@ -74,8 +84,8 @@ export const MIC_TEXT = {
   starting: ["打開麥克風…(第一次會問權限)", "Opening the microphone… (asks for permission the first time)"],
   head: ["練習回饋 · 節奏(麥克風)", "Practice feedback · rhythm (microphone)"],
   silent: ["沒有聽到鼓聲:把裝置放近一點、不要蓋住麥克風,再打一次。", "No drums heard — move the device closer, keep the mic uncovered and try again."],
-  disclaimer: ["僅供練習參考,不是官方評分;只評時間(全部鼓件合併成一條,不分鼓件、不看力度)。容許範圍是練習設定。",
-    "For practice only — not an official mark. Timing only (all drums merged; no per-drum or dynamics check). The tolerance is a practice setting."]
+  disclaimer: ["僅供練習參考,不是官方評分;只評時間(全部鼓件合併成一條,不分鼓件、不看力度)。容許範圍、偵測靈敏度、扣掉 App 自己聲音的規則都是練習設定。",
+    "For practice only — not an official mark. Timing only (all drums merged; no per-drum or dynamics check). Tolerance, detection sensitivity and removal of the App's own sounds are practice settings."]
 };
 export function micFailText(reason){
   if (reason === "denied") return ["沒有取得麥克風權限,這一次照觸控鼓墊評分。要用麥克風:到瀏覽器 / 系統設定允許麥克風再試。",

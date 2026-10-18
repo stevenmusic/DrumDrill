@@ -8,7 +8,8 @@
 // 2. 瀏覽器:--use-fake-device-for-media-stream --use-file-for-fake-audio-capture=<wav>(檔案在按「正式打」之前才寫好:
 //    Chromium 在 getUserMedia 時才讀),整個 App 照真的流程跑(開關、權限、預備拍、錄音、分析、結果):
 //    視奏 RSL 3 級(小鼓,♩=150):準時 / 偏晚 250 ms / 開麥克風時 AudioContext 被打斷 / 亂打 / 沒聲音 / 拒絕權限;視奏 RSL 4 級(整組鼓合併一條,官方速度)準時;
-//    聽力 RSL Fill 準時;聽力 Trinity Playback 第二次準時(混進 App 自己那一句的鼓聲,dropBleed 要拿掉)
+//    聽力 RSL Fill 準時;聽力 Trinity Playback 第二次準時(混進 App 自己那一句的鼓聲,dropBleed 要拿掉);
+//    聽力 RSL 模擬考:Fill 錄完馬上被打斷不中止、過了緩衝時間才打斷照樣中止
 //    預備拍的拍點也混進去(慢 60 ms、小聲),模擬喇叭被麥克風收到
 import { open } from "./harness.mjs";
 import { detectHits } from "../../js/shared/timing.js";
@@ -236,6 +237,32 @@ async function earTake(type, grade, mode = "exact"){
   await close();
   return { ...out, plan };
 }
+/* 聽力 RSL 模擬考(Fill → Groove):Fill 用麥克風回打完、選譜之前 iOS 切回只播放的工作階段(AudioContext 被「打斷」,外框 leave + enter):
+   錄完之後 SETTLE_MS 內的打斷是自己造成的,模擬考不能中止;過了之後的打斷照樣中止 */
+async function earMockSettle(){
+  const wav = path.join(TMP, "ear-mock-fill-3.wav");
+  const { page, errors, close } = await openApp(wav, { "drumdrill.v1": { onboarded: true, view: "exam", exam: { system: "rsl", grade: 3 }, mic: true, sub: { exam: "ear" } } });
+  await page.waitForFunction(() => window.__ear && window.__ear.state && window.__ear.state.key, null, { timeout: 60000 });
+  await page.evaluate(() => window.__ear.startMock());
+  await page.waitForFunction(() => window.__ear.mock.state === "run" && window.__ear.state.kind === "listen", null, { timeout: 60000 });
+  await page.evaluate(() => window.__ear.finishNow());
+  await page.waitForFunction(() => !window.__ear.state.kind && !document.getElementById("e-performBtn").disabled, null, { timeout: 30000 });
+  const plan = await page.evaluate(() => window.__ear.micPlan());
+  const seconds = LEAD0 + plan.countIn + Math.max(...plan.expected) + 3;
+  await writeWav(page, wav, plan, "exact", seconds);
+  await page.click("#e-performBtn");
+  await page.waitForFunction(() => window.__ear.state.phase === "choose", null, { timeout: (seconds + 30) * 1000 });
+  const suspend = () => page.evaluate(async () => { const a = await import("./js/shared/audio.js"); await a.ensureAudio().suspend(); });
+  await suspend(); await page.waitForTimeout(400);
+  const soon = await page.evaluate(() => ({ st: window.__ear.mock.state, phase: window.__ear.state.phase, answers: !document.getElementById("e-answers").hidden }));
+  await page.evaluate(async () => { const a = await import("./js/shared/audio.js"); await a.ensureAudio().resume(); });
+  await page.waitForTimeout(2000);
+  await suspend(); await page.waitForTimeout(400);
+  const later = await page.evaluate(() => ({ st: window.__ear.mock.state, reason: window.__ear.mock.reason }));
+  if (errors.length) problems.push("聽力模擬考:" + errors.join(" | "));
+  await close();
+  return { soon, later };
+}
 const show = (name, x) => console.log(`${name.padEnd(14)} ${x.r ? `分數 ${x.r.score} 命中 ${x.r.hits}/${x.r.total}` : "—"}${x.mic ? ` · 偵測 ${x.mic.detected.length}(拿掉 App 的聲音 ${x.mic.removed},延遲 ${x.mic.lagMs} ms)` : ""} | ${x.text.slice(0, 120)}`);
 
 async function sightSide(){
@@ -275,7 +302,9 @@ async function sightSide(){
   const kit = await sightTake("exact", 4, null);
   show("視奏 整組鼓", kit);
   if (process.env.DEBUG) console.log("  expected", kit.mic.expected.map(t => t.toFixed(3)).join(" "), "\n  detected", kit.mic.detected.map(t => t.toFixed(3)).join(" "), "\n  pieces", JSON.stringify(kit.plan.pieces.map(h => [h.time.toFixed(3), h.piece, h.vel])));
-  ok(kit.r && kit.r.score >= 85 && kit.r.hits / kit.r.total >= 0.9, `視奏 RSL 4 整組鼓(合併一條、官方速度)準時:分數 ${kit.r && kit.r.score}、命中 ${kit.r && kit.r.hits}/${kit.r && kit.r.total}(要 ≥ 85、≥ 90%)`);
+  // 命中門檻 93%:node 側同樣的混音漏偵 ≤ 2%(上面);瀏覽器端多了假麥克風開始放的時間、AudioContext 排程的抖動,每次會再差一兩下
+  // (這一題約 30–40 下,一兩下 = 3–6%)。95% 太接近會偶爾失敗;90% 太鬆,偵測真的變差(漏三成的輕 hi-hat 那種)也會過。93% = 留兩下的餘量
+  ok(kit.r && kit.r.score >= 85 && kit.r.hits / kit.r.total >= 0.93, `視奏 RSL 4 整組鼓(合併一條、官方速度)準時:分數 ${kit.r && kit.r.score}、命中 ${kit.r && kit.r.hits}/${kit.r && kit.r.total}(要 ≥ 85、≥ 93%)`);
 }
 async function earSide(){
   const fill = await earTake("fill", 3);
@@ -288,6 +317,10 @@ async function earSide(){
   const x = pb.r;
   ok(x && x.rows && x.rows.every(s => s >= 80), `聽力 Trinity 第二次準時:每一句 ${x && x.rows}(要都 ≥ 80)`);
   ok(pb.mic && pb.mic.removed >= Math.min(5, pb.plan.app.length / 2), `聽力 Trinity:App 自己那一句的鼓聲要被拿掉(拿掉 ${pb.mic && pb.mic.removed} / App ${pb.plan.app.length} 下)`);
+  const ms = await earMockSettle();
+  console.log(`聽力模擬考 錄完被打斷  馬上:${JSON.stringify(ms.soon)} · 2 秒後:${JSON.stringify(ms.later)}`);
+  ok(ms.soon.st === "run" && ms.soon.phase === "choose" && ms.soon.answers, `聽力模擬考:錄完 ${1.5} 秒內被打斷(iOS 切回只播放)模擬考不能中止、選譜要還在(${JSON.stringify(ms.soon)})`);
+  ok(ms.later.st !== "run", `聽力模擬考:錄完過了緩衝時間的打斷照樣中止(${JSON.stringify(ms.later)})`);
 }
 
 try {

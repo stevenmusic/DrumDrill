@@ -49,14 +49,16 @@ function band(x, lo, hi, sr){
 }
 export function detectHits(samples, sampleRate, { hop = MIC_HOP, refractory = MIC_REFRACTORY, bands = MIC_BANDS, overlap = MIC_OVERLAP, pad = MIC_PAD,
   bloomGap = MIC_BLOOM_GAP, bloomRise = MIC_BLOOM_RISE } = {}){
-  const k = hop / 0.01, n = Math.round(sampleRate * hop);
+  const k = hop / 0.01, n = Math.round(sampleRate * hop), frame = Math.round(sampleRate * k * 0.01);
   if (!samples || samples.length < n * 5) return [];
   let peak = 0;
   for (let f = 0; f + n <= samples.length; f += n) { let s = 0; for (let i = f; i < f + n; i++) s += samples[i] * samples[i]; peak = Math.max(peak, Math.sqrt(s / n)); }
   if (peak < SILENT_RMS) return [];
   const find = x => {
     if (pad > 0) { const y = new Float32Array(x.length + Math.round(x.length * pad)); y.set(x); x = y; }   // 後面補靜音(上面的說明)
-    return detectOnsets(x, sampleRate * k, { refractory: refractory / k }).map(t => t * k);
+    // detectOnsets 的一格 = round(sampleRate × hop) 個樣本,回傳「格數 × 0.01」:照實際的格長換回秒
+    // (44.1 kHz 時一格 220.5 → 221 個樣本,直接 × k 會越後面越早,一段 2 秒差到 7 ms;48 kHz 剛好整除,結果不變)
+    return detectOnsets(x, sampleRate * k, { refractory: refractory / k }).map(t => t * 100 * frame / sampleRate);
   };
   const all = [];
   let high = null;

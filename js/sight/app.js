@@ -177,7 +177,10 @@ export function enter(t){
 }
 /* 離開(切分頁、切到背景):停止播放、準備的倒數、正式打(不算分);題目保留;模擬考進行中就中止(回來時說明)。放掉整組鼓(聽力也沒拿著的話 60 秒後釋放,小鼓保留) */
 export function leave(){
-  active = false; mock.abort("leave"); stopAll();
+  active = false;
+  // 打開麥克風 / 錄完時 iOS 切換音訊工作階段造成的「打斷」(外框 leave + enter):不是使用者離開,模擬考不中止
+  if (!mic.shielded) mock.abort("leave");
+  stopAll();
   audio.dropKit("sight");
 }
 export function setExam(ex){
@@ -614,6 +617,7 @@ function renderMic(){
   box.disabled = !(ctx && ctx.setMicPref) || phase === "perform" || !!starting;
   pairText($("alongMicLabel"), () => tr(...MIC_TEXT.label));
   const note = $("alongMicNote");
+  if (!micOn()) micFail = null;   // 開關關掉了(包括在另一個模組關的):忘掉上一次打開失敗的原因
   note.classList.toggle("warn", !!micFail);
   pairText(note, () => tr(...(micFail ? micFailText(micFail) : MIC_TEXT.note)));
 }
@@ -1073,7 +1077,7 @@ $("generate").onclick = () => newTest();
 
 /* ── 正式打:預備拍(第一小節的拍號 1 小節)+ 拍點(可關);鼓墊的時間扣掉第一拍 → 從第一拍算起的秒數 ── */
 async function startPerform(){
-  if (!cur || starting) return;
+  if (!cur || starting || mic.opening) return;   // 麥克風打開中(iOS 打斷時外框 leave + enter 會清掉 starting)不能再開始一次
   if (phase === "perform") { stopPerform(); return; }
   if (mockOn() && phase === "prep") return;   // 模擬考:準備時間不能提早結束
   if (phase === "prep") endPrep(false);
@@ -1153,7 +1157,7 @@ function finishPerform(){
   // 麥克風:整體偏移(裝置的輸入、輸出延遲)不設上限,跟 PianoDrill 視奏的 scoreRhythm 一樣
   const r = scoreLanes(expected, taps, { tempoBpm: p.bpm, ...(p.mic ? { offsetLimit: Infinity } : {}) });
   lastResult = { r, taps: taps.length, devTaps, bpm: p.bpm, practice: !officialBpm(p.bpm), pb: cur.kind === "playback", lanes,
-    src: p.mic ? "mic" : "pad", silent, micFail: p.mic ? null : micFail };
+    src: p.mic ? "mic" : "pad", silent, micFail: p.mic || !micOn() ? null : micFail };
   const st = SS.stats[cur.key] || (SS.stats[cur.key] = { n: 0, hits: 0, total: 0 });
   st.n++;
   if (taps.length) { st.hits += r.hits; st.total += r.total; }   // 沒有敲鼓墊、麥克風沒聽到(例如在真的鼓上打、沒開麥克風):只算題數,不算進命中率

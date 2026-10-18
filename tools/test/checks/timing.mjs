@@ -190,20 +190,23 @@ export default function check(ok){
 
 /* 8. 麥克風的起音偵測(合成訊號) */
 export function checkMic(ok){
-  const SR = 48000, r = rng(3), times = [];
-  for (let t = 0.3; t < 4.3; t += 0.1) times.push(Math.round((t + 0.0023) * SR) / SR);   // 不在 5 ms 格子上
-  const x = new Float32Array(SR * 5);
-  times.forEach((t, i) => {
-    const a = i % 2 ? 0.25 : 0.8, s0 = Math.round(t * SR);
-    for (let k = 0; k < SR * 0.3 && s0 + k < x.length; k++) x[s0 + k] += a * (r() * 2 - 1) * Math.exp(-k / (SR * 0.03));
-  });
-  const det = detectHits(x, SR);
-  const errs = times.map(t => Math.min(...det.map(d => Math.abs(d - t))));
-  ok(det.length === times.length, `麥克風:${times.length} 下,找到 ${det.length}`);
-  ok(Math.max(...errs) <= 0.006, `麥克風:最大誤差 ${(Math.max(...errs) * 1000).toFixed(1)} ms(應該 ≤ 6)`);
-  const quiet = x.map(v => v * 0.002);
-  ok(detectHits(quiet, SR).length === 0, "麥克風:整段很小聲(最大的一格 RMS < 0.004)應該當作沒有聲音");
-  ok(detectHits(new Float32Array(100), SR).length === 0, "麥克風:太短的錄音 = 沒有");
+  // 48 kHz(大部分裝置)與 44.1 kHz(有些 iPhone / 藍牙耳機、Mac 的內建麥克風):hop、refractory 都照秒數換算,結果要一樣
+  for (const SR of [48000, 44100]) {
+    const r = rng(3), times = [], kHz = `${SR / 1000} kHz`;
+    for (let t = 0.3; t < 4.3; t += 0.1) times.push(Math.round((t + 0.0023) * SR) / SR);   // 不在 5 ms 格子上
+    const x = new Float32Array(SR * 5);
+    times.forEach((t, i) => {
+      const a = i % 2 ? 0.25 : 0.8, s0 = Math.round(t * SR);
+      for (let k = 0; k < SR * 0.3 && s0 + k < x.length; k++) x[s0 + k] += a * (r() * 2 - 1) * Math.exp(-k / (SR * 0.03));
+    });
+    const det = detectHits(x, SR);
+    const errs = times.map(t => Math.min(...det.map(d => Math.abs(d - t))));
+    ok(det.length === times.length, `麥克風 ${kHz}:${times.length} 下,找到 ${det.length}`);
+    ok(Math.max(...errs) <= 0.006, `麥克風 ${kHz}:最大誤差 ${(Math.max(...errs) * 1000).toFixed(1)} ms(應該 ≤ 6)`);
+    const quiet = x.map(v => v * 0.002);
+    ok(detectHits(quiet, SR).length === 0, `麥克風 ${kHz}:整段很小聲(最大的一格 RMS < 0.004)應該當作沒有聲音`);
+    ok(detectHits(new Float32Array(100), SR).length === 0, `麥克風 ${kHz}:太短的錄音 = 沒有`);
+  }
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
