@@ -141,7 +141,7 @@
 ### 決定 11:取樣與記憶體
 - **鼓件只用 12 個**:kick、snare、xstick、hhClosed、hhOpen、hhPedal、ride、rideBell、crashL、tom1(HT)、tom3(MT)、tom5(FT)。
 - **round-robin 上限**:
-  - iPhone 與小記憶體裝置:鼓皮每層 3 個、鈸類每層 2 個 → 立體聲解碼約 **76 MB**(照 manifest 的 frames 算)。
+  - iPhone 與小記憶體裝置:鼓皮每層 3 個、鈸類每層 2 個 → 立體聲解碼實測約 **83×10⁶ 位元組**(照 manifest 的 frames 算)。
   - 其他裝置:鼓皮 6 個、鈸 4 個 → 約 150 MB。
   - 技巧模組的小鼓維持現狀。
 - **離開視奏/聽力 60 秒後釋放**整組鼓,小鼓與拍點保留。
@@ -595,7 +595,7 @@
 
 **4. 驗收與測試**
 - 新增 `tools/test/kitaudio.mjs`:
-  - 載入後計算解碼的 frames 總數:iPhone UA ≤ 80 MB 等量,桌機 ≤ 160 MB。
+  - 載入後計算解碼的 frames 總數:iPhone UA ≤ 85×10⁶ 位元組,桌機 ≤ 170×10⁶ 位元組(十進位)。
   - hhOpen 接 hhClosed 時,舊的那一下被淡出。
   - `unloadKit` 之後 buffer 被釋放。
 - `sync.mjs` 的共用段落仍然一致。

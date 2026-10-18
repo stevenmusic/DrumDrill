@@ -31,7 +31,7 @@ const setup = async (no, bpm, opts) => {
     return { notes, clicks, perRound: notes + clicks };
   });
 };
-// 記下每個聲音節點的 stop 時間(audio.js:鼓聲 stop 在 min(長度, 2.5 秒)、拍點 0.4 秒;停止時 stopAll 再 stop 一次)
+// 記下每個聲音節點的 stop 時間(audio.js:鼓聲 stop 在錄音長度(照錄音自然響完)、拍點 0.4 秒;停止時 stopAll 再 stop 一次)
 await page.evaluate(() => {
   const P = AudioScheduledSourceNode.prototype, stop0 = P.stop;
   window.__nodes = [];
