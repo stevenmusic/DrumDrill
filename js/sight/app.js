@@ -41,7 +41,7 @@ import { timeline, clickAt, barAt } from "./meter.js";
 import { createHistory, generateUnique } from "./fingerprint.js";
 import { randomSeed } from "./random.js";
 import { addLog, cleanLog, renderLog as paintLog, today, nextGoal, cleanGoal } from "../shared/practicelog.js";
-import { createMock, abortText, paintCard, resultNote, mockLabel } from "../shared/mock.js";
+import { createMock, abortText, paintCard, resultNote, mockLabel, cardToTop } from "../shared/mock.js";
 import "./strings.js";
 const T = scoped("sight");
 
@@ -76,7 +76,7 @@ const save = () => { try { localStorage.setItem(KEY, JSON.stringify(SS)); } catc
 /* 譜面排法只留最近 LAYOUT_KEEP 筆(物件照寫入順序;用到的那一筆 fitScore 會移到最後) */
 function trimLayout(o){ const ks = Object.keys(o); for (const k of ks.slice(0, Math.max(0, ks.length - LAYOUT_KEEP))) delete o[k]; }
 /* 模擬考(下面「模擬考」一段):中止時停掉播放與計時,在畫面上就馬上畫出說明 */
-const mock = createMock({ store: SS, save, onAbort: () => { stopAll(); if (active) { render(); window.scrollTo({ top: 0 }); } } });
+const mock = createMock({ store: SS, save, onAbort: () => { stopAll(); if (active) { render(); cardToTop($("mockCard")); } } });
 const mockOn = () => mode === "exam" && mock.running();
 const history = createHistory({ capacity: 60, load: () => SS.history, save: e => { SS.history = e; save(); } });
 
@@ -85,7 +85,7 @@ let ctx = null, exam = null, active = false, mode = "free";
 let freeGrade = Number.isInteger(SS.pick.grade) ? Math.max(0, Math.min(8, SS.pick.grade)) : 0;
 let cur = null;               // { key:"rsl-3", sys, grade, kind:"snare"|"kit"|"playback", spec(出題參數), test, xml }
 let phase = "idle";           // idle | prep | ready(準備時間到)| perform | result
-let left = 0, countdown = 0, prepStarted = 0;
+let left = 0, countdown = 0, prepStarted = 0, prepEnd = 0;   // 倒數照 performance.now() 的終點算(主執行緒卡住也不會變慢)
 let perf = null;              // 正式打:{ t0, bpm, taps:[{lane, time}], startedAt }
 let playKind = null;          // 播放器正在播的:"metro"(準備時節拍器)| "perform" | "listen"
 let lastResult = null;
@@ -142,7 +142,7 @@ export async function start(c){
     get mock(){ return { state: mock.state, reason: mock.reason, stage: mock.data ? mock.data.stage : null, result: mock.data && mock.data.result ? { ...mock.data.result.r, taps: mock.data.result.taps } : null }; },
     startMock: () => startMock(),
     /* 測試用:模擬考的準備時間馬上到(90 秒太久) */
-    mockSkipPrep(){ if (mockOn() && phase === "prep") { left = 1; } }
+    mockSkipPrep(){ if (mockOn() && phase === "prep") { prepEnd = performance.now(); } }
   };
   window.__playback = { get playing(){ return player.state.playing; } };   // human.mjs:「不在畫面上的模組沒有在播放」
 }
@@ -196,7 +196,7 @@ export function onKey(e){
   if (e.code === "Space") {
     e.preventDefault();       // 不要捲動頁面
     if (phase === "perform") stopPerform(); else if (!$("play").disabled) toggleListen();
-  } else if ((e.key === "n" || e.key === "N") && !$("generate").disabled) newTest();
+  } else if ((e.key === "n" || e.key === "N") && !mockOn() && !$("generate").disabled) newTest();   // 模擬考中不能換題(換題會繞過「不能提早結束」)
 }
 
 /* ══ 畫面:檢定頁 / 自由練習(有題目 / 只有說明)══ */
@@ -960,7 +960,7 @@ function startPrep(){
   if (phase === "prep") { endPrep(false); return; }   // 「結束準備」
   if (phase === "perform") stopPerform();
   if (playKind === "listen") stopListening();
-  phase = "prep"; left = prepSec(); prepStarted = performance.now();
+  phase = "prep"; left = prepSec(); prepStarted = performance.now(); prepEnd = prepStarted + left * 1000;
   lastResult = null;   // 上一次的練習回饋清掉(換語言時 renderResult 不會把它叫回來)
   $("countdown").hidden = false; $("countdown").className = "countdown running"; $("countdownValue").textContent = String(left);
   showFloat(left);
@@ -972,10 +972,10 @@ function startPrep(){
   bringScoreIntoView();
   clearInterval(countdown);
   countdown = setInterval(() => {
-    left -= 1;
-    $("countdownValue").textContent = String(Math.max(0, left)); showFloat(Math.max(0, left));
+    const l = Math.max(0, Math.ceil((prepEnd - performance.now()) / 1000 - 1e-3));
+    if (l !== left) { left = l; $("countdownValue").textContent = String(left); showFloat(left); }
     if (left <= 0) endPrep(true);
-  }, 1000);
+  }, 200);
   if (SS.metroPractice) startMetro();
 }
 async function startMetro(){
@@ -1058,7 +1058,7 @@ function abortPerform(){
   perf = null; phase = "idle"; stage && stage.end();
   renderAlongLabel(); renderPrepareLabel(); syncButtons();
   if (active) say(() => tr("停止了(這一次不算)。", "Stopped (not counted)."));
-  if (mockOn()) { mock.data.stopped = true; mock.finish(); render(); window.scrollTo({ top: 0 }); }   // 模擬考:自己按停止 = 結束(正式打記「中途停止」)
+  if (mockOn()) { mock.data.stopped = true; mock.finish(); render(); cardToTop($("mockCard")); }   // 模擬考:自己按停止 = 結束(正式打記「中途停止」)
 }
 /* 打完:照題目的每一個音評節奏(js/shared/timing.js;扣掉整體的固定延遲)→ 練習回饋 + 自我檢查;算一題練習。
    整組鼓:3 個鼓墊各自配對(鈸 / 鼓 / 大鼓與腳踩 HH);裝飾音不算(hitsOnly);自由發展的小節不評分(那裡的敲擊不算多打) */
@@ -1086,7 +1086,7 @@ function finishPerform(){
   renderResult();
   showChecklist("self");
   say(() => tr("打完了。看下面的練習回饋與自我檢查;可以按 ▶ 聽正確版本對照。", "Done. See the feedback and self-check below; tap ▶ to hear the correct version."));
-  if (mockOn()) { mock.data.result = lastResult; mock.finish(); render(); window.scrollTo({ top: 0 }); }   // 模擬考:正式打完 = 結果
+  if (mockOn()) { mock.data.result = lastResult; mock.finish(); render(); cardToTop($("mockCard")); }   // 模擬考:正式打完 = 結果
   renderStats();
   if (ctx) ctx.examChanged();
 }
@@ -1207,7 +1207,7 @@ function startMock(){
   newTest();
   if (!cur || cur.key !== keyOf(ex.system, ex.grade)) { mock.close(); render(); return; }
   render();
-  window.scrollTo({ top: 0 });
+  cardToTop($("mockCard"));
   startPrep();
   say(() => (cur && cur.kind === "playback" ? tr(`模擬考:看譜 ${prepSec()} 秒(不能暫停),時間到自動正式打一次。`, `Mock: ${prepSec()} s to study (no pausing); then you perform it once.`)
     : tr(`模擬考:準備 ${prepSec()} 秒(不能暫停),時間到自動正式打一次。`, `Mock: ${prepSec()} s to prepare (no pausing); then you perform it once.`)));
@@ -1227,7 +1227,7 @@ function renderMockCard(){
   const ex = curExam(), ms = mock.state, card = $("mockCard");
   card.hidden = mode !== "exam" || (ms === "idle" && ex.auto);
   if (card.hidden) return;
-  const sys = mock.data ? mock.data.sys : ex.system, g = mock.data ? mock.data.grade : ex.grade, pb = sys === "trinity";
+  const { sys, grade: g } = mock.who(ex), pb = sys === "trinity";
   const name = `${sysName(sys)} ${gl(g, sys)}`;
   $("mockOpts").hidden = !(ms === "idle" || (ms === "run" && mock.data.stage === "prep")) || !practicable(ex.system, ex.grade);
   $("mockMetro").setAttribute("aria-pressed", String(!!SS.metroPractice));

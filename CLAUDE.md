@@ -11,7 +11,7 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
 - 底部四個分頁:**技巧 / 視奏 / 聽力 / 檢定**。頂欄下面的子項目分段鈕:技巧 = 滾奏/複點/Flam/Drag(PAS 四大類)、視奏 = 級數 0–8(第一格 RSL 寫 D、Trinity 寫 I,aria-label 寫完整級名;沒選考試時用 RSL)、檢定 = 技巧/視奏/聽力
 - 檢定:考試系統 **Trinity Rock & Pop Drums**(初級 Initial、1–8 級)與 **RSL Rockschool Drums**(入門 Debut、1–8 級),在外框設一次(`js/main.js`)
   - Trinity 只採用 Rock & Pop 大綱;不用 Drum Kit & Percussion 系列的要求(記譜圖例用到 DK p.107 是例外,要標出處)
-  - 檢定頁不顯示練習紀錄(練習回饋不跟配分、等第放在同一個畫面,也不換算成官方分數)
+  - 檢定頁不顯示練習紀錄(模擬考的進行中 / 結果 / 中止說明例外:那個畫面藏起配分、等第與規格卡,只有各項練習回饋,不算總分)
 - 第一次打開問「你在準備爵士鼓檢定嗎?」:選了 → 打開檢定分頁;不考 → 技巧分頁自由練習
 - 模組 `js/tech/app.js`(基本打法)、`js/sight/app.js`、`js/ear/app.js` 匯出同一組函式:`start(ctx)`、`enter(tab)`、`leave()`、`setExam(exam)`、`relang()`、`examStatus()`、`onKey(e)`
   - 離開模組(`leave`)一定要停止播放與計時(但不清題目;`enter` 有題目就不重新出題);模組看不到時不要量版面(寬度是 0),回到畫面再畫
@@ -63,7 +63,11 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
   - 聽力:RSL = Fill → Groove 各一題(自動聽兩次、不能重聽、不能看答案;練習後回打;Fill 再選譜);Trinity = Playback(看譜 30 秒 → 第一次 → 第二次,自動接下去)
   - 進行中、結果、中止的說明:考試摘要(配分、等第)與規格卡 / 本級要求藏起來;結果只有各項的練習回饋(節奏吻合度、選譜對錯、完成與否),
     **不算總分、不出現 Pass / Merit / Distinction、不換算官方分數**;practiceOnly
-  - 中途切分頁、切到背景、重新整理、旋轉螢幕(直式 ↔ 橫式)、換考試 = 中止:不殘留播放與計時,回到檢定頁說明「模擬考已中止」(重新整理靠各模組 localStorage 的 `mockRun` 標記)
+  - 中途切分頁、切到背景、重新整理、旋轉螢幕(直式 ↔ 橫式)、換考試 = 中止:不殘留播放與計時,回到檢定頁說明「模擬考已中止」(重新整理靠各模組 localStorage 的 `mockRun` 標記;
+    說明的系統與級數用 `mockRun` 存的 {sys, grade}(`mock.who`),不用現在的考試);自動開始的那一步(聽力自動聽題目、Trinity 自動第一次 / 第二次)鼓聲載入失敗 = 中止(`abort("load")`)
+  - 按「停止模擬考」= `close()`(不算、回到檢定頁);開始、結果、中止時把模擬考卡捲到頂欄下(`cardToTop`;手機橫式、折疊機才看得到);模擬考中不能換題(視奏的 N 鍵也不行)
+  - 準備 / 看譜的倒數照 `performance.now()` 的終點算(主執行緒卡住也不會變慢)
+  - 技巧:練習型標「App 依大綱時值排的練習型 · 不是官方譜」(`t-mockMsg`)、時值推估的加「推估」標籤;進行中的說明寫官方速度的頁碼;混合組(pattern + book)結果註明檢定書的項目這次沒練;沒選考試時不顯示模擬考卡(跟視奏、聽力一樣)
   - 進行中、結果也算進練習紀錄(真的打了);測試掛鉤:`__tech.startMock / mockNext / mockFinishRun`、`__sight.startMock / mockSkipPrep`、`__ear.startMock / mockNext / mockSkipStudy`
 - **練習紀錄**(`js/shared/practicelog.js`;三個模組同一個格式,PianoDrill 的樣式):三格數字 + 每週目標(`.goal`,最近 7 天的分鐘數;點一下換 15/30/60/90/120/180,預設 60,存各自 localStorage 的 `goal`)+ 最近 7 天
   - 技巧:連續天數 / 今天次數 / 今天分鐘;視奏:連續天數 / 今天題數 / 今天分鐘 + 各級練過題數(`#s-statsCard`);聽力:連續天數 / 今天題數 / 今天正確率(`e-logAcc` = 回打命中的音 + 選對的譜 ÷ 全部)+ 各題型正確率(`#e-statsCard`)
@@ -77,7 +81,7 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
 - localStorage:`drumdrill.v1`(外框)、`drumdrill.tech.v1`(技巧:熟練度、速度、`log`、`goal`、`mockOneBar`、`mockRun`)、`drumdrill.sight.v1`(視奏:pick、節拍器 / 拍點開關、`bpmOverride` 每一級各自的練習速度(`rsl-3`、`trinity-4`)、
   出題歷史、`stats`〔"rsl-3": {n, hits, total}〕各級練過幾題、`log`、`goal`、`mockRun`、譜面排法;讀進來先消毒)、`drumdrill.ear.v1`(聽力:`grades` 各系統的級數、`examSeen`、Trinity 每一級的練習速度 `bpmBy`(`trinity-4`)、`hideChart`、
   `stats`〔"rsl-3-fill": {n, picks, ok, hits, total}〕、`log`〔日期: {n, sec, hits, total}〕、`goal`、`mockRun`;讀進來先消毒)、`drumdrill-lang`(語言)。
-  `log` 的格式三個模組一樣:`{ "YYYY-MM-DD": { n, sec } }`;`mockRun` = 進行中的模擬考標記(正常結束拿掉;重新整理後還在 = 說明「模擬考已中止」)
+  `log` 的格式三個模組一樣:`{ "YYYY-MM-DD": { n, sec } }`,聽力另外有 `hits`、`total`(今天正確率);三個模組讀進來都用 `cleanLog` 消毒(技巧在 `js/tech/store.js`);`mockRun` = 進行中的模擬考標記(正常結束拿掉;重新整理後還在 = 說明「模擬考已中止」)
 
 ## 絕不能做的事
 - **不要有 build step**:多檔 ES modules,直接部署 GitHub Pages(main 根目錄);App 版只是把同樣的檔案複製到 `app/www`

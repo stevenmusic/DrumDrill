@@ -11,7 +11,7 @@ import { createScore } from "../shared/score.js";
 import { createTempo } from "../shared/tempo.js";
 import { fitLandZoom, createLandPlay } from "../shared/landscape.js";
 import { addLog, renderLog as paintLog, today, nextGoal, cleanGoal } from "../shared/practicelog.js";
-import { createMock, abortText, paintCard, resultNote, mockLabel } from "../shared/mock.js";
+import { createMock, abortText, paintCard, resultNote, mockLabel, cardToTop } from "../shared/mock.js";
 import "./strings.js";
 const T = scoped("tech");
 
@@ -27,7 +27,7 @@ let bpm = 60;
    換到別的打法(選擇器、別的類別)自動離開 */
 let target = null, lastKey = null;
 /* 模擬考(下面「模擬考」一段):中止時停止播放、速度還原,在檢定頁就重畫(說明「模擬考已中止」) */
-const mock = createMock({ store: S, save: store.save, onAbort: () => { stopPlayback(); mockRestore(); if (tab === "exam") renderExam(); } });
+const mock = createMock({ store: S, save: store.save, onAbort: () => { stopPlayback(); mockRestore(); if (tab === "exam") { renderExam(); if (active) cardToTop($("mockCard")); } } });
 let mockSaved = null;   // 開始模擬考前的速度(結束後還原;目標模式的速度也不受影響)
 
 /* ══ 外框呼叫 ══ */
@@ -746,12 +746,13 @@ function startMock(){
   const items = techItems(ex.grade, d);
   const steps = d.tech[ex.grade].groups.map(gr => {
     const pool = items.filter(x => x.group === gr.id && (x.kind === "pas" || x.kind === "pattern"));
-    return { gr, it: pool.length ? pool[Math.floor(Math.random() * pool.length)] : null, status: "todo" };
+    const book = items.filter(x => x.group === gr.id && x.kind === "book").length;   // 混合組:只在檢定書的項目這次沒練(結果註明)
+    return { gr, it: pool.length ? pool[Math.floor(Math.random() * pool.length)] : null, status: "todo", book: pool.length ? book : 0 };
   });
   mockSaved = { bpm };
   mock.begin({ sys: "rsl", grade: ex.grade, steps, i: 0 }, { sys: "rsl", grade: ex.grade });
   goMockStep(0);
-  window.scrollTo({ top: 0 });
+  cardToTop($("mockCard"));
 }
 function goMockStep(i){
   stopPlayback();
@@ -795,7 +796,7 @@ function finishMock(){
   mock.finish();
   mockRestore();
   renderExam();
-  window.scrollTo({ top: 0 });
+  cardToTop($("mockCard"));
   if (ctx) ctx.examChanged();
 }
 /* 模擬考結束(做完、中止、停止):速度還原;技巧分頁回來時 switchTab 會照自己的選擇重設打法 */
@@ -811,7 +812,8 @@ const stepName = st => () => (st.it ? itemName(st.it) : L(st.gr.name));
 const stepDetail = (st, i) => () => {
   const b = st.gr.bpm ? `♩=${st.gr.bpm}` : "";
   const mk = mock.state === "result" && mock.data.marks ? mock.data.marks[i] : "";
-  const mark = mk === "good" ? tr(" · 已經會了", " · got it") : mk === "weak" ? tr(" · 待加強", " · needs work") : "";
+  const mark = (mk === "good" ? tr(" · 已經會了", " · got it") : mk === "weak" ? tr(" · 待加強", " · needs work") : "")
+    + (mock.state === "result" && st.book ? tr(` · 這一組另有 ${st.book} 項只在檢定書(這次沒練)`, ` · ${st.book} more in the grade book (not practised)`) : "");
   if (st.status === "skip") return tr("這一組請用檢定書練(App 沒有譜)", "Use the grade book for this group (no part in the App)");
   if (st.status === "done") return tr(`跟拍點打完 · ${b}`, `Played through with the click · ${b}`) + mark;
   if (st.status === "stopped") return tr(`中途停止 · ${b}`, `Stopped part-way · ${b}`) + mark;
@@ -822,10 +824,10 @@ const stepMark = (st, i) => (st.status === "done" ? "ok" : st.status === "skip" 
 /* 模擬考卡:檢定頁的說明 + 開始 / 進行中的進度 / 結果 / 中止的說明 */
 function renderMockCard(d, g){
   const ex = curExam(), card = $("mockCard"), ms = mock.state;
-  card.hidden = !(ms !== "idle" || ex.system === "rsl" || !ex.auto);
+  card.hidden = ms === "idle" && !!ex.auto;   // 沒選考試:跟視奏、聽力一樣不顯示模擬考卡
   if (card.hidden) return;
   const name = (sys, gg) => `${sys === "rsl" ? "RSL" : "Trinity"} ${ctx.gradeLabel(gg, sys)}`;
-  const g0 = mock.data ? mock.data.grade : g;
+  const g0 = mock.who(ex).grade;   // 中止的說明(含重新整理後):那一場的級數
   $("mockOpts").hidden = !((ms === "idle" || ms === "run") && ex.system === "rsl" && oneBarOK(g0));
   if (!$("mockOpts").hidden) {
     $("mockOneBar").setAttribute("aria-pressed", String(!!S.mockOneBar));
@@ -833,7 +835,7 @@ function renderMockCard(d, g){
   }
   const rows = mock.data && (ms === "run" || ms === "result") ? mock.data.steps.map((st, i) => ({ id: st.gr.id, name: stepName(st), detail: stepDetail(st, i), mark: stepMark(st, i) })) : null;
   if (ms === "aborted") {
-    paintCard($, { title: () => tr("模擬考已中止", "Mock exam stopped"), sub: name("rsl", g0), text: () => abortText(mock.reason),
+    paintCard($, { title: () => tr("模擬考已中止", "Mock exam stopped"), sub: name(mock.who(ex).sys, g0), text: () => abortText(mock.reason),
       btn: ex.system === "rsl" && !ex.auto && d ? { label: () => mockLabel("aborted") } : null, close: { label: () => tr("回到本級要求", "Back to the list") } });
     if (active) mock.seen();
     return;
@@ -850,8 +852,9 @@ function renderMockCard(d, g){
   if (ms === "run") {
     const m = mock.data;
     paintCard($, { title: () => tr("模擬考 · 技巧", "Mock exam · Technique"), sub: tr(`${m.i + 1} / ${m.steps.length} 組`, `Group ${m.i + 1} / ${m.steps.length}`),
-      text: () => (oneBarOK(m.grade) ? tr("每一組抽一項,照官方速度;按 ▶ 開始(預備拍 1 小節)。", "One item per group at the official tempo; tap ▶ to start (1-bar count-in).")
-        : tr("每一組抽一項,照官方速度跟拍點打;按 ▶ 開始(預備拍 1 小節)。", "One item per group with the click at the official tempo; tap ▶ to start (1-bar count-in).")),
+      text: () => { const p = d && d.tech && d.tech[m.grade] ? srcOf("rsl", d.tech[m.grade].src.p) : "";
+        return oneBarOK(m.grade) ? tr(`每一組抽一項,照官方速度(${p});按 ▶ 開始(預備拍 1 小節)。`, `One item per group at the official tempo (${p}); tap ▶ to start (1-bar count-in).`)
+          : tr(`每一組抽一項,照官方速度(${p})跟拍點打;按 ▶ 開始(預備拍 1 小節)。`, `One item per group with the click at the official tempo (${p}); tap ▶ to start (1-bar count-in).`); },
       rows, btn: { label: () => mockLabel("run") }, note: () => tr(`每一項 ${MOCK_BEATS / 4} 小節(${TS("srcPractice")})。`, `${MOCK_BEATS / 4} bars each (${TS("srcPractice").toLowerCase()}).`) + " " + resultNote() });
     return;
   }
@@ -878,7 +881,8 @@ function renderMockStep(){
   pairText($("mockNextLabel"), () => (last ? tr("結束", "Finish") : tr("下一組", "Next group")));
   renderMockTitle();
   const one = !!S.mockOneBar && oneBarOK(m.grade);
-  pairText($("mockMsg"), () => (!st.it ? tr("這一組請用檢定書練(譜只在官方檢定書);按「下一組」繼續。", "Use the grade book for this group (the part is only in the book); tap Next group.")
+  const ptn = () => (st.it && st.it.kind === "pattern" ? tr("App 依大綱時值排的練習型 · 不是官方譜。", "App drill in the syllabus values · not the official part. ") : "");
+  pairText($("mockMsg"), () => ptn() + (!st.it ? tr("這一組請用檢定書練(譜只在官方檢定書);按「下一組」繼續。", "Use the grade book for this group (the part is only in the book); tap Next group.")
     : st.status === "done" ? tr("完成。可以標熟練度,再按「下一組」。", "Done. Mark it if you like, then tap Next group.")
     : st.status === "stopped" ? tr("中途停止。可以再按 ▶ 打一次,或按「下一組」。", "Stopped. Tap ▶ to play it again, or Next group.")
     : one ? tr("按 ▶:一小節拍點之後自己保持速度打。", "Tap ▶: one bar of click, then keep the tempo yourself.")
@@ -889,8 +893,9 @@ function renderMockStep(){
 function renderMockTitle(){
   const st = mockStep(); if (!st) return;
   $("qTitle").textContent = st.it ? itemName(st.it) : L(st.gr.name);
-  // 組別、官方速度(頁碼在模擬考卡的說明裡)、練習型;中英數量一樣,都不縮成「…」
-  const tags = [tr(`${st.gr.id} 組`, `Group ${st.gr.id}`), st.gr.bpm ? `♩=${st.gr.bpm}` : "♩ —", st.it && st.it.kind === "pattern" ? tr("App 練習型", "App drill") : null].filter(Boolean);
+  // 組別、官方速度(頁碼在模擬考卡的說明裡)、練習型、推估;中英數量一樣,都不縮成「…」
+  const tags = [tr(`${st.gr.id} 組`, `Group ${st.gr.id}`), st.gr.bpm ? `♩=${st.gr.bpm}` : "♩ —", st.it && st.it.kind === "pattern" ? tr("App 練習型", "App drill") : null,
+    st.it && st.it.kind === "pattern" && st.it.assumed ? TS("srcAssumed") : null].filter(Boolean);   // 時值是推估的(4 級 C 組 Flam tap)
   $("qTags").innerHTML = tags.map(t => `<span class="q-tag">${t}</span>`).join("");
 }
 

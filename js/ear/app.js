@@ -40,7 +40,7 @@ import { toEvents, hitsOnly } from "../shared/kitevents.js";
 import { genChart, phraseSpec, playbackParams, NOTES as PB_NOTES } from "../shared/playbackgen.js";
 import { genFill, fillOptions, genGroove, NOTES as EAR_NOTES } from "./gen.js";
 import { addLog, cleanLog, renderLog as paintLog, today, nextGoal, cleanGoal } from "../shared/practicelog.js";
-import { createMock, abortText, paintCard, mockLabel } from "../shared/mock.js";
+import { createMock, abortText, paintCard, mockLabel, cardToTop } from "../shared/mock.js";
 import "./strings.js";
 const T = scoped("ear");
 
@@ -78,7 +78,7 @@ const SS = (() => {
 })();
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(SS)); } catch (e) {} };
 /* 模擬考(下面「模擬考」一段):中止時停掉播放與計時,在畫面上就馬上畫出說明 */
-const mock = createMock({ store: SS, save, onAbort: () => { stopAll(); if (active) { render(); window.scrollTo({ top: 0 }); } } });
+const mock = createMock({ store: SS, save, onAbort: () => { stopAll(); if (active) { render(); cardToTop($("mockCard")); } } });
 const mockOn = () => mode === "exam" && mock.running();
 const mockRes = () => (mockOn() ? mock.data.res[mock.data.i] : null);
 
@@ -89,7 +89,7 @@ let phase = "idle";    // RSL:idle | practice(聽過了)| perform | choose(Fill 
 let playKind = null;   // 播放器正在播的:"listen"(RSL 聽題目 / Trinity 聽整份)| "perform"(RSL 回打)| "pass"(Trinity 第一次 / 第二次)
 let perf = null;       // 回打中:{ t0, bpm, taps:[{lane, time}], startedAt, tl, pass }
 let tl = null;         // 正在播的時間軸(timeline())
-let lastMsg = null, starting = 0, countdown = 0, left = 0, studyStarted = 0, drawn = 0;
+let lastMsg = null, starting = 0, countdown = 0, left = 0, studyStarted = 0, studyEnd = 0, drawn = 0;   // 看譜倒數照 performance.now() 的終點算
 
 const curExam = () => exam || { system: "trinity", grade: 1, auto: true };
 const sysName = sys => (sys === "rsl" ? "RSL" : "Trinity");
@@ -127,7 +127,7 @@ export async function start(c){
     get mock(){ return { state: mock.state, reason: mock.reason, i: mock.data ? mock.data.i : null, res: mock.data ? mock.data.res.map(r => ({ type: r.type, stage: r.stage, stopped: !!r.stopped, pick: r.pick || null, score: r.r ? summary(r.r) : null })) : null }; },
     startMock: () => startMock(), mockNext: () => mockNext(),
     /* 測試用:模擬考的看譜時間馬上到 */
-    mockSkipStudy(){ if (mockOn() && phase === "study") left = 1; },
+    mockSkipStudy(){ if (mockOn() && phase === "study") studyEnd = performance.now(); },
     set unloadMs(v){ audio.kitRelease.ms = v; }, get unloadMs(){ return audio.kitRelease.ms; }   // 等待時間在 audio.js(視奏、聽力共用)
   };
 }
@@ -579,8 +579,10 @@ async function toggleListen(){
   if (playKind === "listen") { stopPlayer(); say(() => tr("停止了。", "Stopped.")); return; }
   if (playKind === "perform" || playKind === "pass") stopRun();
   if (phase === "study") endStudy(false);
-  if (!(await ready())) return;
-  if (playKind) return;
+  const mk = mockOn() ? mock.id : 0;
+  // 模擬考(自動聽題目):鼓聲載入失敗就中止(不能重聽,按鈕都鎖著,不中止會卡住)
+  if (!(await ready())) { if (loadFailed && mk && mock.alive(mk) && active) mock.abort("load"); return; }
+  if (playKind || (mk && !mock.alive(mk))) return;
   const bpm = bpmNow(), c = cur.q;
   let t;
   if (cur.sys === "rsl") {
@@ -782,17 +784,17 @@ function startStudy(){
   if (!cur || cur.sys !== "trinity") return;
   if (phase === "study") { endStudy(false); return; }
   if (playKind) { if (playKind === "pass") stopRun(); else stopPlayer(); }
-  phase = "study"; left = studySec(); studyStarted = performance.now();
+  phase = "study"; left = studySec(); studyStarted = performance.now(); studyEnd = studyStarted + left * 1000;
   $("countdown").hidden = false; $("countdown").className = "countdown running"; $("countdownValue").textContent = String(left);
   showFloat(left);
   say(() => tr("看譜中:可以在鼓墊上試打(不計分)。", "Study the chart; try it on the pads (not scored)."));
   bringIntoView($("scoreCard"));
   clearInterval(countdown);
   countdown = setInterval(() => {
-    left -= 1;
-    $("countdownValue").textContent = String(Math.max(0, left)); showFloat(Math.max(0, left));
+    const l = Math.max(0, Math.ceil((studyEnd - performance.now()) / 1000 - 1e-3));
+    if (l !== left) { left = l; $("countdownValue").textContent = String(left); showFloat(left); }
     if (left <= 0) endStudy(true);
-  }, 1000);
+  }, 200);
   syncButtons();
 }
 function endStudy(done){
@@ -834,7 +836,8 @@ async function startPass(){
   if (phase === "study") endStudy(false);
   if (playKind) stopPlayer();
   const mk = mockOn() ? mock.id : 0;
-  if (!(await ready())) { if (mk && mock.alive(mk)) syncButtons(); return; }
+  // 模擬考(Trinity 自動第一次 / 第二次):鼓聲載入失敗就中止(按鈕只能停止,不中止會卡住)
+  if (!(await ready())) { if (loadFailed && mk && mock.alive(mk) && active) mock.abort("load"); return; }
   if (playKind || (mk && !mock.alive(mk))) return;
   const k = cur.pass >= 1 && phase !== "result" ? 2 : 1;
   if (k === 1) { cur.pass = 0; cur.result = null; $("alongResult").hidden = true; }
@@ -1006,8 +1009,10 @@ function loading(p){
 }
 const within = (p, ms) => Promise.race([p, new Promise(r => setTimeout(r, ms))]);
 /* 叫醒音訊、等取樣;回傳 false = 不能播(取樣沒載到、等的時候離開了 / 換題了) */
+let loadFailed = false;   // 最近一次 ready() 是不是因為鼓聲載入失敗(模擬考自動開始的那一步用來決定要不要中止)
 async function ready(){
   const token = starting = Date.now() + Math.random(), c0 = cur;
+  loadFailed = false;
   syncButtons();
   const actx = audio.ensureAudio();
   if (actx.state !== "running") await within(actx.resume().catch(() => {}), 1500);
@@ -1016,7 +1021,7 @@ async function ready(){
   const still = starting === token && active && cur === c0;
   if (starting === token) starting = 0;
   syncButtons();
-  if (!ok) { say(() => tr("鼓聲載入失敗,再按一次重試(需要網路,之後會存在裝置上)", "Could not load the drums — try again (needs internet once; then cached)")); return false; }
+  if (!ok) { loadFailed = true; say(() => tr("鼓聲載入失敗,再按一次重試(需要網路,之後會存在裝置上)", "Could not load the drums — try again (needs internet once; then cached)")); return false; }
   return still;
 }
 
@@ -1259,7 +1264,7 @@ function mockQuestion(i){
   newQuestion(undefined, { sys: m.sys, g: m.grade, t });
   if (!cur || cur.type !== t) { mock.close(); render(); return; }
   render();
-  window.scrollTo({ top: 0 });
+  cardToTop($("mockCard"));
   if (!active) return;
   if (t === "playback") startStudy(); else toggleListen();
 }
@@ -1277,7 +1282,7 @@ function finishMock(){
   mock.finish();
   stopAll();
   render();
-  window.scrollTo({ top: 0 });
+  cardToTop($("mockCard"));
   if (ctx) ctx.examChanged();
 }
 $("mockBtn").onclick = () => {
@@ -1312,7 +1317,7 @@ function renderMockCard(){
   const ex = curExam(), ms = mock.state, card = $("mockCard");
   card.hidden = mode !== "exam" || (ms === "idle" && ex.auto);
   if (card.hidden) return;
-  const sys = mock.data ? mock.data.sys : ex.system, g = mock.data ? mock.data.grade : ex.grade, name = `${sysName(sys)} ${gl(g, sys)}`;
+  const { sys, grade: g } = mock.who(ex), name = `${sysName(sys)} ${gl(g, sys)}`;
   const queue = ex.system === "rsl" ? ["fill", "groove"] : ["playback"], ok = !ex.auto && queue.every(t => practicable(ex.system, ex.grade, t));
   const rows = () => mock.data.queue.map((t, i) => {
     const r = mock.data.res[i];
