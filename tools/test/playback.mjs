@@ -1,5 +1,7 @@
 // 播放的排程與停止(Playwright):
-//  1. 技巧 #20 Flam,♩=240,循環播放 20 輪:每輪自然播完時,還排著的聲音節點 ≤ 一輪的節點數 + 拍點數(播完的節點自己移除,不會越積越多)
+//  1. 技巧 #20 Flam,♩=240,循環播放 20 輪:每輪自然播完時,還排著的聲音節點 ≤「照每個節點的 stop 時間,這時候還在響的」節點數
+//     (測試把 AudioBufferSourceNode 的 start/stop 時間記下來,門檻就是實際值;播完的節點自己移除,不會越積越多)
+//  1b. 循環 + 每輪 +4(ramp)跑 3 輪:每輪播完時「排程中 − 還在響」不增加(= 0,沒有一輪一輪累積),速度 +12
 //  2. 播放中按停止:300ms 後排程中的節點 = 0,技巧的播放狀態是停止
 //  3. 切到背景(visibilitychange → hidden):播放停止;回到前景不會自己開始播
 //  4. 播放中換語言:不停止播放,題目、選擇器、按鈕文字換成新語言
@@ -28,6 +30,14 @@ const setup = async (no, bpm, opts) => {
     return { notes, clicks, perRound: notes + clicks };
   });
 };
+// 記下每個聲音節點的 stop 時間(audio.js:鼓聲 stop 在 min(長度, 2.5 秒)、拍點 0.4 秒;停止時 stopAll 再 stop 一次)
+await page.evaluate(() => {
+  const P = AudioScheduledSourceNode.prototype, stop0 = P.stop;
+  window.__nodes = [];
+  P.stop = function(when){ if (!this.__rec) { this.__rec = true; this.__made = this.context.currentTime; window.__nodes.push(this); } this.__stopAt = when || 0; return stop0.apply(this, arguments); };
+});
+// 自然播完的那一刻(lastEnd.at)還在響的節點:那時候之前就排好(下一輪是同一刻或之後才排,不算)、stop 時間在那之後(多留 0.1 秒給 onended 事件晚一點才到)
+const alive = at => page.evaluate(at => window.__nodes.filter(n => n.__made < at && n.__stopAt > at - 0.1).length, at);
 const click = () => page.click("#t-playBtn");
 
 // 1. 循環 20 輪
@@ -35,17 +45,40 @@ const click = () => page.click("#t-playBtn");
   const r = await setup(20, 240, { loop: true });
   const ends0 = (await state()).lastEnd.n;
   await click();
-  const seen = [];
+  const seen = [], lims = [];
   for (let k = 1; k <= 20; k++) {
     try { await waitFor(n => window.__tech.state.lastEnd.n >= n, ends0 + k, 30000); }
     catch (e) { fail(`第 ${k} 輪沒有自然播完`); break; }
-    const s = await state();
-    seen.push(s.lastEnd.scheduled);
-    if (s.lastEnd.scheduled > r.perRound) fail(`第 ${k} 輪播完時還排著 ${s.lastEnd.scheduled} 個節點 > 一輪 ${r.perRound}(音 ${r.notes} + 拍點 ${r.clicks})`);
+    const s = await state(), lim = await alive(s.lastEnd.at);
+    seen.push(s.lastEnd.scheduled); lims.push(lim);
+    if (s.lastEnd.scheduled > lim) fail(`第 ${k} 輪播完時還排著 ${s.lastEnd.scheduled} 個節點 > 照 stop 時間還在響的 ${lim}(一輪共 ${r.perRound})`);
   }
-  if (!bad) ok(`#20 Flam ♩=240 循環 20 輪:每輪播完時排程中的節點 ${Math.min(...seen)}–${Math.max(...seen)} ≤ 一輪 ${r.perRound}`);
+  if (!bad) ok(`#20 Flam ♩=240 循環 20 輪:每輪播完時排程中的節點 ${Math.min(...seen)}–${Math.max(...seen)} ≤ 照 stop 時間還在響的 ${Math.min(...lims)}–${Math.max(...lims)}(一輪共 ${r.perRound})`);
   await click();   // 停止
   await page.waitForTimeout(300);
+}
+
+// 1b. 循環 + 每輪 +4,跑 3 輪
+{
+  const bpm0 = 200;
+  await setup(20, bpm0, { loop: true, ramp: true });
+  const ends0 = (await state()).lastEnd.n, n0 = bad;
+  await click();
+  const seen = [], extra = [];
+  for (let k = 1; k <= 3; k++) {
+    try { await waitFor(n => window.__tech.state.lastEnd.n >= n, ends0 + k, 30000); }
+    catch (e) { fail(`每輪 +4:第 ${k} 輪沒有自然播完`); break; }
+    const s = await state(), lim = await alive(s.lastEnd.at);
+    seen.push(s.lastEnd.scheduled); extra.push(Math.max(0, s.lastEnd.scheduled - lim));
+  }
+  const bpmNow = (await state()).bpm;
+  await click(); await page.waitForTimeout(300);
+  if (seen.length === 3) {
+    if (extra.some((x, i) => x > (i ? extra[i - 1] : 0))) fail(`每輪 +4:每輪播完時「排程中 − 還在響」在增加 ${extra.join(" → ")}(排程中 ${seen.join(" → ")})`);
+    if (bpmNow !== bpm0 + 12) fail(`每輪 +4:3 輪之後速度是 ${bpmNow},應該是 ${bpm0 + 12}`);
+  }
+  if (bad === n0) ok(`#20 循環 + 每輪 +4(♩=${bpm0}→${bpmNow})3 輪:每輪播完時「排程中 − 還在響」${extra.join(" → ")},沒有增加(排程中 ${seen.join(" → ")})`);
+  await page.evaluate(() => { window.__tech.S.ramp = false; });
 }
 
 // 2. 播放中按停止

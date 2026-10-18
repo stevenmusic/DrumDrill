@@ -1,4 +1,4 @@
-/* 聽音模組(準備中):先放中性的說明卡,題目照官方大綱整理好才做(不自己發明題目) */
+/* 聽力模組(準備中):先放中性的說明卡,題目照官方大綱整理好才做(不自己發明題目) */
 import { tr, pairText } from "../shared/i18n.js";
 const ROOT = document.getElementById("mod-ear");
 function render(){ pairText(document.getElementById("e-soonText"), () => tr("題目正在照官方大綱整理。", "Questions are being built from the official syllabus.")); }

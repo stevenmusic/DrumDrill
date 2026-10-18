@@ -52,8 +52,13 @@ function relabel(){
   }
   syncTempoUI(); showBest();
   $("playLabel").textContent = play ? T("stop") : starting ? tr("準備中…", "Preparing…") : T("play");
+  remsg();
   renderLog();
 }
+/* 暫時訊息(載入中、載入失敗、繪製失敗):記住產生文字的函式,換語言時重寫 */
+const msgs = {};
+function setMsg(id, fn){ msgs[id] = fn || null; $(id).textContent = fn ? fn() : ""; }
+function remsg(){ for (const id in msgs) if (msgs[id]) $(id).textContent = msgs[id](); }
 function switchTab(t){
   stopPlayback();
   tab = t;
@@ -157,7 +162,7 @@ async function renderScore(){
     });
     osmd.EngravingRules.TupletNumberLimitConsecutiveRepetitions = false;   // 每一組三連音都標「3」(官方表就是這樣)
   }
-  $("paperMsg").textContent = "";
+  setMsg("paperMsg", null);
   try {
     await osmd.load(xml);
     if (seq !== renderSeq) return;
@@ -170,7 +175,7 @@ async function renderScore(){
     measureNotes();
   } catch (e) {
     console.error(e);
-    $("paperMsg").textContent = tr("鼓譜繪製失敗:", "Could not draw the score: ") + e.message;
+    setMsg("paperMsg", () => tr("鼓譜繪製失敗:", "Could not draw the score: ") + e.message);
   }
   window.__lastXml = xml;
   window.__scoreReady = (window.__scoreReady || 0) + 1;
@@ -386,14 +391,14 @@ function preloadSamples(){
   preloadJob = (async () => {
     try {
       setRing(null);
-      $("loadingMsg").textContent = tr("載入小鼓取樣…", "Loading snare samples…");
-      await audio.loadDrums(["snare"], p => { setRing(p * 0.95); $("loadingMsg").textContent = tr("載入小鼓取樣… ", "Loading snare samples… ") + Math.round(p * 100) + "%"; });
+      setMsg("loadingMsg", () => tr("載入小鼓取樣…", "Loading snare samples…"));
+      await audio.loadDrums(["snare"], p => { setRing(p * 0.95); setMsg("loadingMsg", () => tr("載入小鼓取樣… ", "Loading snare samples… ") + Math.round(p * 100) + "%"); });
       await audio.loadClick().catch(() => {});
-      setRing(1); $("loadingMsg").textContent = "";
+      setRing(1); setMsg("loadingMsg", null);
       return true;
     } catch (e) {
       preloadJob = null;
-      $("loadingMsg").textContent = tr("小鼓取樣載入失敗,再按一次播放重試(需要網路,之後會存在裝置上)", "Could not load the snare — tap play to retry (needs internet once; then cached)");
+      setMsg("loadingMsg", () => tr("小鼓取樣載入失敗,再按一次播放重試(需要網路,之後會存在裝置上)", "Could not load the snare — tap play to retry (needs internet once; then cached)"));
       return false;
     }
   })();
@@ -454,7 +459,7 @@ async function startPlayback(){
     starting = 0; $("playBtn").classList.remove("busy");
     if (play) stopPlayback();
     $("playLabel").textContent = T("play");
-    $("loadingMsg").textContent = tr("播放失敗:", "Playback failed: ") + (e && e.message || e);
+    setMsg("loadingMsg", () => tr("播放失敗:", "Playback failed: ") + (e && e.message || e));
   }
 }
 async function startInner(){
@@ -486,7 +491,7 @@ async function startInner(){
     movePlayline(beat < 0 ? 0 : beat >= play.endBeat ? len : beat % len, true);
     if (beat > play.endBeat + 0.3) {
       const sec = play.endBeat * play.beatSec;
-      lastEnd = { n: lastEnd.n + 1, scheduled: audio.scheduledCount() };   // 測試用:自然播完時還排著的節點數(播完的會自己移除)
+      lastEnd = { n: lastEnd.n + 1, scheduled: audio.scheduledCount(), at: audio.audioNow() };   // 測試用:自然播完時還排著的節點數(播完的會自己移除)與當時的時間
       stopPlayback(true);
       logPractice(sec);
       if (!S.clickOnly && (!S.best[cur.no] || bpm > S.best[cur.no])) { S.best[cur.no] = bpm; store.save(); showBest(); }
@@ -497,7 +502,7 @@ async function startInner(){
   };
   play.raf = requestAnimationFrame(tick);
 }
-let lastEnd = { n: 0, scheduled: 0 };
+let lastEnd = { n: 0, scheduled: 0, at: 0 };
 function showBest(){ const b = cur && S.best[cur.no]; $("bestTempo").textContent = b ? `${T("bestLabel")} ♩=${b}` : ""; }
 function stopPlayback(natural){
   starting = 0; $("playBtn").classList.remove("busy");
