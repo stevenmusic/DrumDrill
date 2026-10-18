@@ -59,7 +59,7 @@ const appActions = ({ page, tap, tapAny }) => [
   [2, "視奏 新題目", async () => tap("#s-generate")],
   [1, "視奏 速度 ±", async () => tap(pickOne(["#s-bpmUp", "#s-bpmDown"]))],
   [2, "視奏 正式打到結果", async () => {
-    const ok = await page.evaluate(() => !document.getElementById("mod-sight").hidden && !document.getElementById("s-quiz").hidden && !!window.__sight.test);
+    const ok = await page.evaluate(() => !document.getElementById("mod-sight").hidden && !document.getElementById("s-quiz").hidden && !!window.__sight.test && window.__sight.mock.state !== "run");   // 模擬考有自己的動作
     if (!ok) return false;
     await page.evaluate(() => { const S = window.__sight; if (S.state.phase === "perform") document.getElementById("s-playAlong").click(); S.setBpm(240); document.getElementById("s-playAlong").click(); });
     try { await page.waitForFunction(() => window.__sight.state.phase === "perform", null, { timeout: 60000 }); } catch (e) { return false; }
@@ -129,7 +129,7 @@ const appActions = ({ page, tap, tapAny }) => [
     return true;
   }],
   [3, "聽力 照節奏回打", async () => {
-    const ok = await page.evaluate(() => !document.getElementById("mod-ear").hidden && !document.getElementById("e-quizCard").hidden && !!window.__ear.q);
+    const ok = await page.evaluate(() => !document.getElementById("mod-ear").hidden && !document.getElementById("e-quizCard").hidden && !!window.__ear.q && window.__ear.mock.state !== "run");   // 模擬考有自己的動作
     if (!ok) return false;
     const sys = await page.evaluate(() => window.__ear.state.sys);
     if (sys === "trinity") {
