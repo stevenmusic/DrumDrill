@@ -94,7 +94,7 @@ export function randomScore(seed, nMeasures = 4){
       if (next && !next.some(c => /t|dup/.test(c))) codes.push(...next.slice(0, Math.floor(R() * next.length)));
     } else codes = groups.flat();
     const evs = codes.map(c => (R() < 0.15 ? { value: "r" + c } : { value: c, notes: notesFn() }));
-    if (!feet && lines === 5) evs.forEach(e => { if (e.notes && R() < 0.05) e.roll = 1 + Math.floor(R() * 3); });
+    if (!feet && lines === 5) evs.forEach(e => { if (e.notes && R() < 0.05) e.roll = 1 + Math.floor(R() * 3); else if (e.notes && R() < 0.03) e.buzz = true; });
     // 連結線:下一個也是音的話,把下一個改成同樣的鼓件
     for (let i = 0; i + 1 < evs.length; i++) if (evs[i].notes && evs[i + 1].notes && R() < 0.1) { evs[i].tie = true; evs[i + 1].notes = evs[i].notes.map(n => ({ piece: n.piece })); }
     return evs;
@@ -165,7 +165,9 @@ export default function check(ok){
     ["力度對不到音", S([[q("snare"), q("snare"), q("snare"), q("snare")]], { dyn: [{ m: 0, beat: 0.5, mark: "f" }] })],
     ["不認得的力度", S([[q("snare")]], { dyn: [{ m: 0, beat: 0, mark: "fff" }] })],
     ["力度的小節不對", S([[q("snare")]], { dyn: [{ m: 3, beat: 0, mark: "f" }] })],
-    ["lines 不是 1 或 5", S([[q("snare")]], { lines: 3 })]
+    ["lines 不是 1 或 5", S([[q("snare")]], { lines: 3 })],
+    ["roll 和 buzz 一起", S([[{ ...q("snare"), roll: 2, buzz: true }]])],
+    ["roll 超過 3", S([[{ ...q("snare"), roll: 4 }]])]
   ];
   for (const [name, spec] of BAD) { let threw = false; try { scoreXML(spec); } catch (e) { threw = true; } ok(threw, `不合法的資料要丟出錯誤:${name}`); }
   // 每個時值代號都能用(連音寫一整組,其他寫一個;剩下的自動補休止)

@@ -15,6 +15,7 @@ const { KIT_SAMPLES, pickSamples } = await import("./kitsamples.mjs");
 const { scoreXML, piecesUsed } = await import("../../js/shared/kitnotation.js");
 const { drawLegend, decorate, setupKit } = await import("../../js/shared/legend.js");
 const { tr } = await import("../../js/shared/i18n.js");
+window.__L = await import("../../js/shared/legend.js");   // notation.mjs 用(符頭位置、補畫的記號)
 const key = await (await fetch("../../data/drumkey.json")).json();
 const out = document.getElementById("out");
 const samples = pickSamples(Q.get("kit"));

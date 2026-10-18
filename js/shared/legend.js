@@ -32,8 +32,8 @@ export function marksOf(xml){
   });
   return out;
 }
-/* OSMD 畫出來的每個音(不含裝飾音):{ mi, voice, t, k, gn } */
-function graphicalNotes(osmd){
+/* OSMD 畫出來的每個音(不含裝飾音):{ mi, voice, t, k, gn };tools/test/notation.mjs 也用來檢查符頭位置 */
+export function graphicalNotes(osmd){
   const out = [];
   osmd.GraphicSheet.MeasureList.forEach((row, mi) => {
     const gm = row && row[0]; if (!gm) return;
@@ -48,7 +48,7 @@ function graphicalNotes(osmd){
   return out;
 }
 /* 一個音的符頭(SVG 的 bbox)與它上方最高的東西(符桿頂端、連桿、重音等記號)的 y */
-function headBox(gn){
+export function headBox(gn){
   const g = gn.getSVGGElement && gn.getSVGGElement();
   if (!g) return null;
   const heads = [...g.querySelectorAll(".vf-notehead")].filter(h => !h.closest(".vf-modifiers")).map(h => h.getBBox());
@@ -109,7 +109,8 @@ export function decorate(osmd, xml, svg){
 }
 
 /* 鼓組譜的 OSMD 設定(建立 OSMD 之後、load 之前呼叫一次):
-   - PercussionOneLineCutoff = 0(五線):OSMD 預設會把「用到的位置少於 3 個」的打擊樂譜縮成一條線,鼓組譜一律照 MusicXML 的 staff-lines
+   - PercussionOneLineCutoff = 0(五線):OSMD 的規則是「用到的位置少於 3 個」的打擊樂譜縮成一條線(2.1.0 實測有 display-step 時沒有縮,設 0 是保險),
+     單線譜維持預設 3(設 0 的話 E4 會畫在線下兩格;notation.mjs 檢查符頭高度)
    - 連音每一組都標數字(跟技巧一樣) */
 export function setupKit(osmd, lines = 5){
   const R = osmd.EngravingRules;
@@ -145,7 +146,8 @@ export async function drawLegend(el, { pieces, lines = 5, key = drumKeyCached() 
     const note = document.createElement("div"); note.className = "kl-note";
     const name = document.createElement("figcaption"); name.className = "kl-name";
     const src = document.createElement("div"); src.className = "kl-src";
-    const [s1, s2, pending] = srcLines(key, p);
+    // 單線譜的小鼓:出處用 singleLine.src(官方只寫小鼓;單線譜是 App 的選擇)
+    const [s1, s2, pending] = srcLines(key, lines === 1 && id === key.singleLine.piece ? { ...p, src: key.singleLine.src, posSrc: null } : p);
     if (pending) cell.classList.add("pending");
     cell.append(note, name, src);
     cells.appendChild(cell);
@@ -182,7 +184,7 @@ function cellGeom(svg){
   const bs = [...svg.querySelectorAll(".vf-stavenote, .kit-mark")].map(e => e.getBBox()).filter(b => b.width || b.height);
   if (!bs.length) return null;
   return { sp, mid, cx: (Math.min(...bs.map(b => b.x)) + Math.max(...bs.map(b => b.x + b.width))) / 2,
-    up: Math.max(2.5, ...bs.map(b => (mid - b.y) / sp)), down: Math.max(2.5, ...bs.map(b => (b.y + b.height - mid) / sp)) };
+    up: Math.max(6, ...bs.map(b => (mid - b.y) / sp)), down: Math.max(5, ...bs.map(b => (b.y + b.height - mid) / sp)) };   // 至少上 6、下 5 格:單線譜的一格跟五線的格子一樣大
 }
 function fitCells(svgs){
   const gs = svgs.map(cellGeom);

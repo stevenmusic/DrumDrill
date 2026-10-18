@@ -23,6 +23,7 @@
      tie: true             連到同一聲部的下一個音(同一個鼓件)
      tuplet: "stop"        連音自動照時值分組(加起來 = 一組的長度就結束);要提早結束一組時寫 "stop"
      roll: 2               滾奏斜線數(1–3;tremolo,OSMD 會畫)
+     buzz: true            多次反彈滾奏(符桿上的 z;<tremolo type="unmeasured">,OSMD 會畫)
      notes: [{ piece, accent, ghost, open, closed, flam, drag }]
                            piece = drumkey.json 的鼓件 id;ghost = 鬼音(符頭加括號);open / closed = HH 開 o / 閉 +
                            (hhOpen、hhClosed 本身就帶 o / +);flam = 一個帶斜線的八分裝飾音、drag = 兩個十六分裝飾音
@@ -82,7 +83,8 @@ function normEv(ev, where){
   const notes = rest ? [] : (ev.notes || []);
   if (!rest && !notes.length) throw new Error(`${where}:音符沒有 notes(休止符要寫 r)`);
   if (ev.roll != null && !(Number.isInteger(ev.roll) && ev.roll >= 1 && ev.roll <= 3)) throw new Error(`${where}:roll 要是 1–3`);
-  return { info, rest, notes, tie: !!ev.tie && !rest, roll: rest ? 0 : (ev.roll || 0), tupletStop: ev.tuplet === "stop", src: ev };
+  if (ev.roll && ev.buzz) throw new Error(`${where}:roll 和 buzz 只能選一個`);
+  return { info, rest, notes, tie: !!ev.tie && !rest, roll: rest ? 0 : (ev.roll || 0), buzz: !rest && !!ev.buzz, tupletStop: ev.tuplet === "stop", src: ev };
 }
 
 /* 連音分組:同一種比例(3:2、5:4……)連續的音,加起來等於其中一個的一組長度就結束一組 */
@@ -123,7 +125,7 @@ function fillRests(pos, end, meter, where){
   }
   return out;
 }
-const restEv = code => ({ info: valueInfo(code), rest: true, notes: [], tie: false, roll: 0, filled: true });
+const restEv = code => ({ info: valueInfo(code), rest: true, notes: [], tie: false, roll: 0, buzz: false, filled: true });
 
 /* 一組連桿裡每一層的 begin / continue / end / hook(照 js/tech/notation.js) */
 function beamLevels(group){
@@ -223,6 +225,7 @@ function noteXML(e, ctx){
       if (fl.length || dr.length) nt.push('<slur type="stop" number="2"/>');
       nt.push(tupletXML(e));
       if (e.roll) nt.push(`<ornaments><tremolo type="single">${e.roll}</tremolo></ornaments>`);
+      if (e.buzz) nt.push(`<ornaments><tremolo type="unmeasured">0</tremolo></ornaments>`);
     }
     if (ctx.prevTie && ctx.prevTie.has(n.piece)) nt.push('<tied type="stop"/>');
     if (e.tie && nextTie && nextTie.has(n.piece)) nt.push('<tied type="start"/>');

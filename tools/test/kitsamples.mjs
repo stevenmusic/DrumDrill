@@ -61,6 +61,9 @@ const OTHER = [
       { voices: [rep(8, () => ev("8", N("snare")))] }, { voices: [[ev("2", N("snare"), { tie: true }), ev("2", N("snare"))]] }] } },
   { id: "ties", group: "dyn", spec: { time: "4/4", measures: [{ voices: [[ev("2", N("snare")), ev("4", N("snare")), ev("4", [N("crash"), N("snare")], { tie: true })], [r("2."), ev("4", N("kick"), { tie: true })]] },
     { voices: [[ev("4", [N("crash"), N("snare")]), r("4"), ev("2", N("snare"))], [ev("4", N("kick")), r("2.")]] }] } },
+  // 滾奏:斜線 1–3 條、多次反彈(z)
+  { id: "rolls", group: "dyn", spec: { time: "4/4", measures: [{ voices: [[ev("4", N("snare"), { roll: 1 }), ev("4", N("snare"), { roll: 2 }), ev("4", N("snare"), { roll: 3 }), ev("4", N("snare"), { buzz: true })]] },
+    { voices: [[ev("2", N("snare"), { roll: 3, tie: true }), ev("4", N("snare")), ev("8", N("tomFloor"), { buzz: true }), ev("8", N("snare", { accent: true }))]] }] } },
   // 自由發展的小節(斜線)
   { id: "slash", group: "slash", spec: { time: "4/4", measures: [rock(), rock(), { slash: true }, { slash: true }] } },
   { id: "slash-68", group: "slash", spec: { time: "6/8", measures: [{ voices: [rep(6, () => ev("8", N("hh"))), [ev("4.", N("kick")), ev("4.", N("kick"))]] }, { slash: true }] } },
