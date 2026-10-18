@@ -9,7 +9,9 @@
    - 鍵盤:模組的 onKey(e) 轉給 pads.key(e)(F / J / K;Space 留給播放);按住不放的重複不算。
      先看 e.key,對不到再看 e.code(KeyF / KeyJ / KeyK = 實體按鍵):注音等輸入法開著時 e.key 是「ㄑ」或 "Process"
    - 輔助使用:VoiceOver 點兩下、鍵盤聚焦後按 Enter 不會有 pointerdown,只有 click(detail = 0)→ 也算一下;
-     手指 / 滑鼠的 click(detail ≥ 1,或剛剛同一個鼓墊有 pointerdown)不重複算
+     手指 / 滑鼠的 click(detail ≥ 1,或剛剛同一個鼓墊有 pointerdown)不重複算。
+     聚焦在鼓墊上按住 Enter:瀏覽器每次自動重複的 keydown 都會再送一個 click → 重複的 keydown 擋掉預設動作(就不會有 click);
+     另外同一個鼓墊兩個 a11y click 間隔 < A11Y_MIN_MS 也當作重複(擋不掉 keydown 的情況)。手指、F / J / K 的快速連打不受影響
    - 打到閃一下(app.css 的 .tap-pad.hit);不出聲(要出聲由 onHit 自己用 audio.playKit)
    共用元件不寫死前綴:只用傳進來的 el 與 class */
 import { perfToAudioTime } from "./player.js";
@@ -17,6 +19,7 @@ import { tr } from "./i18n.js";
 
 const FLASH_MS = 90;
 const CLICK_DUP_MS = 800;   // pointerdown 之後這麼久內同一個鼓墊的 click 當作同一下(有的瀏覽器 detail 也是 0)
+export const A11Y_MIN_MS = 60;   // 同一個鼓墊兩個 a11y click 至少隔這麼久(按鍵自動重複約 30 ms 一次;人按 Enter / 點兩下不會這麼快)
 
 /* 事件時間(performance 的毫秒)→ 音訊時間(秒);沒有 AudioContext 時 null */
 export function eventToAudioTime(ts){
@@ -60,6 +63,7 @@ export function createPads(el, lanes, onHit){
     if (onHit) { try { onHit({ lane: id, time, src }); } catch (e) { console.error(e); } }
   }
   const lastDown = new Map();   // 鼓墊 → 最近一次 pointerdown 的 performance 時間
+  const lastA11y = new Map();   // 鼓墊 → 最近一次 a11y click 的 performance 時間
   const padOf = e => {
     const b = e.target && e.target.closest ? e.target.closest(".tap-pad") : null;
     return b && !b.disabled && el.contains(b) ? b : null;
@@ -77,12 +81,21 @@ export function createPads(el, lanes, onHit){
     const b = padOf(e);
     if (!b || e.detail !== 0) return;
     const id = b.dataset.lane, d = lastDown.get(id);
-    if (d != null && performance.now() - d < CLICK_DUP_MS) return;
+    const now = performance.now();
+    if (d != null && now - d < CLICK_DUP_MS) return;
+    const a = lastA11y.get(id);
+    if (a != null && now - a < A11Y_MIN_MS) return;
+    lastA11y.set(id, now);
     hit(id, e.timeStamp, "a11y");
+  };
+  // 按住 Enter 的自動重複:擋掉預設動作 = 不送 click(第一下照常)
+  const onKeyDown = e => {
+    if (e.repeat && (e.key === "Enter" || e.code === "NumpadEnter") && padOf(e)) e.preventDefault();
   };
   const noMenu = e => e.preventDefault();
   el.addEventListener("pointerdown", onDown);
   el.addEventListener("click", onClick);
+  el.addEventListener("keydown", onKeyDown);
   el.addEventListener("contextmenu", noMenu);
   let on = true;
   function key(e){
@@ -96,7 +109,7 @@ export function createPads(el, lanes, onHit){
   }
   function enable(v){ on = !!v; for (const b of btns.values()) b.disabled = !on; }
   function destroy(){
-    el.removeEventListener("pointerdown", onDown); el.removeEventListener("click", onClick); el.removeEventListener("contextmenu", noMenu);
+    el.removeEventListener("pointerdown", onDown); el.removeEventListener("click", onClick); el.removeEventListener("keydown", onKeyDown); el.removeEventListener("contextmenu", noMenu);
     for (const t of timers.values()) clearTimeout(t);
     el.innerHTML = "";
   }

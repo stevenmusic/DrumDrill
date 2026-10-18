@@ -5,9 +5,13 @@
 //  3. 偏移超過上限(450 ms)→ 不扣、有旗標、不給分數、說明是「太多了沒有扣掉」
 //  4. 三個鼓墊(鈸 / 鼓 / 大鼓與腳踩 HH):expectedByLane 分組正確(同一條 lane 同一時間算一下);各自評分,
 //     漏打大鼓只算在大鼓那條、多敲小鼓只算在鼓那條,鈸全部命中;打錯鼓墊 = 那條漏、另一條多
-//  5. 一條 lane 單獨晚(大鼓整條晚 300 / 600 ms,其他對):整體偏移不受影響、大鼓那條不另外扣偏移 → 那條低分、總分 < 90,
+//  5. 一條 lane 單獨晚(大鼓整條晚 100 / 300 / 600 ms,其他對):整體偏移不受影響、大鼓那條不另外扣偏移 → 那條低分、總分 < 90,
 //     有 lag 旗標(lagLanes)與 laneNote 提示;晚 40 ms(< 容許範圍一半)沒有旗標;大家一起晚 = 整體偏移,沒有旗標
 //  6. 只有一條 lane 時行為不變:結果跟 scoreRhythm 直接評一模一樣(偏移 0 / 80 / 200 ms、漏一下、多一下;3 個鼓墊只用到一條也一樣)
+//  7. 密集音型整體偏移估錯一格(♩=140 十六分,三條一起晚 64 ms):重新對齊後偏移 ≈ 64、沒有旗標、分數 ≥ 90;
+//     兩條 lane 一條晚 300 ms(分不出是誰):不說 laneNote;
+//     隨機音型(固定種子 400 次,♩=60–160、十六分 / 三連音 / 八分 / 四分,整體 ±100 ms、抖動 ≤ 30 ms):
+//     沒有單獨晚的 → 不能有旗標;一條單獨晚超過容許範圍 → 那條一定有旗標、別條沒有
 import { expectedByLane, scoreLanes, offsetNote, laneNote, LANES, OFFSET_LIMIT } from "../../../js/shared/timing.js";
 import { scoreRhythm } from "../../../js/shared/onsets.js";
 
@@ -103,6 +107,11 @@ export default function check(ok){
       for (const id of ["cym", "drum", "foot"]) t.push(...tapsAt(exp[id], id, all + (id === "foot" ? footLate : 0), r));
       return scoreLanes(exp, t, { tempoBpm: BPM });
     };
+    {
+      const r = mk(0.1), f = r.lanes.foot, ok0 = mk(0);
+      ok(f.lag && r.lagLanes.join() === "foot" && f.score < 90 && r.score < ok0.score && laneNote(r, LANES[3]) && laneNote(r, LANES[3])[0].includes("大鼓・腳踩"),
+        `大鼓單獨晚 100 ms:應該只有大鼓有旗標、那條 < 90 分、總分比沒晚低(${ok0.score}),實際 lag=${r.lagLanes} 大鼓 ${f.score} 分、總分 ${r.score}`);
+    }
     for (const late of [0.3, 0.6]) {
       const r = mk(late), f = r.lanes.foot, note = laneNote(r, LANES[3]);
       ok(Math.abs(r.offsetMs) <= 20, `大鼓單獨晚 ${late * 1000} ms:整體偏移應該不受影響,實際 ${r.offsetMs}`);
@@ -137,6 +146,42 @@ export default function check(ok){
     const exp = expectedByLane(ev, BPM, LANES[3]), taps = tapsAt(exp.drum, "drum", 0.12, rng(47));
     const r = scoreLanes(exp, taps, { tempoBpm: BPM }), want = scoreRhythm(exp.drum, taps.map(t => t.time), { tempoBpm: BPM });
     ok(r.score === want.score && r.hits === want.hits && r.offsetMs === want.offsetMs && !r.lagLanes.length, `3 個鼓墊只用到一條:應該跟 scoreRhythm 一樣(${want.score} 分、偏移 ${want.offsetMs}),實際 ${r.score} 分、偏移 ${r.offsetMs}`);
+  }
+  // 7. 密集音型、兩條 lane、隨機音型
+  {
+    const B = 140, ev = [];
+    for (let b = 0; b < 8; b += 0.25) ev.push({ beat: b, piece: "kick" });                    // 大鼓:十六分
+    for (let b = 0; b < 8; b += 0.25) if ([0, 0.5, 0.75].includes(b % 1)) ev.push({ beat: b, piece: "hhClosed" });
+    for (let b = 0.25; b < 8; b += 0.5) if (b % 2 !== 1.75) ev.push({ beat: b, piece: "snare" });
+    const exp = expectedByLane(ev, B, LANES[3]), r0 = rng(120), taps = [];   // 種子 120:舊的估法估成 −34 ms、三條都亮、75 分
+    for (const id of Object.keys(exp)) for (const t of exp[id]) taps.push({ lane: id, time: t + 0.064 + (r0() - 0.5) * 0.06 });
+    const r = scoreLanes(exp, taps, { tempoBpm: B });
+    ok(Math.abs(r.offsetMs - 64) <= 25 && !r.lagLanes.length && laneNote(r) === null && r.score >= 90,
+      `♩=140 十六分、三條一起晚 64 ms:應該偏移 ≈ 64、沒有旗標、≥ 90 分,實際偏移 ${r.offsetMs}(重新對齊 ${r.realigned} 次)、旗標 ${r.lagLanes}、${r.score} 分`);
+    // 兩條 lane:鈸對、大鼓晚 300 ms → 分數照扣,但分不出是誰,不說 laneNote
+    const e2 = expectedByLane([0, 1, 2, 3, 4, 5, 6, 7].flatMap(beat => [{ beat, piece: "hhClosed" }, { beat: beat + 0.5, piece: "kick" }]), BPM, LANES[3]);
+    const t2 = [...tapsAt(e2.cym, "cym", 0, rng(5)), ...tapsAt(e2.foot, "foot", 0.3, rng(6))];
+    const r2 = scoreLanes(e2, t2, { tempoBpm: BPM });
+    ok(r2.score < 90 && laneNote(r2) === null && r2.judgedLanes.length === 2, `兩條 lane、一條晚 300 ms:應該扣分、不說 laneNote,實際 ${r2.score} 分、旗標 ${r2.lagLanes}、提示 ${laneNote(r2)}`);
+    // 隨機音型
+    const R = rng(2026), pick = a => a[Math.floor(R() * a.length)];
+    let n = 0, clean = 0, falseLag = 0, big = 0, caught = 0, wrong = 0;
+    while (n < 400) {
+      const bpm = pick([60, 72, 80, 90, 100, 120, 140, 160]), g = pick([0.25, 1 / 3, 0.5, 1]), ev = [];
+      for (const p of ["hhClosed", "snare", "kick"]) { const dens = pick([0.3, 0.6, 1]), off = R() < 0.4 ? g / 2 : 0; for (let b = off; b < 8 - 1e-9; b += g) if (R() < dens) ev.push({ beat: b, piece: p }); }
+      const exp = expectedByLane(ev, bpm, LANES[3]);
+      if (!Object.values(exp).every(a => a.length >= 4)) continue;
+      const glob = (R() - 0.5) * 0.2, jit = pick([0.01, 0.02, 0.03]), lag = R() < 0.5 ? 0 : pick([0.12, -0.12, 0.2, -0.2, 0.3, 0.4]), lid = pick(["cym", "drum", "foot"]);
+      const taps = [];
+      for (const id of Object.keys(exp)) for (const t of exp[id]) taps.push({ lane: id, time: t + glob + (id === lid ? lag : 0) + (R() - 0.5) * 2 * jit });
+      const r = scoreLanes(exp, taps, { tempoBpm: bpm });
+      if (r.offsetTooLarge) continue;
+      n++;
+      if (!lag) { clean++; if (r.lagLanes.length || laneNote(r)) falseLag++; }
+      else if (Math.abs(lag) * 1000 > r.toleranceMs) { big++; if (r.lagLanes.includes(lid)) caught++; if (r.lagLanes.some(x => x !== lid)) wrong++; }
+    }
+    ok(clean > 100 && falseLag === 0, `隨機音型:沒有單獨晚的 ${clean} 次,誤報 ${falseLag} 次(應該 0)`);
+    ok(big > 50 && caught === big && wrong === 0, `隨機音型:單獨晚超過容許範圍 ${big} 次,抓到 ${caught}、標錯別條 ${wrong}`);
   }
 }
 

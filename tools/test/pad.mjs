@@ -7,7 +7,8 @@
 //      換出來的時間跟有 API 時差不到 30 ms;這時點鼓墊,記下的時間仍是點下去的時間
 //  4. 鍵盤 F / J / K 打三個鼓墊;按住不放的重複不算;Space 不算(留給播放);
 //     輸入法開著(e.key 是「ㄑ」/ "Process")看 e.code(KeyF / KeyJ / KeyK)
-//  4b. 沒有 pointerdown 的啟動(VoiceOver、Enter;click 的 detail = 0)也算一下(src "a11y");滑鼠點一下只算一下(pointerdown 算過,click 不重複)
+//  4b. 沒有 pointerdown 的啟動(VoiceOver、Enter;click 的 detail = 0)也算一下(src "a11y");滑鼠點一下只算一下(pointerdown 算過,click 不重複);
+//      按住 Enter 的自動重複只算第一下;a11y 隔 80 ms 兩下都算、隔 5 ms 只算一下;手指隔 20 ms 快速連打每下都算
 //  5. 版面:280 / 320 / 390 / 手機橫式 / 桌機,1 個與 3 個鼓墊:每個 ≥ 80×96、在卡片框線內、沒有橫向捲動、字沒被切掉、
 //     中英鼓墊在卡片裡的位置大小一模一樣;touch-action:none
 // 用法:node tools/test/pad.mjs
@@ -214,6 +215,32 @@ await page.evaluate(async () => {
   await page.keyboard.press("Enter");
   const e = await page.evaluate(() => window.__pt.hits.map(h => h.lane + ":" + h.src));
   if (e.join() !== "cym:a11y") fail(`聚焦後按 Enter:應該算一下 cym:a11y,實際 ${e.join()}`);
+  // 按住 Enter 不放(自動重複的 keydown,repeat = true):只算第一下
+  await page.evaluate(() => { window.__pt.hits.length = 0; });
+  await sleep(100);
+  await page.focus('#padTestCard .tap-pad[data-lane="drum"]');
+  await page.keyboard.down("Enter");
+  for (let i = 0; i < 6; i++) { await sleep(35); await page.keyboard.down("Enter"); }
+  await page.keyboard.up("Enter");
+  const held = await page.evaluate(() => window.__pt.hits.map(h => h.lane + ":" + h.src));
+  if (held.join() !== "drum:a11y") fail(`按住 Enter(6 次自動重複):應該只算一下 drum:a11y,實際 ${held.join()}`);
+  // 放開再按:照常算;a11y click 隔 80 ms 兩下都算,隔幾毫秒的重複只算一下;手指快速連打(同一個鼓墊、隔 20 ms)每下都算
+  const quick = await page.evaluate(async () => {
+    const sl = ms => new Promise(r => setTimeout(r, ms));
+    window.__pt.hits.length = 0;
+    const b = document.querySelector('#padTestCard .tap-pad[data-lane="cym"]');
+    await sl(100); b.click(); await sl(80); b.click(); await sl(5); b.click();
+    const a11y = window.__pt.hits.map(h => h.lane + ":" + h.src);
+    window.__pt.hits.length = 0;
+    const f = document.querySelector('#padTestCard .tap-pad[data-lane="foot"]');
+    for (let i = 0; i < 4; i++) { f.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true, pointerId: 10 + i, button: 0, pointerType: "touch" })); await sl(20); }
+    return { a11y, pointer: window.__pt.hits.map(h => h.lane + ":" + h.src) };
+  });
+  await page.keyboard.press("Enter");
+  const again = await page.evaluate(() => window.__pt.hits.filter(h => h.src === "a11y").map(h => h.lane));
+  if (quick.a11y.join() !== "cym:a11y,cym:a11y") fail(`a11y click 隔 80 ms 兩下 + 隔 5 ms 的重複:應該算兩下,實際 ${quick.a11y.join()}`);
+  if (quick.pointer.join() !== "foot:pointer,foot:pointer,foot:pointer,foot:pointer") fail(`手指快速連打 4 下(隔 20 ms):應該每下都算,實際 ${quick.pointer.join()}`);
+  if (again.join() !== "drum") fail(`放開 Enter 再按一次:應該算一下 drum,實際 ${again.join()}`);
   await page.evaluate(() => { window.__pt.hits.length = 0; });
   await page.click('#padTestCard .tap-pad[data-lane="drum"]');                                  // 滑鼠:pointerdown + click(detail 1)
   await page.touchscreen.tap(...(await page.evaluate(() => { const r = document.querySelector('#padTestCard .tap-pad[data-lane="foot"]').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })));
@@ -222,7 +249,7 @@ await page.evaluate(async () => {
   await page.evaluate(() => document.querySelector('#padTestCard .tap-pad[data-lane="foot"]').click());
   const m = await page.evaluate(() => window.__pt.hits.map(h => h.lane + ":" + h.src));
   if (m.join() !== "drum:pointer,foot:pointer") fail(`滑鼠點、手指點各一下(再加一個 detail 0 的 click):應該 drum:pointer、foot:pointer,實際 ${m.join()}`);
-  if (bad === n0) ok("輔助使用:click()(detail 0)與聚焦後 Enter 各算一下(a11y);滑鼠點、手指點只算 pointerdown 那一下,緊接的 click 不重複");
+  if (bad === n0) ok("輔助使用:click()(detail 0)與聚焦後 Enter 各算一下(a11y);按住 Enter 的自動重複不算、放開再按照常算;a11y 隔 80 ms 兩下都算、隔 5 ms 只算一下;手指隔 20 ms 連打每下都算;滑鼠點、手指點只算 pointerdown 那一下,緊接的 click 不重複");
 }
 
 // 5. 版面
