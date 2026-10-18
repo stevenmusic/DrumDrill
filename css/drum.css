@@ -209,6 +209,11 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
    卡片順序(一欄):設定 1、說明 2、題目 3、譜 4、回打 5、紀錄 6;檢定頁:考試摘要 1、規格卡 2 */
 #e-setup,#e-paneExam{order:1} #e-unsupported,#e-specCards{order:2} #e-quizCard{order:3} #e-scoreCard{order:4} #e-along{order:5} #e-logCard{order:6}
 #e-unsupported .card-title b{white-space:normal}
+/* 題目大標題一行(照視奏;app.css 的 #mod-ear 是 PianoDrill 聽音的換行寫法):太長由 fitTitle 縮字,中英高度一樣 */
+#mod-ear #e-qTitle:not(.empty){white-space:nowrap;height:calc(clamp(24px, 6.6vw, 36px) * 1.45)}
+/* 3 個鼓墊在窄手機:「大鼓・腳踩」一行放得下(中英一樣高) */
+#e-pads .pad-name{white-space:nowrap}
+@media (max-width:360px){ #e-pads:not([data-n="1"]) .tap-pad{font-size:var(--fs-md);padding:6px 2px} }
 /* 級數:D(I)1–4 / 5–8 兩排固定格子(中英一樣;折疊機也 ≥ 28 寬) */
 #mod-ear .picker .opts[data-k="grade"]{grid-template-columns:repeat(5, minmax(0, 1fr))}
 #mod-ear .picker .opts[data-k="grade"] .opt{font-variant-numeric:tabular-nums}
@@ -278,7 +283,7 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
   /* 題目卡:標題 | 標籤 | ▶ 一行(照視奏) */
   #mod-ear .quiz{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:4px 12px}
   #mod-ear .q-head,#mod-ear .q-row{display:contents}
-  #e-qTitle{grid-column:1;grid-row:1;font-size:24px;height:auto}
+  #mod-ear #e-qTitle,#mod-ear #e-qTitle:not(.empty){grid-column:1;grid-row:1;font-size:24px;height:auto}
   #mod-ear .q-row .q-tags{grid-column:2;grid-row:1;min-height:0}
   #mod-ear .q-row .loading{grid-column:2;grid-row:2;justify-self:end}
   #e-playBtn{grid-column:3;grid-row:1;width:44px;height:44px}

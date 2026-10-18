@@ -495,7 +495,12 @@ const click = () => page.click("#t-playBtn");
   if (!(g.you > 0)) fail("聽力 Trinity:空檔沒有拍點");
   await page.evaluate(() => window.__ear.perform());
   await waitFor(() => window.__ear.state.kind === "pass", null, 60000);
-  await page.keyboard.press("j");
+  // 第一句的空檔裡點一下(有敲擊才會列每一句),再快轉
+  await page.evaluate(() => new Promise(res => {
+    const E = window.__ear, tl = E.tl, g = tl.segs.find(x => x.kind === "you"), sec = 60 / (240 * 2);
+    const t = () => { const A = window.__A, now = A.getCtx().currentTime - (E.perfT0() || 0); if (now > g.u0 * sec + 0.05) { document.querySelector('#e-pads .tap-pad[data-lane="drum"]').dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true })); res(); } else setTimeout(t, 20); };
+    t();
+  }));
   const res = await page.evaluate(() => { window.__ear.finishNow(); return { st: window.__ear.state, rows: document.querySelectorAll("#e-alongResult .e-phrases li").length, n: window.__ear.q.phrases.length }; });
   if (res.st.phase !== "result" || res.rows !== res.n) fail(`聽力 Trinity 第二次:每一句一列回饋,實際 ${res.rows} / ${res.n} 句(${res.st.phase})`);
   await page.evaluate(() => window.__ear.setBpm(80));
