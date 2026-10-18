@@ -1,4 +1,4 @@
-// 不用瀏覽器的檢查:基本打法資料(照 PAS 官方表)、鼓譜 MusicXML(技巧的單線譜、鼓組譜)、RSL 依大綱時值的練習型、考試資料(照 RSL / Trinity 官方大綱)、Trinity Playback 譜產生器、RSL 整組鼓視奏與聽力出題器、節奏評分、視奏出題器、版本指紋、兩個 App 的共用檔案(sync.mjs)
+// 不用瀏覽器的檢查(APPWWW=1 另外跑 App 打包檢查):基本打法資料(照 PAS 官方表)、鼓譜 MusicXML(技巧的單線譜、鼓組譜)、RSL 依大綱時值的練習型、考試資料(照 RSL / Trinity 官方大綱)、Trinity Playback 譜產生器、RSL 整組鼓視奏與聽力出題器、節奏評分、視奏出題器、版本指紋、兩個 App 的共用檔案(sync.mjs)
 // 執行:node tools/test/verify.mjs
 import { execFileSync } from "node:child_process";
 import { RUDIMENTS, CATEGORIES, strokes, cycleLength, mainStrokes, withLead, DIV } from "../../js/tech/rudiments.js";
@@ -83,6 +83,11 @@ try { genkit(ok); } catch (e) { ok(false, "RSL 整組鼓視奏出題器檢查出
 try { genear(ok); } catch (e) { ok(false, "RSL 聽力出題器檢查出錯:" + e.stack); }
 // 6i. 視奏的拍點與小節時間軸(js/sight/meter.js:拍號的拍點、複拍子用八分音符當一拍、換拍號;Trinity / RSL 題目的事件都落在小節裡)+ 題目指紋(checks/sight-meter.mjs)
 try { sightmeter(ok); } catch (e) { ok(false, "視奏拍點時間軸檢查出錯:" + e.stack); }
+// 6j. 可選:APPWWW=1 時跑 App 打包檢查(tools/test/app-www.mjs:先跑 app-www 再檢查 app/www 完整;要下載取樣,所以預設不跑)
+if (process.env.APPWWW) {
+  try { console.log(execFileSync("node", [new URL("./app-www.mjs", import.meta.url).pathname], { stdio: "pipe" }).toString().trim().split("\n").pop()); checks++; }
+  catch (e) { fails++; checks++; console.log((e.stdout || "").toString().trim()); }
+}
 // 7. 版本指紋與 sw.js 預快取清單
 try { execFileSync("node", [new URL("../build/stamp.mjs", import.meta.url).pathname, "--check"], { stdio: "pipe" }); checks++; }
 catch (e) { fails++; checks++; console.log("✗ " + (e.stdout || "").toString().trim()); }
