@@ -627,7 +627,7 @@
   - `pointerdown` 的 `event.timeStamp` 用 `ctx.getOutputTimestamp()` 換算成音訊時間(沒有這個 API 就用當下的 `currentTime`/`performance.now()` 配對)。
   - 1 個鼓墊:小鼓;3 個鼓墊:鈸 / 鼓 / 大鼓與腳踩 HH。
   - 鍵盤:J(或 Space 以外的鍵)/ K / F。
-- `js/shared/timing.js`(純函式):`expectedByLane(events, bpm)`;`scoreLanes(expected, taps)` 每條 lane 呼叫 `scoreRhythm`,再合併成總結。
+- `js/shared/timing.js`(純函式):`expectedByLane(events, bpm)`;`scoreLanes(expected, taps)` 用 `scoreRhythm` 估整體偏移、扣掉,每條 lane 不再各自估偏移(最近配對 + 同樣的計分公式;一條 lane 單獨晚要扣分),lane 剩的偏移只顯示,超過容許範圍一半有旗標與提示(`laneNote`);只有一條 lane 時結果跟 `scoreRhythm` 一模一樣。
 
 **3. 資料來源**:PianoDrill `scoring.js`。容許範圍沿用 PianoDrill(`max(70ms, ¼ 拍)`,上限 160 ms),標「練習設定」。
 

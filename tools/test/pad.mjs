@@ -3,7 +3,11 @@
 //     整體偏移(CDP 送觸控的延遲)在上限內;打到的鼓墊閃一下(.hit)
 //  2. 多指同時點擊(CDP 一次送 3 根手指、同一個鼓墊 2 根手指):每根手指都收到,時間幾乎一樣
 //  3. 時間是事件時間:主執行緒忙 400 ms 時點下去,處理函式晚跑了,記下的時間仍是手指碰到的時間
-//  4. 鍵盤 F / J / K 打三個鼓墊;按住不放的重複不算;Space 不算(留給播放)
+//  3b. 沒有 getOutputTimestamp 的瀏覽器(設成 undefined):eventToAudioTime 改用 currentTime − outputLatency 與 performance.now() 配對,
+//      換出來的時間跟有 API 時差不到 30 ms;這時點鼓墊,記下的時間仍是點下去的時間
+//  4. 鍵盤 F / J / K 打三個鼓墊;按住不放的重複不算;Space 不算(留給播放);
+//     輸入法開著(e.key 是「ㄑ」/ "Process")看 e.code(KeyF / KeyJ / KeyK)
+//  4b. 沒有 pointerdown 的啟動(VoiceOver、Enter;click 的 detail = 0)也算一下(src "a11y");滑鼠點一下只算一下(pointerdown 算過,click 不重複)
 //  5. 版面:280 / 320 / 390 / 手機橫式 / 桌機,1 個與 3 個鼓墊:每個 ≥ 80×96、在卡片框線內、沒有橫向捲動、字沒被切掉、
 //     中英鼓墊在卡片裡的位置大小一模一樣;touch-action:none
 // 用法:node tools/test/pad.mjs
@@ -147,6 +151,31 @@ await page.evaluate(async () => {
   }
 }
 
+// 3b. 沒有 getOutputTimestamp 的備援路徑
+{
+  const n0 = bad;
+  const pads = await mount(3, true), d = pads.find(p => p.lane === "drum");
+  const conv = await page.evaluate(async () => {
+    const { eventToAudioTime } = await import("./js/shared/pad.js");
+    const ctx = window.__A.getCtx(), t = performance.now();
+    const withApi = eventToAudioTime(t);
+    ctx.getOutputTimestamp = undefined;
+    const ct = ctx.currentTime, lat = ctx.outputLatency || 0, without = eventToAudioTime(performance.now());
+    return { withApi, without, expect: ct - lat, api: typeof AudioContext.prototype.getOutputTimestamp };
+  });
+  const toNode = await clockSync();
+  const cdp = await ctx.newCDPSession(page);
+  const tapNode = Date.now();
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: d.x, y: d.y, id: 1 }] });
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  await sleep(150);
+  const h = await page.evaluate(() => { delete window.__A.getCtx().getOutputTimestamp; return window.__pt.hits; });
+  if (Math.abs(conv.without - conv.expect) > 0.02) fail(`沒有 getOutputTimestamp:換出 ${conv.without.toFixed(3)},應該 ≈ currentTime − outputLatency = ${conv.expect.toFixed(3)}`);
+  if (Math.abs(conv.without - conv.withApi) > 0.03) fail(`沒有 getOutputTimestamp:跟有 API 時差 ${((conv.without - conv.withApi) * 1000).toFixed(0)} ms`);
+  if (h.length !== 1 || Math.abs(toNode(h[0].time) - tapNode) > 60) fail(`沒有 getOutputTimestamp 時點一下:收到 ${h.length} 下${h[0] ? `、跟點下去差 ${(toNode(h[0].time) - tapNode).toFixed(0)} ms` : ""}`);
+  if (bad === n0) ok(`沒有 getOutputTimestamp(備援):換算跟有 API 時差 ${((conv.without - conv.withApi) * 1000).toFixed(1)} ms,點鼓墊記下的時間跟點下去差 ${(toNode(h[0].time) - tapNode).toFixed(0)} ms`);
+}
+
 // 4. 鍵盤
 {
   const n0 = bad;
@@ -163,7 +192,37 @@ await page.evaluate(async () => {
   await page.keyboard.press("j"); await page.keyboard.press("f"); await page.keyboard.press("k");
   const one = await page.evaluate(() => window.__pt.hits.map(h => h.lane));
   if (one.join() !== "snare,snare") fail(`1 個鼓墊:J、F 是小鼓、K 不算,實際 ${one.join()}`);
-  if (bad === n0) ok("鍵盤:F / J / K = 鈸 / 鼓 / 大鼓,按住不放的重複不算,Space 不算;1 個鼓墊時 J、F 都是小鼓");
+  // 輸入法開著:e.key 對不到,看 e.code
+  await mount(3, true);
+  const ime = await page.evaluate(() => {
+    const send = (key, code) => document.body.dispatchEvent(new KeyboardEvent("keydown", { key, code, bubbles: true, cancelable: true }));
+    send("ㄑ", "KeyF"); send("Process", "KeyJ"); send("ㄜ", "KeyK"); send("ㄎ", "KeyD"); send(" ", "Space");
+    return window.__pt.hits.map(h => h.lane + ":" + h.src);
+  });
+  if (ime.join() !== "cym:key,drum:key,foot:key") fail(`輸入法開著(e.key = ㄑ / Process / ㄜ):應該照 e.code 打到 cym、drum、foot,實際 ${ime.join()}`);
+  if (bad === n0) ok("鍵盤:F / J / K = 鈸 / 鼓 / 大鼓,按住不放的重複不算,Space 不算;1 個鼓墊時 J、F 都是小鼓;注音輸入法開著時照 e.code(KeyF / KeyJ / KeyK)");
+}
+
+// 4b. 輔助使用(click detail = 0)與不重複計算
+{
+  const n0 = bad;
+  await mount(3, true);
+  const a = await page.evaluate(() => { document.querySelector('#padTestCard .tap-pad[data-lane="foot"]').click(); return window.__pt.hits.map(h => h.lane + ":" + h.src); });
+  if (a.join() !== "foot:a11y") fail(`click()(detail 0,VoiceOver 的啟動):應該算一下 foot:a11y,實際 ${a.join()}`);
+  await page.evaluate(() => { window.__pt.hits.length = 0; });
+  await page.focus('#padTestCard .tap-pad[data-lane="cym"]');
+  await page.keyboard.press("Enter");
+  const e = await page.evaluate(() => window.__pt.hits.map(h => h.lane + ":" + h.src));
+  if (e.join() !== "cym:a11y") fail(`聚焦後按 Enter:應該算一下 cym:a11y,實際 ${e.join()}`);
+  await page.evaluate(() => { window.__pt.hits.length = 0; });
+  await page.click('#padTestCard .tap-pad[data-lane="drum"]');                                  // 滑鼠:pointerdown + click(detail 1)
+  await page.touchscreen.tap(...(await page.evaluate(() => { const r = document.querySelector('#padTestCard .tap-pad[data-lane="foot"]').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })));
+  await sleep(100);
+  // 手指點下去之後馬上又有 detail 0 的 click(有的瀏覽器會這樣):pointerdown 剛算過,不重複
+  await page.evaluate(() => document.querySelector('#padTestCard .tap-pad[data-lane="foot"]').click());
+  const m = await page.evaluate(() => window.__pt.hits.map(h => h.lane + ":" + h.src));
+  if (m.join() !== "drum:pointer,foot:pointer") fail(`滑鼠點、手指點各一下(再加一個 detail 0 的 click):應該 drum:pointer、foot:pointer,實際 ${m.join()}`);
+  if (bad === n0) ok("輔助使用:click()(detail 0)與聚焦後 Enter 各算一下(a11y);滑鼠點、手指點只算 pointerdown 那一下,緊接的 click 不重複");
 }
 
 // 5. 版面

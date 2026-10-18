@@ -5,7 +5,11 @@
 //  3. 偏移超過上限(450 ms)→ 不扣、有旗標、不給分數、說明是「太多了沒有扣掉」
 //  4. 三個鼓墊(鈸 / 鼓 / 大鼓與腳踩 HH):expectedByLane 分組正確(同一條 lane 同一時間算一下);各自評分,
 //     漏打大鼓只算在大鼓那條、多敲小鼓只算在鼓那條,鈸全部命中;打錯鼓墊 = 那條漏、另一條多
-import { expectedByLane, scoreLanes, offsetNote, LANES, OFFSET_LIMIT } from "../../../js/shared/timing.js";
+//  5. 一條 lane 單獨晚(大鼓整條晚 300 / 600 ms,其他對):整體偏移不受影響、大鼓那條不另外扣偏移 → 那條低分、總分 < 90,
+//     有 lag 旗標(lagLanes)與 laneNote 提示;晚 40 ms(< 容許範圍一半)沒有旗標;大家一起晚 = 整體偏移,沒有旗標
+//  6. 只有一條 lane 時行為不變:結果跟 scoreRhythm 直接評一模一樣(偏移 0 / 80 / 200 ms、漏一下、多一下;3 個鼓墊只用到一條也一樣)
+import { expectedByLane, scoreLanes, offsetNote, laneNote, LANES, OFFSET_LIMIT } from "../../../js/shared/timing.js";
+import { scoreRhythm } from "../../../js/shared/onsets.js";
 
 function rng(seed){   // mulberry32:固定種子,每次結果一樣
   return () => { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
@@ -85,6 +89,54 @@ export default function check(ok){
     // 沒有要打的 lane 上敲:算多的,分數打折
     const stray = scoreLanes({ drum: exp.drum }, [...tapsAt(exp.drum, "drum", 0.05, rng(5)), { lane: "foot", time: 1 }], { tempoBpm: BPM });
     ok(stray.extra === 1 && stray.lanes.foot.extra === 1 && stray.score < 100, `沒有要打的鼓墊上敲一下:extra ${stray.extra}、分數 ${stray.score}`);
+    ok(!scoreLanes(exp, taps, { tempoBpm: BPM }).lagLanes.length, "三個鼓墊都打對:不應該有 lag 旗標");
+  }
+  // 5. 一條 lane 單獨晚
+  {
+    const ev = [];
+    for (let b = 0; b < 8; b += 0.5) ev.push({ beat: b, piece: "hhClosed" });
+    for (const b of [1, 3, 5, 7]) ev.push({ beat: b, piece: "snare" });
+    for (const b of [0, 2, 2.5, 4, 6]) ev.push({ beat: b, piece: "kick" });
+    const exp = expectedByLane(ev, BPM, LANES[3]);
+    const mk = (footLate, all = 0, seed = 31) => {
+      const r = rng(seed), t = [];
+      for (const id of ["cym", "drum", "foot"]) t.push(...tapsAt(exp[id], id, all + (id === "foot" ? footLate : 0), r));
+      return scoreLanes(exp, t, { tempoBpm: BPM });
+    };
+    for (const late of [0.3, 0.6]) {
+      const r = mk(late), f = r.lanes.foot, note = laneNote(r, LANES[3]);
+      ok(Math.abs(r.offsetMs) <= 20, `大鼓單獨晚 ${late * 1000} ms:整體偏移應該不受影響,實際 ${r.offsetMs}`);
+      ok(f.score <= 20 && f.hits <= 1, `大鼓單獨晚 ${late * 1000} ms:大鼓那條不能高分,實際 ${f.score} 分、命中 ${f.hits}/${f.total}`);
+      ok(r.score < 90, `大鼓單獨晚 ${late * 1000} ms:總分不能高分(< 90),實際 ${r.score}`);
+      ok(f.lag && r.lagLanes.join() === "foot" && Math.abs(f.offsetMs - late * 1000) <= 20, `大鼓單獨晚 ${late * 1000} ms:應該只有大鼓有 lag 旗標、剩的偏移 ≈ ${late * 1000},實際 lag=${f.lag} lagLanes=${r.lagLanes} offset=${f.offsetMs}`);
+      ok(note && note[0].includes("大鼓・腳踩") && note[0].includes("慢約") && /Kick · HH \d+ ms behind/.test(note[1]), `大鼓單獨晚 ${late * 1000} ms 的提示:${note}`);
+      ok(r.lanes.cym.hits === 16 && r.lanes.drum.hits === 4 && !r.lanes.cym.lag && !r.lanes.drum.lag, `大鼓單獨晚 ${late * 1000} ms:鈸、鼓應該全部命中、沒有旗標`);
+    }
+    const small = mk(0.04);
+    ok(!small.lanes.foot.lag && laneNote(small) === null && small.score >= 90, `大鼓晚 40 ms(< 容許範圍一半):不該有旗標、分數 ≥ 90,實際 lag=${small.lanes.foot.lag} 分數 ${small.score}`);
+    const all = mk(0, 0.15);
+    ok(Math.abs(all.offsetMs - 150) <= 20 && !all.lagLanes.length && all.score >= 90, `三條一起晚 150 ms:整體偏移 ${all.offsetMs}、旗標 ${all.lagLanes}、分數 ${all.score}(應該扣掉、沒有旗標、≥ 90)`);
+    const early = mk(-0.3);
+    ok(early.lanes.foot.lag && early.lanes.foot.offsetMs < 0 && laneNote(early)[0].includes("快約"), `大鼓單獨早 300 ms:應該有旗標、說「快約」,實際 ${early.lanes.foot.offsetMs} ${laneNote(early)}`);
+  }
+  // 6. 只有一條 lane:跟 scoreRhythm 直接評一模一樣
+  {
+    const cases = [];
+    for (const off of [0, 0.08, 0.2]) cases.push([`偏移 ${off * 1000} ms`, tapsAt(exp1.snare, "snare", off, rng(41 + off * 1000))]);
+    const base = tapsAt(exp1.snare, "snare", 0.08, rng(43));
+    cases.push(["漏一下", base.filter((_, i) => i !== 3)], ["多一下", [...base, { lane: "snare", time: 7 * sec + 0.07 }]]);
+    for (const [name, taps] of cases) {
+      const r = scoreLanes(exp1, taps, { tempoBpm: BPM });
+      const want = scoreRhythm(exp1.snare, taps.map(t => t.time).sort((a, b) => a - b), { tempoBpm: BPM });
+      const got = { score: r.score, hits: r.hits, total: r.total, missed: r.missed, extra: r.extra, meanErrorMs: r.meanErrorMs, offsetMs: r.offsetMs, toleranceMs: r.toleranceMs };
+      ok(JSON.stringify(got) === JSON.stringify(want), `一個鼓墊(${name}):應該跟 scoreRhythm 一樣 ${JSON.stringify(want)},實際 ${JSON.stringify(got)}`);
+      ok(r.lanes.snare.offsetMs === 0 && !r.lanes.snare.lag && !r.lagLanes.length, `一個鼓墊(${name}):不應該有 lane 剩的偏移或旗標`);
+    }
+    // 3 個鼓墊只用到鼓那條
+    const ev = [0, 1, 2, 3, 4, 5, 6, 7].map(beat => ({ beat, piece: "snare" }));
+    const exp = expectedByLane(ev, BPM, LANES[3]), taps = tapsAt(exp.drum, "drum", 0.12, rng(47));
+    const r = scoreLanes(exp, taps, { tempoBpm: BPM }), want = scoreRhythm(exp.drum, taps.map(t => t.time), { tempoBpm: BPM });
+    ok(r.score === want.score && r.hits === want.hits && r.offsetMs === want.offsetMs && !r.lagLanes.length, `3 個鼓墊只用到一條:應該跟 scoreRhythm 一樣(${want.score} 分、偏移 ${want.offsetMs}),實際 ${r.score} 分、偏移 ${r.offsetMs}`);
   }
 }
 

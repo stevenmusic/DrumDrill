@@ -7,6 +7,9 @@
 //  3. 切到背景(visibilitychange → hidden):播放停止;回到前景不會自己開始播
 //  4. 播放中換語言:不停止播放,題目、選擇器、按鈕文字換成新語言
 //  5. 共用播放器(js/shared/player.js):時間窗排程、改速度不重複、stop 後歸零、切到背景自己停(細項見下面第 5 段)
+//  6. 共用播放器的其他行為:gaps 不出聲、預設拍點(只有預備拍、第一下重)、onTick(聽到的拍子,扣輸出延遲)、
+//     onTick 裡 stop() / play() 不出錯也不會兩條 rAF、看不到時 play() 不丟例外、切到背景叫 onStop、
+//     計時器被擋住時漏的音算進 dropped + onLate、bpm 不合法丟 RangeError、超出 lenBeats 的事件不播、自然播完後 stop(true) 收掉尾音
 // 用法:node tools/test/playback.mjs
 import { open } from "./harness.mjs";
 let bad = 0;
@@ -283,6 +286,154 @@ const click = () => page.click("#t-playBtn");
   await page.evaluate(() => window.__A.stopAll());
   if (bad === n0) ok(`共用播放器 24 小節(${p.n} 個鼓組事件):排程中最多 ${Math.max(w1.worst, w2.worst)} 個節點,每個時刻都 ≤ 2 × 時間窗內的事件,最遠只往前排 ${Math.max(w1.latest, w2.latest).toFixed(2)} 秒;` +
     `第 ${rt.beatFrom.toFixed(1)} 拍改速度 ${BPM}→${BPM2}:${dup.checked} 個反拍 hi-hat 各一個節點、不重複;stop() 後不再排、響完歸零,stop(true) 立刻歸零;切到背景自己停;自然播完 onEnd 一次`);
+}
+
+// 6. 共用播放器的其他行為(細項見檔頭第 6 項)
+{
+  const n0 = bad;
+  await page.evaluate(() => {
+    window.__errs = [];
+    window.addEventListener("error", e => window.__errs.push(e.message));
+    const C = AudioNode.prototype;
+    if (!C.__pl6) { C.__pl6 = true; const c0 = C.connect; C.connect = function(dest){ if (this instanceof AudioBufferSourceNode) this.__dest = dest; return c0.apply(this, arguments); }; }
+  });
+  // 播一段,等播完(或 ms),回傳這段排的節點(相對第一拍的拍子)、state、回呼紀錄
+  const run6 = (opts, ms) => page.evaluate(async ([opts, ms]) => {
+    const { createPlayer } = await import("./js/shared/player.js");
+    const log = { end: 0, stop: [], late: [] };
+    const m0 = window.__pl.length;
+    const pl = createPlayer({ onEnd: () => log.end++, onStop: r => log.stop.push(r), onLate: x => log.late.push(x) });
+    const t0 = pl.play(opts);
+    const sec = 60 / opts.bpm;
+    await new Promise(r => setTimeout(r, ms));
+    const nodes = window.__pl.slice(m0).filter(x => !x.__cancel).map(x => ({ beat: +((x.__at - t0) / sec).toFixed(3), strong: x.__dest && x.__dest.gain ? x.__dest.gain.value === 1 : null }));
+    return { t0, nodes, state: pl.state, log };
+  }, [opts, ms]);
+  const beatsOf = r => [...new Set(r.nodes.map(x => x.beat))].sort((a, b) => a - b);
+
+  // 6a. gaps:[2, 4) 裡的事件不出聲,其他照常;沒有 click、預備拍 0 → 沒有拍點
+  {
+    const ev = [0, 1, 2, 3, 4, 5, 6, 7].map(beat => ({ beat, piece: "snare", vel: "mf" }));
+    const r = await run6({ events: ev, lenBeats: 8, bpm: 240, countInBeats: 0, gaps: [[2, 4]] }, 2600);
+    const b = beatsOf(r).join();
+    if (b !== "0,1,4,5,6,7") fail(`gaps [2,4):有聲音的拍子應該是 0,1,4,5,6,7,實際 ${b}`);
+    if (r.state.sent !== 6 || r.state.dropped || r.state.failed || r.log.end !== 1) fail(`gaps:sent ${r.state.sent}(6)、dropped ${r.state.dropped}、failed ${r.state.failed}、onEnd ${r.log.end}`);
+  }
+  // 6b. 預設拍點:只有預備拍響(-3 重、-2 -1 弱),第一拍之後不響
+  {
+    const r = await run6({ events: [], lenBeats: 2, bpm: 240, countInBeats: 3 }, 1700);
+    const got = r.nodes.map(x => `${x.beat}${x.strong ? "!" : ""}`).sort().join();
+    if (got !== "-1,-2,-3!") fail(`預設拍點:應該是 -3(重)、-2、-1,實際 ${got}`);
+    if (r.state.sent !== 3) fail(`預設拍點:sent ${r.state.sent}(應該 3)`);
+  }
+  // 6c. onTick:每一格畫面一次、拍子一直往前、= 「聽到的」拍子(輸出延遲 0.1 秒、沒有 getOutputTimestamp 時晚 0.1 秒 ÷ 每拍秒數)
+  const tick = await page.evaluate(async () => {
+    const { createPlayer } = await import("./js/shared/player.js");
+    const ctx = window.__A.getCtx();
+    const out = {};
+    for (const mode of ["api", "latency"]) {
+      if (mode === "latency") { ctx.getOutputTimestamp = undefined; Object.defineProperty(ctx, "outputLatency", { configurable: true, get: () => 0.1 }); }
+      const ticks = [];
+      let pl;
+      pl = createPlayer({ onTick: b => ticks.push({ b, raw: pl.timeToBeat(ctx.currentTime) }) });
+      pl.play({ events: [], lenBeats: 4, bpm: 120, countInBeats: 2 });
+      await new Promise(r => setTimeout(r, 1200));
+      pl.stop();
+      if (mode === "latency") { delete ctx.getOutputTimestamp; delete ctx.outputLatency; }
+      const d = ticks.map(t => t.raw - t.b);
+      out[mode] = { n: ticks.length, mono: ticks.every((t, i) => !i || t.b >= ticks[i - 1].b - 1e-6), first: ticks.length ? ticks[0].b : NaN,
+        dMin: Math.min(...d), dMax: Math.max(...d) };
+    }
+    return out;
+  });
+  for (const [mode, t] of Object.entries(tick)) {
+    if (t.n < 20 || !t.mono || !(t.first >= -2.6)) fail(`onTick(${mode}):1.2 秒 ${t.n} 次、遞增 ${t.mono}、第一下 ${t.first}`);
+  }
+  if (!(tick.api.dMin >= -0.01 && tick.api.dMax <= 0.6)) fail(`onTick(getOutputTimestamp):聽到的拍子應該 ≤ 排程的拍子、差不到 0.3 秒,實際差 ${tick.api.dMin.toFixed(3)}–${tick.api.dMax.toFixed(3)} 拍`);
+  if (!(Math.abs(tick.latency.dMin - 0.2) < 0.02 && Math.abs(tick.latency.dMax - 0.2) < 0.02)) fail(`onTick(沒有 getOutputTimestamp、outputLatency 0.1 秒):應該晚 0.2 拍,實際 ${tick.latency.dMin.toFixed(3)}–${tick.latency.dMax.toFixed(3)}`);
+  // 6d. onTick 裡 stop():不出錯、停下來、不再叫 onTick;onTick 裡重新 play():只有一條 rAF(onTick 次數 ≤ 畫面數)
+  const reent = await page.evaluate(async () => {
+    const { createPlayer } = await import("./js/shared/player.js");
+    window.__errs.length = 0;
+    let pl, n = 0;
+    pl = createPlayer({ onTick: () => { n++; if (n === 3) pl.stop(); } });
+    pl.play({ events: [{ beat: 0, piece: "snare" }], lenBeats: 4, bpm: 120, countInBeats: 4 });
+    await new Promise(r => setTimeout(r, 600));
+    const stopRes = { n, playing: pl.state.playing };
+    let restarted = 0, ticks = 0, frames = 0, counting = false;
+    const pl2 = createPlayer({ onTick: () => { if (counting) ticks++; if (restarted < 1) { restarted++; pl2.play({ events: [], lenBeats: 8, bpm: 60, countInBeats: 0 }); } } });
+    pl2.play({ events: [], lenBeats: 8, bpm: 120, countInBeats: 4 });
+    await new Promise(r => setTimeout(r, 300));
+    counting = true;
+    await new Promise(res => { const t1 = performance.now() + 1000; const f = () => { frames++; if (performance.now() < t1) requestAnimationFrame(f); else res(); }; requestAnimationFrame(f); });
+    counting = false;
+    const playing2 = pl2.state.playing; pl2.stop(true);
+    return { stopRes, ticks, frames, playing2, errs: [...window.__errs] };
+  });
+  if (reent.stopRes.n !== 3 || reent.stopRes.playing) fail(`onTick 裡 stop():之後又叫了 onTick(共 ${reent.stopRes.n} 次,應該 3)或還在播 ${reent.stopRes.playing}`);
+  if (!reent.playing2 || reent.ticks > reent.frames + 2) fail(`onTick 裡重新 play():1 秒 onTick ${reent.ticks} 次 > 畫面 ${reent.frames} 格(兩條 rAF),或沒有在播 ${reent.playing2}`);
+  if (reent.errs.length) fail(`onTick 裡 stop / play 出錯:${reent.errs.join(";")}`);
+  // 6e. 看不到時 play():不丟例外、回傳 NaN、沒有在播、不排節點;播放中切到背景:onStop("hidden") 一次
+  const hid = await page.evaluate(async () => {
+    const { createPlayer } = await import("./js/shared/player.js");
+    const stops = [];
+    const pl = createPlayer({ onStop: r => stops.push(r) });
+    Object.defineProperty(document, "hidden", { configurable: true, get: () => true });
+    const m0 = window.__pl.length;
+    let msg = null, ret;
+    try { ret = pl.play({ events: [{ beat: 0, piece: "snare" }], lenBeats: 4, bpm: 120 }); } catch (e) { msg = String(e); }
+    await new Promise(r => setTimeout(r, 300));
+    const a = { msg, ret: String(ret), playing: pl.state.playing, made: window.__pl.length - m0 };
+    delete document.hidden;
+    pl.play({ events: [{ beat: 0, piece: "snare" }], lenBeats: 16, bpm: 120 });
+    await new Promise(r => setTimeout(r, 300));
+    Object.defineProperty(document, "hidden", { configurable: true, get: () => true });
+    await new Promise(r => setTimeout(r, 400));
+    delete document.hidden;
+    return { a, stops, playing: pl.state.playing };
+  });
+  if (hid.a.msg || hid.a.ret !== "NaN" || hid.a.playing || hid.a.made) fail(`看不到時 play():例外 ${hid.a.msg}、回傳 ${hid.a.ret}、playing ${hid.a.playing}、排了 ${hid.a.made} 個節點`);
+  if (hid.stops.join() !== "hidden" || hid.playing) fail(`播放中切到背景:onStop 應該叫一次("hidden"),實際 ${JSON.stringify(hid.stops)}、playing ${hid.playing}`);
+  // 6f. 漏音:主執行緒卡 2.5 秒 → 晚了的不補播,算進 dropped、onLate 有通知;sent + dropped = 全部事件
+  const drop = await page.evaluate(async () => {
+    const { createPlayer } = await import("./js/shared/player.js");
+    const late = [];
+    const ev = [];
+    for (let b = 0; b < 16; b += 0.25) ev.push({ beat: b, piece: "hhClosed", vel: "mp" });
+    const pl = createPlayer({ onLate: x => late.push(x) });
+    pl.play({ events: ev, lenBeats: 16, bpm: 240, countInBeats: 0 });
+    await new Promise(r => setTimeout(r, 300));
+    const t = performance.now(); while (performance.now() - t < 2500) {}
+    await new Promise(r => setTimeout(r, 3000));
+    return { s: pl.state, n: ev.length, late, lateSum: late.reduce((a, x) => a + x.n, 0) };
+  });
+  if (!(drop.s.dropped > 0) || drop.lateSum !== drop.s.dropped || !drop.late.length || drop.late[drop.late.length - 1].dropped !== drop.s.dropped) fail(`漏音:dropped ${drop.s.dropped}、onLate ${drop.late.length} 次合計 ${drop.lateSum}`);
+  if (drop.s.sent + drop.s.dropped + drop.s.failed !== drop.n) fail(`漏音:sent ${drop.s.sent} + dropped ${drop.s.dropped} + failed ${drop.s.failed} ≠ ${drop.n} 個事件`);
+  // 6g. bpm 不合法 → RangeError、沒有在播;超出 lenBeats(與預備拍之前)的事件不播;自然播完後 stop(true) 收掉還在響的尾音
+  const misc = await page.evaluate(async () => {
+    const { createPlayer } = await import("./js/shared/player.js");
+    const A = window.__A, pl = createPlayer({});
+    const errs = [];
+    for (const bpm of [0, -60, NaN, undefined, "120"]) { try { pl.play({ events: [], lenBeats: 4, bpm }); errs.push("沒丟"); } catch (e) { errs.push(e.name); } }
+    const playing = pl.state.playing;
+    pl.play({ events: [{ beat: -9, piece: "snare" }, { beat: 0, piece: "snare" }, { beat: 1, piece: "kick" }, { beat: 2, piece: "snare" }, { beat: 5, piece: "kick" }], lenBeats: 2, bpm: 120, countInBeats: 2 });
+    const evN = pl.state.events;
+    pl.stop(true);
+    let ended = 0;
+    const pl2 = createPlayer({ onEnd: () => ended++ });
+    pl2.play({ events: [{ beat: 0, piece: "hhOpen", vel: "ff" }], lenBeats: 1, bpm: 240, countInBeats: 0 });
+    await new Promise(r => setTimeout(r, 900));
+    const before = A.scheduledCount(), ret = pl2.stop(true);
+    await new Promise(r => setTimeout(r, 150));
+    return { errs, playing, evN, ended, before, ret, after: A.scheduledCount() };
+  });
+  if (misc.errs.some(e => e !== "RangeError") || misc.playing) fail(`bpm 不合法:應該都丟 RangeError,實際 ${misc.errs.join()}、playing ${misc.playing}`);
+  if (misc.evN !== 2) fail(`超出 lenBeats / 預備拍之前的事件:應該只留 2 個,實際 ${misc.evN}`);
+  if (misc.ended !== 1 || !(misc.before > 0) || misc.ret !== false || misc.after !== 0) fail(`自然播完後 stop(true):onEnd ${misc.ended}、之前還在響 ${misc.before}、回傳 ${misc.ret}、之後 ${misc.after}(應該 0)`);
+  await page.evaluate(() => window.__A.stopAll());
+  if (bad === n0) ok(`共用播放器其他行為:gaps 不出聲、預設拍點只有預備拍(第一下重)、onTick 每格一次且扣輸出延遲(沒有 API 時晚 ${tick.latency.dMin.toFixed(2)} 拍)、` +
+    `onTick 裡 stop / play 不出錯(重新 play 後 1 秒 ${reent.ticks} 次 / ${reent.frames} 格)、看不到時 play() 回傳 NaN、切到背景叫 onStop、` +
+    `卡 2.5 秒漏 ${drop.s.dropped} 個(onLate ${drop.late.length} 次,sent ${drop.s.sent} + dropped = ${drop.n})、bpm 不合法丟 RangeError、超出範圍的事件不播、播完後 stop(true) 收掉尾音`);
 }
 
 for (const e of errors) fail("console:" + e);
