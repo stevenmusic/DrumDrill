@@ -3,7 +3,7 @@ import { addStrings } from "../shared/i18n.js";
 addStrings("sight", {
   tempo: ["速度", "Tempo"],
   bpmDown: ["慢 1(按住連續減少)", "Slower (hold)"], bpmUp: ["快 1(按住連續增加)", "Faster (hold)"],
-  optMetro: ["準備時節拍器", "Prep metronome"], optClick: ["正式打的拍點", "Perform click"], bpmReset: ["官方速度", "Official tempo"],
+  optMetro: ["準備時節拍器", "Prep click"], optClick: ["正式打的拍點", "Perform click"], bpmReset: ["官方速度", "Official tempo"],
   playAria: ["聽正確版本", "Hear the correct version"],
   countdownUnit: ["秒", "s"],
   generate: ["新題目", "New test"],

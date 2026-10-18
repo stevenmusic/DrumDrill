@@ -68,7 +68,7 @@ const SUBS = {
   sight: () => [0, 1, 2, 3, 4, 5, 6, 7, 8].map(g => [String(g), g === 0 ? (examSystem() === "rsl" ? "D" : "I") : String(g)]),
   // 聽力:子項目 = 題型(RSL 有 Fill、Groove;Trinity 有 Playback;不適用的題型 js/ear/app.js 顯示說明)
   ear: () => [["fill", tr("過門", "Fill")], ["groove", tr("律動", "Groove")], ["playback", tr("回打", "Playback")]],
-  exam: () => [["tech", tr("技巧", "Technique")], ["sight", tr("視奏", "Sight-reading")], ["ear", tr("聽力", "Aural")]]
+  exam: () => [["tech", tr("技巧", "Technique")], ["sight", tr("視奏", "Sight-read")], ["ear", tr("聽力", "Aural")]]   // 跟分頁列同一個短名(折疊機 280 一行放得下)
 };
 const PART_LABEL = () => ({ tech: tr("技巧", "Technique"), sight: tr("視奏", "Sight-reading"), ear: tr("聽力", "Aural") });
 /* 子項目分段鈕的群組名稱(無障礙:role="group" 的 aria-label) */
