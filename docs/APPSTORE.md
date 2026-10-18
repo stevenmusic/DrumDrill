@@ -9,7 +9,7 @@
 |---|---|
 | iOS 外殼(Capacitor 8) | `app/capacitor.config.json`、`app/package.json`;Bundle ID `io.github.stevenmusic.drumdrill` |
 | 把網頁複製成 App 內容 | `cd app && npm run www`(= `tools/build/app-www.mjs`:複製網頁、**拿掉 Google Fonts 改用系統字型**、寫入版本號、打包取樣);`node tools/test/app-www.mjs` 檢查完整 |
-| 取樣打包進 App | `tools/build/app-samples.mjs`:iOS App(iPhone 與 iPad)一律走小記憶體,每層只帶 App 會用到的 round-robin(跟 `js/shared/audio.js` 的 `RR_LIMIT` / `KIT_RR` 一樣,`verify.mjs` 核對):技巧的小鼓 5 層力度 × 6 個 + 整組鼓 12 個鼓件(鼓皮每層前 3 個、鈸每層前 2 個)+ 拍點 + 鼓房殘響,104 個檔、10.9×10⁶ 位元組(小鼓 2.1、ride 2.3、crash 1.8、hhOpen 0.9、tom5 0.7、kick 0.7、tom3 0.6、rideBell 0.6、tom1 0.5、hhClosed 0.4、xstick 0.1、hhPedal 0.1、殘響 0.05)。第一次要連網下載到 `tools/build/samples/` |
+| 取樣打包進 App | `tools/build/app-samples.mjs`:iOS App(iPhone 與 iPad)一律走小記憶體,每層只帶 App 會用到的 round-robin(跟 `js/shared/audio.js` 的 `RR_LIMIT` / `KIT_RR` 一樣,`verify.mjs` 核對):技巧的小鼓 5 層力度 × 6 個 + 整組鼓 12 個鼓件(鼓皮每層前 3 個、鈸每層前 2 個)+ 拍點 + 鼓房殘響,104 個取樣檔(另有 `drums/manifest.json`)、10.9×10⁶ 位元組(小鼓 2.1、ride 2.3、crash 1.8、hhOpen 0.9、tom5 0.7、kick 0.7、tom3 0.6、rideBell 0.6、tom1 0.5、hhClosed 0.4、xstick 0.1、hhPedal 0.1、殘響 0.05)。第一次要連網下載到 `tools/build/samples/` |
 | 版本號 | repo 根目錄的 `VERSION`(1.0.0);app-www 寫進 Xcode 的 `MARKETING_VERSION`,build 號 = git commit 數(`docs/IOS.md` 第 6 節) |
 | App 圖示 | `icons/icon-1024.png`(金底小鼓 + 勾)、`icon-1024-dark.png`、`icon-1024-tinted.png`;`cd tools/test && node icons.mjs` 重新產生 |
 | 隱私權政策(中英) | `privacy.html` → `https://stevenmusic.github.io/DrumDrill/privacy.html` |
@@ -60,7 +60,8 @@
 ## 5. 關鍵字(100 字元,逗號分隔、不重複名稱裡的字)
 
 - **繁體中文**:`打鼓,練鼓,鼓譜,鼓組,基本打法,滾奏,複點,視奏,聽力,節奏,節拍器,考級,打擊,rudiments,paradiddle,flam,drum exam`(77 字)
-- **English**:`rudiments,paradiddle,flam,drag,drum kit,drumming,sight reading,aural,rhythm,metronome,grade,exam`(96 字)
+- **English**:`rudiments,paradiddle,flam,drag,drumming,snare,sight reading,aural,rhythm,metronome,grade,groove`(95 字)
+  - 名稱「DrumDrill: Drum Kit Exam Prep」已經有的 `drum kit`、`exam` 不再放(名稱的字本來就會被搜尋到,重複只浪費字數),換成 `snare`、`groove`。
 - **不放考試機構與其他組織的名稱**:Trinity、RSL、Rockschool、ABRSM、PAS(審核 2.3.7:關鍵字不能放別人的商標;本 App 與它們無關,放了容易被當成冒用而退件)。
 
 ## 6. 審核備註(App Review Information ▸ Notes,貼英文)
