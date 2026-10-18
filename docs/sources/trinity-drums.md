@@ -288,7 +288,7 @@
 ## 5. 鼓譜圖例(drum key)
 
 - **Rock & Pop 鼓的大綱裡沒有鼓譜圖例(drum key):查不到。** [RP] 全文沒有 key、legend 或記譜說明頁;圖例應該印在各級曲本和 Session Skills 書裡(書本內容這次查不到公開版本)。
-- [DK] Drum Kit & Percussion 大綱也沒有完整圖例。只在視奏參數表看得到:HH 用腳踩是 × 符頭寫在線下、開 HH 是「o」、閉 HH 是「+」[DK p.107]。
+- [DK] Drum Kit & Percussion 大綱也沒有完整圖例。只在視奏參數表看得到:HH 用腳踩是 × 符頭(只畫 × 符頭與向下的符桿,圖上沒有譜線,所以看不出寫在哪一線/間;「線下」是常見寫法,待 PAS 指南核對)、開 HH 是「o」、閉 HH 是「+」[DK p.107]。
 - 官方勘誤透露的零星記譜慣例 [ERR]:「Sweet Emotion」(2018 版 Grade 3,p.32)第 17 小節「diamond-notehead quavers should be on the top line … indicating Ride Bell」→ **Ride Bell = 菱形符頭,寫在最上面那條線**。這是唯一能從公開官方資料確認的一項;完整的 drum key(各鼓、各鈸在哪一線/間)**查不到**。
 
 ## 6. 官方公開範例

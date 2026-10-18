@@ -9,7 +9,7 @@
     "docs": {
       "ig": { "title": "Instrument Guides Drums D-8 2024 (Graded Certificate)", "url": "https://www.rslawards.com/wp-content/uploads/dlm_uploads/2024/09/Instrument-Guides-Drums-D-8-2024.pdf" }
     },
-    "legend": "src.p = page of the main syllabus PDF; src.doc = key in doc.docs when another document. assumed:true = not stated in the syllabus, the App's assumption. null = not stated (do not fill)."
+    "legend": "src.p = page of the main syllabus PDF; src.doc = key in doc.docs when another document. assumed:true = not stated in the syllabus, the App's assumption ({v, assumed} or a sibling xxxAssumed:true for the field xxx: bpmSrc backing = tempo of the backing track; styleChoices 0 = no style question at Debut–3). null = not stated (do not fill)."
   },
   "gradeNames": {
     "0": ["入門(Debut)", "Debut"],
@@ -127,7 +127,7 @@
         { "id": "C", "name": ["複點", "Paradiddles"], "bpm": 70, "bpmSrc": null, "items": [
           { "kind": "pattern", "pas": 16, "value": "8" }
         ] },
-        { "id": "D", "name": ["過門", "Fill"], "bpm": null, "bpmSrc": "backing", "items": [
+        { "id": "D", "name": ["過門", "Fill"], "bpm": null, "bpmSrc": "backing", "bpmSrcAssumed": true, "items": [
           { "kind": "book", "label": ["過門(配伴奏)", "Fill with backing"], "related": [], "note": ["第 1–3 小節 groove,第 4 小節考官從 4 個過門選 1 個;譜見官方檢定書", "Bars 1–3 groove, bar 4 one of 4 fills (examiner's pick); see the grade book"] }
         ] }
       ]
@@ -148,7 +148,7 @@
         { "id": "C", "name": ["單複點", "Single paradiddle"], "bpm": 70, "bpmSrc": null, "items": [
           { "kind": "pas", "no": 16 }
         ] },
-        { "id": "D", "name": ["過門", "Fill"], "bpm": null, "bpmSrc": "backing", "items": [
+        { "id": "D", "name": ["過門", "Fill"], "bpm": null, "bpmSrc": "backing", "bpmSrcAssumed": true, "items": [
           { "kind": "book", "label": ["過門(配伴奏)", "Fill with backing"], "related": [], "note": ["第 1–3 小節 groove,第 4 小節考官從 4 個過門選 1 個;譜見官方檢定書", "Bars 1–3 groove, bar 4 one of 4 fills (examiner's pick); see the grade book"] }
         ] }
       ]
@@ -173,7 +173,7 @@
         { "id": "D", "name": ["三連音", "Triplets"], "bpm": 70, "bpmSrc": null, "items": [
           { "kind": "pattern", "pas": 1, "value": "8t3", "sticking": "single", "note": ["官方:八分三連音,左右交替", "Officially: 8th-note triplets, alternating hands"] }
         ] },
-        { "id": "E", "name": ["過門", "Fill"], "bpm": null, "bpmSrc": "backing", "items": [
+        { "id": "E", "name": ["過門", "Fill"], "bpm": null, "bpmSrc": "backing", "bpmSrcAssumed": true, "items": [
           { "kind": "book", "label": ["過門(配伴奏)", "Fill with backing"], "related": [], "note": ["第 1–3 小節 groove,第 4 小節考官從 4 個過門選 1 個;譜見官方檢定書", "Bars 1–3 groove, bar 4 one of 4 fills (examiner's pick); see the grade book"] }
         ] }
       ]
@@ -210,7 +210,7 @@
     "4": {
       "src": { "p": "47" },
       "click": "required",
-      "rule": ["全部的技巧練習都要跟著 click 打", "All technical exercises are played to a click"],
+      "rule": ["全部的技巧練習都要跟著 click 打", "A click is required for every exercise"],
       "groups": [
         { "id": "A", "name": ["單擊/雙擊", "Singles/doubles"], "bpm": 75, "bpmSrc": null, "note": ["官方:第一次打單擊、反覆打雙擊;小節長度、拍號見檢定書", "Officially singles first time, doubles on the repeat; bar length and metre: see the grade book"], "items": [
           { "kind": "pattern", "pas": 1, "value": "8", "sticking": "single" },
@@ -239,7 +239,7 @@
     "5": {
       "src": { "p": "52" },
       "click": "required",
-      "rule": ["全部的技巧練習都要跟著 click 打", "All technical exercises are played to a click"],
+      "rule": ["全部的技巧練習都要跟著 click 打", "A click is required for every exercise"],
       "groups": [
         { "id": "A", "name": ["單擊/雙擊", "Singles/doubles"], "bpm": 80, "bpmSrc": null, "note": ["官方:第一次打單擊、反覆打雙擊;小節長度、拍號見檢定書", "Officially singles first time, doubles on the repeat; bar length and metre: see the grade book"], "items": [
           { "kind": "pattern", "pas": 1, "value": "8", "sticking": "single" },
@@ -271,7 +271,7 @@
     "6": {
       "src": { "p": "58" },
       "click": "required",
-      "rule": ["全部的技巧練習都要跟著 click 打", "All technical exercises are played to a click"],
+      "rule": ["全部的技巧練習都要跟著 click 打", "A click is required for every exercise"],
       "groups": [
         { "id": "A", "name": ["單擊/雙擊", "Singles/doubles"], "bpm": 80, "bpmSrc": null, "note": ["官方:三種時值連續交替,第一次打單擊、反覆打雙擊;小節長度、拍號見檢定書", "Officially the three values in continuous alternation, singles first time, doubles on the repeat; see the grade book"], "items": [
           { "kind": "pattern", "pas": 1, "value": "8t3", "sticking": "single" },
@@ -292,7 +292,7 @@
           { "kind": "book", "label": ["五擊滾奏樂句", "5-stroke roll phrase"], "related": [7], "note": ["重音在 Tom;樂句本身見官方檢定書", "Accents on toms; the phrase itself is in the grade book"] },
           { "kind": "book", "label": ["九擊滾奏樂句", "9-stroke roll phrase"], "related": [10], "note": ["樂句本身見官方檢定書", "The phrase itself is in the grade book"] }
         ] },
-        { "id": "E", "name": ["風格練習曲", "Stylistic Study"], "bpm": null, "bpmSrc": "backing", "items": [
+        { "id": "E", "name": ["風格練習曲", "Stylistic Study"], "bpm": null, "bpmSrc": "backing", "bpmSrcAssumed": true, "items": [
           { "kind": "book", "label": ["風格練習曲(三選一)", "Style study (1 of 3)"], "related": [], "note": ["選的風格同時決定 Quick Study Piece 的風格;譜見官方檢定書", "The style chosen also sets the Quick Study Piece style; see the grade book"] }
         ], "styles": [
           { "name": ["Rock/Metal", "Rock/Metal"], "focus": ["半開 hi-hat、密集的十六分大鼓", "Half-open hi-hat, busy 16th bass drum"] },
@@ -304,7 +304,7 @@
     "7": {
       "src": { "p": "63" },
       "click": "required",
-      "rule": ["全部的技巧練習都要跟著 click 打", "All technical exercises are played to a click"],
+      "rule": ["全部的技巧練習都要跟著 click 打", "A click is required for every exercise"],
       "groups": [
         { "id": "A", "name": ["單擊", "Single strokes"], "bpm": 65, "bpmSrc": null, "note": ["組名寫 Single and Double Strokes,內容只列單擊;照內容", "Group title says singles and doubles but only singles are listed; the App follows the list"], "items": [
           { "kind": "pattern", "pas": 1, "value": "4", "sticking": "single" },
@@ -331,7 +331,7 @@
           { "kind": "book", "label": ["七擊滾奏樂句", "7-stroke roll phrase"], "related": [9], "note": ["樂句本身見官方檢定書", "The phrase itself is in the grade book"] },
           { "kind": "book", "label": ["九擊滾奏樂句", "9-stroke roll phrase"], "related": [10], "note": ["重音在 Tom;樂句本身見官方檢定書", "Accents on toms; the phrase itself is in the grade book"] }
         ] },
-        { "id": "F", "name": ["風格練習曲", "Stylistic Study"], "bpm": null, "bpmSrc": "backing", "items": [
+        { "id": "F", "name": ["風格練習曲", "Stylistic Study"], "bpm": null, "bpmSrc": "backing", "bpmSrcAssumed": true, "items": [
           { "kind": "book", "label": ["風格練習曲(三選一)", "Style study (1 of 3)"], "related": [], "note": ["選的風格同時決定 Quick Study Piece 的風格;譜見官方檢定書", "The style chosen also sets the Quick Study Piece style; see the grade book"] }
         ], "styles": [
           { "name": ["Rock/Metal", "Rock/Metal"], "focus": ["Ride 碗 7/8 節奏、五擊滾奏", "Ride bell 7/8 pattern, 5-stroke rolls"] },
@@ -343,7 +343,7 @@
     "8": {
       "src": { "p": "68" },
       "click": "required",
-      "rule": ["全部的技巧練習都要跟著 click 打", "All technical exercises are played to a click"],
+      "rule": ["全部的技巧練習都要跟著 click 打", "A click is required for every exercise"],
       "groups": [
         { "id": "A", "name": ["單擊", "Single strokes"], "bpm": 65, "bpmSrc": null, "items": [
           { "kind": "pattern", "pas": 1, "value": "4", "sticking": "single" },
@@ -372,7 +372,7 @@
           { "kind": "book", "label": ["七擊滾奏樂句", "7-stroke roll phrase"], "related": [9], "note": ["重音在 Tom;樂句本身見官方檢定書", "Accents on toms; the phrase itself is in the grade book"] },
           { "kind": "book", "label": ["組合滾奏", "Combined rolls"], "related": [], "note": ["不是 PAS 名稱;譜見官方檢定書", "Not a PAS rudiment name; see the grade book"] }
         ] },
-        { "id": "F", "name": ["風格練習曲", "Stylistic Study"], "bpm": null, "bpmSrc": "backing", "items": [
+        { "id": "F", "name": ["風格練習曲", "Stylistic Study"], "bpm": null, "bpmSrc": "backing", "bpmSrcAssumed": true, "items": [
           { "kind": "book", "label": ["風格練習曲(三選一)", "Style study (1 of 3)"], "related": [], "note": ["選的風格同時決定 Quick Study Piece 的風格;譜見官方檢定書", "The style chosen also sets the Quick Study Piece style; see the grade book"] }
         ], "styles": [
           { "name": ["Rock/Metal", "Rock/Metal"], "focus": ["節奏移位、5/4 協調", "Rhythmic displacement, 5/4 coordination"] },
@@ -418,22 +418,22 @@
   "ear": {
     "0": {
       "fill": { "bars": 1, "pieces": ["snare"], "bpm": 70, "values": ["4", "8"], "rests": [], "options": 2, "plays": 2, "countInBars": 1, "metro": true },
-      "groove": { "bars": 2, "pieces": ["hh", "snare", "kick"], "bpm": [80, 80], "repeat": { "v": 2, "assumed": true }, "styleChoices": 0, "styleOptions": null },
+      "groove": { "bars": 2, "pieces": ["hh", "snare", "kick"], "bpm": [80, 80], "repeat": { "v": 2, "assumed": true }, "styleChoices": 0, "styleChoicesAssumed": true, "styleOptions": null },
       "src": { "p": "31" }
     },
     "1": {
       "fill": { "bars": 1, "pieces": ["snare"], "bpm": 70, "values": ["4", "8"], "rests": ["r4"], "options": 2, "plays": 2, "countInBars": 1, "metro": true },
-      "groove": { "bars": 2, "pieces": ["hh", "snare", "kick"], "bpm": [80, 80], "repeat": { "v": 2, "assumed": true }, "styleChoices": 0, "styleOptions": null },
+      "groove": { "bars": 2, "pieces": ["hh", "snare", "kick"], "bpm": [80, 80], "repeat": { "v": 2, "assumed": true }, "styleChoices": 0, "styleChoicesAssumed": true, "styleOptions": null },
       "src": { "p": "35" }
     },
     "2": {
       "fill": { "bars": 1, "pieces": ["snare"], "bpm": 70, "values": ["4", "8", "16"], "rests": ["r4"], "options": 2, "plays": 2, "countInBars": 1, "metro": true },
-      "groove": { "bars": 2, "pieces": ["hh", "hhOpen", "snare", "kick"], "bpm": [80, 80], "repeat": { "v": 2, "assumed": true }, "styleChoices": 0, "styleOptions": null },
+      "groove": { "bars": 2, "pieces": ["hh", "hhOpen", "snare", "kick"], "bpm": [80, 80], "repeat": { "v": 2, "assumed": true }, "styleChoices": 0, "styleChoicesAssumed": true, "styleOptions": null },
       "src": { "p": "39" }
     },
     "3": {
       "fill": { "bars": 1, "pieces": ["snare"], "bpm": 70, "values": ["4", "8", "8t3", "16"], "rests": ["r4"], "options": 2, "plays": 2, "countInBars": 1, "metro": true },
-      "groove": { "bars": 2, "pieces": ["crash", "hh", "hhOpen", "snare", "kick"], "bpm": [80, 80], "repeat": { "v": 2, "assumed": true }, "styleChoices": 0, "styleOptions": null },
+      "groove": { "bars": 2, "pieces": ["crash", "hh", "hhOpen", "snare", "kick"], "bpm": [80, 80], "repeat": { "v": 2, "assumed": true }, "styleChoices": 0, "styleChoicesAssumed": true, "styleOptions": null },
       "src": { "p": "43" }
     },
     "4": {

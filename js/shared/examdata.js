@@ -77,5 +77,7 @@ export function techItems(g, data = examCached("rsl")){
     bpm: gr.bpm, bpmSrc: gr.bpmSrc, src: t.src, note: it.note || gr.note || null
   })));
 }
-/* 這一級連到 PAS 原譜的編號(去掉重複;examStatus 的「已會 n/m」用) */
-export const techPasNos = (g, data) => [...new Set(techItems(g, data).filter(it => it.kind === "pas").map(it => it.no))];
+/* 這一級用到的 PAS 編號(去掉重複;examStatus 的「已會 n/m」、清單的「已會」狀態用):
+   kind:"pas" 的 no,加上 kind:"pattern" 的 pas——pattern 是「PAS 的左右手 + 大綱時值」,熟練度(已經會了 / 待加強)
+   一律記在那個 PAS 編號上(技巧分頁的 mastery[no]),不另外記一份;book 的 related 只是參考,不算 */
+export const techPasNos = (g, data) => [...new Set(techItems(g, data).flatMap(it => it.kind === "pas" ? [it.no] : it.kind === "pattern" ? [it.pas] : []))];

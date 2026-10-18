@@ -3,7 +3,8 @@
 // 1. 結構:每個有數值的節點都有 src.p(自己或上層)、0–8 級都在、PAS 編號對得到 rudiments.js、時值代號在允許清單、bpm 30–240、
 //    中英都有(中文一定配英文)、按鈕/標籤的英文 ≤ 22 字元、沒有長段原文、配分加總 100、等第門檻遞增、Trinity 累積後不會變少
 // 2. 官方查不到的一定是 null 或 assumed:true(Trinity Playback 速度、RSL 聽力風格清單、RSL Debut–3 視奏拍號……)
-// 3. 另外照 docs/sources/*.md 的表手抄一份(配分、等第門檻、各級技巧組別與 BPM、視奏/聽力速度、考試時間、Playback 參數),跟 JSON 互相核對
+// 3. 另外照 docs/sources/*.md 的表手抄一份(配分、等第門檻、不及格段、各級技巧組別與 BPM、視奏/聽力速度、考試時間、Playback 參數與鼓件、
+//    Improvising 拍號/風格/solo、自選曲長度與速度、每一段的頁碼),跟 JSON 互相核對
 //    (跟 verify.mjs 的 STICK 表同樣做法:改 JSON 時這裡也要照大綱再抄一次)
 import fs from "node:fs";
 import { RUDIMENTS, CATEGORIES } from "../../../js/tech/rudiments.js";
@@ -59,7 +60,7 @@ export default function check(ok){
       if (k === "rests" && v !== null) ok(Array.isArray(v) && v.every(isRestCode), `${file} ${p}:休止符代號不對:${JSON.stringify(v)}`);
       if (k === "pieces" && Array.isArray(v)) ok(v.every(x => KIT.has(x)), `${file} ${p}:鼓件不在 drumkey.json:${JSON.stringify(v)}`);
       if (k === "time" && Array.isArray(v)) ok(v.every(x => /^\d+\/\d+$/.test(x)), `${file} ${p}:拍號格式不對`);
-      if (k === "assumed") ok(typeof v === "boolean", `${file} ${p}:assumed 要是 true / false`);
+      if (k === "assumed" || /Assumed$/.test(k)) ok(typeof v === "boolean", `${file} ${p}:${k} 要是 true / false`);
       walk(file, v, p, src);
     }
   }
@@ -198,7 +199,9 @@ export default function check(ok){
     const got = rsl.tech[g].groups.map(gr => `${gr.id}${gr.bpm ?? "-"}: ${gr.items.map(code).join(" ")}`).join(" | ");
     ok(got === RSL_TECH[g], `RSL ${g} 級技巧:\n    手抄 ${RSL_TECH[g]}\n    JSON ${got}`);
   }
-  ok(same(techPasNos(3, rsl), [16, 20, 31]), "techPasNos(3)");
+  // 3 級(§3.2):單擊 #1、雙擊 #6(pattern 的熟練度記在 PAS 編號上)、Paradiddle #16、Flam #20、Drag #31
+  ok(same(techPasNos(3, rsl), [1, 6, 16, 20, 31]), `techPasNos(3) 要是 [1,6,16,20,31](含 pattern 的 pas):${JSON.stringify(techPasNos(3, rsl))}`);
+  ok(same(techPasNos(0, rsl), [1, 6, 16]), `techPasNos(0) 要是 [1,6,16](Debut 都是 pattern):${JSON.stringify(techPasNos(0, rsl))}`);
   // RSL 視奏(§4.1):[小節, 速度, 時值, 休止符]
   const RSL_SIGHT = { 0: [4, [80, 80], "2 4", "r4"], 1: [4, [80, 80], "8 4", "r4"], 2: [4, [70, 70], "4 8 16", "r4 r8"], 3: [4, [70, 80], "4 8 16", "r4 r8"],
     4: [8, [80, 90], "4 4. 8 8. 16", "r4 r8"], 5: [8, [80, 120], "4 4. 8 8. 16", "r4 r8"], 6: [12, null, null, null], 7: [12, null, null, null], 8: [12, null, null, null] };
@@ -254,6 +257,72 @@ export default function check(ok){
   }
   ok(same(playbackFor(0, tri).pieces, ["snare", "kick", "tomHi", "tomFloor", "crash"]) && playbackFor(1, tri).pieces.includes("tomMid") && ["hh", "ride"].every(p => playbackFor(2, tri).pieces.includes(p)), "Trinity Playback 鼓件:初級 SD BD HT LT CR、1 級加中鼓、2 級加 HH RC");
   ok(same(KEYS.map(g => tri.improvising.grades[g].bars ?? null), [4, null, null, 8, null, 12, 16, null, null]), "Trinity Improvising 總小節數 4/8/12/16");
+  ok(tri.improvising.barsAs && tri.improvising.barsAs.v === "loop" && tri.improvising.barsAs.assumed === true, "Trinity Improvising:總小節數 = 循環長度是推估,要標 assumed");
+  ok(tri.playback.pieceMap && tri.playback.pieceMap.LT && tri.playback.pieceMap.LT.v === "tomFloor" && tri.playback.pieceMap.LT.assumed === true, "Trinity Playback:LT → 落地鼓是 App 的對應,要標 assumed");
+  for (const g of GRADES) for (const gr of rsl.tech[g].groups)
+    if (gr.bpmSrc === "backing") ok(gr.bpmSrcAssumed === true, `RSL ${g} 級 ${gr.id} 組:速度 = 伴奏音軌是推估(大綱沒寫數字),要標 bpmSrcAssumed`);
+  for (const g of GRADES) if (rsl.ear[g].groove.styleChoices === 0) ok(rsl.ear[g].groove.styleChoicesAssumed === true, `RSL ${g} 級 Groove 沒有風格題(0)是推估,要標 styleChoicesAssumed`);
+
+  /* ── 3b. 更多手抄核對(照 docs/sources/*.md;不是從 JSON 複製):各段頁碼、Trinity 自選曲、Improvising、Playback 鼓件與其他、不及格分數段 ── */
+  const pages = o => KEYS.map(g => o[g] && o[g].src ? o[g].src.p : null);
+  // RSL 頁碼:技巧 §3.2、視奏 §4.1 + QSP §4.3(長度頁, 流程頁)、聽力 §5.2、樂理問答 §6(Debut 題數 p.30、範圍 p.31)、即興 §4.2
+  const RSL_P = {
+    tech: ["30", "34", "38", "42", "47", "52", "58", "63", "68"],
+    sight: ["31", "35", "39", "43", "48", "53", "57, 59", "62, 64", "67, 69"],
+    ear: ["31", "35", "39", "43", "48", "53", "59", "64", "69"],
+    gmq: ["30–31", "35", "39", "43", "48", "54", "59", "64", "69"],
+    improv: [null, "35", "39", "43", "48", "53", null, null, null]
+  };
+  for (const [k, want] of Object.entries(RSL_P)) ok(same(pages(rsl[k]), want), `RSL ${k} 頁碼:手抄 ${want.join("/")},JSON ${pages(rsl[k]).join("/")}`);
+  ok(same(KEYS.map(g => rsl.other.pieceMaxSec[g].src.p), ["30", "34", "38", "42", "46", "51", "57", "62", "67"]), "RSL 演奏曲最長時間的頁碼(§2.4)");
+  ok(rsl.marks.gradeExam.src.p === "16" && rsl.marks.gradedCert.src.p === "17" && rsl.marks.belowPass.src.p === "22–23" && rsl.minutes.src.p === "15", "RSL 配分 p.16、錄影考 p.17、不及格段 p.22–23、時間 p.15");
+  // Trinity 頁碼:Playback Initial–4 p.62、5–8 p.63;Improvising Initial–4 p.64、5–8 p.65;自選曲 Initial p.55、1–2 p.56、3–4 p.57、5–6 p.58、7–8 p.59
+  const TR_P = {
+    playback: ["62", "62", "62", "62", "62", "63", "63", "63", "63"],
+    improvising: ["64", "64", "64", "64", "64", "65", "65", "65", "65"],
+    ownChoice: ["55", "56", "56", "57", "57", "58", "58", "59", "59"]
+  };
+  for (const [k, want] of Object.entries(TR_P)) ok(same(pages(tri[k].grades), want), `Trinity ${k} 頁碼:手抄 ${want.join("/")},JSON ${pages(tri[k].grades).join("/")}`);
+  ok(tri.playback.flow.src.p === "60" && tri.improvising.flow.src.p === "61", "Trinity Playback 流程 p.60、Improvising 流程 p.61");
+  ok(tri.marks.faceToFace.src.p === "46–47" && tri.marks.digital.src.p === "31–32" && tri.marks.total.src.p === "6, 22" && tri.songBands.src.p === "23" && tri.sessionBands.src.p === "23" && tri.minutes.src.p === "48", "Trinity 配分 p.46–47、數位 p.31–32、總分 p.6/22、等第 p.23、時間 p.48");
+  // Trinity 自選曲(§4.1):長度(秒)、速度(null = 全範圍、undefined = 這一級沒有新增)
+  const TR_OC = { 0: [[45, 120], [60, 130]], 1: [[60, 150], [60, 160]], 2: [[90, 180], [50, 160]], 3: [[90, 210], null], 4: [[150, 240]], 5: [[150, 240]], 6: [[180, 270]], 7: [[180, 270]], 8: [[210, 300]] };
+  for (const g of GRADES) {
+    const o = tri.ownChoice.grades[g], [len, bpm] = TR_OC[g];
+    ok(same(o.lengthSec, len), `Trinity 自選曲 ${g} 級長度:手抄 ${JSON.stringify(len)},JSON ${JSON.stringify(o.lengthSec)}`);
+    ok(TR_OC[g].length === 1 ? !("bpm" in o) : same(o.bpm, bpm), `Trinity 自選曲 ${g} 級速度:手抄 ${JSON.stringify(bpm)},JSON ${JSON.stringify(o.bpm)}`);
+  }
+  ok(Array.isArray(tri.ownChoice.grades[3].bpmText), "Trinity 自選曲 3 級:速度是「全範圍」的文字");
+  // Trinity Improvising(§3.4):每一級新增的拍號、風格(英文,小寫比)、solo break 最多幾小節
+  const TR_IM = {
+    0: ["4/4", "simple rock|pop", null], 1: ["", "ballad|heavy rock"], 2: ["3/4", "country"], 3: ["2/2", "blues"], 4: ["6/8", "reggae|r'n'b"],
+    5: ["12/8", "funk|shuffle|disco"], 6: ["9/8", "latin|metal", 2], 7: ["5/4 7/8", "jazz|boogie-woogie|boogie-style rock"], 8: ["", "any style, incl. mixed", 4]
+  };
+  for (const g of GRADES) {
+    const o = tri.improvising.grades[g], [time, sty, solo] = TR_IM[g];
+    ok((o.time || []).join(" ") === time, `Trinity Improvising ${g} 級拍號:手抄「${time}」,JSON「${(o.time || []).join(" ")}」`);
+    ok(o.styles.map(x => x[1].toLowerCase()).join("|") === sty, `Trinity Improvising ${g} 級風格:手抄 ${sty},JSON ${o.styles.map(x => x[1]).join("|")}`);
+    if (solo !== undefined) ok(solo === null ? o.solo === null : o.solo && o.solo.maxBars === solo, `Trinity Improvising ${g} 級 solo break:手抄 ${solo},JSON ${JSON.stringify(o.solo)}`);
+    else ok(!("solo" in o), `Trinity Improvising ${g} 級 solo break 沒有新增`);
+  }
+  ok(tri.improvising.grades[8].meterChange === true, "Trinity Improvising 8 級:會換拍號");
+  // Trinity Playback(§3.2):每一級新增的鼓件、其他、聲部說明(LT = 落地鼓 tomFloor、HH 用腳踩 = hhFoot、開/閉 HH = hhOpen)
+  const TR_PB2 = {
+    0: ["snare kick tomHi tomFloor crash", "", "only"], 1: ["tomMid", "", "some"], 2: ["hh ride", "ties", "mostly"], 3: ["hhFoot", "footHH offbeatBD", null],
+    4: ["hhOpen", "fullKit hhOpenClose rimclick roll flam drag ruff"], 5: ["", "independence"], 6: ["", "ghost"], 7: ["", "anyTerms"], 8: ["", "meterChange"]
+  };
+  for (const g of GRADES) {
+    const d = tri.playback.grades[g], [pcs, extra, va] = TR_PB2[g];
+    ok((d.pieces || []).join(" ") === pcs, `Trinity Playback ${g} 級鼓件:手抄「${pcs}」,JSON「${(d.pieces || []).join(" ")}」`);
+    ok((d.extra || []).join(" ") === extra, `Trinity Playback ${g} 級其他:手抄「${extra}」,JSON「${(d.extra || []).join(" ")}」`);
+    ok(va === undefined ? !("voicesAmount" in d) : d.voicesAmount === va, `Trinity Playback ${g} 級聲部說明:手抄 ${va},JSON ${d.voicesAmount}`);
+  }
+  // 不及格分數段(RSL §2.3 p.22–23;Trinity §2.4 p.6/22/23/28)
+  const RSL_BP = { piece: [[6, 11], [0, 5]], tech: [[4, 8], [0, 3]], sight: [[3, 5], [0, 2]], ear: [[3, 5], [0, 2]], gmq: [[2, 2], [0, 1]] };
+  for (const [k, [bp1, bp2]] of Object.entries(RSL_BP)) ok(same(rsl.marks.belowPass[k], { bp1, bp2 }), `RSL 不及格段 ${k}:手抄 ${JSON.stringify({ bp1, bp2 })}`);
+  ok(same(tri.marks.total.belowPass, { bp1: [45, 59], bp2: [0, 44] }), "Trinity 總分不及格段 45–59 / 0–44");
+  ok(same(tri.songBands.song12.belowPass, { bp1: [11, 14], bp2: [0, 10] }) && same(tri.songBands.song3.belowPass, { bp1: [14, 17], bp2: [0, 13] }), "Trinity 每首歌不及格段");
+  ok(same(tri.sessionBands.belowPass, { bp1: [9, 11], bp2: [0, 8] }) && same(tri.overallBands.belowPass, { bp1: [4, 5], bp2: [1, 3] }), "Trinity Session skills / Overall performance 不及格段");
 
   /* ── 4. 鼓組圖例 ── */
   for (const [id, p] of Object.entries(key.pieces)) {
@@ -264,6 +333,9 @@ export default function check(ok){
   for (const [id, s] of Object.entries(key.srcs)) ok(s.pending ? !s.p : PAGE.test(s.p || ""), `drumkey srcs.${id}:官方出處要有頁碼、待核對的不能有`);
   const P = key.pieces;
   ok(P.hhFoot.head === "x" && P.hhFoot.src === "trinity-dk-p107" && P.hhOpen.mark === "o" && P.hhClosed.mark === "+", "drumkey:腳踩 HH ×、開 o、閉 +(DK p.107)");
+  // DK p.107 只畫 × 符頭與向下的符桿(圖上沒有譜線):位置(線下、D4)不是官方的,要有 posSrc = 待核對
+  ok(P.hhFoot.posSrc === "pending-pas-weinberg", "drumkey:腳踩 HH 的位置官方沒畫(DK p.107 沒有譜線),要有 posSrc:pending-pas-weinberg");
+  ok(Object.entries(P).every(([id, p]) => p.src === "pending-pas-weinberg" || id === "rideBell" || p.posSrc === "pending-pas-weinberg"), "drumkey:官方只確認符頭/記號的(DK p.107),位置都要標 posSrc 待核對");
   ok(P.rideBell.head === "diamond" && P.rideBell.step === "F" && P.rideBell.oct === 5 && P.rideBell.src === "trinity-errata", "drumkey:Ride bell 菱形在最上線(勘誤)");
   ok(key.singleLine.piece === "snare" && key.srcs[key.singleLine.src], "drumkey:RSL 初中級單線小鼓");
   const official = new Set(["trinity-dk-p107", "trinity-errata"]);
