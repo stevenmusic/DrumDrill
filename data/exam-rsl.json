@@ -9,7 +9,7 @@
     "docs": {
       "ig": { "title": "Instrument Guides Drums D-8 2024 (Graded Certificate)", "url": "https://www.rslawards.com/wp-content/uploads/dlm_uploads/2024/09/Instrument-Guides-Drums-D-8-2024.pdf" }
     },
-    "legend": "src.p = page of the main syllabus PDF; src.doc = key in doc.docs when another document. assumed:true = not stated in the syllabus, the App's assumption ({v, assumed} or a sibling xxxAssumed:true for the field xxx: bpmSrc backing = tempo of the backing track; styleChoices 0 = no style question at Debut–3). null = not stated (do not fill)."
+    "legend": "src.p = page of the main syllabus PDF; src.doc = key in doc.docs when another document. assumed:true = not stated in the syllabus, the App's assumption ({v, assumed} or a sibling xxxAssumed:true for the field xxx, e.g. styleChoices 0 = no style question at Debut–3). null = not stated (do not fill). tech bpmSrc \"backing\" = officially played with the backing track (stated), bpm stays null (no number given; not an assumption)."
   },
   "gradeNames": {
     "0": ["入門(Debut)", "Debut"],
@@ -127,7 +127,7 @@
         { "id": "C", "name": ["複點", "Paradiddles"], "bpm": 70, "bpmSrc": null, "items": [
           { "kind": "pattern", "pas": 16, "value": "8" }
         ] },
-        { "id": "D", "name": ["過門", "Fill"], "bpm": null, "bpmSrc": "backing", "bpmSrcAssumed": true, "items": [
+        { "id": "D", "name": ["過門", "Fill"], "bpm": null, "bpmSrc": "backing", "items": [
           { "kind": "book", "label": ["過門(配伴奏)", "Fill with backing"], "related": [], "note": ["第 1–3 小節 groove,第 4 小節考官從 4 個過門選 1 個;譜見官方檢定書", "Bars 1–3 groove, bar 4 one of 4 fills (examiner's pick); see the grade book"] }
         ] }
       ]
@@ -148,7 +148,7 @@
         { "id": "C", "name": ["單複點", "Single paradiddle"], "bpm": 70, "bpmSrc": null, "items": [
           { "kind": "pas", "no": 16 }
         ] },
-        { "id": "D", "name": ["過門", "Fill"], "bpm": null, "bpmSrc": "backing", "bpmSrcAssumed": true, "items": [
+        { "id": "D", "name": ["過門", "Fill"], "bpm": null, "bpmSrc": "backing", "items": [
           { "kind": "book", "label": ["過門(配伴奏)", "Fill with backing"], "related": [], "note": ["第 1–3 小節 groove,第 4 小節考官從 4 個過門選 1 個;譜見官方檢定書", "Bars 1–3 groove, bar 4 one of 4 fills (examiner's pick); see the grade book"] }
         ] }
       ]
@@ -173,7 +173,7 @@
         { "id": "D", "name": ["三連音", "Triplets"], "bpm": 70, "bpmSrc": null, "items": [
           { "kind": "pattern", "pas": 1, "value": "8t3", "sticking": "single", "note": ["官方:八分三連音,左右交替", "Officially: 8th-note triplets, alternating hands"] }
         ] },
-        { "id": "E", "name": ["過門", "Fill"], "bpm": null, "bpmSrc": "backing", "bpmSrcAssumed": true, "items": [
+        { "id": "E", "name": ["過門", "Fill"], "bpm": null, "bpmSrc": "backing", "items": [
           { "kind": "book", "label": ["過門(配伴奏)", "Fill with backing"], "related": [], "note": ["第 1–3 小節 groove,第 4 小節考官從 4 個過門選 1 個;譜見官方檢定書", "Bars 1–3 groove, bar 4 one of 4 fills (examiner's pick); see the grade book"] }
         ] }
       ]
@@ -292,7 +292,7 @@
           { "kind": "book", "label": ["五擊滾奏樂句", "5-stroke roll phrase"], "related": [7], "note": ["重音在 Tom;樂句本身見官方檢定書", "Accents on toms; the phrase itself is in the grade book"] },
           { "kind": "book", "label": ["九擊滾奏樂句", "9-stroke roll phrase"], "related": [10], "note": ["樂句本身見官方檢定書", "The phrase itself is in the grade book"] }
         ] },
-        { "id": "E", "name": ["風格練習曲", "Stylistic Study"], "bpm": null, "bpmSrc": "backing", "bpmSrcAssumed": true, "items": [
+        { "id": "E", "name": ["風格練習曲", "Stylistic Study"], "bpm": null, "bpmSrc": "backing", "items": [
           { "kind": "book", "label": ["風格練習曲(三選一)", "Style study (1 of 3)"], "related": [], "note": ["選的風格同時決定 Quick Study Piece 的風格;譜見官方檢定書", "The style chosen also sets the Quick Study Piece style; see the grade book"] }
         ], "styles": [
           { "name": ["Rock/Metal", "Rock/Metal"], "focus": ["半開 hi-hat、密集的十六分大鼓", "Half-open hi-hat, busy 16th bass drum"] },
@@ -331,7 +331,7 @@
           { "kind": "book", "label": ["七擊滾奏樂句", "7-stroke roll phrase"], "related": [9], "note": ["樂句本身見官方檢定書", "The phrase itself is in the grade book"] },
           { "kind": "book", "label": ["九擊滾奏樂句", "9-stroke roll phrase"], "related": [10], "note": ["重音在 Tom;樂句本身見官方檢定書", "Accents on toms; the phrase itself is in the grade book"] }
         ] },
-        { "id": "F", "name": ["風格練習曲", "Stylistic Study"], "bpm": null, "bpmSrc": "backing", "bpmSrcAssumed": true, "items": [
+        { "id": "F", "name": ["風格練習曲", "Stylistic Study"], "bpm": null, "bpmSrc": "backing", "items": [
           { "kind": "book", "label": ["風格練習曲(三選一)", "Style study (1 of 3)"], "related": [], "note": ["選的風格同時決定 Quick Study Piece 的風格;譜見官方檢定書", "The style chosen also sets the Quick Study Piece style; see the grade book"] }
         ], "styles": [
           { "name": ["Rock/Metal", "Rock/Metal"], "focus": ["Ride 碗 7/8 節奏、五擊滾奏", "Ride bell 7/8 pattern, 5-stroke rolls"] },
@@ -372,7 +372,7 @@
           { "kind": "book", "label": ["七擊滾奏樂句", "7-stroke roll phrase"], "related": [9], "note": ["重音在 Tom;樂句本身見官方檢定書", "Accents on toms; the phrase itself is in the grade book"] },
           { "kind": "book", "label": ["組合滾奏", "Combined rolls"], "related": [], "note": ["不是 PAS 名稱;譜見官方檢定書", "Not a PAS rudiment name; see the grade book"] }
         ] },
-        { "id": "F", "name": ["風格練習曲", "Stylistic Study"], "bpm": null, "bpmSrc": "backing", "bpmSrcAssumed": true, "items": [
+        { "id": "F", "name": ["風格練習曲", "Stylistic Study"], "bpm": null, "bpmSrc": "backing", "items": [
           { "kind": "book", "label": ["風格練習曲(三選一)", "Style study (1 of 3)"], "related": [], "note": ["選的風格同時決定 Quick Study Piece 的風格;譜見官方檢定書", "The style chosen also sets the Quick Study Piece style; see the grade book"] }
         ], "styles": [
           { "name": ["Rock/Metal", "Rock/Metal"], "focus": ["節奏移位、5/4 協調", "Rhythmic displacement, 5/4 coordination"] },

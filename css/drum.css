@@ -67,6 +67,12 @@ body.land-play #s-stage,body.land-play #e-stage{flex:1;display:flex;flex-directi
 .spec-v[data-src]::after,.spec-note[data-src]::after{content:attr(data-src);margin-left:6px;font-size:var(--fs-2xs);color:var(--muted);white-space:nowrap}
 .spec-note,.xnote,.xi-note{font-size:var(--fs-xs);color:var(--muted-bright);line-height:1.6;margin-top:8px;overflow-wrap:anywhere}
 .spec-card .spec{margin-top:8px}
+/* 規格卡標題 + 頁碼(「RSL p.67, 69」):頁碼不能被省略號吃掉 → 照自己的寬度、不縮。
+   手機寬度(≤600)頁碼一律自己一行(放在標題下面):換不換行跟標題字寬無關,中英版面一定一樣;
+   標題兩種語言疊在同一格(pairStack),標題太長時在格子裡換行,高度取兩種語言比較高的 */
+.spec-card .card-title b{min-width:0;flex:0 1 auto}
+.spec-card .card-title .sub{flex:0 0 auto;overflow:visible;text-overflow:clip}
+@media (max-width:600px){ .spec-card .card-title{row-gap:2px} .spec-card .card-title .sub{flex-basis:100%} }
 .practice-only{font-size:var(--fs-xs);color:var(--gold);line-height:1.6;margin-top:10px}
 #t-listCard .progress{margin-top:0}
 /* RSL 每組一列:組別字母、名稱、♩、頁碼;下面是這一組的項目(PAS 原譜可以點「練習」) */

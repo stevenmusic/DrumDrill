@@ -27,7 +27,7 @@ function renderExam(){
   const cards = $("specCards"); cards.innerHTML = "";
   if (!d) {
     V.fillSpec($("sumSpec"), []); $("examSummary").textContent = T("sumTitle");
-    V.addPara(card(tr("考試規格", "Exam spec")), () => tr("考試資料還沒載好(第一次要連網路,之後會存在裝置上)。", "Exam data isn't loaded yet (needs internet once; then it's cached)."));
+    V.addPara(card(() => tr("考試規格", "Exam spec")), () => tr("考試資料還沒載好(第一次要連網路,之後會存在裝置上)。", "Exam data isn't loaded yet (needs internet once; then it's cached)."));
     return;
   }
   // 考試摘要:這一項的配分與等第 + 整場門檻、時間、資料版本
@@ -52,7 +52,8 @@ function card(title, src){
   const c = document.createElement("section");
   c.className = "card spec-card";
   c.innerHTML = `<div class="card-title"><b></b><span class="sub"></span></div>`;
-  c.querySelector("b").textContent = title;
+  // 標題兩種語言疊在同一格(寬、高都取比較大的那個):窄畫面標題換行、頁碼換到下一行時,中英版面一樣(drum.css .spec-card .card-title)
+  V.pairStack(c.querySelector("b"), typeof title === "function" ? title : () => title);
   c.querySelector(".sub").textContent = src || "";
   $("specCards").appendChild(c);
   return c;
@@ -63,7 +64,7 @@ const notStated = () => tr("大綱沒寫", "Not stated");
 function renderRsl(d, g){
   const s = d.sight[g], key = keyOf(), src = V.srcOf("rsl", s.src.p);
   if (s.type !== "qsp") {
-    const c = card(tr("視奏規格", "Sight reading"), src);
+    const c = card(() => tr("視奏規格", "Sight reading"), src);
     specIn(c, [
       { k: () => tr("小節數", "Bars"), v: () => String(s.bars) + (s.develop ? tr(`(含 ${s.develop.bars} 小節自由發展)`, ` (incl. a ${s.develop.bars}-bar development)`) : ""), src },
       s.develop && { k: () => tr("自由發展位置", "Development"), v: () => tr("最後兩小節", "Last 2 bars") + V.assumed(s.develop.pos.assumed) },
@@ -80,7 +81,7 @@ function renderRsl(d, g){
     V.addPara(c, () => V.L(d.sightNote.examples));
     const im = d.improv[g];
     if (im) {
-      const c2 = card(tr("即興(I&I,二選一)", "Improvisation (I&I)"), V.srcOf("rsl", im.src.p)), s2 = V.srcOf("rsl", im.src.p);
+      const c2 = card(() => tr("即興(I&I,二選一)", "Improvisation (I&I)"), V.srcOf("rsl", im.src.p)), s2 = V.srcOf("rsl", im.src.p);
       specIn(c2, [
         { k: () => tr("小節數", "Bars"), v: () => String(im.bars), src: s2 },
         { k: () => tr("形式", "Form"), v: () => V.L(im.form), src: s2 },
@@ -106,7 +107,7 @@ function renderRsl(d, g){
 
 function renderTrinity(d, g){
   const pb = playbackFor(g, d), key = keyOf(), src = V.srcOf("trinity", pb.src.join(", "));
-  const c = card(tr("Playback(看譜)", "Playback (chart)"), V.srcOf("trinity", d.sightNote.src.p));
+  const c = card(() => tr("Playback(看譜)", "Playback (chart)"), V.srcOf("trinity", d.sightNote.src.p));
   V.addPara(c, () => V.L(d.sightNote.text));
   const codes = d.playback.codes, lt = d.playback.pieceMap && d.playback.pieceMap.LT;
   specIn(c, [

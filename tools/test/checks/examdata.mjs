@@ -260,7 +260,8 @@ export default function check(ok){
   ok(tri.improvising.barsAs && tri.improvising.barsAs.v === "loop" && tri.improvising.barsAs.assumed === true, "Trinity Improvising:總小節數 = 循環長度是推估,要標 assumed");
   ok(tri.playback.pieceMap && tri.playback.pieceMap.LT && tri.playback.pieceMap.LT.v === "tomFloor" && tri.playback.pieceMap.LT.assumed === true, "Trinity Playback:LT → 落地鼓是 App 的對應,要標 assumed");
   for (const g of GRADES) for (const gr of rsl.tech[g].groups)
-    if (gr.bpmSrc === "backing") ok(gr.bpmSrcAssumed === true, `RSL ${g} 級 ${gr.id} 組:速度 = 伴奏音軌是推估(大綱沒寫數字),要標 bpmSrcAssumed`);
+    // 主持人決定(2026-10-18):bpmSrc "backing" 是官方明寫的(配伴奏音軌),不是推估;bpm 維持 null 表示沒有數字 → 不能標 bpmSrcAssumed
+    if (gr.bpmSrc === "backing") ok(gr.bpm === null && !("bpmSrcAssumed" in gr), `RSL ${g} 級 ${gr.id} 組:速度 = 伴奏音軌是官方寫的,不標 bpmSrcAssumed(bpm 維持 null)`);
   for (const g of GRADES) if (rsl.ear[g].groove.styleChoices === 0) ok(rsl.ear[g].groove.styleChoicesAssumed === true, `RSL ${g} 級 Groove 沒有風格題(0)是推估,要標 styleChoicesAssumed`);
 
   /* ── 3b. 更多手抄核對(照 docs/sources/*.md;不是從 JSON 複製):各段頁碼、Trinity 自選曲、Improvising、Playback 鼓件與其他、不及格分數段 ── */

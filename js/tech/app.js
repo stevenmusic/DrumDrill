@@ -30,7 +30,10 @@ export function relang(){ relabel(); }
 /* 外框改了考試(系統、級數):沒變就不重設(外框重送同一個考試、晚到的資料不能把畫面洗掉) */
 export function setExam(ex){
   const same = exam && ex && exam.system === ex.system && exam.grade === ex.grade && !!exam.auto === !!ex.auto;
+  const moved = !exam || !ex || exam.system !== ex.system || exam.grade !== ex.grade;
   exam = ex;
+  // 系統或級數換了:之前那一級的目標(官方速度、組別)已經不適用 → 離開目標模式(速度回到自己的設定)
+  if (moved && target) leaveTarget();
   if (!same && active && tab === "exam") renderExam();
 }
 /* 外框的 appCtx(考試資料)晚到:只重畫用得到資料的地方 */
@@ -132,10 +135,12 @@ function setRudiment(no){
   renderPicker();
   renderTitle();
   showBest();
-  fitTitle();
+  if (active) fitTitle();   // 看不到時不量(寬度是 0);回到畫面時 enter → onStageResize 會再量
   $("playBtn").disabled = false;
   syncMastery();
-  bpm = target && target.bpm ? target.bpm : S.bpm[cur.no] || 60;   // 檢定目標:官方速度(不寫進 S.bpm)
+  // 檢定目標:官方速度只在剛設定目標時套用一次(不寫進 S.bpm);之後改反覆次數、左右手(又走一次 setRudiment)保留使用者調過的速度
+  if (!target) bpm = S.bpm[cur.no] || 60;
+  else if (!target.bpmSet) { target.bpmSet = true; if (target.bpm) bpm = target.bpm; }
   syncTempoUI();
   renderScore();
   preloadSamples();
@@ -185,6 +190,7 @@ function renderExam(){
   renderSummary(sys, g, d);
   $("drawBtn").hidden = $("nextBtn").hidden = true; $("listActions").hidden = true;
   $("progress").hidden = true;
+  $("listEmpty").hidden = true;
   $("qGroups").innerHTML = "";
   delete $("listRule").dataset.src;
   if (!d) {
@@ -274,9 +280,9 @@ function renderRsl(d, g){
         }
       }
     }
-    // 這一組的說明:速度跟伴奏音軌(推估)、組的備註、風格練習曲的三種風格
+    // 這一組的說明:速度跟伴奏音軌(官方寫的,只是沒有數字;不標推估)、組的備註、風格練習曲的三種風格
     const gnote = () => [
-      gr.bpmSrc === "backing" ? tr("速度:跟伴奏音軌(大綱沒寫數字)", "Tempo: the backing track (no number given)") + assumed(gr.bpmSrcAssumed) + tr("。", ".") : "",
+      gr.bpmSrc === "backing" ? tr("速度:跟伴奏音軌(大綱沒寫數字)。", "Tempo: the backing track (no number given).") : "",
       gr.note ? L(gr.note) : "",
       gr.styles ? gr.styles.map(x => L(x.name) + tr(":", ": ") + L(x.focus)).join(tr(";", "; ")) : ""
     ].filter(Boolean).join(" ");
@@ -286,8 +292,13 @@ function renderRsl(d, g){
   const pool = items.filter(x => x.kind === "pas");
   $("drawBtn").hidden = $("nextBtn").hidden = false; $("listActions").hidden = false;
   $("drawBtn").disabled = $("nextBtn").disabled = !pool.length;
+  // 沒有可以抽的項目(這一級的項目 App 都還不能直接練):按鈕停用,並說一句為什麼
+  para($("listEmpty"), () => (pool.length ? "" : tr("這一級還沒有 App 能直接練的項目,所以不能抽一項。", "Nothing in this grade can be practised in the App yet, so there is nothing to draw.")));
 }
-/* 從清單去練:跳到技巧分頁的那個打法、速度設成官方 ♩(目標模式) */
+/* 從清單去練:跳到技巧分頁的那個打法、速度設成官方 ♩(目標模式)。
+   順序有依賴:先設 target、S.pick[類別],再 ctx.showView("tech", 類別) → 外框呼叫 enter(類別) → (從檢定頁過來 tab 是 "exam",一定)switchTab(類別)
+   → setRudiment(S.pick[類別]) = 這個打法:因為 target.no 相同,setRudiment 不會清掉目標,並在這時套用一次官方速度(target.bpmSet)。
+   下面的 setRudiment 是保險(外框沒有走到 switchTab 時);syncTarget 畫目標橫幅 */
 function practiceItem(it){
   const ex = curExam(), r = byNo(it.no);
   target = { system: ex.system, grade: ex.grade, group: it.group, no: it.no, bpm: it.bpm, p: it.src.p, key: it.key };
@@ -361,10 +372,12 @@ function syncTarget(){
   const t = target, sysName = t.system === "rsl" ? "RSL" : "Trinity", gl = () => ctx.gradeLabel(t.grade, t.system);   // 級名要在 fn 裡算(兩種語言各算一次)
   pairStack($("targetText"), () => tr(`${sysName} ${gl()} · ${t.group} 組 · ♩=${t.bpm} · p.${t.p}`, `${sysName} ${gl()} · Group ${t.group} · ♩=${t.bpm} · p.${t.p}`));
 }
-$("targetClose").onclick = () => {
+/* 離開目標模式:速度回到自己的設定(× 按鈕、換了考試系統或級數) */
+function leaveTarget(){
   target = null; syncTarget();
   if (cur) { stopPlayback(); bpm = S.bpm[cur.no] || 60; syncTempoUI(); }
-};
+}
+$("targetClose").onclick = leaveTarget;
 $("targetList").onclick = () => ctx.showView("exam", "tech");
 
 /* ══ 鼓譜:一整行 + 播放軸(js/shared/score.js,照 PianoDrill / ScrollScore)══
@@ -596,7 +609,8 @@ async function startInner(){
       lastEnd = { n: lastEnd.n + 1, scheduled: audio.scheduledCount(), at: audio.audioNow() };   // 測試用:自然播完時還排著的節點數(播完的會自己移除)與當時的時間
       stopPlayback(true, !!(S.loop && cur));   // 循環的下一輪:手機橫式不捲回去
       logPractice(sec);
-      if (!S.clickOnly && (!S.best[cur.no] || bpm > S.best[cur.no])) { S.best[cur.no] = bpm; store.save(); showBest(); }
+      // 示範最快只記自由練習(目標模式是官方速度的練習,不算)
+      if (!target && !S.clickOnly && (!S.best[cur.no] || bpm > S.best[cur.no])) { S.best[cur.no] = bpm; store.save(); showBest(); }
       if (S.loop && cur) { if (S.ramp) setBpm(bpm + 4, true); startPlayback(); }
       return;
     }

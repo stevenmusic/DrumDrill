@@ -26,7 +26,7 @@ function renderExam(){
   $("specCards").innerHTML = "";
   if (!d) {
     V.fillSpec($("sumSpec"), []); $("examSummary").textContent = T("sumTitle");
-    V.addPara(card(tr("考試規格", "Exam spec")), () => tr("考試資料還沒載好(第一次要連網路,之後會存在裝置上)。", "Exam data isn't loaded yet (needs internet once; then it's cached)."));
+    V.addPara(card(() => tr("考試規格", "Exam spec")), () => tr("考試資料還沒載好(第一次要連網路,之後會存在裝置上)。", "Exam data isn't loaded yet (needs internet once; then it's cached)."));
     return;
   }
   const rows = [];
@@ -49,7 +49,8 @@ function card(title, src){
   const c = document.createElement("section");
   c.className = "card spec-card";
   c.innerHTML = `<div class="card-title"><b></b><span class="sub"></span></div>`;
-  c.querySelector("b").textContent = title;
+  // 標題兩種語言疊在同一格(寬、高都取比較大的那個):窄畫面標題換行、頁碼換到下一行時,中英版面一樣(drum.css .spec-card .card-title)
+  V.pairStack(c.querySelector("b"), typeof title === "function" ? title : () => title);
   c.querySelector(".sub").textContent = src || "";
   $("specCards").appendChild(c);
   return c;
@@ -82,7 +83,7 @@ function renderRsl(d, g){
 }
 
 function renderTrinity(d, g){
-  const c = card(tr("Playback(聽句回打)", "Playback (listen & repeat)"), V.srcOf("trinity", d.earNote.src.p));
+  const c = card(() => tr("Playback(聽句回打)", "Playback (listen & repeat)"), V.srcOf("trinity", d.earNote.src.p));
   V.addPara(c, () => V.L(d.earNote.text));
   const fl = d.playback.flow, fsrc = V.srcOf("trinity", fl.src.p);
   specIn(c, [
