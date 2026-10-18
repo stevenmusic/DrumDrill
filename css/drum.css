@@ -113,7 +113,7 @@ body.land-play #e-stage{flex:1;display:flex;flex-direction:column;justify-conten
 
 /* ══ 檢定頁(S3):考試摘要(.setup,手機收成一行)、本級要求清單、規格卡、技巧的目標橫幅 ══
    中英版面一樣:會換行的文字都是區塊 + pairText;出處(RSL p.42)跟語言無關,用 data-src 由 ::after 小字接在後面 */
-#s-paneExam{order:1} #s-specCards{order:2} #e-soonCard,#e-specCards{order:2}
+#s-paneExam{order:1} #s-specCards{order:2}
 .spec-cards{display:flex;flex-direction:column;gap:14px;min-width:0}
 @media (max-width:600px){ .spec-cards{gap:10px} }
 @media (orientation:landscape) and (max-height:500px){
@@ -204,3 +204,85 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 @media (max-width:360px){ .pads:not([data-n="1"]) .tap-pad{font-size:var(--fs-lg)} }
 @media (max-width:300px){ .pads:not([data-n="1"]){gap:6px;margin:0 -11px} .pads:not([data-n="1"]) .tap-pad{font-size:var(--fs-md);padding:6px 2px} }
 @media (orientation:landscape) and (max-height:500px){ .pads .tap-pad{height:96px} }
+
+/* ══ 聽力(S12 + S13;照 PianoDrill 聽音的卡片,一律限定在 #mod-ear / #e-…)══
+   卡片順序(一欄):設定 1、說明 2、題目 3、譜 4、回打 5、紀錄 6;檢定頁:考試摘要 1、規格卡 2 */
+#e-setup,#e-paneExam{order:1} #e-unsupported,#e-specCards{order:2} #e-quizCard{order:3} #e-scoreCard{order:4} #e-along{order:5} #e-logCard{order:6}
+#e-unsupported .card-title b{white-space:normal}
+/* 級數:D(I)1–4 / 5–8 兩排固定格子(中英一樣;折疊機也 ≥ 28 寬) */
+#mod-ear .picker .opts[data-k="grade"]{grid-template-columns:repeat(5, minmax(0, 1fr))}
+#mod-ear .picker .opts[data-k="grade"] .opt{font-variant-numeric:tabular-nums}
+#e-setup .metro{margin-top:10px}
+#e-setup .play-opts{grid-template-columns:repeat(3, minmax(0, 1fr))}
+#e-tempoNote{min-width:0;overflow-wrap:anywhere}
+#mod-ear .metro .btn:disabled,#mod-ear .metro input:disabled{opacity:.4}
+/* 題目卡:倒數(Trinity 看譜 30 秒)、Fill 的譜面選項 */
+#mod-ear .countdown{font-family:"Noto Serif TC",serif;font-variant-numeric:tabular-nums;font-size:24px;font-weight:700;line-height:1;
+  color:var(--gold);margin-left:6px;transition:color .2s;white-space:nowrap}
+#mod-ear .countdown .unit{font-family:"Noto Sans TC",sans-serif;font-size:var(--fs-xs);font-weight:400;color:var(--muted);margin-left:2px}
+#mod-ear .countdown.running{color:var(--gold-bright)}
+#mod-ear .countdown.done{color:var(--muted-bright)}
+@media (max-width:340px){ #e-studyBtn .btn-label{display:none} }
+#e-practiceOnly{margin-top:0}
+#e-stepQ{margin-top:2px}
+#e-answers{grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));gap:10px}
+@media (max-width:360px){ #e-answers{grid-template-columns:1fr} }
+#e-answers .e-opt{display:flex;align-items:center;gap:8px;min-height:72px;padding:6px 8px 6px 10px;text-align:left;font-weight:400}
+#e-answers .e-letter{flex:none;width:28px;height:28px;border-radius:50%;border:1px solid var(--gold);color:var(--gold);display:inline-flex;align-items:center;justify-content:center;
+  font-family:"Noto Serif TC",serif;font-weight:700;font-size:var(--fs-md)}
+#e-answers .e-paper{flex:1 1 auto;min-width:0;display:block;background:var(--paper);border-radius:var(--radius-sm);padding:2px 4px;color:#16130D;overflow:hidden}
+#e-answers .e-paper > div{display:block}
+#e-answers .e-paper svg{display:block;margin:0 auto}
+#e-answers .e-paper .kit-mark{fill:#16130D}
+/* 選完:答案綠框、選錯的紅框(譜紙保持白色,看得清楚) */
+#e-answers .e-opt.right,#e-answers .e-opt.wrong{background:var(--surface-inset);color:var(--ivory);font-weight:400}
+#e-answers .e-opt.right{border:2px solid var(--teal-fill)}
+#e-answers .e-opt.right .e-letter{background:var(--teal-fill);border-color:var(--teal-fill);color:var(--on-fill)}
+#e-answers .e-opt.wrong{border:2px solid #C8553D}
+#e-answers .e-opt.wrong .e-letter{background:#C8553D;border-color:#C8553D;color:#fff}
+#e-answers .e-opt.done{opacity:.6}
+#e-answers .e-opt.done.right,#e-answers .e-opt.done.wrong{opacity:1}
+#e-ansLegend{margin-top:10px}
+#e-legend{margin-top:10px}
+/* 譜(js/shared/score.js 的 #e-scroll / #e-osmd 在上面「共用的譜面元件」):輪到你打時金色框;不看譜 = 播放中蓋起來 */
+#e-stage{transition:box-shadow .15s}
+#e-stage.you{box-shadow:inset 0 0 0 3px var(--gold)}
+#e-stage.covered #e-scroll,#e-stage.covered #e-playline{visibility:hidden}
+#e-stage.covered{min-height:96px}
+/* 回打:鼓墊 + 按鈕 + 說明 + 練習回饋(照視奏) */
+#mod-ear .along{display:flex;flex-direction:column;gap:12px}
+#mod-ear .along .pads{width:100%}
+#mod-ear .along.you .tap-pad{box-shadow:0 0 0 2px var(--gold-bright)}
+#mod-ear .along-row{display:flex;align-items:center;gap:8px 14px;flex-wrap:wrap}
+#mod-ear .along-row .btn{height:44px;padding:0 16px;flex:none;width:220px}
+#mod-ear .along-note{flex:1 1 180px;min-width:0;color:var(--muted);font-size:var(--fs-xs);line-height:1.5;overflow-wrap:anywhere}
+@media (max-width:600px){ #mod-ear .along-row .btn{width:100%} }
+#mod-ear .along-result{border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 14px;line-height:1.5;background:var(--surface-inset)}
+#mod-ear .along-result .r-head{font-size:var(--fs-xs);letter-spacing:.08em;color:var(--gold)}
+#mod-ear .along-result .big{font-family:"Noto Serif TC",serif;font-size:30px;font-weight:700;color:var(--gold-bright);line-height:1.25}
+#mod-ear .along-result .big small{font-family:"Noto Sans TC",sans-serif;font-size:var(--fs-sm);font-weight:400;color:var(--muted-bright);margin-left:4px}
+#mod-ear .along-result p,#mod-ear .along-result li{margin-top:4px;color:var(--muted-bright);font-size:var(--fs-sm);overflow-wrap:anywhere}
+#mod-ear .along-result .e-phrases{margin:4px 0 0;padding-left:0;list-style:none}
+#mod-ear .along-result .disclaimer{color:var(--muted);font-size:var(--fs-xs)}
+#e-notes{padding:0 2px;margin-top:0;overflow-wrap:anywhere}
+/* 看譜的浮動倒數(題目卡的倒數看不到時) */
+#mod-ear .prep-float{position:fixed;right:12px;z-index:55;display:flex;align-items:baseline;gap:2px;padding:6px 14px;border-radius:var(--radius-pill);
+  background:var(--gold-fill);color:var(--on-fill);font-family:"Noto Serif TC",serif;font-size:22px;font-weight:700;line-height:1.2;
+  box-shadow:0 4px 14px rgba(0,0,0,.35);font-variant-numeric:tabular-nums;pointer-events:none}
+#mod-ear .prep-float .unit{font-size:12px;font-family:inherit}
+#mod-ear .prep-float.low{animation:prep-pulse 1s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){ #mod-ear .prep-float.low{animation:none} }
+#mod-ear .prep-float[hidden]{display:none}
+@media (orientation:landscape) and (max-height:500px){
+  body.view-exam #e-paneExam{grid-column:2 !important;grid-row:1}
+  /* 題目卡:標題 | 標籤 | ▶ 一行(照視奏) */
+  #mod-ear .quiz{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:4px 12px}
+  #mod-ear .q-head,#mod-ear .q-row{display:contents}
+  #e-qTitle{grid-column:1;grid-row:1;font-size:24px;height:auto}
+  #mod-ear .q-row .q-tags{grid-column:2;grid-row:1;min-height:0}
+  #mod-ear .q-row .loading{grid-column:2;grid-row:2;justify-self:end}
+  #e-playBtn{grid-column:3;grid-row:1;width:44px;height:44px}
+  #e-feedback{grid-column:1 / -1;font-size:var(--fs-sm);min-height:0}
+  #e-stepQ,#e-answers,#e-ansLegend,#mod-ear .q-foot,#e-practiceOnly{grid-column:1 / -1}
+  #mod-ear .q-tag{font-size:14px;padding:0 8px;line-height:26px}
+}
