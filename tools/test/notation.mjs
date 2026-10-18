@@ -3,8 +3,11 @@
 //  2. 鼓組記譜樣張(js/shared/kitnotation.js,notation-preview.html?kit=all;樣張在 kitsamples.mjs):
 //     沒有錯誤;符頭數 = <note> 數;每種符頭形狀(一般 / x / 菱形 / 圈 x / 斜線)的數量 = MusicXML;
 //     每個符頭的高度 = drumkey.json 的位置(五線:E4 = 最下面那條線;單線:在線上);
-//     補畫的記號(鬼音括號、開 HH 的 o)數量 = MusicXML;閉 HH 的 + 是 OSMD 畫的(lefthandpizzicato)
-//  3. 折疊機 280 寬:樣張不超出紙張、沒有橫向捲動;圖例中英版面一樣(每一格的位置、大小相同)
+//     補畫的記號(鬼音括號、開 HH 的 o)數量 = MusicXML;閉 HH 的 + 是 OSMD 畫的(lefthandpizzicato);
+//     連音組數 = MusicXML 的 <tuplet type="start">(8t3 與 16t3 混在一拍是一組);
+//     開 HH 的 o:OSMD 照 <open-string/> 畫的小圓圈有藏起來(每個 o 一個)、o 的中心跟符頭中心水平差 < 0.1 符頭高、
+//     不碰到力度、漸強線、重音、+、連桿、符桿、其他符頭與補畫記號(兩種縮放:0.8 與 1.3)
+//  3. 折疊機 280 寬:樣張不超出紙張、沒有橫向捲動;圖例中英版面一樣(每一格的位置、大小相同)、出處小字最多兩行、沒有 undefined
 // 截圖存到 tools/test/out/notation/(基本打法、樣張 1000 寬 + 每一張、280 寬中英)
 // 用法:node tools/test/notation.mjs
 import { open } from "./harness.mjs";
@@ -36,14 +39,14 @@ const ok = m => console.log("✓ " + m);
 /* 2. 鼓組記譜樣張 */
 // MusicXML 的符頭形狀 → VexFlow 畫出來的字形(OSMD 2.1.0 / VexFlow 1.2;一般 = 黑 / 二分 / 全音符,x = 四分以下 / 二分以上)
 const GLYPH = { normal: ["vb", "v81", "v1d"], x: ["v3e", "v95", "v92"], "circle-x": ["v3b"], diamond: ["v22", "v27", "v2d"], slash: [undefined] };
-async function kitPage(width, lang, shots){
-  const { page, errors, close } = await open({ viewport: { width, height: 900 }, path: `tools/test/notation-preview.html?kit=all${lang ? "&lang=" + lang : ""}` });
+async function kitPage(width, lang, shots, { kit = "all", zoom = null } = {}){
+  const { page, errors, close } = await open({ viewport: { width, height: 900 }, path: `tools/test/notation-preview.html?kit=${kit}${lang ? "&lang=" + lang : ""}${zoom ? "&zoom=" + zoom : ""}` });
   await page.waitForFunction(() => window.__done, null, { timeout: 120000 });
   const res = await page.evaluate(({ GLYPH }) => {
     const L = window.__L, out = [];
     const ord = (s, o) => o * 7 + "CDEFGAB".indexOf(s);
     for (const r of window.__kit) {
-      const o = { id: r.id, err: r.err, issues: [] };
+      const o = { id: r.id, err: r.err, issues: [], zoom: r.zoom };
       out.push(o);
       if (r.err || !r.osmd) continue;
       const svg = r.el.querySelector(".kit-paper svg"), doc = new DOMParser().parseFromString(r.xml, "application/xml");
@@ -94,6 +97,39 @@ async function kitPage(width, lang, shots){
       let lhp = 0;
       for (const mm of r.osmd.Sheet.SourceMeasures) for (const c of mm.VerticalSourceStaffEntryContainers) for (const se of c.StaffEntries) if (se) for (const ve of se.VoiceEntries) lhp += ve.Articulations.filter(a => a.articulationEnum === 14).length;
       if (stopped !== lhp) o.issues.push(`閉 HH 的 + :OSMD 讀到 ${lhp} 個,MusicXML 有 ${stopped} 個`);
+      // 連音組數:OSMD 讀到的 Tuplet = MusicXML 的 <tuplet type="start">
+      const tups = new Set();
+      for (const mm of r.osmd.Sheet.SourceMeasures) for (const c of mm.VerticalSourceStaffEntryContainers) for (const se of c.StaffEntries) if (se) for (const ve of se.VoiceEntries) for (const n of ve.Notes) if (n.NoteTuplet) tups.add(n.NoteTuplet);
+      const wantTup = (r.xml.match(/<tuplet type="start"/g) || []).length;
+      if (tups.size !== wantTup) o.issues.push(`連音組 OSMD 讀到 ${tups.size} 組,MusicXML 有 ${wantTup} 組`);
+      // 開 HH 的 o:位置(對到符頭中心)、OSMD 的小圓圈藏起來、不碰到別的東西
+      const opens = marks.filter(m => m.open), ahs = svg.querySelectorAll(".kit-ah");
+      if (ahs.length !== opens.length) o.issues.push(`OSMD 的開 HH 小圓圈藏起來 ${ahs.length} 個,應該 ${opens.length} 個(找不到的話 o 位置是猜的)`);
+      // 位置要算進 transform(decorate 把連音數字、力度往上移是用 transform)
+      const box = e => { const b = e.getBBox(), m = e.getCTM(), sm = svg.getCTM(); const k = m && sm ? sm.inverse().multiply(m) : { e: 0, f: 0 }; return { x: b.x + k.e, y: b.y + k.f, w: b.width, h: b.height }; };
+      const hit = (a, b, pad) => a.x + pad < b.x + b.w && b.x + pad < a.x + a.w && a.y + pad < b.y + b.h && b.y + pad < a.y + a.h;
+      // 連音數字(.vf-measure 底下直接畫的曲線字形)也算
+      const others = [...svg.querySelectorAll(".vf-text text, .vf-line path, .vf-modifiers > path:not(.kit-ah), .kit-mark, .vf-beam path, .vf-stem, .vf-notehead path, .vf-stavetie path"),
+        ...[...svg.querySelectorAll(".vf-measure > path")].filter(p => /C/.test(p.getAttribute("d") || ""))];
+      let oChecked = 0;
+      for (const m of opens) {
+        const at = `${m.mi}:${m.voice}:${m.t}:${m.k}`, el = svg.querySelector(`.kit-open[data-at="${at}"]`);
+        const g = gns.find(x => x.mi === m.mi && x.voice === m.voice && x.t === m.t && x.k === m.k), hb = g && L.headBox(g.gn);
+        if (!el || !hb) { o.issues.push(`開 HH 第 ${m.mi + 1} 小節 ${m.t / 2520} 拍:找不到 o 或符頭`); continue; }
+        const ob = box(el), hx = hb.head.x + hb.head.width / 2, dx = Math.abs(ob.x + ob.w / 2 - hx);
+        if (dx >= 0.1 * hb.head.height) o.issues.push(`開 HH 第 ${m.mi + 1} 小節 ${(m.t / 2520).toFixed(2)} 拍:o 跟符頭中心差 ${(dx / hb.head.height).toFixed(2)} 符頭高`);
+        if (ob.y + ob.h > hb.head.y) o.issues.push(`開 HH 第 ${m.mi + 1} 小節 ${(m.t / 2520).toFixed(2)} 拍:o 不在符頭上方`);
+        for (const x of others) {
+          if (x === el) continue;
+          const xb = box(x);
+          if ((xb.w || xb.h) && hit(ob, xb, 0.3)) { o.issues.push(`開 HH 第 ${m.mi + 1} 小節 ${(m.t / 2520).toFixed(2)} 拍:o 碰到 ${x.closest("[class]").getAttribute("class")}${x.tagName === "text" ? "「" + x.textContent + "」" : ""}`); break; }
+        }
+        oChecked++;
+      }
+      o.oChecked = oChecked;
+      // 鬼音的括號:彼此不疊在一起(連續十六分鬼音)。text 的 bbox 是字寬(advance),墨水 ≈ 中間 75%
+      const gh = [...svg.querySelectorAll(".kit-ghost")].map(box).map(b => ({ ...b, x: b.x + b.w * 0.125, w: b.w * 0.75 }));
+      for (let i = 0; i < gh.length; i++) for (let j = i + 1; j < gh.length; j++) if (hit(gh[i], gh[j], 0.3)) { o.issues.push(`鬼音括號疊在一起(x ${Math.round(gh[i].x)} / ${Math.round(gh[j].x)})`); i = gh.length; break; }
       // 樣張不超出紙張
       const pr = r.el.querySelector(".kit-paper").getBoundingClientRect(), gr = svg.getBoundingClientRect();
       if (gr.right > pr.right + 1 || gr.left < pr.left - 1) o.issues.push(`超出紙張(${Math.round(gr.left)}–${Math.round(gr.right)} / ${Math.round(pr.left)}–${Math.round(pr.right)},縮放 ${r.zoom.toFixed(2)})`);
@@ -102,7 +138,15 @@ async function kitPage(width, lang, shots){
     const legend = [...document.querySelectorAll(".kit-legend")].map(l => ({ id: l.id, h: Math.round(l.getBoundingClientRect().height), cells: [...l.querySelectorAll(".kl-cell")].map(c => { const b = c.getBoundingClientRect(); return [c.dataset.piece, Math.round(b.x), Math.round(b.y), Math.round(b.width), Math.round(b.height)].join(":"); }) }));
     const overflow = document.documentElement.scrollWidth > innerWidth + 1 ? document.documentElement.scrollWidth : 0;
     const cellOverflow = [...document.querySelectorAll(".kl-cell, .kl-name, .kl-src")].filter(e => e.scrollWidth > e.clientWidth + 1).map(e => e.textContent).slice(0, 5);
-    return { out, legend, overflow, cellOverflow };
+    // 出處小字:最多兩行(格子 74px 寬)、沒有 undefined;Trinity DK 寫明 DK、Ride bell 寫勘誤
+    const srcIssues = [];
+    for (const e of document.querySelectorAll(".kl-src")) {
+      const lh = parseFloat(getComputedStyle(e).lineHeight), n = Math.round(e.getBoundingClientRect().height / lh), id = e.closest(".kl-cell").dataset.piece;
+      if (n > 2) srcIssues.push(`${id} 出處 ${n} 行:${e.textContent.replace(/\n/g, " / ")}`);
+      if (/undefined|null|NaN|Trinity p\./.test(e.textContent)) srcIssues.push(`${id} 出處:${e.textContent}`);
+    }
+    const cellSrc = Object.fromEntries([...document.querySelectorAll("#legend5 .kl-cell, #legend1 .kl-cell")].map(c => [c.closest(".kit-legend").id + ":" + c.dataset.piece, c.querySelector(".kl-src").textContent]));
+    return { out, legend, overflow, cellOverflow, srcIssues, cellSrc };
   }, { GLYPH });
   if (shots) {
     await page.screenshot({ path: OUT + `kit-${width}${lang ? "-" + lang : ""}.png`, fullPage: true });
@@ -119,7 +163,20 @@ async function kitPage(width, lang, shots){
   for (const o of r.out) { if (o.err) fail(`樣張 ${o.id}:${o.err}`); for (const i of o.issues) fail(`樣張 ${o.id}:${i}`); }
   for (const e of r.errors) fail("樣張 console:" + e);
   if (r.overflow) fail(`1000 寬有橫向捲動 ${r.overflow}`);
-  if (bad === n0) ok(`鼓組記譜樣張 ${r.out.length} 張:OSMD 畫出來沒有錯誤,符頭數、形狀、高度(${r.out.reduce((s, o) => s + (o.checked || 0), 0)} 個音)、補畫記號、閉 HH 的 + 都對`);
+  for (const i of r.srcIssues) fail("圖例:" + i);
+  // 出處的字(英文):Trinity DK p.107 + 位置待核對、Ride bell = Trinity errata、單線譜小鼓 = RSL p.31–43 + 1-line: App's choice
+  const want = { "legend5:hhFoot": "Trinity DK p.107\nPos. pending", "legend5:hhOpen": "Trinity DK p.107\nPos. pending", "legend5:rideBell": "Trinity errata", "legend5:kick": "Pending", "legend1:snare": "RSL p.31–43\n1-line: App's choice" };
+  for (const [k, v] of Object.entries(want)) if (r.cellSrc[k] !== v) fail(`圖例 ${k} 出處「${r.cellSrc[k]}」,應該「${v}」`);
+  if (bad === n0) ok(`鼓組記譜樣張 ${r.out.length} 張:OSMD 畫出來沒有錯誤,符頭數、形狀、高度(${r.out.reduce((s, o) => s + (o.checked || 0), 0)} 個音)、補畫記號、閉 HH 的 +、連音組數、開 HH 的 o(${r.out.reduce((s, o) => s + (o.oChecked || 0), 0)} 個)都對;圖例出處`);
+}
+{
+  // 另一種縮放(1.3):開 HH 的 o 位置、不碰撞
+  const n0 = bad;
+  const r = await kitPage(1000, "en", false, { kit: "open-hh,piece-hh,piece-hhOpen,groove-rock,pieces", zoom: 1.3 });
+  for (const o of r.out) { if (o.err) fail(`縮放 1.3 樣張 ${o.id}:${o.err}`); for (const i of o.issues) fail(`縮放 1.3 樣張 ${o.id}:${i}`); }
+  for (const e of r.errors) fail("縮放 1.3 console:" + e);
+  const zs = r.out.map(o => o.zoom).filter(Boolean);
+  if (bad === n0) ok(`縮放 1.3(實際 ${Math.min(...zs).toFixed(2)}–${Math.max(...zs).toFixed(2)}):開 HH 的 o(${r.out.reduce((s, o) => s + (o.oChecked || 0), 0)} 個)對到符頭中心、沒有碰到別的記號`);
 }
 {
   const n0 = bad;
@@ -129,6 +186,7 @@ async function kitPage(width, lang, shots){
     for (const e of r.errors) fail(`280 寬 ${lang} console:` + e);
     if (r.overflow) fail(`280 寬 ${lang}:橫向捲動 ${r.overflow}`);
     for (const t of r.cellOverflow) fail(`280 寬 ${lang}:圖例的字超出格子:${t}`);
+    for (const t of r.srcIssues) fail(`280 寬 ${lang}:圖例:${t}`);
   }
   if (JSON.stringify(zh.legend) !== JSON.stringify(en.legend)) {
     for (let i = 0; i < Math.max(zh.legend.length, en.legend.length); i++) {

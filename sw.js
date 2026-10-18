@@ -12,7 +12,7 @@
 const APP = "drumdrill";
 // @app-end
 /*@precache-begin*/
-const CACHE = APP + "-app-a8bd2cf6";
+const CACHE = APP + "-app-95281efe";
 const PRECACHE = [
   "./",
   "manifest.webmanifest",
@@ -24,7 +24,7 @@ const PRECACHE = [
   "licenses.html",
   "privacy.html",
   "css/app.css?v=9f6af68d07",
-  "css/drum.css?v=554ae11632",
+  "css/drum.css?v=2e65e69b91",
   "vendor/opensheetmusicdisplay.min.js?v=4bfeb3d01c",
   "js/ear/app.js?v=66e6065b2d",
   "js/main.js?v=4a3930106f",
@@ -32,9 +32,9 @@ const PRECACHE = [
   "js/shared/examdata.js?v=48f1b46bf2",
   "js/shared/examview.js?v=b4959afa11",
   "js/shared/i18n.js?v=a561423d5b",
-  "js/shared/kitnotation.js?v=4a5c621528",
+  "js/shared/kitnotation.js?v=d2dac59b01",
   "js/shared/landscape.js?v=8ab1bab3eb",
-  "js/shared/legend.js?v=f89e3540a7",
+  "js/shared/legend.js?v=0d8943f084",
   "js/shared/score.js?v=626f4a4e45",
   "js/shared/tempo.js?v=1e38af7d3f",
   "js/sight/app.js?v=b48ef82b62",
@@ -43,7 +43,7 @@ const PRECACHE = [
   "js/tech/rudiments.js?v=5e7d24246c",
   "js/tech/store.js?v=c27b27f99c",
   "js/tech/strings.js?v=fa3be55e9c",
-  "data/drumkey.json?v=990a00639b",
+  "data/drumkey.json?v=f649905063",
   "data/exam-rsl.json?v=2d89d69753",
   "data/exam-trinity.json?v=33070e658b"
 ];

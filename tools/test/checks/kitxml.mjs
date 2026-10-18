@@ -3,15 +3,31 @@
 // 2. 每一份 MusicXML:每小節每個聲部的時值加起來 = 拍號長度(含複拍子、不規則拍、換拍號);符頭位置 + 形狀都對得到 drumkey.json 的鼓件;
 //    沒有 undefined / NaN;標籤成對;連音、連結線、wedge 開始和結束一樣多;整份譜有腳的聲部時每一小節都有
 // 3. 隨機產生 500 小節(各種拍號、時值、連音、鼓件、修飾、連結線、力度、斜線小節、單線譜)都合法
-// 4. 不合法的資料一定丟出錯誤(超過一小節、鼓件不在 drumkey、腳的鼓件放在手、連音沒結束、時值代號不認得……)
+// 4. 不合法的資料一定丟出錯誤(超過一小節、鼓件不在 drumkey、腳的鼓件放在手、連音沒結束、時值代號不認得、
+//    開閉 HH 寫錯地方、Flam/Drag/滾奏放在腳、滾奏太短、同一個位置兩個力度……)
+// 5. 混用 8t3 與 16t3 的一拍是一個連音組;連結線接續的開 HH 只有第一個音有 o;圖例的出處小字(legendSrc)
+// auditXML 的時值不信任 <duration>:每個音用 <type>、<dot/>、<time-modification> 自己重算,再跟 <duration>、拍號、連音組的長度比對
 import fs from "node:fs";
-import { scoreXML, measureLengths, parseTime, DIV, piecesUsed, legendXML } from "../../../js/shared/kitnotation.js";
+import { scoreXML, measureLengths, parseTime, DIV, piecesUsed, legendXML, legendSrc, osmdXML } from "../../../js/shared/kitnotation.js";
 import { VALUE_CODES } from "../../../js/shared/examdata.js";
 import { KIT_SAMPLES } from "../kitsamples.mjs";
 
 const root = new URL("../../../", import.meta.url).pathname;
+const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const key = JSON.parse(fs.readFileSync(root + "data/drumkey.json", "utf8"));
 
+/* 一個 <note> 的時值,只看 <type>、<dot/>、<time-modification>(不看 <duration>);整小節休止回傳 null */
+const TYPE_Q = { whole: 4, half: 2, quarter: 1, eighth: 0.5, "16th": 0.25, "32nd": 0.125, "64th": 0.0625 };
+export function noteDur(n){
+  if (/<rest measure="yes"/.test(n)) return null;
+  const type = (/<type>([\w]+)<\/type>/.exec(n) || [])[1];
+  if (!(type in TYPE_Q)) return NaN;
+  const dots = (n.match(/<dot\/>/g) || []).length;
+  let q = TYPE_Q[type] * (2 - 1 / 2 ** dots);
+  const tm = /<time-modification><actual-notes>(\d+)<\/actual-notes><normal-notes>(\d+)<\/normal-notes>(?:<normal-type>([\w]+)<\/normal-type>)?/.exec(n);
+  if (tm) q = q * Number(tm[2]) / Number(tm[1]);
+  return Math.round(q * DIV * 1e6) / 1e6;
+}
 /* 一份 MusicXML 的結構檢查;回傳錯誤訊息清單 */
 export function auditXML(xml, spec){
   const errs = [], lines = spec.lines === 1 ? 1 : 5;
@@ -38,7 +54,7 @@ export function auditXML(xml, spec){
   if (ms.length !== spec.measures.length) errs.push(`小節數 ${ms.length} ≠ ${spec.measures.length}`);
   const hasFeet = /<voice>2<\/voice>/.test(xml);
   ms.forEach((m, i) => {
-    const sums = {}; let t = 0, max = 0;
+    const sums = {}, tup = {}; let t = 0, max = 0;
     for (const el of m[2].matchAll(/<note>([\s\S]*?)<\/note>|<backup><duration>(\d+)<\/duration><\/backup>/g)) {
       if (el[2]) { t -= Number(el[2]); continue; }
       const n = el[1];
@@ -47,12 +63,38 @@ export function auditXML(xml, spec){
         if (!pos || !POS.has(`${pos[1]}${pos[2]}:${head}`)) errs.push(`第 ${i + 1} 小節:符頭 ${pos ? pos[1] + pos[2] : "?"} ${head} 對不到 drumkey.json 的鼓件`);
       }
       if (n.includes("<grace")) { if (n.includes("<duration>")) errs.push(`第 ${i + 1} 小節:裝飾音不能有時值`); continue; }
-      if (n.includes("<chord/>")) continue;
       const d = Number((/<duration>(\d+)<\/duration>/.exec(n) || [])[1]), v = (/<voice>(\d)<\/voice>/.exec(n) || [])[1];
+      // 時值自己重算(type + dot + time-modification),跟 <duration> 比對
+      const rd = noteDur(n), where = `第 ${i + 1} 小節 聲部 ${v} ${t / DIV} 拍`;
+      if (rd === null) { if (d !== lens[i]) errs.push(`${where}:整小節休止 ${d / DIV} 拍 ≠ 拍號 ${lens[i] / DIV} 拍`); }
+      else if (!(rd > 0)) errs.push(`${where}:<type> 不認得`);
+      else if (Math.abs(rd - d) > 1e-6) errs.push(`${where}:<duration> ${d} ≠ 照 type/dot/time-modification 重算 ${rd}`);
+      if (n.includes("<chord/>")) continue;
       if (!(d > 0)) { errs.push(`第 ${i + 1} 小節:時值不對`); continue; }
-      sums[v] = (sums[v] || 0) + d; t += d; max = Math.max(max, t);
+      const dd = rd === null ? d : rd;
+      // 連音組:start 到 stop 之間每個音都要有 time-modification、比例一樣;總長(重算的)= 組裡最長的 normal-notes × normal-type
+      const tm = /<time-modification><actual-notes>(\d+)<\/actual-notes><normal-notes>(\d+)<\/normal-notes><normal-type>([\w]+)<\/normal-type>/.exec(n);
+      const st = /<tuplet type="start"/.test(n), sp = /<tuplet type="stop"/.test(n);
+      if (st) { if (tup[v]) errs.push(`${where}:上一個連音組還沒結束又開始一組`); tup[v] = { acc: 0, ratio: tm && tm[1] + ":" + tm[2], spans: [] }; }
+      const g = tup[v];
+      if (tm && !g) errs.push(`${where}:有 time-modification 卻不在連音組裡`);
+      if (g) {
+        if (!tm) errs.push(`${where}:連音組裡的音沒有 time-modification`);
+        else {
+          if (tm[1] + ":" + tm[2] !== g.ratio) errs.push(`${where}:連音組裡比例不一樣(${g.ratio} / ${tm[1]}:${tm[2]})`);
+          g.spans.push(Number(tm[2]) * TYPE_Q[tm[3]] * DIV);
+        }
+        g.acc += dd;
+        if (sp) {
+          const span = Math.max(...g.spans);
+          if (Math.abs(g.acc - span) > 1e-6 && !g.spans.some(x => Math.abs(x - g.acc) < 1e-6)) errs.push(`${where}:連音組總長 ${g.acc / DIV} 拍不是完整的一組(${span / DIV} 拍)`);
+          tup[v] = null;
+        }
+      }
+      sums[v] = (sums[v] || 0) + dd; t += d; max = Math.max(max, t);
     }
-    for (const [v, s] of Object.entries(sums)) if (s !== lens[i]) errs.push(`第 ${i + 1} 小節 聲部 ${v}:時值 ${s / DIV} 拍 ≠ 拍號 ${lens[i] / DIV} 拍`);
+    for (const [v, g] of Object.entries(tup)) if (g) errs.push(`第 ${i + 1} 小節 聲部 ${v}:連音組沒有結束`);
+    for (const [v, s] of Object.entries(sums)) if (Math.abs(s - lens[i]) > 1e-6) errs.push(`第 ${i + 1} 小節 聲部 ${v}:時值 ${s / DIV} 拍 ≠ 拍號 ${lens[i] / DIV} 拍`);
     if (max > lens[i]) errs.push(`第 ${i + 1} 小節超過拍號長度`);
     if (!sums[1]) errs.push(`第 ${i + 1} 小節沒有手的聲部`);
     if (hasFeet && !spec.measures[i].slash && !sums[2]) errs.push(`第 ${i + 1} 小節少了腳的聲部`);
@@ -67,14 +109,18 @@ const TIMES = ["4/4", "3/4", "2/4", "2/2", "5/4", "7/4", "6/8", "9/8", "12/8", "
 export function randomScore(seed, nMeasures = 4){
   const R = rng(seed), pick = a => a[Math.floor(R() * a.length)], lines = R() < 0.2 ? 1 : 5;
   const handNotes = () => {
-    if (lines === 1) return [{ piece: "snare", accent: R() < 0.3, ghost: R() < 0.1, flam: R() < 0.1, drag: R() < 0.05 }];
+    // 裝飾音:一個和弦只有 flam 或 drag 其中一種;開閉 HH 擇一
+    const grace = R() < 0.08 ? "flam" : R() < 0.05 ? "drag" : null;
+    if (lines === 1) return [{ piece: "snare", accent: R() < 0.3, ghost: R() < 0.1, ...(grace ? { [grace]: true } : {}) }];
     const n = R() < 0.3 ? 2 : 1, set = new Set(); while (set.size < n) set.add(pick(HANDS));
-    return [...set].map(piece => ({ piece, accent: R() < 0.2, ghost: R() < 0.1, flam: R() < 0.08, drag: R() < 0.05, open: piece === "hh" && R() < 0.2, closed: piece === "hh" && R() < 0.2 }));
+    return [...set].map((piece, i) => { const oc = piece === "hh" ? R() : 1; return { piece, accent: R() < 0.2, ghost: R() < 0.1, ...(grace && (i === 0 || R() < 0.5) ? { [grace]: true } : {}), open: oc < 0.2, closed: oc >= 0.2 && oc < 0.4 }; });
   };
   const footNotes = () => [{ piece: R() < 0.7 ? "kick" : "hhFoot", accent: R() < 0.1 }];
   // 一組(拍)的節奏:一般時值切開,或一組連音
   const groupRhythm = g => {
     if (g === DIV && R() < 0.3) { const c = pick(["8t3", "16t5", "16t6", "16t7", "32t9", "32t10"]), n = Number(c.split("t")[1]); return Array(n).fill(c); }
+    // 8t3 與 16t3 混在一拍(一個連音組)
+    if (g === DIV && R() < 0.1) return pick([["8t3", "16t3", "16t3", "8t3"], ["16t3", "16t3", "8t3", "8t3"], ["8t3", "8t3", "16t3", "16t3"], ["16t3", "16t3", "16t3", "16t3", "16t3", "16t3"]]);
     if (g === 1.5 * DIV && R() < 0.3) return ["dup", "dup"];
     if (g === 1.5 * DIV && R() < 0.4) return ["4."];
     const out = []; let left = g;
@@ -94,7 +140,9 @@ export function randomScore(seed, nMeasures = 4){
       if (next && !next.some(c => /t|dup/.test(c))) codes.push(...next.slice(0, Math.floor(R() * next.length)));
     } else codes = groups.flat();
     const evs = codes.map(c => (R() < 0.15 ? { value: "r" + c } : { value: c, notes: notesFn() }));
-    if (!feet && lines === 5) evs.forEach(e => { if (e.notes && R() < 0.05) e.roll = 1 + Math.floor(R() * 3); else if (e.notes && R() < 0.03) e.buzz = true; });
+    // 滾奏:手、八分音符以上(十六分以下不可)
+    const rollable = c => !/^(16|32)/.test(c);
+    if (!feet && lines === 5) evs.forEach(e => { if (!e.notes || !rollable(e.value)) return; if (R() < 0.05) e.roll = 1 + Math.floor(R() * 3); else if (R() < 0.03) e.buzz = true; });
     // 連結線:下一個也是音的話,把下一個改成同樣的鼓件
     for (let i = 0; i + 1 < evs.length; i++) if (evs[i].notes && evs[i + 1].notes && R() < 0.1) { evs[i].tie = true; evs[i + 1].notes = evs[i].notes.map(n => ({ piece: n.piece })); }
     return evs;
@@ -167,9 +215,121 @@ export default function check(ok){
     ["力度的小節不對", S([[q("snare")]], { dyn: [{ m: 3, beat: 0, mark: "f" }] })],
     ["lines 不是 1 或 5", S([[q("snare")]], { lines: 3 })],
     ["roll 和 buzz 一起", S([[{ ...q("snare"), roll: 2, buzz: true }]])],
-    ["roll 超過 3", S([[{ ...q("snare"), roll: 4 }]])]
+    ["roll 超過 3", S([[{ ...q("snare"), roll: 4 }]])],
+    // 開閉 HH
+    ["open 寫在小鼓", S([[{ value: "4", notes: [{ piece: "snare", open: true }] }]])],
+    ["closed 寫在 Ride", S([[{ value: "4", notes: [{ piece: "ride", closed: true }] }]])],
+    ["open 寫在腳踩 HH", S([[], [{ value: "4", notes: [{ piece: "hhFoot", open: true }] }]])],
+    ["closed 寫在大鼓", S([[], [{ value: "4", notes: [{ piece: "kick", closed: true }] }]])],
+    ["hh 同時 open、closed", S([[{ value: "4", notes: [{ piece: "hh", open: true, closed: true }] }]])],
+    ["hhOpen 又寫 closed", S([[{ value: "4", notes: [{ piece: "hhOpen", closed: true }] }]])],
+    ["hhClosed 又寫 open", S([[{ value: "4", notes: [{ piece: "hhClosed", open: true }] }]])],
+    // Flam / Drag
+    ["flam 放在腳", S([[], [{ value: "4", notes: [{ piece: "kick", flam: true }] }]])],
+    ["drag 放在腳", S([[], [{ value: "4", notes: [{ piece: "hhFoot", drag: true }] }]])],
+    ["同一個音 flam + drag", S([[{ value: "4", notes: [{ piece: "snare", flam: true, drag: true }] }]])],
+    ["同一個和弦 flam + drag", S([[{ value: "4", notes: [{ piece: "snare", flam: true }, { piece: "tomHi", drag: true }] }]])],
+    // 滾奏
+    ["roll 放在腳", S([[], [{ value: "4", notes: [{ piece: "kick" }], roll: 2 }]])],
+    ["buzz 放在腳", S([[], [{ value: "4", notes: [{ piece: "kick" }], buzz: true }]])],
+    ["roll 在十六分音符", S([[{ value: "16", notes: [{ piece: "snare" }], roll: 1 }]])],
+    ["roll 在附點十六分", S([[{ value: "16.", notes: [{ piece: "snare" }], roll: 1 }, { value: "32", notes: [{ piece: "snare" }] }]])],
+    ["buzz 在三十二分音符", S([[{ value: "32", notes: [{ piece: "snare" }], buzz: true }]])],
+    ["roll 在 16t3", S([[...[0, 1, 2].map(i => ({ value: "16t3", notes: [{ piece: "snare" }], ...(i ? {} : { roll: 2 }) }))]])],
+    // 力度
+    ["同一個位置兩個力度", S([[q("snare")]], { dyn: [{ m: 0, beat: 0, mark: "f" }, { m: 0, beat: 0, mark: "p" }] })],
+    ["同一個位置兩個漸強", S([[q("snare")]], { dyn: [{ m: 0, beat: 0, mark: "cresc" }, { m: 0, beat: 0, mark: "dim" }] })],
+    // 連音
+    ["tuplet 寫了不認得的值", S([[...[0, 1, 2].map(i => ({ value: "8t3", notes: [{ piece: "snare" }], tuplet: i === 2 ? "end" : undefined }))]])],
+    ["一般時值寫 tuplet", S([[{ ...q("snare"), tuplet: "stop" }]])],
+    ["連音 stop 時不是完整的一組", S([[{ value: "8t3", notes: [{ piece: "snare" }] }, { value: "8t3", notes: [{ piece: "snare" }], tuplet: "stop" }]])],
+    ["混用連音超過一組", S([[{ value: "8t3", notes: [{ piece: "snare" }] }, { value: "8t3", notes: [{ piece: "snare" }] }, { value: "16t3", notes: [{ piece: "snare" }] }, { value: "8t3", notes: [{ piece: "snare" }] }]])],
+    // 分組拍號
+    ["x/4 寫分組(3+2/4)", S([[q("snare")]], { time: "3+2/4" })],
+    ["分組有 4(4+3/8)", S([[q("snare")]], { time: "4+3/8" })]
   ];
   for (const [name, spec] of BAD) { let threw = false; try { scoreXML(spec); } catch (e) { threw = true; } ok(threw, `不合法的資料要丟出錯誤:${name}`); }
+  // 5. 混用 8t3 與 16t3:一拍一個連音組(一個「3」)
+  const T = (v, o = {}) => ({ value: v, notes: [{ piece: "snare" }], ...o });
+  const GOOD = [
+    ["[8t3,16t3,16t3,8t3] 一組", [T("8t3"), T("16t3"), T("16t3"), T("8t3")], 1],
+    ["[16t3,16t3,8t3,8t3] 一組", [T("16t3"), T("16t3"), T("8t3"), T("8t3")], 1],
+    ["[8t3,8t3,16t3,16t3] 一組", [T("8t3"), T("8t3"), T("16t3"), T("16t3")], 1],
+    ["[4t3,8t3] 一拍一組", [T("4t3"), T("8t3")], 1],
+    ["[4t3 ×3] 兩拍一組", [T("4t3"), T("4t3"), T("4t3")], 1],
+    ["[4t3,8t3,8t3,4t3] 一拍一組 × 2", [T("4t3"), T("8t3"), T("8t3"), T("4t3")], 2],
+    ["[4t3,8t3(continue),8t3,4t3] 兩拍一組", [T("4t3"), T("8t3", { tuplet: "continue" }), T("8t3"), T("4t3")], 1],
+    ["16t3 ×3 兩組", [T("16t3"), T("16t3"), T("16t3"), T("16t3"), T("16t3"), T("16t3")], 2],
+    ["continue:[16t3 ×3(continue),16t3,8t3] 一組", [T("16t3"), T("16t3"), T("16t3", { tuplet: "continue" }), T("16t3"), T("8t3")], 1],
+    ["stop:[8t3,16t3(stop)] + 16t3 ×3 兩組", [T("8t3"), T("16t3", { tuplet: "stop" }), T("16t3"), T("16t3"), T("16t3")], 2],
+    ["休止在混用連音裡", [T("8t3"), { value: "r16t3" }, T("16t3"), T("8t3")], 1]
+  ];
+  for (const [name, evs, groups] of GOOD) {
+    const spec = { key, time: "4/4", measures: [{ voices: [evs] }] };
+    let errs, xml = "";
+    try { xml = scoreXML(spec); errs = auditXML(xml, spec); } catch (e) { errs = [e.message]; }
+    ok(!errs.length, `連音 ${name}:${errs.join(";")}`);
+    ok((xml.match(/<tuplet type="start"/g) || []).length === groups, `連音 ${name}:應該 ${groups} 組,XML 有 ${(xml.match(/<tuplet type="start"/g) || []).length} 組`);
+  }
+  // auditXML 自己重算時值:<duration> 被改掉要抓得到;連音組總長不對要抓得到
+  {
+    const spec = { key, time: "4/4", measures: [{ voices: [[T("8t3"), T("16t3"), T("16t3"), T("8t3")]] }] }, xml = scoreXML(spec);
+    ok(auditXML(xml.replace("<duration>840</duration>", "<duration>841</duration>"), spec).some(e => /重算/.test(e)), "auditXML:<duration> 跟重算的不一樣要抓得到");
+    ok(auditXML(xml.replace(/<normal-type>16th<\/normal-type>/g, "<normal-type>eighth</normal-type>").replace(/<type>16th<\/type>/g, "<type>eighth</type>"), spec).length > 0, "auditXML:連音的 type 改掉要抓得到");
+    ok(auditXML(xml.replace('<tuplet type="stop"/>', ""), spec).some(e => /連音組/.test(e)), "auditXML:連音組沒有結束要抓得到");
+  }
+  // 連結線接續的開 HH:只有第一個音有 <open/>;閉 HH 也一樣
+  for (const [mk, tag] of [["open", "<open "], ["closed", "<stopped "]]) {
+    const spec = { key, time: "4/4", measures: [{ voices: [[{ value: "2", notes: [{ piece: "hh", [mk]: true }], tie: true }, { value: "4", notes: [{ piece: "hh", [mk]: true }] }]] }] };
+    let xml = ""; try { xml = scoreXML(spec); } catch (e) { ok(false, `連結線的 ${mk} HH:${e.message}`); }
+    ok((xml.match(new RegExp(tag, "g")) || []).length === 1, `連結線接續的 ${mk} HH 只在第一個音畫(現在 ${(xml.match(new RegExp(tag, "g")) || []).length} 個)`);
+    const spec2 = { key, time: "4/4", measures: [{ voices: [[{ value: "2", notes: [{ piece: mk === "open" ? "hhOpen" : "hhClosed" }], tie: true }, { value: "2", notes: [{ piece: mk === "open" ? "hhOpen" : "hhClosed" }] }]] }] };
+    try { xml = scoreXML(spec2); } catch (e) { xml = ""; ok(false, `連結線的 ${mk} HH(鼓件):${e.message}`); }
+    ok((xml.match(new RegExp(tag, "g")) || []).length === 1, `連結線接續的 ${mk === "open" ? "hhOpen" : "hhClosed"} 只在第一個音畫`);
+  }
+  // 滾奏在八分音符、8t3、二連音可以
+  for (const v of ["8", "8.", "8t3", "4t3", "2", "1"]) {
+    const n = /t3$/.test(v) ? 3 : 1, spec = { key, time: "4/4", measures: [{ voices: [Array(n).fill(0).map(() => ({ value: v, notes: [{ piece: "snare" }], roll: 2 }))] }] };
+    let errs; try { errs = auditXML(scoreXML(spec), spec); } catch (e) { errs = [e.message]; }
+    ok(!errs.length, `滾奏在 ${v}:${errs.join(";")}`);
+  }
+  // 交給 OSMD 的版本:<open/> → <open-string/>(其他不動)
+  {
+    const xml = scoreXML({ key, time: "4/4", measures: [{ voices: [[{ value: "4", notes: [{ piece: "hh", open: true }] }]] }] }), ox = osmdXML(xml);
+    ok(/<open placement="above"\/>/.test(xml) && !/<open[ /]/.test(ox) && /<open-string placement="above"\/>/.test(ox) && ox.length === xml.length + 7, "osmdXML:<open/> 換成 <open-string/>");
+  }
+  // 圖例的出處小字(legendSrc):照 srcs[…].short;DK 寫明「Trinity DK」;沒有 undefined;單線譜的小鼓第二行「單線譜為 App 的選擇」
+  const srcText = ls => ls.lines.map(l => l.join("|")).join("/");
+  for (const id of Object.keys(key.pieces)) {
+    const ls = legendSrc(key, id, 5), t = srcText(ls), p = key.pieces[id];
+    ok(ls.lines.length >= 1 && ls.lines.length <= 2 && ls.lines.every(l => Array.isArray(l) && l.length === 2 && l.every(x => typeof x === "string" && x)), `圖例 ${id} 出處:${t}`);
+    ok(!/undefined|null|NaN/.test(t) && !/Trinity p\./.test(t), `圖例 ${id} 出處不能有 undefined、不能寫成「Trinity p.」:${t}`);
+    ok(same(ls.lines[0], key.srcs[p.src].short), `圖例 ${id} 出處第一行要照 srcs.${p.src}.short:${t}`);
+    if (p.src === "trinity-dk-p107") ok(ls.lines[0][0] === "Trinity DK p.107" && same(ls.lines[1], ["位置待核對", "Pos. pending"]) && ls.pending, `圖例 ${id}:Trinity DK p.107 + 位置待核對:${t}`);
+    if (p.src === "pending-pas-weinberg") ok(same(ls.lines, [["待核對", "Pending"]]) && ls.pending, `圖例 ${id}:待核對:${t}`);
+    if (id === "rideBell") ok(same(ls.lines, [["Trinity 勘誤", "Trinity errata"]]) && !ls.pending, `圖例 Ride bell 寫「Trinity 勘誤」:${t}`);
+    ok(!ls.wide, `圖例 ${id}:五線的格子是一般寬`);
+  }
+  {
+    const ls = legendSrc(key, "snare", 1);
+    ok(same(ls.lines, [["RSL p.31–43", "RSL p.31–43"], ["單線譜為 App 的選擇", "1-line: App's choice"]]) && !ls.pending && ls.wide, `圖例 單線譜小鼓:${srcText(ls)}`);
+  }
+  // 之後 src 改成 PAS 指南(不是待核對了):出處寫 PAS 的 short、沒有第二行、沒有 undefined;沒有 short 的出處用 label
+  {
+    const k2 = JSON.parse(JSON.stringify(key));
+    k2.srcs["pas-weinberg"] = { pending: false, label: ["PAS 鼓組記譜指南 p.12", "PAS drumset guide p.12"], short: ["PAS 指南 p.12", "PAS guide p.12"], p: "12" };
+    k2.srcs["no-short"] = { pending: false, label: ["某官方資料 p.3", "Some doc p.3"], p: "3" };
+    for (const p of Object.values(k2.pieces)) { if (p.src === "pending-pas-weinberg") p.src = "pas-weinberg"; if (p.posSrc) p.posSrc = "pas-weinberg"; }
+    for (const id of Object.keys(k2.pieces)) {
+      const ls = legendSrc(k2, id, 5), t = srcText(ls);
+      ok(!/undefined|null|NaN/.test(t) && !ls.pending && ls.lines.length === 1, `圖例(src 改成 PAS 指南後)${id}:${t}`);
+      if (key.pieces[id].src === "pending-pas-weinberg") ok(same(ls.lines[0], ["PAS 指南 p.12", "PAS guide p.12"]), `圖例(src 改成 PAS 指南後)${id} 寫 PAS:${t}`);
+    }
+    k2.pieces.kick.src = "no-short";
+    ok(same(legendSrc(k2, "kick", 5).lines, [["某官方資料 p.3", "Some doc p.3"]]), "圖例:沒有 short 的出處用 label");
+    k2.pieces.kick.src = "missing";
+    ok(same(legendSrc(k2, "kick", 5).lines, [["待核對", "Pending"]]) && legendSrc(k2, "kick", 5).pending, "圖例:找不到出處 = 待核對");
+  }
   // 每個時值代號都能用(連音寫一整組,其他寫一個;剩下的自動補休止)
   for (const c of VALUE_CODES) {
     const n = /t(\d+)$/.test(c) ? Number(c.split("t")[1]) : c === "dup" ? 2 : 1, spec = { key, time: c === "dup" ? "6/8" : "4/4", measures: [{ voices: [Array(n).fill(0).map(() => ({ value: c, notes: [{ piece: "snare" }] }))] }] };

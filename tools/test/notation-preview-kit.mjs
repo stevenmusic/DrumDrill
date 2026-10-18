@@ -12,7 +12,7 @@ style.textContent = `body{margin:0;padding:12px;background:var(--bg);color:var(-
 .kp-title{font-size:13px;font-weight:700;color:var(--gold-bright);margin:0 0 6px}.kp-err{color:#c33;font-size:12px}.kit-paper{background:var(--paper);border-radius:var(--radius-sm);padding:8px;overflow:hidden}`;
 document.head.appendChild(style);
 const { KIT_SAMPLES, pickSamples } = await import("./kitsamples.mjs");
-const { scoreXML, piecesUsed } = await import("../../js/shared/kitnotation.js");
+const { scoreXML, piecesUsed, osmdXML } = await import("../../js/shared/kitnotation.js");
 const { drawLegend, decorate, setupKit } = await import("../../js/shared/legend.js");
 const { tr } = await import("../../js/shared/i18n.js");
 window.__L = await import("../../js/shared/legend.js");   // notation.mjs 用(符頭位置、補畫的記號)
@@ -35,17 +35,18 @@ for (const s of samples) {
   try {
     rec.xml = scoreXML({ ...s.spec, key, title: s.id });
     const o = new opensheetmusicdisplay.OpenSheetMusicDisplay(box, { backend: "svg", autoResize: false, drawTitle: false, drawSubtitle: false, drawComposer: false, drawPartNames: false, drawMeasureNumbers: false, drawingParameters: "compacttight" });
-    setupKit(o, rec.lines);
-    await o.load(rec.xml);
+    setupKit(o, rec.lines, rec.xml);
+    await o.load(osmdXML(rec.xml));
+    // 放不下就縮小(最小 0.45);鬼音括號放不下(decorate 的 kitTight)也縮小,讓 OSMD 有寬度排開
     let z = Number(Q.get("zoom")) || 0.8;
-    for (let k = 0; k < 4; k++) {
+    for (let k = 0; k < 8; k++) {
       o.zoom = z; o.render();
-      const w = box.querySelector("svg").getBoundingClientRect().width, avail = paper.clientWidth - 16;
-      if (w <= avail + 1 || z <= 0.45) break;
-      z = Math.max(0.45, z * avail / w * 0.98);
+      rec.marks = decorate(o, rec.xml, box.querySelector("svg"));
+      const svg = box.querySelector("svg"), w = svg.getBoundingClientRect().width, avail = paper.clientWidth - 16, tight = Number(svg.dataset.kitTight) > 0;
+      if ((w <= avail + 1 && !tight) || z <= 0.45) break;
+      z = Math.max(0.45, w > avail + 1 ? z * avail / w * 0.98 : z * 0.85);
     }
     rec.zoom = z;
-    rec.marks = decorate(o, rec.xml, box.querySelector("svg"));
     rec.osmd = o; rec.el = c;
   } catch (e) {
     console.error(s.id, e); rec.err = e.message;

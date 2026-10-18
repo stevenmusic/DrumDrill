@@ -7,15 +7,16 @@
     "legend": "Neither syllabus prints a drum key. Only the items whose src is not pending-pas-weinberg are confirmed by public official documents; the rest is a common convention, to be checked against the PAS Weinberg guide."
   },
   "srcs": {
-    "pending-pas-weinberg": { "pending": true, "label": ["常見寫法(待依 PAS 指南核對)", "Pending PAS check"], "ref": "Norman Weinberg, Guide to Standardized Drumset Notation (PAS, Hal Leonard HL06620063)" },
-    "trinity-dk-p107": { "pending": false, "label": ["Trinity 鼓組大綱 p.107", "Trinity Drum Kit p.107"], "ref": "Trinity Drum Kit & Percussion Syllabus from 2020 (Online edition, March 2026)", "url": "https://www.trinitycollege.com/resource/?id=8828", "p": "107" },
-    "trinity-errata": { "pending": false, "label": ["Trinity 勘誤(Sweet Emotion)", "Trinity errata"], "ref": "Trinity Rock & Pop errata, Drums, Sweet Emotion (2018 Grade 3, p.32, bar 17)", "url": "https://www.trinitycollege.com/qualifications/music/rock-and-pop/rock-and-pop-errata", "p": "32" },
-    "rsl-p31-43": { "pending": false, "label": ["RSL p.31–43", "RSL p.31–43"], "ref": "Rockschool Drums Syllabus Specification (rev. 2026-06-02)", "url": "https://www.rslawards.com/wp-content/uploads/dlm_uploads/2026/06/RSL_Drums_Syllabus_Specification_June_2026.pdf", "p": "31–43" }
+    "pending-pas-weinberg": { "pending": true, "label": ["常見寫法(待依 PAS 指南核對)", "Pending PAS check"], "short": ["待核對", "Pending"], "posShort": ["位置待核對", "Pos. pending"], "ref": "Norman Weinberg, Guide to Standardized Drumset Notation (PAS, Hal Leonard HL06620063)" },
+    "trinity-dk-p107": { "pending": false, "label": ["Trinity 鼓組大綱 p.107", "Trinity Drum Kit p.107"], "short": ["Trinity DK p.107", "Trinity DK p.107"], "ref": "Trinity Drum Kit & Percussion Syllabus from 2020 (Online edition, March 2026)", "url": "https://www.trinitycollege.com/resource/?id=8828", "p": "107" },
+    "trinity-errata": { "pending": false, "label": ["Trinity 勘誤(Sweet Emotion)", "Trinity errata"], "short": ["Trinity 勘誤", "Trinity errata"], "ref": "Trinity Rock & Pop errata, Drums, Sweet Emotion (2018 Grade 3, p.32, bar 17)", "url": "https://www.trinitycollege.com/qualifications/music/rock-and-pop/rock-and-pop-errata", "p": "32" },
+    "rsl-p31-43": { "pending": false, "label": ["RSL p.31–43", "RSL p.31–43"], "short": ["RSL p.31–43", "RSL p.31–43"], "ref": "Rockschool Drums Syllabus Specification (rev. 2026-06-02)", "url": "https://www.rslawards.com/wp-content/uploads/dlm_uploads/2026/06/RSL_Drums_Syllabus_Specification_June_2026.pdf", "p": "31–43" }
   },
   "singleLine": {
     "piece": "snare",
     "src": "rsl-p31-43",
-    "note": ["官方只寫小鼓;單線譜是 App 的選擇", "Officially snare only; the single-line staff is the App's choice"]
+    "note": ["官方只寫小鼓;單線譜是 App 的選擇", "Officially snare only; the single-line staff is the App's choice"],
+    "short": ["單線譜為 App 的選擇", "1-line: App's choice"]
   },
   "pieces": {
     "kick": { "name": ["大鼓", "Bass drum"], "abbr": "BD", "step": "F", "oct": 4, "head": "normal", "src": "pending-pas-weinberg" },
