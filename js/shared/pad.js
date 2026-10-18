@@ -15,7 +15,7 @@
    - 打到閃一下(app.css 的 .tap-pad.hit);不出聲(要出聲由 onHit 自己用 audio.playKit)
    共用元件不寫死前綴:只用傳進來的 el 與 class */
 import { perfToAudioTime } from "./player.js";
-import { tr } from "./i18n.js";
+import { tr, pairText } from "./i18n.js";
 
 const FLASH_MS = 90;
 const CLICK_DUP_MS = 800;   // pointerdown 之後這麼久內同一個鼓墊的 click 當作同一下(有的瀏覽器 detail 也是 0)
@@ -46,7 +46,8 @@ export function createPads(el, lanes, onHit){
   function relang(){
     for (const l of lanes) {
       const b = btns.get(l.id), name = tr(l.label[0], l.label[1]);
-      b.querySelector(".pad-name").textContent = name;
+      // 名稱兩種語言保留比較高的高度(窄畫面「大鼓・腳踩」會換行、「Kick · HH」不會:中英版面一樣)
+      pairText(b.querySelector(".pad-name"), () => tr(l.label[0], l.label[1]));
       b.querySelector(".pad-key").textContent = [].concat(l.key || [])[0] ? [].concat(l.key)[0].toUpperCase() : "";
       b.setAttribute("aria-label", name);
     }
