@@ -12,6 +12,7 @@ import gensight from "./checks/gen-sight.mjs";
 import genplayback from "./checks/gen-playback.mjs";
 import genkit from "./checks/gen-kit.mjs";
 import genear from "./checks/gen-ear.mjs";
+import sightmeter from "./checks/sight-meter.mjs";
 let fails = 0, checks = 0;
 const ok = (cond, msg) => { checks++; if (!cond) { fails++; console.log("✗ " + msg); } };
 
@@ -80,6 +81,8 @@ try { genplayback(ok); } catch (e) { ok(false, "Playback 產生器檢查出錯:"
 try { genkit(ok); } catch (e) { ok(false, "RSL 整組鼓視奏出題器檢查出錯:" + e.stack); }
 // 6h. RSL 聽力出題器(js/ear/gen.js):Fill(♩=70、小鼓單線、白名單、干擾選項只改一拍且聽起來不同)、Groove(鼓件照級數、速度範圍、播兩遍、不出風格題)(checks/gen-ear.mjs)
 try { genear(ok); } catch (e) { ok(false, "RSL 聽力出題器檢查出錯:" + e.stack); }
+// 6i. 視奏的拍點與小節時間軸(js/sight/meter.js:拍號的拍點、複拍子用八分音符當一拍、換拍號;Trinity / RSL 題目的事件都落在小節裡)+ 題目指紋(checks/sight-meter.mjs)
+try { sightmeter(ok); } catch (e) { ok(false, "視奏拍點時間軸檢查出錯:" + e.stack); }
 // 7. 版本指紋與 sw.js 預快取清單
 try { execFileSync("node", [new URL("../build/stamp.mjs", import.meta.url).pathname, "--check"], { stdio: "pipe" }); checks++; }
 catch (e) { fails++; checks++; console.log("✗ " + (e.stdout || "").toString().trim()); }

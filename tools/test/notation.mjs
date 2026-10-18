@@ -315,5 +315,51 @@ for (const width of [1000, 280]) {
   if (bad === n0) ok(`RSL 出題器 ${r.out.length} + ${n.out.length} 張(整組鼓視奏、Fill 含干擾選項、Groove):OSMD 畫出來沒有錯誤,符頭數、形狀(含斜線)、高度(${r.out.reduce((s, o) => s + (o.checked || 0), 0)} 個音)、補畫記號、連音組數、開 HH 的 o 都對;320 寬不超出紙張`);
 }
 
+/* 7. 視奏分頁實際畫出來的整組鼓譜(S9:RSL 4、5;S10/S11:Trinity Playback Initial–8),1000 與 320 寬,每級 2 題:
+   沒有繪製錯誤;小節數 = 題目;譜在紙張裡;每行幾小節照考卷規則(5 / 4 / 3 / 2,放不下才交給 OSMD)、縮放不小於 0.45(每行 3 小節以上不小於 0.55);
+   圖例格子 = 這一題用到的鼓件(五線);自由發展的斜線符頭(RSL)= 2 小節 × 4 拍 */
+for (const width of [1000, 320]) {
+  const n0 = bad;
+  const { page, errors, close } = await open({ viewport: { width, height: 900 }, mobile: width < 600 });
+  await page.evaluate(() => { localStorage.clear(); localStorage.setItem("drumdrill-lang", "zh"); localStorage.setItem("drumdrill.v1", JSON.stringify({ onboarded: true, view: "sight", sub: { sight: "4", tech: "roll", exam: "tech" } })); });
+  await page.reload(); await page.waitForFunction(() => window.__stageReady >= 1);
+  let tests = 0;
+  for (const [sys, g] of [["rsl", 4], ["rsl", 5], ...[0, 1, 2, 3, 4, 5, 6, 7, 8].map(g => ["trinity", g])]) {
+    await page.evaluate(([s, g]) => { window.__shell.setExam(s, g); window.__shell.showView("sight", String(g)); }, [sys, g]);
+    for (let k = 0; k < 2; k++) {
+      if (k) { const d = await page.evaluate(() => window.__sight.state.drawn); await page.evaluate(() => window.__sight.newTest()); await page.waitForFunction(d => window.__sight.state.drawn > d, d, { timeout: 30000 }).catch(() => {}); }
+      await page.waitForFunction(() => window.__sight.state.drawn > 0 && !document.querySelector("#s-score[aria-busy]"), null, { timeout: 30000 }).catch(() => {});
+      await page.waitForFunction(() => document.querySelectorAll("#s-legend .kl-cell svg").length >= document.querySelectorAll("#s-legend .kl-cell").length && document.querySelectorAll("#s-legend .kl-cell").length > 0, null, { timeout: 30000 }).catch(() => {});
+      await page.waitForTimeout(200);
+      const r = await page.evaluate(async () => {
+        const S = window.__sight, svg = document.querySelector("#s-score svg"), issues = [];
+        if (!svg) return { issues: ["沒有譜"] };
+        if (/失敗/.test(document.getElementById("s-message").textContent)) issues.push("訊息:" + document.getElementById("s-message").textContent);
+        const ids = new Set([...svg.querySelectorAll("g.vf-measure")].map(e => Number(e.id)).filter(n => n >= 1));
+        if (ids.size !== S.test.bars) issues.push(`畫出 ${ids.size} 小節,題目 ${S.test.bars} 小節`);
+        const pr = document.getElementById("s-stage").getBoundingClientRect(), gr = svg.getBoundingClientRect();
+        if (gr.right > pr.right + 1 || gr.left < pr.left - 1) issues.push(`譜超出紙張(${Math.round(gr.left)}–${Math.round(gr.right)} / ${Math.round(pr.left)}–${Math.round(pr.right)})`);
+        const L = S.layout || {};
+        if (![5, 4, 3, 2, 0].includes(L.measuresPerLine)) issues.push(`每行 ${L.measuresPerLine} 小節`);
+        if (!(L.zoom >= 0.45 - 1e-9) || (L.measuresPerLine >= 3 && L.zoom < 0.55 - 1e-9)) issues.push(`縮放 ${L.zoom}`);
+        const { piecesUsed } = await import("./js/shared/kitnotation.js");
+        const want = piecesUsed({ ...S.test.score }), got = [...document.querySelectorAll("#s-legend .kl-cell")].map(c => c.dataset.piece);
+        if (want.join() !== got.join()) issues.push(`圖例 ${got.join(",")},用到的鼓件 ${want.join(",")}`);
+        if (S.test.develop) {
+          const slash = (S.xml.match(/<notehead>slash<\/notehead>/g) || []).length;
+          if (slash !== S.test.develop.bars * 4) issues.push(`自由發展斜線 ${slash} 個`);
+        }
+        return { issues, layout: L };
+      });
+      tests++;
+      for (const i of r.issues) fail(`視奏 ${width} 寬 ${sys} ${g} 級 第 ${k + 1} 題:${i}`);
+    }
+    if (width === 1000 || g === 8 || g === 4) await page.locator("#s-scoreCard").screenshot({ path: OUT + `sight-${sys}${g}-${width}.png` });
+  }
+  for (const e of errors) fail(`視奏整組鼓 ${width} 寬 console:` + e);
+  if (bad === n0) ok(`視奏 ${width} 寬:RSL 4、5 與 Trinity Initial–8 共 ${tests} 題整組鼓譜都畫得出來、小節數對、在紙張裡、每行小節數與縮放照考卷規則、圖例 = 用到的鼓件、自由發展 8 個斜線`);
+  await close();
+}
+
 console.log(bad ? `✗ ${bad} 項問題` : `✓ 全部通過(截圖在 ${OUT})`);
 process.exit(bad ? 1 : 0);
