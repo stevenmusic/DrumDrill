@@ -1,8 +1,11 @@
 // 整組鼓的取樣與播放(Playwright;js/shared/audio.js 的 loadKit / playKit / unloadKit,docs/STAGES.md S6):
 //  1. 載入 12 個鼓件(背景補完 round-robin)後,每層的錄音數 = min(manifest 的 rr, 上限),
-//     解碼後的記憶體(換成 manifest 的 48kHz 算,立體聲 32-bit 浮點)iPhone UA ≤ 80 MB、桌機 ≤ 160 MB(MB = 2^20 位元組)
-//  2. 技巧的小鼓跟整組鼓共用同一份 buffer:之後再 loadDrums(["snare"]) 不會多載;小鼓的錄音都比 2.5 秒短(拿掉 2.5 秒截斷聲音不變)
+//     解碼後的記憶體(換成 manifest 的 48kHz 算,立體聲 32-bit 浮點)iPhone UA ≤ 85×10⁶ 位元組、桌機 ≤ 170×10⁶ 位元組(十進位)。
+//     參考:ScrollScore 在 iOS 的取樣記憶體預算是 160×10⁶ 位元組;本專案 iPhone 實測約 83×10⁶、桌機約 160×10⁶
+//  2. 技巧的小鼓跟整組鼓共用同一份 buffer:之後再 loadDrums(["snare"]) 不會多載、進度直接到 1;小鼓的錄音都比 2.5 秒短(拿掉 2.5 秒截斷聲音不變)
 //  3. hhOpen 接 hhClosed(或腳踩 hi-hat):還在響的開放 hi-hat 在 DRUM_CHOKE_FADE 內淡出、播放停止
+//  3b. hhOpen 在 t 之前、hhClosed 在 t 之後,cancelFrom(t):開放 hi-hat 不會在舊時間被截(音量恢復、停止時間回到錄音結束);
+//      之後 stopAll 再打 hhOpen → hhClosed 仍正常截斷
 //  4. crash 連打 6 下:同時響(沒被收掉)的 ≤ DRUM_POLY 上限(4),最舊的兩下在 0.65 秒內收掉
 //  5. 鼓皮在力度交界同時播兩層(交叉淡化),鈸只播一層
 //  6. unloadKit() 之後只剩小鼓;整組鼓不出聲、小鼓照樣出聲;再 loadKit 會重新載入
@@ -12,11 +15,11 @@ import { open } from "./harness.mjs";
 let bad = 0;
 const fail = m => { bad++; console.log("✗ " + m); };
 const ok = m => console.log("✓ " + m);
-const MB = 1024 * 1024;
+const E6 = 1e6;   // 記憶體一律用十進位 10⁶ 位元組(跟 docs/STAGES.md 決定 11、docs/APPSTORE.md 一樣)
 const IPHONE_UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1";
 const { page, errors, close } = await open({ viewport: { width: 1280, height: 800 } });
 
-async function run(label, limitMB){
+async function run(label, limit){
   await page.evaluate(() => { localStorage.clear(); localStorage.setItem("drumdrill-lang", "zh"); localStorage.setItem("drumdrill.v1", JSON.stringify({ onboarded: true, view: "tech", sub: { tech: "roll", exam: "tech" } })); });
   await page.reload(); await page.waitForFunction(() => window.__stageReady >= 1);
   const n0 = bad;
@@ -46,20 +49,23 @@ async function run(label, limitMB){
     man[n].layers.forEach((l, li) => { expect48 += l.frames / l.rr * exp[li] * 8; });
     if ((st.pieces[n] || []).join() !== exp.join()) fail(`${label}:${n} 每層載了 ${(st.pieces[n] || []).join("/")} 個,應該是 ${exp.join("/")}`);
   }
-  const mb = st.bytes48 / MB;
-  if (mb > limitMB) fail(`${label}:解碼後 ${mb.toFixed(1)} MB > ${limitMB} MB`);
+  const e6 = st.bytes48 / E6;
+  if (st.bytes48 > limit) fail(`${label}:解碼後 ${e6.toFixed(1)}×10⁶ 位元組 > 上限 ${limit / E6}×10⁶ 位元組(十進位;ScrollScore iOS 預算 160×10⁶,本專案 iPhone 實測約 83×10⁶)`);
   if (Math.abs(st.bytes48 - expect48) / expect48 > 0.01) fail(`${label}:解碼 ${st.bytes48} 位元組,照 manifest 應該 ${Math.round(expect48)}`);
-  if (bad === n0) ok(`${label}(上限 鼓皮 ${st.limits.head}、鈸 ${st.limits.cymbal}、小鼓 ${st.limits.snare}):12 個鼓件解碼 ${mb.toFixed(1)} MB(${(st.bytes48 / 1e6).toFixed(1)}×10⁶ 位元組,跟 manifest 的 frames 一致)≤ ${limitMB} MB`);
+  if (bad === n0) ok(`${label}(上限 鼓皮 ${st.limits.head}、鈸 ${st.limits.cymbal}、小鼓 ${st.limits.snare}):12 個鼓件解碼 ${e6.toFixed(1)}×10⁶ 位元組(跟 manifest 的 frames 一致)≤ 上限 ${limit / E6}×10⁶ 位元組(十進位;ScrollScore iOS 預算 160×10⁶)`);
 
   // 2. 技巧的小鼓共用同一份 buffer
   const n2 = bad;
   const sn = await page.evaluate(async () => {
     const A = await import("./js/shared/audio.js");
-    await A.loadDrums(["snare"]);
+    let p1 = 0, p2 = 0;
+    await A.loadDrums(["snare"], p => { p1 = p; });   // 小鼓已經跟整組鼓一起載過:第 1 輪沒有要載的
+    await A.loadDrums(["snare"], p => { p2 = p; });   // 同一組再呼叫一次(memo)
     await new Promise(r => setTimeout(r, 500));
-    return A.kitStats();
+    return { ...A.kitStats(), p1, p2 };
   });
   if (sn.pieces.snare.join() !== st.pieces.snare.join()) fail(`${label}:loadDrums(snare) 之後小鼓每層 ${sn.pieces.snare.join("/")} 個(原本 ${st.pieces.snare.join("/")}):沒有共用`);
+  if (sn.p1 !== 1 || sn.p2 !== 1) fail(`${label}:已經載過的再載一次,進度停在 ${sn.p1} / ${sn.p2}(應該直接到 1)`);
   if (sn.maxSec.snare >= 2.5) fail(`${label}:小鼓最長的錄音 ${sn.maxSec.snare.toFixed(2)} 秒 ≥ 2.5 秒,拿掉截斷會改變技巧的聲音`);
   if (bad === n2) ok(`${label}:技巧小鼓與整組鼓共用 buffer(再載一次不增加),小鼓最長 ${sn.maxSec.snare.toFixed(2)} 秒 < 2.5 秒`);
 
@@ -78,6 +84,23 @@ async function run(label, limitMB){
       await wait(0.6);
       out[closer] = { open: !!o, close: !!c, faded: !!(o && o.faded), gain: o ? o.g.gain.value : null, level: o ? o.level : null,
         stopAt: o ? Math.min(...o.srcs.map(s => s.__stopAt || Infinity)) - (t + 0.3) : null, closedFaded: !!(c && c.faded) };
+    }
+    // 3b. cancelFrom 取消了 hhClosed:開放 hi-hat 要恢復
+    {
+      const t = ctx.currentTime + 0.1;
+      const o = A.playKit("hhOpen", t, 0.8), c = A.playKit("hhClosed", t + 0.4, 0.7);
+      const fadedBefore = !!(o && o.faded);
+      A.cancelFrom(t + 0.2);
+      await wait(0.8);
+      out.cancel = { ok: !!(o && c), fadedBefore, faded: !!(o && o.faded), gain: o ? o.g.gain.value : null, level: o ? o.level : null,
+        stopAt: o ? Math.min(...o.srcs.map(s => s.__stopAt || Infinity)) : null, end: o ? o.end : null,
+        ringing: (A.kitStats().ringing.hhOpen || []).filter(v => !v.faded).length };
+      A.stopAll();
+      const t2 = ctx.currentTime + 0.1;
+      const o2 = A.playKit("hhOpen", t2, 0.8), c2 = A.playKit("hhClosed", t2 + 0.3, 0.7);
+      await wait(0.6);
+      out.cancel.after = { faded: !!(o2 && o2.faded), gain: o2 ? o2.g.gain.value : null, level: o2 ? o2.level : null, close: !!c2 };
+      A.stopAll();
     }
     // 4. crash 連打 6 下
     const t = ctx.currentTime + 0.1, hits = [];
@@ -105,6 +128,18 @@ async function run(label, limitMB){
     }
   }
   if (bad === n3) ok(`${label}:hhOpen 接 hhClosed / 腳踩 hi-hat,開放 hi-hat 在 ${p.fade} 秒內淡出(音量 ${p.hhClosed.level.toFixed(3)} → ${p.hhClosed.gain.toExponential(1)}),${(p.fade + 0.02).toFixed(3)} 秒後停止`);
+  const n3b = bad, cc = p.cancel;
+  if (!cc.ok) fail(`${label}:cancelFrom 測試的 hhOpen / hhClosed 沒有聲音`);
+  else {
+    if (!cc.fadedBefore) fail(`${label}:cancelFrom 之前,hhOpen 沒有被之後的 hhClosed 收掉(測試前提不成立)`);
+    if (cc.faded) fail(`${label}:cancelFrom 取消了 hhClosed,開放 hi-hat 還標成被收掉`);
+    if (!(Math.abs(cc.gain - cc.level) < cc.level * 0.01)) fail(`${label}:cancelFrom 之後開放 hi-hat 在舊的截斷時間之後音量 ${cc.gain}(應該維持 ${cc.level})`);
+    if (!(Math.abs(cc.stopAt - cc.end) < 0.005)) fail(`${label}:cancelFrom 之後開放 hi-hat 的停止時間 ${cc.stopAt}(應該回到錄音結束 ${cc.end})`);
+    if (cc.ringing !== 1) fail(`${label}:cancelFrom 之後還在響的開放 hi-hat ${cc.ringing} 個(應該 1 個)`);
+    const a = cc.after;
+    if (!a.close || !a.faded || !(a.gain < a.level * 0.01)) fail(`${label}:cancelFrom + stopAll 之後再打 hhOpen → hhClosed 沒有正常截斷(faded ${a.faded}、音量 ${a.gain})`);
+  }
+  if (bad === n3b) ok(`${label}:hhClosed 被 cancelFrom 取消後,之前的開放 hi-hat 恢復(音量 ${cc.level.toFixed(3)}、照錄音響完);stopAll 後 hhOpen → hhClosed 照常截斷`);
   const n4 = bad, c = p.crash;
   if (c.n !== 6) fail(`${label}:crash 6 下只有 ${c.n} 下有聲音`);
   if (c.ringing > c.poly[0]) fail(`${label}:crash 連打 6 下,同時響 ${c.ringing} 下 > 上限 ${c.poly[0]}`);
@@ -137,7 +172,7 @@ async function run(label, limitMB){
   if (!u.snare || !u.snareKit) fail(`${label}:unloadKit 之後小鼓沒有聲音(playDrum ${u.snare}、playKit ${u.snareKit})`);
   if (!u.again || !u.again.every(n => n >= 1)) fail(`${label}:unloadKit 之後再 loadKit(kick) 沒有重新載入`);
   if (u.after.join() !== "snare") fail(`${label}:第二次 unloadKit 之後還有 ${u.after.join(", ")}`);
-  if (bad === n6) ok(`${label}:unloadKit 之後只剩小鼓(${(u.bytes / MB).toFixed(1)} MB),大鼓不出聲、小鼓照常;再 loadKit 會重新載入`);
+  if (bad === n6) ok(`${label}:unloadKit 之後只剩小鼓(${(u.bytes / E6).toFixed(1)}×10⁶ 位元組),大鼓不出聲、小鼓照常;再 loadKit 會重新載入`);
 
   // 7. 技巧模組照常播放(小鼓)
   const n7 = bad;
@@ -151,9 +186,9 @@ async function run(label, limitMB){
   if (bad === n7) ok(`${label}:技巧模組的小鼓照常播放、停止`);
 }
 
-await run("桌機", 160);
+await run("桌機", 170e6);
 await page.addInitScript(ua => { Object.defineProperty(Navigator.prototype, "userAgent", { configurable: true, get: () => ua }); }, IPHONE_UA);
-await run("iPhone UA", 80);
+await run("iPhone UA", 85e6);
 if (errors.length) { bad++; console.log("✗ 錯誤:\n  " + errors.join("\n  ")); }
 await close();
 console.log(bad ? `✗ ${bad} 項沒通過` : "✓ 整組鼓取樣與播放全部通過");

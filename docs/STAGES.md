@@ -141,7 +141,7 @@
 ### 決定 11:取樣與記憶體
 - **鼓件只用 12 個**:kick、snare、xstick、hhClosed、hhOpen、hhPedal、ride、rideBell、crashL、tom1(HT)、tom3(MT)、tom5(FT)。
 - **round-robin 上限**:
-  - iPhone 與小記憶體裝置:鼓皮每層 3 個、鈸類每層 2 個 → 立體聲解碼約 **76 MB**(照 manifest 的 frames 算)。
+  - iPhone 與小記憶體裝置:鼓皮每層 3 個、鈸類每層 2 個 → 立體聲解碼實測約 **83×10⁶ 位元組**(照 manifest 的 frames 算)。
   - 其他裝置:鼓皮 6 個、鈸 4 個 → 約 150 MB。
   - 技巧模組的小鼓維持現狀。
 - **離開視奏/聽力 60 秒後釋放**整組鼓,小鼓與拍點保留。

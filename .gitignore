@@ -1,5 +1,5 @@
 node_modules
-tools/test/samplecache/
+tools/test/samplecache
 tools/test/out/
 app/www/
 app/node_modules/

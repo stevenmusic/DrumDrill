@@ -235,7 +235,7 @@ let drumMan = null, drumManPromise = null;
 const kit = {};               // 取樣鼓件(manifest 的名稱)→ [力度層][] = AudioBuffer
 const kitReq = {};            // 取樣鼓件 → Map("層.rr" → 下載中 / 已載入的 promise):同一個檔案只下載一次
 const kitRR = {};
-let kitPending = 0, kitQueued = 0;   // 下載中的檔案數、背景還沒輪到的(kitStats 用)
+let kitPending = 0, kitQueued = 0;   // 正在下載的檔案數、背景補 round-robin 還沒完成的工作數(含正在下載的;kitStats 用)
 let roomRaw = null, roomFor = null;
 function loadDrumManifest(){
   if (!drumManPromise) drumManPromise = (async () => {
@@ -253,6 +253,9 @@ function loadDrumManifest(){
 const LOW_MEM = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) || (navigator.deviceMemory && navigator.deviceMemory <= 4);
 const RR_LIMIT = LOW_MEM ? 6 : 10;
 const KIT_CYMBALS = new Set(["hhClosed", "hhOpen", "hhPedal", "ride", "rideBell", "crashL"]);
+/* ScrollScore 在受限裝置會把 crash / ride 的錄音截到 3 秒;這裡 round-robin 數固定,所以不截(鈸照錄音自然響完)。
+   記憶體吃緊時這是第一個槓桿:小記憶體的 crash / ride 截到 3 秒約省 13×10⁶ 位元組。
+   App 打包的數量(tools/build/app-samples.mjs 的 PIECES)= 這裡與 RR_LIMIT 的小記憶體值,verify.mjs 會核對 */
 const KIT_RR = LOW_MEM ? { head: 3, cymbal: 2 } : { head: 6, cymbal: 4 };
 const kitLimit = name => name === "snare" ? RR_LIMIT : KIT_CYMBALS.has(name) ? KIT_RR.cymbal : KIT_RR.head;
 /* 載入一個錄音檔(同一個檔案只下載一次);unloadKit 之後才回來的就丟掉,不會塞進重新建立的清單 */
@@ -274,7 +277,11 @@ function loadSampleFile(name, li, rr){
   req.set(k, job);
   return job;
 }
-/* 第 1 輪每個力度層各 1 個錄音(載完就能播,力度完整),其餘 round-robin 在背景補到上限 */
+/* 第 1 輪每個力度層各 1 個錄音(載完就能播,力度完整),其餘 round-robin 在背景補到上限。
+   第 1 輪還沒載完、這一輪的鼓件就被 unloadKit 釋放時,這一輪 reject(Error "kit unloaded"):呼叫端(loadKit / loadDrums)要 catch
+   (只看這一輪自己的鼓件:unloadKit 保留的小鼓照常載完,技巧模組的 loadDrums 不受影響)。
+   被釋放的這一輪不會蓋掉新一輪的狀態:loadSampleFile 只把錄音放回同一份 kit[name]、memo 只刪自己那一個 drumJobs,
+   背景補 round-robin 也不會開始 */
 async function loadPieces(names, limit, onProgress){
   const man = await loadDrumManifest();
   // 殘響的脈衝響應要跟 AudioContext 同一個取樣率(ConvolverNode 不會自己轉):先留原始檔,接上時再用真正的 context 解碼
@@ -285,8 +292,12 @@ async function loadPieces(names, limit, onProgress){
     if (!kit[name]) { kit[name] = p.layers.map(() => []); kitReq[name] = new Map(); }
     p.layers.forEach((l, li) => { if (!kit[name][li].length) first.push([name, li, 1]); });
   }
+  const own = names.filter(n => kit[n]).map(n => [n, kit[n]]);
+  const released = () => own.some(([n, layers]) => kit[n] !== layers);   // unloadKit 刪掉(或之後重新建立)了這一輪的鼓件
   let done = 0;
+  if (!first.length && onProgress) onProgress(1);   // 全部已經載過:進度直接到 1
   await runLimited(first.map(j => async () => { if (kit[j[0]]) await loadSampleFile(...j); done++; if (onProgress) onProgress(done / first.length); }), SAMPLE_FETCH_CONCURRENCY);
+  if (released()) throw new Error("kit unloaded");
   if (names.every(n => !kit[n] || kit[n].every(l => !l.length))) throw new Error("drum samples failed");
   // 其餘 round-robin(背景)
   const rest = [];
@@ -299,15 +310,18 @@ async function loadPieces(names, limit, onProgress){
   return true;
 }
 const drumJobs = {};
-function memo(key, names, fn){
-  if (drumJobs[key]) return drumJobs[key];
+function memo(key, names, fn, onProgress){
+  if (drumJobs[key]) {   // 同一組已經在載 / 載完:進度在載完時直接到 1
+    if (onProgress) drumJobs[key].then(() => onProgress(1), () => {});
+    return drumJobs[key];
+  }
   const job = drumJobs[key] = fn().catch(e => { if (drumJobs[key] === job) delete drumJobs[key]; throw e; });
   job.names = names;
   return job;
 }
 /* 技巧模組:載入小鼓(照原本的上限) */
 export function loadDrums(pieces = ["snare"], onProgress){
-  return memo(pieces.join(","), pieces, () => loadPieces(pieces, () => RR_LIMIT, onProgress));
+  return memo(pieces.join(","), pieces, () => loadPieces(pieces, () => RR_LIMIT, onProgress), onProgress);
 }
 /* 整組鼓:鼓件用 data/drumkey.json 的 id → ScrollScore 的 DRUM_VOICES 音色 → 取樣鼓件(manifest 的名稱)。
    照 ScrollScore DRUM_KEY_VOICE 的 GM 對照:HT(48)→ tom1、MT(45)→ tom3、FT(41)→ tom5、crash(49)→ crash1(取樣 crashL);
@@ -320,7 +334,7 @@ export const KIT_PIECES = Object.keys(KIT_VOICE);
 const kitSample = id => (DRUM_VOICES[KIT_VOICE[id] || id] || {}).piece || id;
 export function loadKit(pieces = KIT_PIECES, onProgress){
   const names = [...new Set(pieces.map(kitSample))];
-  return memo("kit:" + names.join(","), names, () => loadPieces(names, kitLimit, onProgress));
+  return memo("kit:" + names.join(","), names, () => loadPieces(names, kitLimit, onProgress), onProgress);
 }
 /* 釋放整組鼓(離開視奏 / 聽力一段時間後):刪掉 buffer 與載入紀錄,下次 loadKit 重新載;keep 的鼓件(預設小鼓)保留 */
 export function unloadKit(keep = ["snare"]){
@@ -331,6 +345,7 @@ export function unloadKit(keep = ["snare"]){
     for (const k of Object.keys(kitRR)) if (k.startsWith(n + ":") || (k.startsWith(n) && /^\d+$/.test(k.slice(n.length)))) delete kitRR[k];   // playKit「名稱:層」、playDrum「名稱層」
   }
   if (ringingOpenHat && gone.includes("hhOpen")) ringingOpenHat = null;
+  fadedVoices = fadedVoices.filter(v => !gone.includes(v.name));
   for (const [k, job] of Object.entries(drumJobs)) if (job.names.some(n => gone.includes(n))) delete drumJobs[k];
   return gone;
 }
@@ -386,7 +401,8 @@ const DRUM_CHOKE_FADE = 0.035;
    gain 是 ScrollScore 用響度計(BS.1770 LUFS,400ms 瞬時響度)量過定的:以小鼓為基準,大鼓、中鼓 ≈ 0,
    開放 hi-hat / ride bell / crash / 邊擊 −3~−5、閉合 hi-hat / ride −6~−7、踩 hi-hat −10。
    send 是 ScrollScore 送進鼓用 plate 殘響(getDrumBus 的 drumVerbIn)的量;DrumDrill 的鼓匯流排沒有 plate
-   (只有每一擊都送的鼓房,跟技巧小鼓一樣),所以 send 先照抄記下、沒有接(技巧小鼓的聲音才不會變) */
+   (只有每一擊都送的鼓房,跟技巧小鼓一樣),所以 send 先照抄記下、沒有接(技巧小鼓的聲音才不會變)。
+   之後要做 plate 另開 Stage,並同步檢查技巧小鼓(小鼓也走這張表,接上 send 會改變技巧的聲音) */
 const DRUM_VOICES = {
   kick:      { piece: "kick",     gain: 1.584,  send: 0.08 },
   snare:     { piece: "snare",    gain: 1.0,  send: 0.35 },
@@ -447,7 +463,7 @@ function pickDrumLayer(name, s){
 }
 /* 照抄 ScrollScore playSample(拿掉 pan / plate send / 變調 / sustainSec:DrumDrill 用到的鼓件都沒有):
    共用的包絡 g(止音、發聲數上限都是控制這一個),交叉淡化時兩層的錄音各自乘權重後接進來;
-   round-robin 隨機挑,但不連續挑到同一個。回傳這一下的播放資訊 {g, when, level, end, srcs} */
+   round-robin 隨機挑,但不連續挑到同一個。回傳這一下的播放資訊 {name, g, when, level, end, srcs} */
 function playSample(name, when, gain, strength){
   const pick = pickDrumLayers(name, strength != null ? strength : 0.72);
   if (!pick) return null;
@@ -471,7 +487,7 @@ function playSample(name, when, gain, strength){
     dur = Math.max(dur, buffer.duration);
   }
   g.connect(getDrumBus()); g.connect(roomIn);
-  return { g, when, level, end: when + dur, srcs };
+  return { name, g, when, level, end: when + dur, srcs };
 }
 /* 照抄 ScrollScore chokeOpenHat:真實 hi-hat 是同一組鈸,閉合或踩 hi-hat 時,還在響的開放 hi-hat 會立刻被夾住停止 */
 let ringingOpenHat = null;
@@ -482,8 +498,9 @@ function chokeOpenHat(when){
   ringingOpenHat = null;
 }
 /* 照抄 ScrollScore ringingCymbals / fadeDrumVoice / chokeCymbal:從 when 開始把這一下在 tau 秒內收掉
-   (從當下包絡的音量收,避免爆音),收完就停止播放;同一下只收一次 */
-let ringingCymbals = {};
+   (從當下包絡的音量收,避免爆音),收完就停止播放;同一下只收一次。
+   收掉的聲音記在 fadedVoices(fadeAt = 收的時間):cancelFrom(t) 取消了 t 之後的那一下時,被它收掉的要恢復(appCancel) */
+let ringingCymbals = {}, fadedVoices = [];
 function fadeDrumVoice(v, when, tau){
   if (!v || v.faded || when <= v.when || when >= v.end) return;
   let cur = v.level;
@@ -494,8 +511,11 @@ function fadeDrumVoice(v, when, tau){
   v.g.gain.cancelScheduledValues(when);
   v.g.gain.setValueAtTime(cur, when);
   v.g.gain.exponentialRampToValueAtTime(0.0001, when + tau);
-  v.faded = true;
+  v.faded = true; v.fadeAt = when;
   for (const src of v.srcs || []) try { src.stop(when + tau + 0.02); } catch (e) {}
+  const now = audioCtx ? audioCtx.currentTime : 0;
+  fadedVoices = fadedVoices.filter(f => f.end > now);   // 已經響完的不用再記
+  fadedVoices.push(v);
 }
 function chokeCymbal(piece, when){
   const list = ringingCymbals[piece];
@@ -503,7 +523,7 @@ function chokeCymbal(piece, when){
   for (const v of list) fadeDrumVoice(v, when, DRUM_CHOKE_FADE);
   ringingCymbals[piece] = list.filter(v => v.when >= when);
 }
-/* 整組鼓打一下(照抄 ScrollScore scheduleDrum 的流程):piece = drumkey.json 的 id(或取樣鼓件名),s = 力度 0–1。
+/* 整組鼓打一下(照抄 ScrollScore scheduleDrum 的流程):piece = drumkey.json 的 id 或 DRUM_VOICES 的鍵(例如 crash1),s = 力度 0–1。
    回傳這一下的播放資訊(沒有聲音時 null) */
 export function playKit(piece, when, s){
   const voice = DRUM_VOICES[KIT_VOICE[piece] || piece];
@@ -521,7 +541,8 @@ export function playKit(piece, when, s){
   }
   return played;
 }
-/* 測試用(tools/test/kitaudio.mjs):每個鼓件每層載了幾個錄音、解碼後佔多少記憶體、還在下載幾個、還在響的鈸 */
+/* 測試用(tools/test/kitaudio.mjs):每個鼓件每層載了幾個錄音、解碼後佔多少記憶體、還在響的鈸;
+   pending = 正在下載的檔數 + 背景補 round-robin 還沒完成的工作數(背景正在下載的會算兩次,只用來判斷是不是 0 = 全部載完) */
 export function kitStats(){
   const pieces = {}, maxSec = {};
   let bytes = 0, bytes48 = 0;
@@ -538,11 +559,28 @@ export function kitStats(){
   for (const [n, list] of Object.entries(ringingCymbals)) ringing[n] = list.map(v => ({ when: v.when, end: v.end, faded: !!v.faded }));
   return { pieces, maxSec, bytes, bytes48, pending: kitPending + kitQueued, ringing, limits: { snare: RR_LIMIT, ...KIT_RR }, lowMem: !!LOW_MEM, poly: DRUM_POLY, chokeFade: DRUM_CHOKE_FADE };
 }
-/* stopAll()、cancelFrom(t) 時樂器自己要清的東西:還在響的鈸清單(聲音本身由 scheduled 停掉) */
-function appStop(now){ ringingOpenHat = null; ringingCymbals = {}; }
+/* stopAll()、cancelFrom(t) 時樂器自己要清的東西:還在響的鈸清單、被收掉的聲音紀錄(聲音本身由 scheduled 停掉;
+   cancelFrom 另外把被取消的那一下收掉的聲音恢復) */
+function appStop(now){ ringingOpenHat = null; ringingCymbals = {}; fadedVoices = []; }
 function appCancel(t){
   if (ringingOpenHat && ringingOpenHat.when >= t) ringingOpenHat = null;
   for (const n of Object.keys(ringingCymbals)) ringingCymbals[n] = ringingCymbals[n].filter(v => v.when < t);
+  // 被 t 之後(已取消)的那一下收掉的聲音:收尾一律發生在觸發它的那一下的時間(fadeAt),那一下被取消了,就把這個聲音恢復原樣
+  const keep = [];
+  for (const v of fadedVoices) {
+    if (v.when >= t) continue;   // 自己也被取消了
+    if (!(v.fadeAt >= t)) { keep.push(v); continue; }
+    v.g.gain.cancelScheduledValues(t);
+    v.g.gain.setValueAtTime(v.level, t);
+    for (const src of v.srcs || []) try { src.stop(v.end); } catch (e) {}
+    v.faded = false; delete v.fadeAt;
+    if (v.end > t && DRUM_POLY[v.name]) {
+      const list = (ringingCymbals[v.name] = ringingCymbals[v.name] || []);
+      if (!list.includes(v)) { list.push(v); list.sort((a, b) => a.when - b.when); }
+    }
+    if (v.end > t && v.name === "hhOpen" && (!ringingOpenHat || v.when > ringingOpenHat.when)) ringingOpenHat = v;
+  }
+  fadedVoices = keep;
 }
 // @app-end
 
