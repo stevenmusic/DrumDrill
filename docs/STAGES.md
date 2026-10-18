@@ -169,7 +169,7 @@
 |---|---|
 | `drumdrill.v1`(外框) | 原有欄位,加 `mic: false` |
 | `drumdrill.tech.v1` | 原有 |
-| `drumdrill.sight.v1`(新) | `{ pick:{system,grade}, metroPractice:true, clickPerform:true, bpmOverride:null, history:[...fingerprint], stats:{"rsl-3":{n,hits,total}}, log:{} }` |
+| `drumdrill.sight.v1`(新) | `{ pick:{system,grade}, metroPractice:true, clickPerform:true, bpmOverride:{"rsl-3":75}(每一級自己設的速度,讀進來夾在 30–240), history:[...fingerprint], stats:{"rsl-3":{n,hits,total}}, log:{}, layout:{"級數:小節數:寬度分級":{measuresPerLine, zoom}}(譜面排法,zoom 夾在 0.45–1) }` |
 | `drumdrill.ear.v1`(新) | `{ pick:{system,grade}, autoNext:false, stats:{"rsl-3-fill":{n,ok}}, log:{}, goal:20 }` |
 
 `log` 的格式跟技巧一樣:`{ "YYYY-MM-DD": { n, sec } }`,保留 400 天。
@@ -217,7 +217,7 @@
 | 頁尾、授權、隱私 | `i18n.js` footer、`licenses.html`、`privacy.html` | 同 | 版型與段落順序相同,內容依樂器不同;CC BY 的寫法(作者、授權名稱 + 連結、修改說明)一致 |
 | 視奏的讀譜舞台 | `js/sight/stage.js` | `js/sight/stage.js` | **完全相同**,S8 照抄 |
 | 隨機種子、題目指紋 | `js/sight/random.js`、`fingerprint.js` | `js/sight/generator/random.js`、`fingerprint.js` | random **完全相同**;fingerprint 介面相同,題目格式不同的部分放在 `@app` 區段 |
-| 拍號換算 | `js/sight/meter.js` | `js/sight/generator/meter.js` | **完全相同** |
+| 拍號換算 | `js/sight/meter.js` | `js/sight/generator/meter.js` | **完全相同**(延後到 S9 / S10:S8 的小鼓視奏只有 4/4,用不到;用到時再照抄並列入 `sync.json`) |
 | 節奏評分 | `js/shared/onsets.js`(新) | `js/shared/onsets.js`(新);`js/sight/scoring.js` 改成從它重新匯出 | **完全相同**:`detectOnsets`、`scoreRhythm` 從 PianoDrill `scoring.js` 搬出來 |
 | 麥克風收音 | `js/shared/mic.js` | `js/sight/mic.js` → 搬到 `js/shared/mic.js` | **完全相同**(S15) |
 | 上架文件 | `docs/IOS.md`(新)、`docs/APPSTORE.md` | 同 | `IOS.md` 兩邊相同(Capacitor 8 的共同步驟);`APPSTORE.md` 格式相同 |
@@ -326,7 +326,7 @@
 - 不做:新功能、共用 log(決定 8)。
 
 **2. 檔案與內容**
-- `js/shared/score.js`
+- `js/shared/score.js`(技巧用,之後聽力也用;視奏不用:考卷排法是 `js/sight/stage.js` + `app.js` 的 fitScore)
   - `createScore({ $, zoom:()=>number, afterRender(svg), onPending })`,回傳 `{ load(xml), render(), fitWidth(), measure(lenBeats), xAtBeat(b), movePlayline(beat, follow), placeExtent(), onResize(), refit(), home(), clear(), landZoom, get osmd, get noteXs, get pending }`(看不看得到由 `opts.isActive()` 決定,沒有 `setActive`;完整說明在 `score.js` 檔頭)。
   - 需要的元素:`$("stage")`、`$("scroll")`、`$("osmd")`、`$("playline")`、`$("paperMsg")`。
   - 搬自 `tech/app.js:118-307`;`drawSticking` 留在技巧模組,當作 `afterRender` 傳入。
@@ -652,7 +652,7 @@
 - Trinity 與 RSL 4–8 顯示規格卡(S9、S10 補)。
 
 **2. 檔案與內容**
-- `js/sight/stage.js`、`random.js`、`fingerprint.js`、`meter.js`:照抄 PianoDrill(`sync.json` 列入)。
+- `js/sight/stage.js`、`random.js`、`fingerprint.js`:照抄 PianoDrill(`sync.json` 列入;fingerprint 的 `fingerprintOf` 在 `@app` 區段)。`meter.js` 延後到 S9 / S10(S8 只有 4/4)。
 - `js/sight/gen.js`(純函式)
   - `genSnare(spec, seed)` → `{ time, bpm, measures, seed }`。
   - 節奏格(每拍):
@@ -896,7 +896,7 @@
 4. 「檢定要求」那一條補上:「已核對的資料在 `docs/sources/*.md`(RSL 2018 規格 2026-06 修訂、Trinity R&P Online edition 2026-04)。」
 5. localStorage 加上 `drumdrill.sight.v1`、`drumdrill.ear.v1`;外框加 `mic` 欄位。
 6. 字串檔加上 `js/sight/strings.js`(`sight.`)、`js/ear/strings.js`(`ear.`)。
-7. 共用模組清單:`score`、`tempo`、`landscape`、`player`、`pad`、`timing`、`onsets`、`mic`、`kitnotation`、`legend`、`examdata`、`playbackgen`。
+7. 共用模組清單:`score`(技巧、聽力;視奏用 `js/sight/stage.js`)、`tempo`、`landscape`、`player`、`pad`、`timing`、`onsets`、`mic`、`kitnotation`、`legend`、`examdata`、`playbackgen`。
 8. 模組介面:「`leave()` 停止播放與計時,但保留題目;`enter()` 有題目就不重新出題。」
 9. 鼓譜:
    - 「鼓組圖例在 `data/drumkey.json`,每份鼓組譜都要附圖例。」

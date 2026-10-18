@@ -2,7 +2,7 @@
    docs/STAGES.md S8;官方參數照 data/exam-rsl.json 的 sight[g](RSL p.31、35、39、43:4 小節、只用小鼓、時值與休止符、速度):
      Debut:二分、四分音符;四分休止符;♩=80      1 級:八分、四分音符;四分休止符;♩=80
      2 級:四分、八分、十六分音符;四分、八分休止符;♩=70      3 級:同 2 級;♩=70–80
-   App 自己的部分(標示用;畫面照這裡的 SOURCE 寫):
+   App 自己的部分(畫面上的標示寫在 js/sight/app.js 的 #s-confidence,跟這裡一致):
    - 拍號一律 4/4:大綱沒寫 Debut–3 級的拍號 → 推估(spec.time.assumed)
    - 節奏格(把官方時值組合成一拍,STAGES.md 決定 4):練習設定。混合格(♪♬、♬♪:一拍裡八分加十六分)另外標出來
    - 結尾停在四分或二分音符、二分音符只放在第 1、3 拍、每小節至少 2 個音、每一題至少用到一次這一級最短的時值:練習設定
@@ -32,8 +32,6 @@ export const CELLS = [
 ];
 /* 每一題至少要出現一次的時值(這一級最短的;練習設定) */
 const MUST = { 0: "2", 1: "8", 2: "16", 3: "16" };
-/* 出處標示(畫面用;頁碼在 spec.src.p) */
-export const SOURCE = { time: "assumed", countIn: "assumed", cells: "practice", mixed: "practice", ending: "practice" };
 
 const isRest = c => c[0] === "r";
 /* 這一級可以用的節奏格(白名單過濾) */

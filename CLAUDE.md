@@ -19,7 +19,7 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
   - ctx:`exam`、`examChanged()`、`gradeLabel(g, sys)`、`showView(view, sub)`,加上 DrumDrill 的 `examData(sys)`、`drumKey()`(最多等 4 秒,晚到時呼叫模組的 `onCtx()`)
   - 檢定頁的考試摘要、規格卡共用 `js/shared/examview.js`(`fillSpec`、`pairStack`、`summaryRows`…)
   - 元素 id 加前綴:技巧 `t-`、視奏 `s-`、聽力 `e-`
-- 共用元件(`js/shared/`):`score.js`(一整行譜面 + 播放軸,看不到時延後重畫)、`tempo.js`(速度 − / + / 滑桿 / 拍點燈號)、`landscape.js`(手機橫式)。
+- 共用元件(`js/shared/`):`score.js`(技巧、聽力:一整行譜面 + 播放軸,看不到時延後重畫;視奏不用,考卷排法用 `js/sight/stage.js`)、`tempo.js`(速度 − / + / 滑桿 / 拍點燈號)、`landscape.js`(手機橫式)。
   **共用元件不寫死前綴**:一律接收模組自己的 `$`(`id => getElementById(前綴 + id)`)(`grep -n '"t-' js/shared/*.js` 要沒結果);
   共用的 CSS 用 class,或在 `drum.css` 補 `#s-…`、`#e-…` 的規則,`app.css` 不動
 - 視奏(`js/sight/`,卡片 id 與流程照 PianoDrill 視奏;S8):RSL Debut–3 小鼓視奏由 `gen.js` 出題(純函式,照 `data/exam-rsl.json` sight[g] 的白名單時值、
@@ -27,12 +27,14 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
   流程:出題 → 準備 90 秒(官方;節拍器可開關;鼓墊可試打、不計分)→ 正式打(預備拍 1 小節,推估)→ 結果(觸控鼓墊的節奏「練習回饋」+ 自我檢查,
   不出現等第字眼、不換算成官方分數)→ 聽正確版本(`js/shared/player.js` + `stage.js`)。使用者改了速度寫「練習速度(官方 ♩=…)」。
   RSL 4–5(整組鼓,下一版)、6–8(Quick Study Piece、I&I 只列規格)、Trinity(Rock & Pop 沒有視奏;Playback 看譜練習下一版)只有說明卡 + 規格卡,不出題
-  - `stage.js`、`random.js` 跟 PianoDrill(`js/sight/stage.js`、`js/sight/generator/random.js`)一模一樣;`fingerprint.js` 只有 `@app` 區段不同(還沒列進 `sync.json`,要兩邊同時加)
+  - `stage.js`、`random.js` 跟 PianoDrill(`js/sight/stage.js`、`js/sight/generator/random.js`)一模一樣;`fingerprint.js` 只有 `@app` 區段(`fingerprintOf`)不同;三個都列在 `sync.json`
+  - 視奏分頁的級數(`S.sub.sight`)還沒自己選過時跟著考試級數(`main.js` 的 `@app` 區段):第一次選了考試,視奏分頁預設就是那一級
+  - 速度:使用者設的速度每一級各自記住(跟這一題的官方速度脫鉤);設在官方範圍外才標「練習速度」
 - 聽力目前是「準備中」說明卡:題目規則要先照 Trinity / RSL 官方大綱與範例整理才做
 - 中英雙語(預設英文,切過就記住):外框字串 `js/shared/i18n.js`、技巧 `js/tech/strings.js`(前綴 `tech.`)、視奏 `js/sight/strings.js`(前綴 `sight.`);程式產生的文字用 `tr("中", "EN")`
 - 用詞:「檢定」「考試」,不用「考級」(只有 App Store 關鍵字可以放)
 - localStorage:`drumdrill.v1`(外框)、`drumdrill.tech.v1`(技巧)、`drumdrill.sight.v1`(視奏:pick、節拍器 / 拍點開關、`bpmOverride` 每一級各自的練習速度、
-  出題歷史、各級練過幾題、練習紀錄、譜面排法)、`drumdrill-lang`(語言)
+  出題歷史、各級練過幾題、練習紀錄、譜面排法;讀進來先消毒)、`drumdrill-lang`(語言)
 
 ## 絕不能做的事
 - **不要有 build step**:多檔 ES modules,直接部署 GitHub Pages(main 根目錄);App 版只是把同樣的檔案複製到 `app/www`

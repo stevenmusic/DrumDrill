@@ -25,8 +25,16 @@ const S = (() => {
   try { saved = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) {}
   saved = saved || {};
   if (saved.exam && !["trinity", "rsl"].includes(saved.exam.system)) saved.exam = null;
-  return { view: "tech", exam: null, onboarded: false, theme: "dark", ...saved,
+  const s = { view: "tech", exam: null, onboarded: false, theme: "dark", ...saved,
     sub: { tech: "roll", exam: "tech", sight: String(saved.exam ? saved.exam.grade : 0), ...(saved.sub || {}) } };
+  /* 視奏分頁的級數還沒自己選過(或還沒回答第一次的問題):跟著考試級數走,第一次選了考試 → 視奏分頁預設就是那一級;
+     自己點過子項目(setter)就照點的。存檔時照目前的值存(下次打開就固定了) */
+  if (!s.onboarded || !(saved.sub && saved.sub.sight != null)) {
+    let picked = null;
+    Object.defineProperty(s.sub, "sight", { enumerable: true, configurable: true,
+      get: () => picked ?? String(s.exam && Number.isInteger(s.exam.grade) ? s.exam.grade : 0), set: v => { picked = v; } });
+  }
+  return s;
 })();
 /* ── 考試:Trinity Rock & Pop Drums(Initial、1–8 級)、RSL Rockschool Drums(Debut、1–8 級) ── */
 const SYSTEMS = { trinity: "Trinity", rsl: "RSL" };

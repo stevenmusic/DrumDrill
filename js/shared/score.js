@@ -1,4 +1,4 @@
-/* 共用的譜面元件:一整行 OSMD + 播放軸(照 PianoDrill / ScrollScore;技巧先用,之後視奏、聽力也用)
+/* 共用的譜面元件:一整行 OSMD + 播放軸(照 PianoDrill / ScrollScore;技巧用,之後聽力也用;視奏不用:考卷排法是 js/sight/stage.js + app.js 的 fitScore)
    元素都用模組自己的 $(id => document.getElementById(前綴 + id)),這裡不寫死前綴:
      $("stage") 紙張、$("scroll") 左右捲的框、$("osmd") OSMD 畫在這裡、$("playline") 播放軸、$("paperMsg") 紙上的訊息
    - 看不到的時候(在別的分頁、寬度 0)不畫:記下 pending,回到畫面(onResize)時用同一份 MusicXML 再畫

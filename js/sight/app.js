@@ -9,7 +9,8 @@
      單線譜(js/shared/kitnotation.js lines:1)+ 圖例(js/shared/legend.js)
    - 檢定頁:考試摘要 + 規格卡(照官方大綱,每項頁碼);不放練習紀錄、練習回饋(不跟配分、等第同一個畫面)
    - leave():停止播放、準備的倒數、正式打(不算分),題目保留;relang():只重寫文字,不停播放
-   - localStorage drumdrill.sight.v1:{ pick, metroPractice, clickPerform, bpmOverride:{ "rsl-3": 75 }, history(出過的題目指紋), stats:{ "rsl-3": {n, hits, total} }, log:{ 日期: {n, sec} }, layout } */
+   - localStorage drumdrill.sight.v1:{ pick, metroPractice, clickPerform, bpmOverride:{ "rsl-3": 75 }, history(出過的題目指紋), stats:{ "rsl-3": {n, hits, total} }, log:{ 日期: {n, sec} }, layout }
+     讀進來先消毒:bpmOverride 夾在 30–240、不是有限數的刪掉;layout 每一項 zoom 夾在 0.45–1、每行小節數不對的刪掉 */
 import { tr, T as TS, scoped, getLang, pairText } from "../shared/i18n.js";
 import { playbackFor } from "../shared/examdata.js";
 import * as V from "../shared/examview.js";
@@ -38,6 +39,11 @@ const SS = (() => {
   s = { pick: { system: "rsl", grade: 0 }, metroPractice: true, clickPerform: true, bpmOverride: {}, history: [], stats: {}, log: {}, layout: {}, ...(s || {}) };
   for (const k of ["bpmOverride", "stats", "log", "layout"]) if (!s[k] || typeof s[k] !== "object" || Array.isArray(s[k])) s[k] = {};
   if (!Array.isArray(s.history)) s.history = [];
+  for (const [k, v] of Object.entries(s.bpmOverride)) { if (typeof v === "number" && Number.isFinite(v)) s.bpmOverride[k] = Math.max(30, Math.min(240, Math.round(v))); else delete s.bpmOverride[k]; }
+  for (const [k, v] of Object.entries(s.layout)) {
+    if (v && typeof v === "object" && typeof v.zoom === "number" && Number.isFinite(v.zoom) && [0, 2, 3, 4, 5].includes(v.measuresPerLine)) v.zoom = Math.max(0.45, Math.min(1, v.zoom));
+    else delete s.layout[k];
+  }
   return s;
 })();
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(SS)); } catch (e) {} };
@@ -151,6 +157,10 @@ function renderUnsupported(sys, g){
   if (!d) {
     title = () => tr("考試資料還沒載好", "Exam data not loaded");
     text = () => tr("第一次要連網路,之後會存在裝置上。", "Needs internet once; then it's cached.");
+  } else if (sys === "rsl" && SNARE_GRADES.includes(g) && specOf(sys, g) && specOf(sys, g).type === "snare" && !drumKey()) {
+    // 小鼓視奏的級數,只是圖例資料(data/drumkey.json)還沒到:不是「整組鼓下一版」
+    title = () => tr("圖例資料還沒載好", "Drum key not loaded");
+    text = () => tr("第一次要連網路,之後會存在裝置上。下面是官方規格。", "Needs internet once; then it's cached. Official spec below.");
   } else if (sys === "trinity") {
     title = () => tr("Rock & Pop 沒有視奏", "No sight-reading in Rock & Pop");
     text = () => tr("Trinity Rock & Pop 沒有視奏項目;最接近的是 Session skills 的 Playback(有譜)。Playback 看譜練習下一版提供。下面是官方規格。",
@@ -166,6 +176,7 @@ function renderUnsupported(sys, g){
   }
   V.pairStack($("unsupportedTitle"), title);
   pairText($("unsupportedText"), text);
+  pairText($("unsupportedNote"), () => TS("practiceOnly"));
   $("specCards").hidden = !d; $("specCards").innerHTML = "";
   if (d) { if (sys === "rsl") renderRsl(d, g, false); else renderTrinity(d, g); }
 }
@@ -316,27 +327,42 @@ function setTest(sys, g, spec, test){
   preload();
 }
 
-/* ── 速度:預設官方;使用者改了是「練習速度」(每一級各自記住;官方速度鈕回到官方)── */
+/* ── 速度:預設官方(3 級 70–80 每題隨機);使用者改了每一級各自記住(跟這一題的速度脫鉤,換題也照用);
+   設在官方範圍外才是「練習速度」;官方速度鈕清掉自己設的速度、回到這一題的官方速度 ── */
 const bpmNow = () => (cur ? (SS.bpmOverride[cur.key] || cur.test.bpm) : 80);
-const overridden = () => !!(cur && SS.bpmOverride[cur.key] && SS.bpmOverride[cur.key] !== cur.test.bpm);
+const officialBpm = b => !!cur && b >= cur.spec.bpm[0] && b <= cur.spec.bpm[cur.spec.bpm.length - 1];
+const custom = () => !!(cur && SS.bpmOverride[cur.key]);
+const overridden = () => custom() && !officialBpm(bpmNow());
 const tempo = createTempo({ $, min: 30, max: 240, get: () => bpmNow(), set: v => setBpm(v) });
 tempo.setBeats(4);
 function setBpm(v){
   if (!cur || phase === "perform") return;   // 正式打中不改(評分照開始時的速度)
-  const b = Math.max(30, Math.min(240, Math.round(v)));
-  if (b === cur.test.bpm) delete SS.bpmOverride[cur.key]; else SS.bpmOverride[cur.key] = b;
+  if (!Number.isFinite(Number(v))) return;
+  const b = Math.max(30, Math.min(240, Math.round(Number(v)))), [lo, hi] = cur.spec.bpm;
+  if (lo === hi && b === lo) delete SS.bpmOverride[cur.key]; else SS.bpmOverride[cur.key] = b;   // 固定速度的級數設回官方值 = 沒有自己設
+  applyBpm();
+}
+/* 官方速度鈕:清掉這一級自己設的速度 */
+function resetBpm(){
+  if (!cur || phase === "perform") return;
+  delete SS.bpmOverride[cur.key];
+  applyBpm();
+}
+function applyBpm(){
   save(); tempoUI();
-  if (playKind === "listen" || playKind === "metro") player.retempo(b);
+  if (playKind === "listen") player.retempo(bpmNow());
+  // 準備中的節拍器:長度是照開始時的速度算的(剩下的秒數 × 速度),照新速度重排一輪
+  else if (playKind === "metro") { stopPlayer(); startMetro(); }
 }
 function tempoUI(){
   tempo.sync(`♩ / ${tr("分", "min")}`);
   if (!cur) return;
   const off = V.bpmText(cur.spec.bpm), src = V.srcOf("rsl", cur.spec.src.p);
   pairText($("tempoNote"), () => (overridden() ? tr(`練習速度(官方 ${off})`, `Practice tempo (official ${off})`) : tr(`官方速度 ${off} · ${src}`, `Official ${off} · ${src}`)));
-  $("bpmReset").disabled = !overridden();
+  $("bpmReset").disabled = !custom();
   renderMeta(); renderSum();
 }
-$("bpmReset").onclick = () => { if (cur) setBpm(cur.test.bpm); };
+$("bpmReset").onclick = () => resetBpm();
 function syncOpts(){
   $("optMetro").setAttribute("aria-pressed", String(!!SS.metroPractice));
   $("optClick").setAttribute("aria-pressed", String(!!SS.clickPerform));
@@ -354,15 +380,15 @@ function refreshTexts(){
   $("title").classList.remove("empty");
   $("title").textContent = `${sysName(cur.sys)} ${gl(cur.grade, cur.sys)}`;
   $("scoreSub").textContent = V.srcOf("rsl", cur.spec.src.p);
-  pairText($("practiceOnly"), () => TS("practiceOnly"));
+  pairText($("practiceOnly"), () => tr(`依 RSL ${gl(cur.grade, cur.sys)}參數的練習 · `, `Practice by RSL ${gl(cur.grade, cur.sys)} parameters · `) + TS("practiceOnly"));
   tempoUI();
   renderPrepareLabel();
   renderAlongLabel();
   pairText($("alongNote"), () => tr("預備拍 1 小節(推估:大綱沒寫)· 鍵盤 J / F", "1-bar count-in (assumed: not stated) · keys J / F"));
-  const mixed = cur.test.mixed;
+  const mixed = cur.test.mixed, half = (cur.spec.values || []).includes("2");
   pairText($("confidence"), () => tr(
-    `拍號 4/4:大綱沒寫 Debut–3 級的拍號(推估)。預備拍 1 小節:大綱沒寫(推估)。節奏格怎麼組合成一拍、結尾停在四分或二分音符${mixed ? "、一拍裡混合八分與十六分音符" : ""}:練習設定。`,
-    `4/4: metre not stated for Debut–3 (assumed). 1-bar count-in: not stated (assumed). How the values are combined into beats, the ending on a crotchet or minim${mixed ? ", and mixed quaver–semiquaver beats" : ""}: practice setting.`));
+    `拍號 4/4:大綱沒寫 Debut–3 級的拍號(推估)。預備拍 1 小節:大綱沒寫(推估)。節奏格怎麼組合成一拍、結尾停在四分或二分音符${half ? "、二分音符只放第 1、3 拍" : ""}、每小節至少 2 個音、每題至少一次本級最短時值${mixed ? "、一拍裡混合八分與十六分音符" : ""}:練習設定。`,
+    `4/4: metre not stated for Debut–3 (assumed). 1-bar count-in: not stated (assumed). Beat patterns, ending on a crotchet or minim${half ? ", minims on beats 1 and 3 only" : ""}, 2+ notes a bar, the grade's shortest value at least once${mixed ? ", mixed quaver–semiquaver beats" : ""}: practice setting.`));
   if (lastMsg) say(lastMsg);
   showChecklist(checkKind);
   renderResult();
@@ -381,8 +407,9 @@ function renderSum(){
     tr("節拍器", "Metronome") + " " + (SS.metroPractice ? tr("開", "on") : tr("關", "off"))].join(" · ");
 }
 function renderPrepareLabel(){
-  const sec = cur ? cur.spec.prepSec : 90;
-  pairText($("prepareLabel"), () => (phase === "prep" ? tr("結束準備", "End prep") : tr(`準備 ${sec} 秒`, `Prep ${sec} s`)));
+  const sec = cur ? cur.spec.prepSec : 90, fn = () => (phase === "prep" ? tr("結束準備", "End prep") : tr(`準備 ${sec} 秒`, `Prep ${sec} s`));
+  pairText($("prepareLabel"), fn);
+  $("prepare").setAttribute("aria-label", fn());   // 窄畫面(≤340)只剩圖示時,螢幕閱讀器還是念得到
 }
 function renderAlongLabel(){ $("playAlong").textContent = phase === "perform" ? tr("停止", "Stop") : T("perform"); }
 /* 狀態訊息:記住產生文字的函式,換語言時重寫;兩種語言保留比較高的高度 */
@@ -620,6 +647,7 @@ function startPrep(){
   if (phase === "perform") stopPerform();
   if (playKind === "listen") stopListening();
   phase = "prep"; left = cur.spec.prepSec; prepStarted = performance.now();
+  lastResult = null;   // 上一次的練習回饋清掉(換語言時 renderResult 不會把它叫回來)
   $("countdown").hidden = false; $("countdown").className = "countdown running"; $("countdownValue").textContent = String(left);
   showFloat(left);
   showChecklist("prep");
@@ -656,12 +684,26 @@ function endPrep(done){
   else if (active) say(() => tr("看譜準備好就按「準備」;也可以直接「正式打」。", "Start the prep when ready, or go straight to Perform."));
 }
 function showFloat(sec){
-  const header = document.querySelector("header");
-  $("prepFloat").style.top = `${Math.round((header ? header.getBoundingClientRect().bottom : 0) + 8)}px`;
   $("prepFloatValue").textContent = String(sec);
   $("prepFloat").classList.toggle("low", sec <= 5);
-  $("prepFloat").hidden = false;
+  placeFloat();
 }
+/* 浮動倒數:題目卡的倒數看得到時不顯示(寬螢幕頁面捲不動、題目卡還在畫面上);放在頂欄下的右邊,碰到 ▶ 就移到 ▶ 下面 */
+function placeFloat(){
+  const f = $("prepFloat");
+  if (phase !== "prep" || !active) { f.hidden = true; return; }
+  const header = document.querySelector("header"), top = header ? header.getBoundingClientRect().bottom : 0;
+  const bar = document.getElementById("tabbar"), bb = bar ? bar.getBoundingClientRect() : null;
+  const bottom = bb && bb.top > innerHeight / 2 ? bb.top : innerHeight;
+  const cd = $("countdown").getBoundingClientRect();
+  if (cd.height > 0 && cd.top >= top && cd.bottom <= bottom) { f.hidden = true; return; }
+  f.hidden = false;
+  let y = top + 8;
+  f.style.top = `${Math.round(y)}px`;
+  const fr = f.getBoundingClientRect(), p = $("play").getBoundingClientRect();
+  if (p.height && p.bottom > fr.top && p.top < fr.bottom && p.right > fr.left && p.left < fr.right) { y = p.bottom + 8; f.style.top = `${Math.round(y)}px`; }
+}
+window.addEventListener("scroll", () => { if (phase === "prep" && active) placeFloat(); }, { passive: true });
 $("prepare").onclick = () => startPrep();
 $("generate").onclick = () => newTest();
 
@@ -704,9 +746,10 @@ function finishPerform(){
   perf = null; phase = "result"; if (stage) stage.end();
   const taps = p.taps.filter(x => x.time >= -beatSec / 2);   // 預備拍裡太早的不算
   const r = scoreLanes(expectedByLane(cur.test.events, p.bpm, LANES[1]), taps, { tempoBpm: p.bpm });
-  lastResult = { r, taps: taps.length, bpm: p.bpm };
+  lastResult = { r, taps: taps.length, bpm: p.bpm, practice: !officialBpm(p.bpm) };
   const st = SS.stats[cur.key] || (SS.stats[cur.key] = { n: 0, hits: 0, total: 0 });
-  st.n++; st.hits += r.hits; st.total += r.total;
+  st.n++;
+  if (taps.length) { st.hits += r.hits; st.total += r.total; }   // 沒有敲鼓墊(例如在真的鼓上打):只算題數,不算進命中率
   addSec((performance.now() - p.startedAt) / 1000, 1);
   renderAlongLabel(); renderPrepareLabel();
   renderResult();
@@ -733,8 +776,8 @@ function renderResult(){
     const off = offsetNote(r);
     if (off) add("", () => tr(off[0], off[1]));
   }
-  add("disclaimer", () => tr(`只看敲擊的時間,不看力度與音色;容許範圍是練習設定。這是練習回饋,不是考試分數,也不能換算成官方分數。${R.bpm !== (cur ? cur.test.bpm : R.bpm) ? `這一次用練習速度 ♩=${R.bpm}。` : ""}`,
-    `Timing only (not dynamics or tone); the tolerance is a practice setting. This is practice feedback, not an exam mark, and it doesn't convert to one.${R.bpm !== (cur ? cur.test.bpm : R.bpm) ? ` Practice tempo ♩=${R.bpm} this time.` : ""}`));
+  add("disclaimer", () => tr(`只看敲擊的時間,不看力度與音色;容許範圍是練習設定。這是練習回饋,不是考試分數,也不能換算成官方分數。${R.practice ? `這一次用練習速度 ♩=${R.bpm}。` : ""}`,
+    `Timing only (not dynamics or tone); the tolerance is a practice setting. This is practice feedback, not an exam mark, and it doesn't convert to one.${R.practice ? ` Practice tempo ♩=${R.bpm} this time.` : ""}`));
   box.hidden = false;
 }
 $("playAlong").onclick = () => startPerform();
