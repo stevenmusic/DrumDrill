@@ -637,7 +637,8 @@ async function openMic(){
   const c0 = cur, k0 = playKind, mk = mockOn() ? mock.id : 0, tok = starting = Date.now() + Math.random();
   micFail = null; renderMic(); syncButtons(); say(() => tr(...MIC_TEXT.starting));
   const fail = await mic.start();
-  const still = starting === tok && active && cur === c0 && playKind === k0 && !(mk && !mock.alive(mk));
+  // 打開的時候被 iOS 切換工作階段「打斷」(外框 leave + enter,starting 被清掉)而且還在同一題:照樣開始
+  const still = (starting === tok || (mic.bumped && !starting)) && active && cur === c0 && playKind === k0 && !(mk && !mock.alive(mk));
   if (starting === tok) starting = 0;
   if (!still) { mic.cancel(); renderMic(); syncButtons(); return null; }
   if (fail) micFail = fail;
@@ -1130,6 +1131,7 @@ function stopAll(){
   setPlayState(false);
   clearInterval(countdown); countdown = 0;
   $("studyFloat").hidden = true;
+  if (!mic.opening) mic.cancel();   // 麥克風一定關掉(回打中停止);正在打開的,等打開之後 openMic 自己判斷要不要關
 }
 
 /* ══ 按鈕與文字(換語言時全部重寫;不停播放)══ */

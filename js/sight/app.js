@@ -1073,7 +1073,8 @@ async function startPerform(){
     const c0 = cur, tok = starting = Date.now() + Math.random();
     micFail = null; renderMic(); say(() => tr(...MIC_TEXT.starting));
     const fail = await mic.start();
-    const still = starting === tok && active && cur === c0 && !playKind && phase !== "perform" && !(mk && !mock.alive(mk));
+    // 打開的時候被 iOS 切換工作階段「打斷」(外框 leave + enter,starting 被清掉)而且還在同一題:照樣開始
+    const still = (starting === tok || (mic.bumped && !starting)) && active && cur === c0 && !playKind && phase !== "perform" && !(mk && !mock.alive(mk));
     if (starting === tok) starting = 0;
     if (!still) { mic.cancel(); renderMic(); return; }
     if (fail) micFail = fail; else useMic = true;
@@ -1239,6 +1240,7 @@ function stopAll(){
   endListenUI();
   clearInterval(countdown); countdown = 0;
   $("prepFloat").hidden = true;
+  if (!mic.opening) mic.cancel();   // 麥克風一定關掉(正式打中停止);正在打開的,等打開之後 startPerform 自己判斷要不要關
 }
 
 /* ══ 練習紀錄(js/shared/practicelog.js):正式打完一題算一題;準備、正式打、聽正確版本的時間算進今天的秒數(保留 400 天);

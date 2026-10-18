@@ -25,11 +25,19 @@ export function failReason(e){
   return "error";
 }
 
-/* 一次錄音:start() → null(開始了)| 失敗原因;finish() → { hits:[音訊時間(秒)], seconds } | null;cancel() 丟掉 */
+/* 一次錄音:start() → null(開始了)| 失敗原因;finish() → { hits:[音訊時間(秒)], seconds } | null;cancel() 丟掉。
+   opening = 正在打開(等權限、iOS 切換音訊工作階段);bumped = 打開的時候 AudioContext 被「打斷」過(audio.onInterrupt):
+   iOS 開麥克風會切換工作階段(play-and-record),AudioContext 可能短暫變成 interrupted,外框會把模組 leave() + enter()。
+   模組在 opening 時不要 cancel(stopAll 跳過),打開之後 bumped 而且還在同一題就照樣開始(不是使用者離開);實機要確認(docs/IOS.md 第 8 節) */
 export function createMicTake(){
   const rec = createRecorder({ context: () => audio.ensureAudio() });
+  let opening = false, bumped = false;
+  audio.onInterrupt(() => { if (opening) bumped = true; });
   return {
-    async start(){ try { await rec.start(); return null; } catch (e) { return failReason(e); } },
+    async start(){
+      opening = true; bumped = false;
+      try { await rec.start(); return null; } catch (e) { return failReason(e); } finally { opening = false; }
+    },
     finish(){
       const take = rec.finish();
       if (!take || take.contextTime == null) return null;
@@ -37,7 +45,9 @@ export function createMicTake(){
       return { hits, seconds: take.samples.length / take.sampleRate, filled: take.filled || 0 };
     },
     cancel(){ rec.cancel(); },
-    get active(){ return rec.active; }
+    get active(){ return rec.active; },
+    get opening(){ return opening; },
+    get bumped(){ return bumped; }
   };
 }
 

@@ -7,7 +7,7 @@
 //    多偵:小鼓 ≤ 2%、全部 ≤ 5%
 // 2. 瀏覽器:--use-fake-device-for-media-stream --use-file-for-fake-audio-capture=<wav>(檔案在按「正式打」之前才寫好:
 //    Chromium 在 getUserMedia 時才讀),整個 App 照真的流程跑(開關、權限、預備拍、錄音、分析、結果):
-//    視奏 RSL 3 級(小鼓,♩=150):準時 / 偏晚 250 ms / 亂打 / 沒聲音 / 拒絕權限;視奏 RSL 4 級(整組鼓合併一條,官方速度)準時;
+//    視奏 RSL 3 級(小鼓,♩=150):準時 / 偏晚 250 ms / 開麥克風時 AudioContext 被打斷 / 亂打 / 沒聲音 / 拒絕權限;視奏 RSL 4 級(整組鼓合併一條,官方速度)準時;
 //    聽力 RSL Fill 準時;聽力 Trinity Playback 第二次準時(混進 App 自己那一句的鼓聲,dropBleed 要拿掉)
 //    預備拍的拍點也混進去(慢 60 ms、小聲),模擬喇叭被麥克風收到
 import { open } from "./harness.mjs";
@@ -187,7 +187,7 @@ async function writeWav(page, wav, plan, mode, seconds){
   fs.writeFileSync(wav, Buffer.from(b64, "base64"));
 }
 
-async function sightTake(mode, grade = 3, bpm = 150){
+async function sightTake(mode, grade = 3, bpm = 150, { bump = false } = {}){
   const wav = path.join(TMP, `sight-${grade}-${mode}.wav`);
   const { page, errors, close } = await openApp(wav, { "drumdrill.v1": { onboarded: true, view: "sight", exam: null, mic: true, sub: { sight: String(grade) } } });
   await page.waitForFunction(g => { const s = window.__sight && window.__sight.state; return s && s.key === "rsl-" + g && s.drawn > 0 && s.loaded; }, grade, { timeout: 60000 });
@@ -196,6 +196,11 @@ async function sightTake(mode, grade = 3, bpm = 150){
   const seconds = LEAD0 + plan.countIn + Math.max(...plan.expected) + 3;
   await writeWav(page, wav, plan, mode, seconds);
   if (mode === "denied") await page.evaluate(() => { navigator.mediaDevices.getUserMedia = async () => { throw new DOMException("denied", "NotAllowedError"); }; });
+  // 開麥克風的時候 AudioContext 被「打斷」(iOS 切換工作階段):外框 leave + enter,打開之後還是要照樣開始
+  if (bump) await page.evaluate(async () => {
+    const a = await import("./js/shared/audio.js"), orig = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+    navigator.mediaDevices.getUserMedia = async c => { await a.ensureAudio().suspend(); await new Promise(r => setTimeout(r, 150)); return orig(c); };
+  });
   await page.click("#s-playAlong");
   await page.waitForFunction(() => window.__sight.state.phase === "result", null, { timeout: (seconds + 30) * 1000 });
   const out = await page.evaluate(() => ({ r: window.__sight.state.result, mic: window.__sight.lastMic, text: document.getElementById("s-alongResult").innerText.replace(/\s+/g, " "),
@@ -247,6 +252,10 @@ async function sightSide(){
   ok(late.r && late.r.score >= 85, `視奏偏晚 250 ms:固定延遲被扣分了(${late.r && late.r.score})`);
   const lateMs = Number((late.text.match(/慢約 (\d+)/) || [])[1]);
   ok(lateMs >= 200 + (Number(offExact) || 0) - 60 && lateMs <= 300 + (Number(offExact) || 0) + 60, `視奏偏晚 250 ms:說明寫慢約 ${lateMs} 毫秒(準時那次 ${offExact || 0})`);
+
+  const bumped = await sightTake("exact", 3, 150, { bump: true });
+  show("視奏 打開時被打斷", bumped);
+  ok(bumped.r && bumped.r.score >= 85 && /麥克風/.test(bumped.text), `視奏:開麥克風時 AudioContext 被打斷(外框 leave + enter)要照樣開始、照樣評分(${bumped.r && bumped.r.score})`);
 
   const sloppy = await sightTake("sloppy");
   show("視奏 亂打", sloppy);
