@@ -101,6 +101,44 @@ for (const [name, w, h, mobile] of VPS) {
     await page.evaluate(([s, g]) => { window.__shell.setExam(s, g); window.__shell.showView("sight", String(g)); }, [sys, g]); await page.waitForTimeout(400);
     await compare(page, name, `視奏 ${sys} ${g} 說明卡`);
   }
+  // S12 / S13 聽力:RSL 0/4/8 Fill(題目 / 練習 / 選譜 / 結果)、Groove(題目 / 結果);Trinity 0/4/8 Playback(題目 / 看譜 / 兩次之間 / 結果);說明卡
+  const eGo = async (sys, g, t) => {
+    await page.evaluate(([s, g, t]) => { window.__shell.setExam(s, g); window.__shell.showView("ear", t); }, [sys, g, t]);
+    await page.waitForFunction(k => window.__ear.state.key === k && !window.__ear.state.pending, `${sys}-${g}-${t}`, { timeout: 20000 }); await page.waitForTimeout(600);
+  };
+  const eDo = (fn, arg) => page.evaluate(([f, a]) => window.__ear[f](a), [fn, arg]);
+  const eKind = k => page.waitForFunction(k => window.__ear.state.kind === k, k, { timeout: 120000 });
+  for (const g of [0, 4, 8]) {
+    await eGo("rsl", g, "fill"); await compare(page, name, `聽力 rsl ${g} fill`);
+    await eDo("listen"); await eKind("listen"); await eDo("finishNow"); await page.waitForTimeout(300);
+    await compare(page, name, `聽力 rsl ${g} fill 練習`);
+    await eDo("perform"); await eKind("perform");
+    for (let k = 0; k < 3; k++) { await page.keyboard.press("j"); await page.waitForTimeout(120); }
+    await eDo("finishNow"); await page.waitForFunction(() => window.__ear.state.optsDrawn === window.__ear.state.options, null, { timeout: 20000 }); await page.waitForTimeout(500);
+    await compare(page, name, `聽力 rsl ${g} fill 選譜`);
+    await eDo("choose", 1); await page.waitForTimeout(1200);
+    await compare(page, name, `聽力 rsl ${g} fill 結果`);
+    await eGo("rsl", g, "groove"); await compare(page, name, `聽力 rsl ${g} groove`);
+    await eDo("listen"); await eKind("listen"); await eDo("finishNow");
+    await eDo("perform"); await eKind("perform");
+    for (const k of ["f", "j", "k"]) { await page.keyboard.press(k); await page.waitForTimeout(120); }
+    await eDo("finishNow"); await page.waitForTimeout(1200);
+    await compare(page, name, `聽力 rsl ${g} groove 結果`);
+  }
+  for (const g of [0, 4, 8]) {
+    await eGo("trinity", g, "playback"); await compare(page, name, `聽力 trinity ${g}`);
+    await eDo("study"); await page.waitForTimeout(400); await compare(page, name, `聽力 trinity ${g} 看譜`); await eDo("study");
+    await eDo("perform"); await eKind("pass"); await eDo("finishNow"); await page.waitForTimeout(300);
+    await compare(page, name, `聽力 trinity ${g} 兩次之間`);
+    await eDo("perform"); await eKind("pass");
+    for (const k of ["f", "j", "k"]) { await page.keyboard.press(k); await page.waitForTimeout(120); }
+    await eDo("finishNow"); await page.waitForTimeout(400);
+    await compare(page, name, `聽力 trinity ${g} 結果`);
+  }
+  for (const [sys, t] of [["rsl", "playback"], ["trinity", "fill"]]) {
+    await page.evaluate(([s, t]) => { window.__shell.setExam(s, 3); window.__shell.showView("ear", t); }, [sys, t]); await page.waitForTimeout(500);
+    await compare(page, name, `聽力 ${sys} ${t} 說明卡`);
+  }
   // 40 個打法的題目與標籤:中英文行數一樣
   await tab("tech");
   const diff = await page.evaluate(async () => {

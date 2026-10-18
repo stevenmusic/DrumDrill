@@ -98,7 +98,7 @@ export async function start(c){
         options: cur && cur.opts ? cur.opts.length : 0, optsDrawn: cur ? cur.optsDrawn : 0, drawn, pending: score.pending, timer: !!countdown, left,
         taps: perf ? perf.taps.length : 0, result: cur && cur.result ? summary(cur.result) : null, lanes: cur ? cur.lanes.length : 0 };
     },
-    get q(){ return cur && cur.q; }, get xml(){ return cur && cur.xml; },
+    get q(){ return cur && cur.q; }, get xml(){ return cur && cur.xml; }, get tl(){ return tl; },
     newQuestion, listen: toggleListen, perform: startPerform, choose, reveal, study: startStudy, setBpm: v => setBpm(v), SS,
     perfT0: () => (perf ? perf.t0 : null), expected, finishNow, set unloadMs(v){ UNLOAD_MS = v; }, get unloadMs(){ return UNLOAD_MS; }
   };
@@ -834,11 +834,11 @@ function expected(){
   }
   return out.sort((a, b) => a.time - b.time);
 }
-/* 測試用:馬上結束這一輪(照目前收到的敲擊評) */
+/* 測試用:馬上結束這一輪(當作播完;回打照目前收到的敲擊評) */
 function finishNow(){
-  if (playKind !== "perform" && playKind !== "pass") return false;
+  if (!playKind) return false;
   const k = playKind; playKind = null; player.stop(true); endRunUI();
-  if (k === "perform") finishPerform(); else finishPass();
+  if (k === "listen") finishListen(); else if (k === "perform") finishPerform(); else finishPass();
   return true;
 }
 
@@ -904,20 +904,19 @@ window.addEventListener("resize", onStageResize);
 if (typeof ResizeObserver !== "undefined") new ResizeObserver(() => requestAnimationFrame(onStageResize)).observe($("stage"));
 
 /* ══ 聲音:整組鼓(Fill 只要小鼓)+ 拍點(js/shared/audio.js;不用合成鼓聲)══ */
-let kitJob = null, kitFull = false, unloadTimer = 0;
+let kitJob = null, unloadTimer = 0;
+/* 每次都問 audio.loadKit(audio.js 自己記住載好的;別的地方 unloadKit 之後會重新載) */
 function preload(){
   const full = !!cur && cur.type !== "fill";
-  if (kitJob && (kitFull || !full)) return kitJob;
-  kitFull = full;
   const job = kitJob = (async () => {
     try {
-      await audio.loadKit(full ? undefined : ["snare"], p => { if (kitJob === job) loading(p); });
+      await audio.loadKit(full ? undefined : ["snare"], p => { if (kitJob === job) loading(p < 1 ? p : null); });
       await audio.loadClick();
       if (kitJob === job) loading(null);
       return true;
     } catch (e) {
       console.error(e);
-      if (kitJob === job) { kitJob = null; loading(null); }
+      if (kitJob === job) loading(null);
       return false;
     }
   })();
@@ -934,7 +933,6 @@ function releaseKit(){
   if (active) return;
   if (audio.scheduledCount() > 0) { unloadTimer = setTimeout(releaseKit, UNLOAD_MS); return; }
   audio.unloadKit();
-  kitJob = null; kitFull = false;
 }
 const within = (p, ms) => Promise.race([p, new Promise(r => setTimeout(r, ms))]);
 /* 叫醒音訊、等取樣;回傳 false = 不能播(取樣沒載到、等的時候離開了 / 換題了) */

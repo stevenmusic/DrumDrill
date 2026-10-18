@@ -10,6 +10,7 @@
 //  5. 鼓皮在力度交界同時播兩層(交叉淡化),鈸只播一層
 //  6. unloadKit() 之後只剩小鼓;整組鼓不出聲、小鼓照樣出聲;再 loadKit 會重新載入
 //  7. 技巧模組的播放(小鼓)照常:按播放有排程、按停止全停
+//  8. 聽力(js/ear/app.js):Groove 題目載入整組鼓;離開聽力 unloadMs(實際 60 秒,測試改 1.5 秒)後只剩小鼓;回到聽力按播放會重新載入
 // 用法:node tools/test/kitaudio.mjs
 import { open } from "./harness.mjs";
 let bad = 0;
@@ -184,6 +185,26 @@ async function run(label, limit){
   const s = await page.evaluate(() => window.__tech.state);
   if (s.play || s.scheduled) fail(`${label}:技巧按停止後還在播(排程 ${s.scheduled})`);
   if (bad === n7) ok(`${label}:技巧模組的小鼓照常播放、停止`);
+
+  // 8. 聽力:離開後釋放整組鼓
+  const n8 = bad;
+  const ul = await page.evaluate(() => window.__ear.unloadMs);
+  await page.evaluate(() => { window.__ear.unloadMs = 1500; window.__shell.setExam("rsl", 3); window.__shell.showView("ear", "groove"); });
+  await page.waitForFunction(() => window.__ear.state.key === "rsl-3-groove", null, { timeout: 20000 });
+  try { await page.waitForFunction(async () => { const A = await import("./js/shared/audio.js"); return Object.keys(A.kitStats().pieces).length >= 10 && !document.getElementById("e-loadingMsg").textContent; }, null, { timeout: 120000, polling: 300 }); }
+  catch (e) { fail(`${label}:聽力 Groove 沒有載入整組鼓`); }
+  await page.click('#tabbar button[data-view="tech"]');
+  await page.waitForTimeout(2500);
+  const left = await page.evaluate(async () => Object.keys((await import("./js/shared/audio.js")).kitStats().pieces));
+  if (left.join() !== "snare") fail(`${label}:離開聽力之後沒有釋放整組鼓(還有 ${left.join(", ")})`);
+  await page.click('#tabbar button[data-view="ear"]'); await page.waitForTimeout(300);
+  await page.evaluate(() => window.__ear.listen());
+  try { await page.waitForFunction(() => window.__ear.state.kind === "listen", null, { timeout: 120000 }); } catch (e) { fail(`${label}:釋放後回到聽力不能播放`); }
+  await page.evaluate(() => window.__ear.listen());
+  const back = await page.evaluate(async () => Object.keys((await import("./js/shared/audio.js")).kitStats().pieces).length);
+  if (back < 10) fail(`${label}:釋放後回到聽力沒有重新載入(${back} 個鼓件)`);
+  await page.evaluate(ul => { window.__ear.unloadMs = ul; }, ul);
+  if (bad === n8) ok(`${label}:聽力載入整組鼓,離開後釋放(只剩小鼓),回來播放會重新載入`);
 }
 
 await run("桌機", 170e6);

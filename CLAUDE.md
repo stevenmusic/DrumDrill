@@ -30,11 +30,22 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
   - `stage.js`、`random.js` 跟 PianoDrill(`js/sight/stage.js`、`js/sight/generator/random.js`)一模一樣;`fingerprint.js` 只有 `@app` 區段(`fingerprintOf`)不同;三個都列在 `sync.json`
   - 視奏分頁的級數(`S.sub.sight`)還沒自己選過時跟著考試級數(`main.js` 的 `@app` 區段):第一次選了考試,視奏分頁預設就是那一級
   - 速度:使用者設的速度每一級各自記住(跟這一題的官方速度脫鉤);設在官方範圍外才標「練習速度」
-- 聽力目前是「準備中」說明卡:題目規則要先照 Trinity / RSL 官方大綱與範例整理才做
-- 中英雙語(預設英文,切過就記住):外框字串 `js/shared/i18n.js`、技巧 `js/tech/strings.js`(前綴 `tech.`)、視奏 `js/sight/strings.js`(前綴 `sight.`);程式產生的文字用 `tr("中", "EN")`
+- 聽力(`js/ear/`,卡片 id 照 PianoDrill 聽音;S12 + S13):子項目 = 題型「過門 Fill / 律動 Groove / 回打 Playback」(`main.js` 的 `@app` 區段;還沒自己選過時 Trinity → 回打、其他 → 過門)。
+  有選考試時照考試系統(不適用的題型只有說明卡 + 規格卡);沒選考試時 Fill / Groove 用 RSL、Playback 用 Trinity。級數在設定卡選(`e-grades`;選了考試或換級數時跟著考試)
+  - RSL Fill(`gen.js` 的 `genFill` / `fillOptions`):配拍點聽兩次、各 1 小節預備拍(官方)→ 練習(時間自己定,鼓墊試打不計分)→ 回打(預備拍 1 小節 = 推估;1 個鼓墊)
+    → 從 2 / 3 個單線譜選(`e-answers`,每個選項一個 OSMD)→ 揭曉正確的譜 + 節奏練習回饋。♩=70 固定(官方,不能改)
+  - RSL Groove(`genGroove`):同流程,兩小節播兩遍(推估)、回打長度一樣(推估)、3 個鼓墊;速度在官方範圍內每題隨機;4–8 級說出風格不出
+  - Trinity Playback(`playbackgen.js` 的 `genChart` / `phraseSpec`):看譜 30 秒(官方;「不看譜」= 播放中把譜蓋起來)→ count-in 1 小節(推估)後 App 播一句、
+    接著同樣長度只有拍點的空檔回打(player 的 `gaps`)→ 第一次練習不計分、第二次每一句分開評時間(`scoreLanes` 取那一句的空檔)。
+    官方配伴奏音軌,App 只有拍點(畫面註明);速度預設 ♩=80(練習設定,可以改);Improvising 只在檢定頁列規格
+  - 播放器的拍用八分音符(`U = 2`):拍點照拍號分組(x/8 附點四分、5/8 = 3+2、7/8 = 2+2+3);RSL 揭曉前不顯示譜(`e-scoreCard` 藏起來)
+  - 結果只有「練習回饋」(不出現等第字眼、不換算官方分數);推估 / 練習設定 / 不出的項目列在回打卡下面(`e-notes`:出題器 NOTES + `APP_NOTES`);每份譜旁邊有圖例
+  - 整組鼓 `audio.loadKit`(進度在題目卡),離開聽力 60 秒 `unloadKit`(還有聲音在排程就再等);測試掛鉤 `window.__ear`(`state`、`finishNow`、`expected`…)
+- 中英雙語(預設英文,切過就記住):外框字串 `js/shared/i18n.js`、技巧 `js/tech/strings.js`(前綴 `tech.`)、視奏 `js/sight/strings.js`(前綴 `sight.`)、聽力 `js/ear/strings.js`(前綴 `ear.`);程式產生的文字用 `tr("中", "EN")`
 - 用詞:「檢定」「考試」,不用「考級」(只有 App Store 關鍵字可以放)
 - localStorage:`drumdrill.v1`(外框)、`drumdrill.tech.v1`(技巧)、`drumdrill.sight.v1`(視奏:pick、節拍器 / 拍點開關、`bpmOverride` 每一級各自的練習速度、
-  出題歷史、各級練過幾題、練習紀錄、譜面排法;讀進來先消毒)、`drumdrill-lang`(語言)
+  出題歷史、各級練過幾題、練習紀錄、譜面排法;讀進來先消毒)、`drumdrill.ear.v1`(聽力:`grades` 各系統的級數、`examSeen`、Trinity 的 `bpm`、`hideChart`、
+  `stats`〔"rsl-3-fill": {n, picks, ok}〕、`log`;讀進來先消毒)、`drumdrill-lang`(語言)
 
 ## 絕不能做的事
 - **不要有 build step**:多檔 ES modules,直接部署 GitHub Pages(main 根目錄);App 版只是把同樣的檔案複製到 `app/www`
@@ -86,7 +97,7 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
     `checks/pattern.mjs`(RSL 練習型)、`checks/gen-sight.mjs`(視奏出題器:每級 1000 個種子)、`checks/appsamples.mjs`(App 取樣數)、版本指紋、`sync.mjs`(跟 PianoDrill 的共用檔案;`PIANODRILL=…`)
   - 瀏覽器(`cd tools/test && npm i` 一次;Playwright):`node layout.mjs`(19 種尺寸)、`node bilingual.mjs`(中英版面)、`node clip.mjs`(文字被切掉)、
     `node human.mjs 150 3`(模擬真人操作)、`node playback.mjs`(播放排程與停止)、`node pad.mjs`(觸控鼓墊)、
-    `node notation.mjs`(OSMD 實際畫譜:40 個打法、鼓組樣張、視奏小鼓譜)、`node kitaudio.mjs`(整組鼓取樣);layout / bilingual / clip / human 都有視奏的狀態
+    `node notation.mjs`(OSMD 實際畫譜:40 個打法、鼓組樣張、視奏小鼓譜)、`node kitaudio.mjs`(整組鼓取樣;聽力離開後釋放);layout / bilingual / clip / human 都有視奏、聽力的狀態(human 的「照節奏回打」要「準」);playback.mjs 有聽力(換語言不停播、Trinity 空檔只有拍點)
   - 重構前後畫面要一樣:動手前 `node shots.mjs --save`,改完 `node shots.mjs --compare`(19 種尺寸 × 技巧四類 + #40×8 + 檢定頁 × 中英,逐像素比對)
   - `tools/test/notation-preview.html?n=1,2,3`:把指定的打法畫出來,跟官方表對照;`?pattern=rsl-7-A`(或 `rsl-7`):RSL 練習型
 - 上架:`docs/APPSTORE.md`;App Store 關鍵字不放 Trinity、RSL、Rockschool(考試機構的商標)

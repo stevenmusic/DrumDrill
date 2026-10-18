@@ -15,7 +15,10 @@ let bad = 0; const fail = (m) => { bad++; console.log("✗ " + m); };
 //   鼓譜跟題目一致(左右手字母都在)、速度在 30–240 且跟顯示一致
 // DrumDrill 視奏(S8):準備 / 結束準備、正式打 / 停止、聽正確版本、點鼓墊、新題目、速度;「正式打到結果」:♩=240 打完要有練習回饋。
 //   檢查:視奏不在畫面上(或在檢定頁)時沒有在播放、準備的倒數停了、不在正式打;按鈕文字跟狀態一致
-const APP = "drumdrill", SYSTEMS = ["trinity", "rsl"], STORE_KEYS = ["drumdrill.v1", "drumdrill.tech.v1", "drumdrill.sight.v1"];
+// DrumDrill 聽力(S12 / S13):聽題目、回打 / 停止、選譜、看答案、看譜 30 秒、點鼓墊、下一題、級數、不看譜;
+//   「照節奏回打」:RSL Fill / Groove 照題目的節奏 ± 20 毫秒點鼓墊 → 練習回饋要「準」(≥ 80 / 100、全部命中);Trinity 兩次各快轉一次 → 有每一句的回饋。
+//   檢查:聽力不在畫面上(或在檢定頁)時沒有在播放、看譜倒數停了、不在回打;回打按鈕、播放鈕跟狀態一致
+const APP = "drumdrill", SYSTEMS = ["trinity", "rsl"], STORE_KEYS = ["drumdrill.v1", "drumdrill.tech.v1", "drumdrill.sight.v1", "drumdrill.ear.v1"];
 const appActions = ({ page, tap, tapAny }) => [
   [10, "技巧選擇器", async () => tapAny("#t-picker .rows .opt")],
   [8, "技巧 播放/停止", async () => tap("#t-playBtn")],
@@ -65,6 +68,49 @@ const appActions = ({ page, tap, tapAny }) => [
     await page.evaluate(() => { const S = window.__sight; if (S.test) S.setBpm(S.test.bpm); });
     return true;
   }],
+  // S12 / S13 聽力
+  [3, "聽力 聽題目 / 停止", async () => tap("#e-playBtn")],
+  [3, "聽力 回打 / 停止", async () => tap("#e-performBtn")],
+  [2, "聽力 選譜", async () => tapAny("#e-answers .e-opt")],
+  [1, "聽力 看答案", async () => tap("#e-revealBtn")],
+  [2, "聽力 看譜", async () => tap("#e-studyBtn")],
+  [3, "聽力 點鼓墊", async () => tapAny("#e-pads .tap-pad")],
+  [2, "聽力 下一題", async () => tap("#e-nextBtn")],
+  [1, "聽力 級數", async () => tapAny("#e-grades .opt")],
+  [1, "聽力 不看譜", async () => tap("#e-optHide")],
+  [3, "聽力 照節奏回打", async () => {
+    const ok = await page.evaluate(() => !document.getElementById("mod-ear").hidden && !document.getElementById("e-quizCard").hidden && !!window.__ear.q);
+    if (!ok) return false;
+    const sys = await page.evaluate(() => window.__ear.state.sys);
+    if (sys === "trinity") {
+      await page.evaluate(() => { const E = window.__ear; E.finishNow(); E.perform(); });
+      try { await page.waitForFunction(() => window.__ear.state.kind === "pass", null, { timeout: 60000 }); } catch (e) { return false; }
+      await page.evaluate(() => { const E = window.__ear; E.finishNow(); E.perform(); });
+      try { await page.waitForFunction(() => window.__ear.state.kind === "pass", null, { timeout: 60000 }); } catch (e) { return false; }
+      await page.keyboard.press("j"); await page.evaluate(() => window.__ear.finishNow());
+      const r = await page.evaluate(() => ({ st: window.__ear.state, shown: !document.getElementById("e-alongResult").hidden, ear: !document.getElementById("mod-ear").hidden }));
+      if (r.ear && (r.st.phase !== "result" || !r.st.result || !r.shown || r.st.pass !== 2)) fail(`聽力 Trinity 兩次之後沒有回饋:${JSON.stringify(r.st)}`);
+      return true;
+    }
+    await page.evaluate(() => { const E = window.__ear; E.finishNow(); E.listen(); });
+    try { await page.waitForFunction(() => window.__ear.state.kind === "listen", null, { timeout: 60000 }); } catch (e) { return false; }
+    await page.evaluate(() => { const E = window.__ear; E.finishNow(); E.perform(); });
+    try { await page.waitForFunction(() => window.__ear.state.kind === "perform", null, { timeout: 60000 }); } catch (e) { return false; }
+    const n = await page.evaluate(async () => {
+      const { perfToAudioTime } = await import("./js/shared/player.js");
+      const E = window.__ear, t0 = E.perfT0(), ex = E.expected(), now = performance.now(), off = perfToAudioTime(now) - now / 1000;
+      for (const x of ex) {
+        const at = (t0 + x.time - off) * 1000 + (Math.random() * 2 - 1) * 20;
+        setTimeout(() => { const b = document.querySelector(`#e-pads .tap-pad[data-lane="${x.lane}"]`); if (b) b.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true })); }, Math.max(0, at - performance.now()));
+      }
+      return ex.length;
+    });
+    try { await page.waitForFunction(() => window.__ear.state.kind !== "perform", null, { timeout: 60000 }); } catch (e) { fail("聽力 回打 60 秒還沒結束"); return true; }
+    const r = await page.evaluate(() => ({ st: window.__ear.state, ear: !document.getElementById("mod-ear").hidden && document.visibilityState === "visible" }));
+    const res = r.st.result;
+    if (r.ear && r.st.kind == null && (!res || res.taps < n || res.hits !== res.total || !(res.score >= 80))) fail(`聽力 照節奏回打不準:${JSON.stringify(res)}(要打 ${n} 下)`);
+    return true;
+  }],
 ];
 // 在頁面裡跑(不能用外面的變數)
 const appCheck = async () => {
@@ -100,6 +146,22 @@ const appCheck = async () => {
       if ((s.kind === "listen") !== document.getElementById("s-play").classList.contains("is-active")) out.push(`視奏播放鈕狀態不一致(${s.kind})`);
       if ((s.phase === "prep") !== s.timer) out.push(`視奏準備倒數不一致(${s.phase}, timer ${s.timer})`);
       if (s.drawn && !s.pending && !document.querySelector("#s-score svg")) out.push("視奏沒有譜");
+    }
+  }
+  // 聽力:不在畫面上(或在檢定頁)時不能在播、看譜倒數要停、不能在回打;在畫面上時按鈕跟狀態一致
+  const Er = window.__ear;
+  if (Er) {
+    const s = Er.state, onScreen = shown[0] === "ear" && view !== "exam" && !document.getElementById("e-quizCard").hidden;
+    if (!onScreen) {
+      if (Er.play) out.push("聽力不在畫面上卻還在播放");
+      if (s.timer) out.push("聽力不在畫面上,看譜倒數還在跑");
+      if (["perform", "pass", "study"].includes(s.phase)) out.push(`聽力不在畫面上還在 ${s.phase}`);
+    } else if (s.key) {
+      const lbl = document.getElementById("e-performBtn").textContent;
+      if ((s.kind === "perform" || s.kind === "pass") !== ["停止", "Stop"].includes(lbl)) out.push(`聽力 ${s.kind} 但回打按鈕寫「${lbl}」`);
+      if ((s.kind === "listen") !== document.getElementById("e-playBtn").classList.contains("is-active")) out.push(`聽力播放鈕狀態不一致(${s.kind})`);
+      if ((s.phase === "study") !== s.timer) out.push(`聽力看譜倒數不一致(${s.phase}, timer ${s.timer})`);
+      if (s.phase === "choose" && document.getElementById("e-answers").hidden) out.push("聽力選譜但沒有選項");
     }
   }
   return out;
