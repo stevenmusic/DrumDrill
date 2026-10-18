@@ -2,6 +2,7 @@
 //  1. 技巧 #20 Flam,♩=240,循環播放 20 輪:每輪自然播完時,還排著的聲音節點 ≤ 一輪的節點數 + 拍點數(播完的節點自己移除,不會越積越多)
 //  2. 播放中按停止:300ms 後排程中的節點 = 0,技巧的播放狀態是停止
 //  3. 切到背景(visibilitychange → hidden):播放停止;回到前景不會自己開始播
+//  4. 播放中換語言:不停止播放,題目、選擇器、按鈕文字換成新語言
 // 用法:node tools/test/playback.mjs
 import { open } from "./harness.mjs";
 let bad = 0;
@@ -83,6 +84,25 @@ const click = () => page.click("#t-playBtn");
   s = await state();
   if (s.play || s.starting || s.scheduled) fail(`回到前景自己開始播放(play=${s.play} 排程 ${s.scheduled})`);
   else ok("切到背景:播放停止、聲音全停;回到前景不會自己開始播");
+}
+
+// 4. 播放中換語言:不停止播放,題目、選擇器、按鈕的文字換成新語言
+{
+  await setup(1, 120, { loop: true });
+  await click();
+  await waitFor(() => window.__tech.state.play && window.__tech.state.scheduled > 0);
+  const before = await page.evaluate(() => ({ title: document.getElementById("t-qTitle").textContent, picker: document.getElementById("t-picker").textContent }));
+  await page.click("#langToggle"); await page.waitForTimeout(300);
+  const s = await state();
+  const after = await page.evaluate(() => ({ title: document.getElementById("t-qTitle").textContent, picker: document.getElementById("t-picker").textContent, label: document.getElementById("t-playLabel").textContent }));
+  const n0 = bad;
+  if (!s.play) fail("換語言後播放停止了");
+  if (after.title === before.title) fail(`換語言後題目沒換:${after.title}`);
+  if (after.picker === before.picker) fail("換語言後選擇器文字沒換");
+  if (after.label !== "Stop") fail(`換語言後播放鈕寫「${after.label}」`);
+  if (bad === n0) ok(`播放中換語言:繼續播放,題目「${before.title}」→「${after.title}」`);
+  await click(); await page.waitForTimeout(300);
+  await page.click("#langToggle"); await page.waitForTimeout(300);
 }
 
 for (const e of errors) fail("console:" + e);
