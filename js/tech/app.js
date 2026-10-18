@@ -889,9 +889,9 @@ function renderMockStep(){
 function renderMockTitle(){
   const st = mockStep(); if (!st) return;
   $("qTitle").textContent = st.it ? itemName(st.it) : L(st.gr.name);
-  const tags = [tr(`${st.gr.id} 組`, `Group ${st.gr.id}`), st.gr.bpm ? `♩=${st.gr.bpm}` : "♩ —", srcOf("rsl", st.it ? st.it.src.p : dataOf("rsl").tech[mockGrade()].src.p),
-    st.it && st.it.kind === "pattern" ? tr("App 練習型", "App drill") : null].filter(Boolean);
-  $("qTags").innerHTML = tags.map((t, i) => `<span class="q-tag${i ? "" : " fold"}" title="${t}">${t}</span>`).join("");
+  // 組別、官方速度(頁碼在模擬考卡的說明裡)、練習型;中英數量一樣,都不縮成「…」
+  const tags = [tr(`${st.gr.id} 組`, `Group ${st.gr.id}`), st.gr.bpm ? `♩=${st.gr.bpm}` : "♩ —", st.it && st.it.kind === "pattern" ? tr("App 練習型", "App drill") : null].filter(Boolean);
+  $("qTags").innerHTML = tags.map(t => `<span class="q-tag">${t}</span>`).join("");
 }
 
 /* ── 啟動(外框呼叫)── */
