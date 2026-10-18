@@ -73,6 +73,17 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
   - 技巧:連續天數 / 今天次數 / 今天分鐘;視奏:連續天數 / 今天題數 / 今天分鐘 + 各級練過題數(`#s-statsCard`);聽力:連續天數 / 今天題數 / 今天正確率(`e-logAcc` = 回打命中的音 + 選對的譜 ÷ 全部)+ 各題型正確率(`#e-statsCard`)
   - 秒數只算真的播放、準備、作答的時間(技巧:預備拍之後的播放;視奏:準備、正式打、聽正確版本;聽力:聽題目、看譜、回打);保留 400 天
   - 紀錄卡、統計卡是練習回饋:檢定頁不放;檢定頁三格進度(`examStatus`)只寫進度(已會 n/m、已練 n 題),不寫命中率
+- **用麥克風評分節奏**(S15,選用;`js/shared/mic.js` 跟 PianoDrill 逐位元組相同(sync.json same)、`js/shared/micrhythm.js` 是 DrumDrill 自己的):
+  視奏「正式打」、聽力「回打 / Trinity 第二次」有「用麥克風評分節奏(選用)」(`s-alongMic`、`e-alongMic`,照 PianoDrill `s-alongMic`),預設關,開關存 `drumdrill.v1` 的 `mic`(視奏、聽力共用,經 ctx 的 `micPref` / `setMicPref`)
+  - 錄在播放用的同一個 AudioContext(`createRecorder({ context: audio.ensureAudio })`);getUserMedia 關 echoCancellation / noiseSuppression / autoGainControl;
+    網頁版 Safari 17+ 錄音時 `navigator.audioSession.type = "play-and-record"`、錄完還原;App 版不碰,交給原生外掛(`docs/IOS.md` 第 3b 節:`.playAndRecord` + `.defaultToSpeaker` + `.allowBluetoothA2DP`,用完 `.playback` + `.mixWithOthers`)
+  - 偵測:`timing.js` 的 `detectHits` = onsets.js 的 `detectOnsets`(**不改 onsets.js**;hop 5 ms、refractory 0.05 秒用參數換算傳進去;分頻帶、分段、補靜音、濾掉大鼓筒鼓的再脹一次,門檻都是練習設定)
+  - 評分:全部鼓件合併一條(`MIC_LANES` = `LANES[1]`),只評時間;整體偏移不設上限(`offsetLimit: Infinity`,跟 PianoDrill scoreRhythm 一樣);App 自己被收進去的聲音(預備拍、Trinity App 播的那一句)用 `dropBleed` 拿掉
+  - 用麥克風的那一次:鼓墊不出聲、不計分;正式打 / 回打的空檔不放拍點(只有預備拍;拍點跟真的鼓同時響分不開)
+  - 拒絕權限 / 沒有麥克風 / 不支援:這一次照觸控鼓墊評分,開關下面與結果說明原因,其他功能不受影響;開關不自己關掉
+  - 整段錄完才在裝置上分析,**不存檔、不上傳**;結果標「練習回饋 · 節奏(麥克風)」+「僅供練習參考,不是官方評分;只評時間」
+  - 開麥克風時 AudioContext 被打斷(iOS 切換工作階段,外框 leave + enter):`mic.bumped` 而且還在同一題就照樣開始;正在打開(`mic.opening`)時 stopAll 不 cancel
+  - 隱私權頁(`privacy.html`)、`docs/IOS.md`(NSMicrophoneUsageDescription 中英文、實機第 17–20 項)要跟著改
 - **整組鼓所有權**(`js/shared/audio.js` 的 @app 區段):視奏、聽力 enter 時 `audio.holdKit(名字)`、leave 時 `audio.dropKit(名字)`;
   沒有人拿著才開始 60 秒計時,到時 `unloadKit()`(小鼓保留),計時中有人拿起來就取消(聽力 ↔ 視奏切換不釋放)。
   載入中被釋放("kit unloaded")不是失敗:在模組裡就靜靜重新載;模組記 `kitGeneration()`,變了就重新 loadKit
@@ -90,7 +101,7 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
   - 文字對比 ≥ 4.5:1(大字 3:1;深淺兩種主題,`a11y.mjs` 量實際背景);改顏色代幣要兩邊同步並看截圖
 - 中英雙語(預設英文,切過就記住):外框字串 `js/shared/i18n.js`、技巧 `js/tech/strings.js`(前綴 `tech.`)、視奏 `js/sight/strings.js`(前綴 `sight.`)、聽力 `js/ear/strings.js`(前綴 `ear.`);程式產生的文字用 `tr("中", "EN")`
 - 用詞:「檢定」「考試」,不用「考級」(只有 App Store 關鍵字可以放)
-- localStorage:`drumdrill.v1`(外框)、`drumdrill.tech.v1`(技巧:熟練度、速度、`log`、`goal`、`mockOneBar`、`mockRun`)、`drumdrill.sight.v1`(視奏:pick、節拍器 / 拍點開關、`bpmOverride` 每一級各自的練習速度(`rsl-3`、`trinity-4`)、
+- localStorage:`drumdrill.v1`(外框;`mic` = 麥克風評分開關)、`drumdrill.tech.v1`(技巧:熟練度、速度、`log`、`goal`、`mockOneBar`、`mockRun`)、`drumdrill.sight.v1`(視奏:pick、節拍器 / 拍點開關、`bpmOverride` 每一級各自的練習速度(`rsl-3`、`trinity-4`)、
   出題歷史、`stats`〔"rsl-3": {n, hits, total}〕各級練過幾題、`log`、`goal`、`mockRun`、譜面排法;讀進來先消毒)、`drumdrill.ear.v1`(聽力:`grades` 各系統的級數、`examSeen`、Trinity 每一級的練習速度 `bpmBy`(`trinity-4`)、`hideChart`、
   `stats`〔"rsl-3-fill": {n, picks, ok, hits, total}〕、`log`〔日期: {n, sec, hits, total}〕、`goal`、`mockRun`;讀進來先消毒)、`drumdrill-lang`(語言)。
   `log` 的格式三個模組一樣:`{ "YYYY-MM-DD": { n, sec } }`,聽力另外有 `hits`、`total`(今天正確率);三個模組讀進來都用 `cleanLog` 消毒(技巧在 `js/tech/store.js`);`mockRun` = 進行中的模擬考標記(正常結束拿掉;重新整理後還在 = 說明「模擬考已中止」)
@@ -146,6 +157,7 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
   - 瀏覽器(`cd tools/test && npm i` 一次;Playwright):`node layout.mjs`(19 種尺寸)、`node bilingual.mjs`(中英版面)、`node clip.mjs`(文字被切掉)、
     `node human.mjs 150 3`(模擬真人操作)、`node playback.mjs`(播放排程與停止)、`node pad.mjs`(觸控鼓墊)、
     `node notation.mjs`(OSMD 實際畫譜:40 個打法、鼓組樣張、視奏小鼓譜與整組鼓譜)、`node a11y.mjs [尺寸]`(無障礙:譜的說明、名稱、重複 id、aria-live、群組與分頁、焦點、對話框、播報、對比)、`node kitaudio.mjs`(整組鼓取樣;視奏、聽力離開 60 秒釋放、互相切換不釋放、載入訊息不蓋結果);
+    `node mic-check.mjs`(麥克風:Chromium 假麥克風 + Naked Drums 取樣混成的 wav;node 側偵測誤差中位數 ≤ 5 ms、漏偵 ≤ 2%;準時 / 偏晚 / 打開時被打斷 / 亂打 / 沒聲音 / 拒絕權限、整組鼓、聽力 Fill、Trinity 第二次;`ONLY=node|sight|ear`);
     layout / bilingual / clip / human 都有模擬考的狀態(`mockTour`:技巧 RSL 3、視奏 RSL 3 / 4 與 Trinity 4、聽力 RSL 4 與 Trinity 4 × 進行中 / 結果 / 中止;human 的「模擬考中途中止」);
     layout / bilingual / clip / human 都有視奏、聽力的狀態(視奏:RSL 0、3、4、5、6,Trinity 0、4、8 × 準備 / 作答 / 結果 / 正確版本;Trinity 一首很長,測試用 `__sight.finishNow()` 提早出結果;
     聽力:human 的「照節奏回打」要「準」);playback.mjs 有視奏、聽力(換語言不停播、Trinity 空檔只有拍點)

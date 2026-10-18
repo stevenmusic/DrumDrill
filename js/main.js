@@ -27,6 +27,7 @@ const S = (() => {
   if (saved.exam && !["trinity", "rsl"].includes(saved.exam.system)) saved.exam = null;
   const s = { view: "tech", exam: null, onboarded: false, theme: "dark", ...saved,
     sub: { tech: "roll", exam: "tech", sight: String(saved.exam ? saved.exam.grade : 0), ...(saved.sub || {}) } };
+  s.mic = s.mic === true;   // 用麥克風評分節奏(選用;視奏、聽力共用一個開關,預設關;js/shared/micrhythm.js)
   /* 視奏分頁的級數還沒自己選過(或還沒回答第一次的問題):跟著考試級數走,第一次選了考試 → 視奏分頁預設就是那一級;
      自己點過子項目(setter)就照點的。存檔時照目前的值存(下次打開就固定了) */
   if (!s.onboarded || !(saved.sub && saved.sub.sight != null)) {
@@ -79,7 +80,9 @@ const examLoading = Promise.all(Object.keys(SYSTEMS).map(sys => loadExam(sys).th
 const keyLoading = loadDrumKey();   // 鼓件名稱(檢定頁的規格卡用)
 const appCtx = async () => {
   const data = Object.fromEntries(await examLoading), key = await keyLoading;
-  return { examData: sys => data[sys] || null, drumKey: () => key || null };
+  return { examData: sys => data[sys] || null, drumKey: () => key || null,
+    // 麥克風評分的開關(drumdrill.v1 的 mic;視奏的正式打、聽力的回打共用,換分頁也一樣)
+    micPref: () => S.mic, setMicPref: on => { S.mic = !!on; save(); } };
 };
 // @app-end
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
