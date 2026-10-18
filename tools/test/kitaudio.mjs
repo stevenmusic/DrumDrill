@@ -293,12 +293,22 @@ await run("桌機", 170e6);
   await setMs(200);
   await page.evaluate(() => window.__shell.showView("tech")); await page.waitForTimeout(700);
   if ((await pieces()) !== "snare") fail("10c:離開視奏後整組鼓沒有釋放(測試前提)");
+  // 記下回來之後訊息列出現過的每一段文字、▶ 有沒有進入載入中(busy)
+  await page.evaluate(() => {
+    window.__msgs = []; window.__busy = false;
+    const m = document.getElementById("s-message"), p = document.getElementById("s-play");
+    window.__mo = [new MutationObserver(() => window.__msgs.push(m.textContent)), new MutationObserver(() => { if (p.classList.contains("busy")) window.__busy = true; })];
+    window.__mo[0].observe(m, { childList: true, characterData: true, subtree: true }); window.__mo[1].observe(p, { attributes: true, attributeFilter: ["class"] });
+  });
   await page.evaluate(() => window.__shell.showView("sight", "4")); await page.waitForTimeout(50);
   const during = await page.evaluate(() => ({ loading: window.__sight.state.loading, phase: window.__sight.state.phase, msg: document.getElementById("s-message").textContent }));
   await page.waitForFunction(() => window.__sight.state.loaded && window.__sight.state.loading == null, null, { timeout: 60000 });
+  const seen = await page.evaluate(() => { window.__mo.forEach(o => o.disconnect()); return { msgs: window.__msgs, busy: window.__busy }; });
   const m1 = await msg();
   if (during.phase !== "result") fail(`10c:回到視奏不在結果畫面(${during.phase})`);
-  if (during.msg !== m0) fail(`10c:結果畫面重新載入整組鼓時訊息被蓋掉:「${m0}」→「${during.msg}」(loading ${during.loading})`);
+  if (!seen.busy) fail("10c:回到視奏沒有重新載入(▶ 沒有進入載入中;測試前提)");
+  const over = seen.msgs.filter(x => x !== m0);
+  if (during.msg !== m0 || over.length) fail(`10c:結果畫面重新載入整組鼓時訊息被蓋掉:「${m0}」→「${over[0] || during.msg}」(loading ${during.loading})`);
   if (m1 !== m0) fail(`10c:載完後訊息沒有還原:「${m0}」→「${m1}」`);
   if (!/kick/.test(await pieces())) fail("10c:回到視奏沒有重新載入整組鼓");
   // 10d:新題目(idle)載入中離開,馬上釋放
