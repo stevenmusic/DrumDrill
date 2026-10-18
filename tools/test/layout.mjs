@@ -227,6 +227,22 @@ for (const [name, w, h, mobile] of VPS) {
     await page.evaluate(([s, t]) => { window.__shell.setExam(s, 3); window.__shell.showView("ear", t); }, [sys, t]); await page.waitForTimeout(500);
     await audit(page, name, `聽力 ${sys} ${t} 說明卡`);
   }
+  // 聽力的譜卡:到檢定頁、不適用的題型(說明卡)再回來,同一題的譜還在(Trinity 一直有譜;RSL 揭曉後有譜)
+  {
+    const svgOk = () => page.evaluate(() => !document.getElementById("e-scoreCard").hidden && !!document.querySelector("#e-osmd svg"));
+    const back = async (sys, t, label) => {
+      const key = await page.evaluate(() => window.__ear.state.key);
+      for (const [v, s] of [["exam", "ear"], ["ear", sys === "rsl" ? "playback" : "fill"]]) {
+        await page.evaluate(([v, s]) => window.__shell.showView(v, s), [v, s]); await page.waitForTimeout(300);
+        await page.evaluate(t => window.__shell.showView("ear", t), t);
+        await page.waitForFunction(k => window.__ear.state.key === k && !window.__ear.state.pending, key, { timeout: 20000 }).catch(() => {});
+        await page.waitForTimeout(500);
+        if (!(await svgOk())) report(name, `聽力 ${label}`, `從${v === "exam" ? "檢定頁" : "說明卡"}回來,譜卡或譜不見了`);
+      }
+    };
+    await eGo("trinity", 4, "playback"); await back("trinity", "playback", "trinity 4 回來");
+    await eGo("rsl", 3, "fill"); await eDo("reveal"); await page.waitForTimeout(800); await back("rsl", "fill", "rsl 3 fill 揭曉後回來");
+  }
   await page.evaluate(() => window.__shell.setExam("trinity", 8));
   // 英文(字比較長)
   await tab("tech"); await page.click("#langToggle"); await page.waitForTimeout(500);

@@ -12,7 +12,8 @@
    - 結果只有「練習回饋」(只看敲擊時間;不出現等第字眼、不換算成官方分數);題目卡寫「依 RSL / Trinity N 級參數的練習 · 」+ practiceOnly;
      推估、練習設定、不出的項目寫在回打卡下面(出題器的 NOTES + 這裡的 APP_NOTES);每一份譜旁邊有圖例(js/shared/legend.js)
    - 播放器的「拍」用八分音符(U = 2 個一拍):x/8、5/8、7/8 的拍點照拍號的分組(附點四分、2+2+3),拍點燈號照分組亮
-   - 聲音:整組鼓 audio.loadKit(載入進度顯示在題目卡;載不到可以再按一次);離開聽力 60 秒後 audio.unloadKit(小鼓保留)
+   - 聲音:整組鼓 audio.loadKit(載入進度顯示在題目卡;載不到可以再按一次);enter / leave 時 audio.holdKit / dropKit("ear")
+     (視奏、聽力都放掉 60 秒後 audio.js 釋放,小鼓保留)
    - 檢定頁:考試摘要 + 規格卡(照官方大綱,每項頁碼)+「練習這一級」;不放練習紀錄、練習回饋(不跟配分、等第同一個畫面)
    - leave():停止播放、看譜倒數、回打(不算),題目保留;relang():只重寫文字,不停播放
    - localStorage drumdrill.ear.v1:{ grades:{ rsl, trinity }(設定卡選的級數), bpm(Trinity 的練習速度), hideChart, stats:{ "rsl-3-fill": {n, picks, ok} }, log:{ 日期: {n, sec} } }
@@ -41,7 +42,6 @@ const TYPES = ["fill", "groove", "playback"];
 const U = 2;                 // 播放器的一拍 = 八分音符(一個四分音符 = 2)
 const TAIL = 1.5;            // 回打最後多收幾個八分音符的敲擊(最後一個音晚一點也算得到)
 const BPM_DEFAULT = 80;      // Trinity Playback 的預設速度(官方沒寫;練習設定)
-let UNLOAD_MS = 60000;       // 離開聽力多久後釋放整組鼓(docs/STAGES.md 決定 11)
 
 /* ── 設定與紀錄(localStorage;讀不到就用預設值)── */
 const KEY = "drumdrill.ear.v1";
@@ -49,10 +49,23 @@ const okGrade = g => Number.isInteger(g) && g >= 0 && g <= 8;
 const SS = (() => {
   let s = null;
   try { s = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) {}
-  s = { grades: {}, bpm: BPM_DEFAULT, hideChart: false, stats: {}, log: {}, ...(s && typeof s === "object" ? s : {}) };
-  for (const k of ["grades", "stats", "log"]) if (!s[k] || typeof s[k] !== "object" || Array.isArray(s[k])) s[k] = {};
+  s = { grades: {}, bpmBy: {}, hideChart: false, stats: {}, log: {}, ...(s && typeof s === "object" ? s : {}) };
+  for (const k of ["grades", "bpmBy", "stats", "log"]) if (!s[k] || typeof s[k] !== "object" || Array.isArray(s[k])) s[k] = {};
   for (const sys of ["rsl", "trinity"]) if (!okGrade(s.grades[sys])) s.grades[sys] = sys === "trinity" ? 1 : 0;
-  s.bpm = typeof s.bpm === "number" && Number.isFinite(s.bpm) ? Math.max(30, Math.min(240, Math.round(s.bpm))) : BPM_DEFAULT;
+  // Trinity 的練習速度每一級各自記("trinity-4": 90;跟視奏的 bpmOverride 一樣);舊版的單一 bpm 當作目前 Trinity 級數的
+  if (typeof s.bpm === "number" && Number.isFinite(s.bpm) && s.bpm !== BPM_DEFAULT && s.bpmBy["trinity-" + s.grades.trinity] == null) s.bpmBy["trinity-" + s.grades.trinity] = s.bpm;
+  delete s.bpm;
+  for (const [k, v] of Object.entries(s.bpmBy)) { if (/^trinity-[0-8]$/.test(k) && typeof v === "number" && Number.isFinite(v)) s.bpmBy[k] = Math.max(30, Math.min(240, Math.round(v))); else delete s.bpmBy[k]; }
+  // 練過幾題、練習紀錄:數字消毒(負數、非整數、不是數字的丟掉或歸零)
+  const cnt = v => (typeof v === "number" && Number.isFinite(v) && v > 0 ? Math.floor(v) : 0);
+  for (const [k, v] of Object.entries(s.stats)) {
+    if (!/^(rsl|trinity)-[0-8]-(fill|groove|playback)$/.test(k) || !v || typeof v !== "object") { delete s.stats[k]; continue; }
+    s.stats[k] = { n: cnt(v.n), picks: cnt(v.picks), ok: Math.min(cnt(v.ok), cnt(v.picks)) };
+  }
+  for (const [k, v] of Object.entries(s.log)) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(k) || !v || typeof v !== "object") { delete s.log[k]; continue; }
+    s.log[k] = { n: cnt(v.n), sec: cnt(v.sec) };
+  }
   s.hideChart = !!s.hideChart;
   if (typeof s.examSeen !== "string") s.examSeen = null;
   return s;
@@ -100,17 +113,19 @@ export async function start(c){
     },
     get q(){ return cur && cur.q; }, get xml(){ return cur && cur.xml; }, get tl(){ return tl; },
     newQuestion, listen: toggleListen, perform: startPerform, choose, reveal, study: startStudy, setBpm: v => setBpm(v), SS,
-    perfT0: () => (perf ? perf.t0 : null), expected, finishNow, set unloadMs(v){ UNLOAD_MS = v; }, get unloadMs(){ return UNLOAD_MS; }
+    perfT0: () => (perf ? perf.t0 : null), expected, finishNow,
+    set unloadMs(v){ audio.kitRelease.ms = v; }, get unloadMs(){ return audio.kitRelease.ms; }   // 等待時間在 audio.js(視奏、聽力共用)
   };
 }
 export function enter(t){
   active = true;
-  clearTimeout(unloadTimer); unloadTimer = 0;
+  audio.holdKit("ear");   // 回來了:不釋放整組鼓
   mode = t === "exam" ? "exam" : "free";
   if (TYPES.includes(t)) type = t;
   const had = cur;
   render();
   if (mode !== "free" || !cur || cur !== had) return;
+  preload();   // 同一題:整組鼓被釋放過就重新載(載過的 audio.loadKit 直接回傳)
   // 同一題:在別的分頁時延後的譜、選項,回到畫面再畫
   requestAnimationFrame(() => {
     if (!active || cur !== had) return;
@@ -119,11 +134,10 @@ export function enter(t){
     fitTitle();
   });
 }
-/* 離開(切分頁、切到背景):停止播放、看譜倒數、回打(不算);題目保留。60 秒後釋放整組鼓 */
+/* 離開(切分頁、切到背景):停止播放、看譜倒數、回打(不算);題目保留。放掉整組鼓(視奏也沒拿著的話 60 秒後釋放) */
 export function leave(){
   active = false; stopAll();
-  clearTimeout(unloadTimer);
-  unloadTimer = setTimeout(releaseKit, UNLOAD_MS);
+  audio.dropKit("ear");
 }
 export function setExam(ex){
   const same = exam && ex && exam.system === ex.system && exam.grade === ex.grade && !!exam.auto === !!ex.auto;
@@ -184,7 +198,8 @@ function renderStatic(){
 }
 function showPractice(on){
   for (const id of ["setup", "quizCard", "along"]) $(id).hidden = !on;
-  if (!on) $("scoreCard").hidden = true;
+  // 譜卡:RSL 揭曉前藏起來,Trinity 一直在(從檢定頁、不適用的題型回來時要還原,enter 的 rAF 再畫譜)
+  $("scoreCard").hidden = !(on && cur && (cur.sys !== "rsl" || cur.revealed));
 }
 
 /* 這個題型不適用 / 資料還沒載好:說明 + 官方規格卡(不出題) */
@@ -345,24 +360,32 @@ $("grades").onclick = e => {
 $("optHide").onclick = () => { SS.hideChart = !SS.hideChart; save(); renderSetup(); renderSum(); coverChart(); };
 
 /* ── 速度:RSL 照官方(Fill ♩=70;Groove 在官方範圍內每題隨機);Trinity 官方沒寫 → 預設 ♩=80(練習設定),可以改 ── */
-const bpmNow = () => (!cur ? BPM_DEFAULT : cur.sys === "rsl" ? cur.q.bpm : SS.bpm);
+const bpmKey = () => "trinity-" + cur.grade;
+const bpmNow = () => (!cur ? BPM_DEFAULT : cur.sys === "rsl" ? cur.q.bpm : SS.bpmBy[bpmKey()] ?? BPM_DEFAULT);
 const tempo = createTempo({ $, min: 30, max: 240, get: () => bpmNow(), set: v => setBpm(v) });
 function setBpm(v){
   if (!cur || cur.sys !== "trinity" || playKind === "pass") return;   // RSL 照官方;Trinity 回打中不改(評分照開始時的速度)
   if (!Number.isFinite(Number(v))) return;
-  SS.bpm = Math.max(30, Math.min(240, Math.round(Number(v)))); save();
-  if (playKind === "listen") player.retempo(SS.bpm * U);
+  const b = Math.max(30, Math.min(240, Math.round(Number(v))));
+  if (b === BPM_DEFAULT) delete SS.bpmBy[bpmKey()]; else SS.bpmBy[bpmKey()] = b;
+  save();
+  if (playKind === "listen") player.retempo(b * U);
   tempoUI(); renderMeta(); renderSum();
 }
 function tempoUI(){
   tempo.sync(`♩ / ${tr("分", "min")}`);
-  const fixed = !cur || cur.sys !== "trinity";
-  for (const id of ["bpmDown", "bpmUp", "bpmRange"]) $(id).disabled = fixed;
+  lockTempo();
   if (!cur) { pairText($("tempoNote"), () => ""); return; }
   const src = cur.sys === "rsl" ? V.srcOf("rsl", cur.q.src && cur.q.src.p) : "";
   pairText($("tempoNote"), () => (cur.type === "fill" ? tr(`官方速度 ${V.bpmText(cur.q.bpm)}(固定)· ${src}`, `Official ${V.bpmText(cur.q.bpm)} (fixed) · ${src}`)
     : cur.type === "groove" ? tr(`官方範圍 ${V.bpmText(cur.q.bpmRange)},每題隨機(練習設定)· ${src}`, `Official ${V.bpmText(cur.q.bpmRange)}, random per test (practice setting) · ${src}`)
     : tr("練習速度:官方沒寫速度(練習設定)", "Practice tempo: none in the syllabus (practice setting)")));
+}
+
+/* 速度鈕:RSL 照官方不能改;Trinity 第一次 / 第二次進行中也不能改(評分照開始時的速度) */
+function lockTempo(){
+  const fixed = !cur || cur.sys !== "trinity" || playKind === "pass";
+  for (const id of ["bpmDown", "bpmUp", "bpmRange"]) $(id).disabled = fixed;
 }
 
 /* ══ 出題 ══ */
@@ -410,6 +433,7 @@ function padPieces(q, lanes){
   return out;
 }
 const studySec = () => { const d = dataOf("trinity"); return (d && d.playback.flow.studySec) || 30; };
+const studySrc = () => { const d = dataOf("trinity"), f = d && d.playback && d.playback.flow; return V.srcOf("trinity", (f && f.src && f.src.p) || "60"); };
 
 /* ══ 時間軸(八分音符為單位):小節、拍點、預備拍、App 播的段落、學生打的空檔 ══ */
 function meterBar(time){ const m = parseTime(time); return { len: m.len / DIV * U, groups: m.groups.map(x => x / DIV * U) }; }
@@ -424,7 +448,7 @@ function timeline(parts, ci){
     const len = sumLen(p.bars);
     let s = at; for (const b of p.bars) { out.bars.push({ start: s, ...b }); s += b.len; }
     for (const e of p.events || []) out.events.push({ ...e, beat: Math.round((e.beat * U + at) * 1e6) / 1e6 });
-    if (p.kind === "you") out.gaps.push([at, at + len]);
+    // "you"(學生打的段落)不放事件,所以不需要 gaps(gaps 會把下一段句首的裝飾音靜音);out.gaps 一直是 []
     out.segs.push({ u0: at, u1: at + len, kind: p.kind, q0: p.q0 || 0, mod: p.mod || 0, phrase: p.phrase, take: p.take || 1 });
     at += len;
   }
@@ -773,7 +797,9 @@ async function startPass(){
   const bpm = bpmNow(), phs = phrases(bpm), parts = [];
   for (const ph of phs) {
     parts.push({ kind: "app", bars: ph.bars, events: ph.events, q0: ph.q0, phrase: ph.i });
-    parts.push({ kind: "you", bars: ph.bars, events: ph.events, q0: ph.q0, phrase: ph.i });   // 空檔:同一句(gaps → 不出聲,只有拍點)
+    // 空檔:不排鼓聲,只有拍點(events = [];評分用 phs[i].events)。不用 player 的 gaps:下一句句首的 Flam / Drag 裝飾音
+    // 在那一句的第一拍之前(落在這個空檔的尾巴),gaps 會把它靜音;空檔的事件留著又會在上一句的尾巴漏出聲
+    parts.push({ kind: "you", bars: ph.bars, events: [], q0: ph.q0, phrase: ph.i });
   }
   const t = timeline(parts, meterBar(cur.q.phrases[0].time));
   const t0 = run(t, "pass", bpm);
@@ -904,7 +930,7 @@ window.addEventListener("resize", onStageResize);
 if (typeof ResizeObserver !== "undefined") new ResizeObserver(() => requestAnimationFrame(onStageResize)).observe($("stage"));
 
 /* ══ 聲音:整組鼓(Fill 只要小鼓)+ 拍點(js/shared/audio.js;不用合成鼓聲)══ */
-let kitJob = null, unloadTimer = 0;
+let kitJob = null;
 /* 每次都問 audio.loadKit(audio.js 自己記住載好的;別的地方 unloadKit 之後會重新載) */
 function preload(){
   const full = !!cur && cur.type !== "fill";
@@ -915,6 +941,8 @@ function preload(){
       if (kitJob === job) loading(null);
       return true;
     } catch (e) {
+      // 還沒載完就被釋放("kit unloaded",離開太久):不是失敗;在聽力就靜靜重新載,不在就等回來(enter 會 preload)
+      if (e && e.message === "kit unloaded") { if (kitJob !== job) return false; if (active) return preload(); loading(null); return false; }
       console.error(e);
       if (kitJob === job) loading(null);
       return false;
@@ -926,13 +954,6 @@ let loadFn = null;
 function loading(p){
   loadFn = p == null ? null : () => tr(`載入鼓聲 ${Math.round(p * 100)}%`, `Loading drums ${Math.round(p * 100)}%`);
   $("loadingMsg").textContent = loadFn ? loadFn() : "";
-}
-/* 離開聽力 60 秒:釋放整組鼓(小鼓保留);還有聲音在排程(別的模組在播)就再等一次 */
-function releaseKit(){
-  unloadTimer = 0;
-  if (active) return;
-  if (audio.scheduledCount() > 0) { unloadTimer = setTimeout(releaseKit, UNLOAD_MS); return; }
-  audio.unloadKit();
 }
 const within = (p, ms) => Promise.race([p, new Promise(r => setTimeout(r, ms))]);
 /* 叫醒音訊、等取樣;回傳 false = 不能播(取樣沒載到、等的時候離開了 / 換題了) */
@@ -969,6 +990,7 @@ function syncButtons(){
   $("revealBtn").hidden = !rsl; $("studyBtn").hidden = !has || rsl; $("countdown").hidden = !has || rsl;
   $("revealBtn").disabled = !has || cur.revealed;
   $("studyBtn").disabled = !has || playKind === "pass";
+  lockTempo();
   const pb = $("performBtn");
   pb.disabled = !has || busy && !playKind || rsl && !cur.listened && playKind !== "perform";
   renderLabels();
@@ -987,7 +1009,7 @@ function renderLabels(){
   $("playBtn").setAttribute("aria-label", pl()); $("playBtn").title = pl();
 }
 const idleMsg = () => (!cur ? "" : isRsl() ? tr("按 ▶ 聽題目:配拍點聽兩次,每次前面 1 小節預備拍。", "Tap ▶: the test plays twice with a click, a 1-bar count-in each time.")
-  : tr("先看譜 30 秒(可以在鼓墊上試打),再按「第一次(練習)」:App 播一句,你接著打同一句。", "Study the chart for 30 s (try it on the pads), then Play 1 (practice): the App plays a phrase, you play it back."));
+  : tr(`先看譜 ${studySec()} 秒(${studySrc()};可以在鼓墊上試打),再按「第一次(練習)」:App 播一句,你接著打同一句。`, `Study the chart for ${studySec()} s (${studySrc()}; try it on the pads), then Play 1 (practice): the App plays a phrase, you play it back.`));
 function refreshTexts(){
   if (!cur) return;
   const c = cur, name = `${sysName(c.sys)} ${gl(c.grade, c.sys)}`;
@@ -1012,7 +1034,7 @@ function alongNote(){
   if (!cur) return "";
   const keys = cur.lanes.length === 1 ? tr("鍵盤 J / F", "keys J / F") : tr("鍵盤 F 鈸 · J 鼓 · K 大鼓", "keys F cymbal · J drum · K kick");
   if (isRsl()) return tr(`回打前面 1 小節預備拍(推估:大綱只寫考官數拍)· ${keys}`, `1-bar count-in before you play (assumed: the syllabus says the examiner counts in) · ${keys}`);
-  return tr(`照抄,不要變化也不要即興 · 官方配伴奏音軌;App 只有拍點 · ${keys}`, `Copy it exactly — no variation or improvising · the exam has a backing track; the App has a click only · ${keys}`);
+  return tr(`看譜 ${studySec()} 秒(${studySrc()})· 照抄,不要變化也不要即興 · 官方配伴奏音軌;App 只有拍點 · ${keys}`, `${studySec()} s to study (${studySrc()}) · copy it exactly — no variation or improvising · the exam has a backing track; the App has a click only · ${keys}`);
 }
 /* 題目卡的標籤 */
 function renderMeta(){

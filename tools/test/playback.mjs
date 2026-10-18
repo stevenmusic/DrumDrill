@@ -12,7 +12,8 @@
 //     計時器被擋住時漏的音算進 dropped + onLate、bpm 不合法丟 RangeError、超出 lenBeats 的事件不播、自然播完後 stop(true) 收掉尾音
 //  7. 視奏的整組鼓播放(細項見第 7 段):Trinity x/8 用八分音符當一拍、RSL 自由發展只有拍點、換語言不停、停止後排程歸零
 //  8. 聽力(js/ear/app.js):RSL Fill 聽題目中換語言不停播、文字換掉;切到技巧分頁 = 停止(題目保留);
-//     Trinity Playback ♩=240 第一次:App 播的句子有鼓聲,學生打的空檔只有拍點(每個拍點的時間只有一個聲音節點,沒有鼓聲);
+//     Trinity Playback(4 級種子 42)♩=240 第一次:App 播的句子有鼓聲(每個事件都出聲,句首的 Flam / Drag 裝飾音沒有被靜音),
+//     學生打的空檔只有拍點(+ 下一句句首的裝飾音;每個拍點的時間只有一個聲音節點);
 //     第二次快轉:每一句一列練習回饋
 // 用法:node tools/test/playback.mjs
 import { open } from "./harness.mjs";
@@ -517,15 +518,18 @@ const click = () => page.click("#t-playBtn");
   if (r2.play || r2.kind) fail(`聽力 離開分頁還在播放(${JSON.stringify(r2)})`);
   await page.click('#tabbar button[data-view="ear"]'); await page.waitForTimeout(400);
   if ((await page.evaluate(() => window.__ear.state.key)) !== key) fail("聽力 回到分頁換了題目(leave 不該清題目)");
-  // Trinity:空檔只有拍點
-  await page.evaluate(() => { window.__shell.setExam("trinity", 1); window.__shell.showView("ear", "playback"); });
-  await waitFor(() => window.__ear.state.key === "trinity-1-playback");
+  // Trinity:空檔只有拍點;句首的 Flam / Drag 裝飾音(在那一句第一拍之前,落在上一個空檔的尾巴)要出聲、上一句的尾巴不能漏出下一個空檔的裝飾音。
+  //   4 級種子 42:第 4 句句首有裝飾音(出題器改了就換一個種子;找不到句首裝飾音的話這一項算失敗)
+  await page.evaluate(() => { window.__shell.setExam("trinity", 4); window.__shell.showView("ear", "playback"); });
+  await waitFor(() => window.__ear.state.key === "trinity-4-playback");
+  await page.evaluate(() => window.__ear.newQuestion(42));
+  await waitFor(() => window.__ear.state.key === "trinity-4-playback" && !window.__ear.state.pending, null, 20000);
   await page.evaluate(() => { window.__pl = []; window.__ear.setBpm(240); window.__ear.perform(); });
   await waitFor(() => window.__ear.state.kind === "pass", null, 60000);
   const t0 = await page.evaluate(() => window.__ear.perfT0());
-  await waitFor(() => window.__ear.state.kind === null, null, 90000);
+  await waitFor(() => window.__ear.state.kind === null, null, 120000);
   const g = await page.evaluate(t0 => {
-    const tl = window.__ear.tl, sec = 60 / (240 * 2), out = { you: 0, app: 0, badYou: [], clicks: 0 };
+    const tl = window.__ear.tl, sec = 60 / (240 * 2), out = { you: 0, app: 0, badYou: [], clicks: 0, lead: 0, leadMissing: [], missing: 0 };
     const clickTimes = [];
     for (let b = -tl.countIn; b < tl.len; b++) {
       const bar = tl.bars.filter(x => x.start <= b).pop(); if (!bar || b >= bar.start + bar.len) continue;
@@ -534,23 +538,32 @@ const click = () => page.click("#t-playBtn");
     }
     out.clicks = clickTimes.length;
     const nodes = (window.__pl || []).filter(n => !n.__cancel && n.__at >= t0 - tl.countIn * sec - 0.01);
+    const evTimes = tl.events.map(e => t0 + e.beat * sec), near = (list, t) => list.some(x => Math.abs(x - t) < 0.004);
+    // 每一個 App 的事件(含裝飾音)都有聲音節點;句首裝飾音(在某一段 App 開頭之前)另外記
+    const appStarts = tl.segs.filter(x => x.kind === "app").map(x => x.u0);
+    tl.events.forEach((e, i) => {
+      const has = nodes.some(n => Math.abs(n.__at - evTimes[i]) < 0.004);
+      if (!has) out.missing++;
+      if (e.grace && appStarts.some(u => e.beat < u - 1e-9 && e.beat > u - 2)) { out.lead++; if (!has) out.leadMissing.push(+(evTimes[i] - t0).toFixed(3)); }
+    });
     for (const sg of tl.segs.filter(x => x.kind !== "ci")) {
       const a = t0 + sg.u0 * sec, z = t0 + sg.u1 * sec;
       const inSeg = nodes.filter(n => n.__at >= a - 0.005 && n.__at < z - 0.005);
       if (sg.kind === "app") { out.app += inSeg.length; continue; }
       out.you += inSeg.length;
-      for (const n of inSeg) {
-        const c = clickTimes.find(t => Math.abs(t - n.__at) < 0.004);
-        if (c == null) out.badYou.push(+(n.__at - t0).toFixed(3));
-      }
-      const per = new Map(); for (const n of inSeg) { const k = Math.round(n.__at * 1000); per.set(k, (per.get(k) || 0) + 1); }
-      for (const [k, v] of per) if (v > 1) out.badYou.push(`${k / 1000 - t0}×${v}`);
+      const clicksHere = inSeg.filter(n => near(clickTimes, n.__at));
+      for (const n of inSeg) if (!near(clickTimes, n.__at) && !near(evTimes, n.__at)) out.badYou.push(+(n.__at - t0).toFixed(3));   // 拍點、下一句句首的裝飾音以外的聲音
+      const per = new Map(); for (const n of clicksHere) { const k = Math.round(n.__at * 1000); per.set(k, (per.get(k) || 0) + 1); }
+      for (const [k, v] of per) if (v > 1 && !near(evTimes, k / 1000)) out.badYou.push(`${(k / 1000 - t0).toFixed(3)}×${v}`);
     }
     return out;
   }, t0);
   if (!(g.app > 0)) fail(`聽力 Trinity:App 播的句子沒有聲音節點(${JSON.stringify(g)};測試沒有記到?)`);
   if (g.badYou.length) fail(`聽力 Trinity:學生打的空檔有拍點以外的聲音(${g.badYou.slice(0, 8).join(", ")})`);
   if (!(g.you > 0)) fail("聽力 Trinity:空檔沒有拍點");
+  if (!g.lead) fail("聽力 Trinity 4 級種子 42:找不到句首的 Flam / Drag 裝飾音(出題器改了?換一個種子)");
+  if (g.leadMissing.length) fail(`聽力 Trinity:句首的裝飾音被靜音(${g.leadMissing.join(", ")} 秒)`);
+  if (g.missing) fail(`聽力 Trinity:App 的句子有 ${g.missing} 個事件沒有出聲`);
   await page.evaluate(() => window.__ear.perform());
   await waitFor(() => window.__ear.state.kind === "pass", null, 60000);
   // 第一句的空檔裡點一下(有敲擊才會列每一句),再快轉
@@ -562,7 +575,7 @@ const click = () => page.click("#t-playBtn");
   const res = await page.evaluate(() => { window.__ear.finishNow(); return { st: window.__ear.state, rows: document.querySelectorAll("#e-alongResult .e-phrases li").length, n: window.__ear.q.phrases.length }; });
   if (res.st.phase !== "result" || res.rows !== res.n) fail(`聽力 Trinity 第二次:每一句一列回饋,實際 ${res.rows} / ${res.n} 句(${res.st.phase})`);
   await page.evaluate(() => window.__ear.setBpm(80));
-  if (bad === n0) ok(`聽力:播放中換語言不停、離開分頁停止(題目保留);Trinity 空檔只有拍點(App 段 ${g.app} 個節點、空檔 ${g.you} 個拍點)、第二次每一句一列回饋`);
+  if (bad === n0) ok(`聽力:播放中換語言不停、離開分頁停止(題目保留);Trinity 空檔只有拍點(App 段 ${g.app} 個節點、空檔 ${g.you} 個節點)、句首裝飾音 ${g.lead} 個都有出聲、第二次每一句一列回饋`);
 }
 
 for (const e of errors) fail("console:" + e);

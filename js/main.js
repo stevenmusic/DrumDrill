@@ -34,13 +34,22 @@ const S = (() => {
     Object.defineProperty(s.sub, "sight", { enumerable: true, configurable: true,
       get: () => picked ?? String(s.exam && Number.isInteger(s.exam.grade) ? s.exam.grade : 0), set: v => { picked = v; } });
   }
-  /* 聽力分頁的題型還沒自己選過:跟著考試系統走(Trinity → 回打 Playback;RSL、沒選考試 → 過門 Fill) */
-  if (!s.onboarded || !(saved.sub && saved.sub.ear != null)) {
-    let picked = null;
+  /* 聽力分頁的題型:還沒自己選過就跟著考試系統走(Trinity → 回打 Playback;RSL、沒選考試 → 過門 Fill)。
+     選過的題型在選的時候那個系統下照選的(RSL 也可以點 Playback 看說明);之後考試系統換了、選的題型不適用新系統,
+     就改成新系統的預設題型(RSL → Fill、Trinity → Playback) */
+  {
+    const EAR = ["fill", "groove", "playback"], sysOf = () => (s.exam ? s.exam.system : null);
+    const fits = (t, sys) => !sys || (sys === "trinity") === (t === "playback");
+    const first = s.onboarded && saved.sub && EAR.includes(saved.sub.ear) ? saved.sub.ear : null;
+    let picked = first, pickedFor = sysOf();
     Object.defineProperty(s.sub, "ear", { enumerable: true, configurable: true,
-      get: () => picked ?? (s.exam && s.exam.system === "trinity" ? "playback" : "fill"), set: v => { picked = v; } });
+      get: () => {
+        const sys = sysOf();
+        if (picked != null && (pickedFor === sys || fits(picked, sys))) return picked;
+        return sys === "trinity" ? "playback" : "fill";
+      },
+      set: v => { picked = EAR.includes(v) ? v : null; pickedFor = sysOf(); } });
   }
-  if (!["fill", "groove", "playback"].includes(s.sub.ear)) s.sub.ear = "fill";
   return s;
 })();
 /* ── 考試:Trinity Rock & Pop Drums(Initial、1–8 級)、RSL Rockschool Drums(Debut、1–8 級) ── */

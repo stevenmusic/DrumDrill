@@ -336,7 +336,7 @@ export function loadKit(pieces = KIT_PIECES, onProgress){
   const names = [...new Set(pieces.map(kitSample))];
   return memo("kit:" + names.join(","), names, () => loadPieces(names, kitLimit, onProgress), onProgress);
 }
-/* 釋放整組鼓(離開視奏 / 聽力一段時間後):刪掉 buffer 與載入紀錄,下次 loadKit 重新載;keep 的鼓件(預設小鼓)保留 */
+/* 釋放整組鼓(視奏、聽力都放掉 60 秒後,見 dropKit):刪掉 buffer 與載入紀錄,下次 loadKit 重新載;keep 的鼓件(預設小鼓)保留 */
 export function unloadKit(keep = ["snare"]){
   const stay = new Set(keep.map(kitSample));
   const gone = Object.keys(kit).filter(n => !stay.has(n));
@@ -347,8 +347,32 @@ export function unloadKit(keep = ["snare"]){
   if (ringingOpenHat && gone.includes("hhOpen")) ringingOpenHat = null;
   fadedVoices = fadedVoices.filter(v => !gone.includes(v.name));
   for (const [k, job] of Object.entries(drumJobs)) if (job.names.some(n => gone.includes(n))) delete drumJobs[k];
+  if (gone.length) kitGen++;
   return gone;
 }
+/* 整組鼓釋放過幾次(模組記住載入時的值;變了 = buffer 已經不在,要重新 loadKit) */
+let kitGen = 0;
+export const kitGeneration = () => kitGen;
+/* 整組鼓的所有權(視奏、聽力共用一份整組鼓):模組 enter 時 holdKit(名字)、leave 時 dropKit(名字)。
+   有人拿著就不釋放;最後一個放掉才開始計時,KIT_RELEASE_MS(60 秒,docs/STAGES.md 決定 11)後 unloadKit()(小鼓保留);
+   計時中有人 holdKit 就取消。聽力 → 視奏切換:聽力放掉、視奏馬上拿起來,不會釋放 */
+const KIT_RELEASE_MS = 60000;
+const kitHolders = new Set();
+let kitReleaseTimer = 0, kitReleaseMs = KIT_RELEASE_MS;
+export function holdKit(owner){
+  kitHolders.add(owner);
+  clearTimeout(kitReleaseTimer); kitReleaseTimer = 0;
+}
+export function dropKit(owner){
+  kitHolders.delete(owner);
+  if (kitHolders.size || kitReleaseTimer) return;
+  kitReleaseTimer = setTimeout(() => { kitReleaseTimer = 0; if (!kitHolders.size) unloadKit(); }, kitReleaseMs);
+}
+/* 測試用(kitaudio.mjs):等待時間改短、看誰拿著、是不是在計時 */
+export const kitRelease = {
+  get ms(){ return kitReleaseMs; }, set ms(v){ kitReleaseMs = Number(v) > 0 ? Number(v) : KIT_RELEASE_MS; },
+  get holders(){ return [...kitHolders]; }, get pending(){ return !!kitReleaseTimer; }
+};
 let drumBus = null, roomIn = null, drumBusCtx = null, roomConv = null;
 function attachRoom(){
   if (!roomRaw || !roomConv || roomFor === roomConv || !audioCtx || audioCtx instanceof OfflineAudioContext) return;

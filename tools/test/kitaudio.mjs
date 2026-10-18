@@ -12,6 +12,7 @@
 //  7. 技巧模組的播放(小鼓)照常:按播放有排程、按停止全停
 //  8. 聽力(js/ear/app.js):Groove 題目載入整組鼓;離開聽力 unloadMs(實際 60 秒,測試改 1.5 秒)後只剩小鼓;回到聽力按播放會重新載入
 //  9. 視奏(js/sight/app.js):RSL 4 級載入整組鼓;離開 60 秒(測試 1.5 秒)釋放、時間到以前回來不釋放、回來重新載入
+//  10. 整組鼓的所有權(audio.js holdKit / dropKit):聽力 ↔ 視奏切換不釋放、兩個都離開到時間才釋放;視奏結果畫面的訊息不被載入中蓋掉;載入中被釋放不顯示失敗
 // 用法:node tools/test/kitaudio.mjs
 import { open } from "./harness.mjs";
 let bad = 0;
@@ -244,6 +245,76 @@ await run("桌機", 170e6);
   const p3 = await pieces();
   if (!/kick/.test(p3)) fail(`視奏:回到視奏沒有重新載入整組鼓(${p3})`);
   if (bad === n9) ok(`視奏 RSL 4 級:載入整組鼓(${p0.split(",").length} 個取樣鼓件)、離開到時間只剩小鼓、時間到以前回來不釋放、回來重新載入`);
+}
+// 10. 整組鼓的所有權(audio.js 的 holdKit / dropKit;測試把 60 秒改成 1.5 秒):
+//   10a. 聽力 → 視奏、視奏 → 聽力切換:超過等待時間也不釋放(另一個模組拿著)
+//   10b. 兩個都離開:等待時間內還在、到時間只剩小鼓
+//   10c. 視奏結果畫面:整組鼓被釋放後回來重新載入,訊息列的結果說明不被「載入中」蓋掉,載完也一樣(進度只在 ▶ 外圈)
+//   10d. 載入中離開、還沒載完就被釋放("kit unloaded"):回來不顯示「載入失敗」,會重新載好
+{
+  const n10 = bad;
+  await page.evaluate(() => { localStorage.clear(); localStorage.setItem("drumdrill-lang", "zh"); localStorage.setItem("drumdrill.v1", JSON.stringify({ onboarded: true, view: "tech", sub: { tech: "roll", exam: "tech" }, exam: { system: "rsl", grade: 4 } })); });
+  await page.reload(); await page.waitForFunction(() => window.__stageReady >= 1);
+  const A = "./js/shared/audio.js";
+  const pieces = () => page.evaluate(async A => Object.keys((await import(A)).kitStats().pieces).sort().join(","), A);
+  const rel = () => page.evaluate(async A => { const r = (await import(A)).kitRelease; return { holders: r.holders.join(","), pending: r.pending }; }, A);
+  const setMs = ms => page.evaluate(async ([A, ms]) => { (await import(A)).kitRelease.ms = ms; }, [A, ms]);
+  const toSight = async () => { await page.evaluate(() => window.__shell.showView("sight", "4")); await page.waitForFunction(() => window.__sight.state.loaded && window.__sight.state.loading == null, null, { timeout: 60000 }); };
+  const toEar = async () => {
+    await page.evaluate(() => window.__shell.showView("ear", "groove"));
+    await page.waitForFunction(async () => { const a = await import("./js/shared/audio.js"); return window.__ear.state.key === "rsl-4-groove" && Object.keys(a.kitStats().pieces).length >= 8 && !document.getElementById("e-loadingMsg").textContent; }, null, { timeout: 120000, polling: 300 });
+  };
+  await setMs(1500);
+  // 10a
+  await toEar();
+  const k0 = await pieces();
+  await toSight(); await page.waitForTimeout(2200);
+  let r = await rel(), k1 = await pieces();
+  if (r.holders !== "sight" || r.pending || !/kick/.test(k1)) fail(`聽力 → 視奏:視奏拿著整組鼓還是被釋放 / 在計時(holders ${r.holders}、pending ${r.pending}、${k1})`);
+  await toEar(); await page.waitForTimeout(2200);
+  r = await rel(); const k2 = await pieces();
+  if (r.holders !== "ear" || r.pending || !/kick/.test(k2)) fail(`視奏 → 聽力:聽力拿著整組鼓還是被釋放 / 在計時(holders ${r.holders}、pending ${r.pending}、${k2})`);
+  // 10b
+  await page.evaluate(() => window.__shell.showView("tech")); await page.waitForTimeout(800);
+  r = await rel(); const k3 = await pieces();
+  if (r.holders || !r.pending || !/kick/.test(k3)) fail(`兩個都離開 0.8 秒(< 1.5 秒):應該在計時、還沒釋放(holders「${r.holders}」、pending ${r.pending}、${k3})`);
+  await page.waitForTimeout(1200);
+  const k4 = await pieces();
+  if (k4 !== "snare") fail(`兩個都離開超過等待時間,整組鼓沒有釋放(還有 ${k4})`);
+  // 10c
+  await toSight();
+  await page.evaluate(() => { window.__sight.setBpm(240); window.__sight.startPerform(); });
+  await page.waitForFunction(() => window.__sight.state.phase === "perform", null, { timeout: 20000 });
+  await page.waitForTimeout(400);
+  await page.evaluate(() => window.__sight.finishNow());
+  await page.waitForFunction(() => window.__sight.state.phase === "result", null, { timeout: 20000 });
+  const msg = () => page.evaluate(() => document.getElementById("s-message").textContent);
+  const m0 = await msg();
+  await setMs(200);
+  await page.evaluate(() => window.__shell.showView("tech")); await page.waitForTimeout(700);
+  if ((await pieces()) !== "snare") fail("10c:離開視奏後整組鼓沒有釋放(測試前提)");
+  await page.evaluate(() => window.__shell.showView("sight", "4")); await page.waitForTimeout(50);
+  const during = await page.evaluate(() => ({ loading: window.__sight.state.loading, phase: window.__sight.state.phase, msg: document.getElementById("s-message").textContent }));
+  await page.waitForFunction(() => window.__sight.state.loaded && window.__sight.state.loading == null, null, { timeout: 60000 });
+  const m1 = await msg();
+  if (during.phase !== "result") fail(`10c:回到視奏不在結果畫面(${during.phase})`);
+  if (during.msg !== m0) fail(`10c:結果畫面重新載入整組鼓時訊息被蓋掉:「${m0}」→「${during.msg}」(loading ${during.loading})`);
+  if (m1 !== m0) fail(`10c:載完後訊息沒有還原:「${m0}」→「${m1}」`);
+  if (!/kick/.test(await pieces())) fail("10c:回到視奏沒有重新載入整組鼓");
+  // 10d:新題目(idle)載入中離開,馬上釋放
+  await setMs(1);
+  await page.evaluate(() => { window.__shell.showView("tech"); });
+  await page.waitForTimeout(100);
+  await page.evaluate(async A => { (await import(A)).kitRelease.ms = 1; }, A);
+  await page.evaluate(() => { window.__shell.showView("sight", "4"); window.__sight.newTest(); window.__shell.showView("tech"); });
+  await page.waitForTimeout(3000);
+  await setMs(1500);
+  await toSight();
+  const m2 = await msg();
+  if (/失敗/.test(m2)) fail(`10d:載入中被釋放,回來顯示「${m2}」(應該靜靜重新載)`);
+  if (!/kick/.test(await pieces())) fail("10d:回到視奏沒有重新載入整組鼓");
+  await setMs(60000);
+  if (bad === n10) ok(`整組鼓所有權:聽力 ↔ 視奏切換不釋放(${k0.split(",").length} 個鼓件)、兩個都離開到時間才釋放;視奏結果畫面重新載入時訊息不被蓋、載完還原;載入中被釋放回來不顯示失敗`);
 }
 await page.addInitScript(ua => { Object.defineProperty(Navigator.prototype, "userAgent", { configurable: true, get: () => ua }); }, IPHONE_UA);
 await run("iPhone UA", 85e6);
