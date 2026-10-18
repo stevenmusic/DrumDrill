@@ -30,3 +30,6 @@
 #t-bestTempo:empty{display:none}
 /* 題目太長(折疊機的英文名):同一個高度排兩行 */
 #t-qTitle.two{display:block;white-space:normal;line-height:1.15;overflow:hidden;text-overflow:clip;align-content:center}
+/* 頁尾:出處一段 + 授權、隱私連結(點擊區域夠高) */
+footer p{margin:0}
+footer .foot-links a{display:inline-flex;align-items:center;min-height:32px}
