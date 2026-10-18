@@ -15,7 +15,7 @@
   - `notes`:說明 key,文字在 `NOTES[key].text`(`[中, 英]`)、`kind` = `assumed`(推估)/ `practice`(練習設定)/ `omit`(不出的項目)。
   - 同一個 `params` + 同一個 `seed` → 同一題(mulberry32)。速度不在產生器裡(官方沒寫;視奏 / 聽力介面自己標「練習設定」)。
 - 純函式:不碰 DOM、不 import i18n,Node 可以直接跑。
-- 播放:題目的 `spec` 交給共用的 `kitevents.toEvents`(§4)。目前只有測試(`gen-kit.mjs`)這樣用;**產品程式要等 S10 / S11 把 Trinity 視奏 / 聽力介面接上以後才會用到**。
+- 播放:題目的 `spec` 交給共用的 `kitevents.toEvents`(§4)。視奏分頁的「Playback 看譜練習」(`js/sight/app.js`,S9 接上;速度預設 ♩=80 = 練習設定)已經這樣用;聽力的「聽句回打」在 S13。
 
 ### 1.2 白名單(官方,累積)→ 產生器怎麼用
 
@@ -208,7 +208,7 @@
 ## 4. 播放事件(`js/shared/kitevents.js`)
 
 - `toEvents(spec, { bpm, dyn = "mf" })` → `[{ beat, piece, vel, m, grace?, accent?, ghost? }]`:RSL 整組鼓視奏、RSL 聽力、Trinity Playback(`chart.spec`、`phraseSpec`)共用,給 `player.play({ events })`。
-  Trinity 這一份目前只在測試裡用,S10 / S11 接上 Trinity 介面以後才會在產品程式使用。
+  視奏分頁(`js/sight/app.js`)的 RSL 4–5 整組鼓與 Trinity Playback 看譜練習都用這一支(改速度時照新速度重算,裝飾音的提前量跟速度有關)。
 - 音量(**練習設定**,EVENT_NOTES.velocity):pp .25 / p .4 / mp .55 / mf .7 / f .85 / ff 1.0(跟 `player.js` 的 `DYN_VEL` 一樣,gen-kit.mjs 核對);
   漸強漸弱從開始的力度直線變到結束位置的下一個力度記號(後面沒有就變一級;前面沒有力度記號就從 mf 算);sfz 1.0;重音 +0.2;幽靈音 ×0.4。
 - **沒寫力度**(那個位置前面沒有力度記號,也沒給 `opts.dyn`)= 鼓件預設音量 `PIECE_VEL`(**練習設定**,EVENT_NOTES.pieceVel;各出題器的 notes 都帶 `pieceVel`):

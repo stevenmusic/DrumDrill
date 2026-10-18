@@ -1,7 +1,7 @@
 /* 鼓組譜(kitnotation.js 的 spec)→ 播放器的事件 [{ beat, piece, vel }](js/shared/player.js 的 play({ events }))。
    純函式:不碰 DOM、不 import audio / i18n,Node 可以直接跑(tools/test/checks/gen-kit.mjs、gen-ear.mjs、gen-playback 的題目都用這一支)。
    RSL 整組鼓視奏(kitgen.js)、RSL 聽力(js/ear/gen.js)、Trinity Playback(playbackgen.js 的 chart.spec / phraseSpec)共用
-   (Trinity 目前只有測試在用,S10 / S11 接上 Trinity 介面以後才會在產品程式使用)。
+   (視奏分頁 js/sight/app.js:RSL 4–5 整組鼓、Trinity Playback 看譜練習都用這一支;聽力的 Trinity 回打是 S13)。
 
    toEvents(spec, { bpm = 80, dyn }) → [{ beat, piece, vel, m, grace?, accent?, ghost? }](照 beat 排好)
    - beat = 從第一小節開頭算幾個四分音符(拍號換了照新的小節長度);時值照 kitnotation 的 valueInfo(連音、附點都算)
