@@ -13,6 +13,9 @@ import { createTempo } from "../shared/tempo.js";
 import { fitLandZoom, createLandPlay } from "../shared/landscape.js";
 import { addLog, renderLog as paintLog, today, nextGoal, cleanGoal } from "../shared/practicelog.js";
 import { createMock, abortText, paintCard, resultNote, mockLabel, cardToTop } from "../shared/mock.js";
+import { createDaily, clickPlays } from "../shared/daily.js";
+import { createDailyCard } from "../shared/dailycard.js";
+import { ROUTES, WARM } from "./routes.js";
 import "./strings.js";
 const T = scoped("tech");
 
@@ -27,6 +30,7 @@ let bpm = 60;
    pattern = { pas, sticking, value }:RSL 的「依大綱時值」練習型(rudiments.js pattern();no = 那個 PAS 編號,熟練度記在 PAS 編號上);
    換到別的打法(選擇器、別的類別)自動離開 */
 let target = null, lastKey = null;
+let dseg = null;   // 今日練習目前顯示的段落(下面「今日練習」一段)
 /* 模擬考(下面「模擬考」一段):中止時停止播放、速度還原,在檢定頁就重畫(說明「模擬考已中止」) */
 const mock = createMock({ store: S, save: store.save, onAbort: () => { stopPlayback(); mockRestore(); if (tab === "exam") { renderExam(); if (active) cardToTop($("mockCard")); } } });
 let mockSaved = null;   // 開始模擬考前的速度(結束後還原;目標模式的速度也不受影響)
@@ -41,7 +45,7 @@ export function setExam(ex){
   exam = ex;
   // 系統或級數換了:進行中的模擬考中止(結果、中止的說明收起來);之前那一級的目標(官方速度、組別)已經不適用 → 離開目標模式(速度回到自己的設定)
   if (moved) { if (!mock.abort("exam") && mock.state === "result") mock.close(); }
-  if (moved && target) leaveTarget();
+  if (moved && target && !target.daily) leaveTarget();
   if (!same && active && tab === "exam") renderExam();
 }
 /* 外框的 appCtx(考試資料)晚到:只重畫用得到資料的地方 */
@@ -49,6 +53,8 @@ export function onCtx(){ if (tab === "exam") renderExam(); if (ctx) ctx.examChan
 /* 進來:同一類、已經有題目就照原樣(回到前景、從別的分頁回來不會重新出題);換了類別或檢定頁才重畫 */
 export function enter(t){
   active = true;
+  // 今日練習的段落:點了子項目(外框把分段鈕亮回來)或到檢定頁 = 暫停,回到一般的打法畫面(卡片寫「繼續今天的練習」)
+  if (dseg && (t === "exam" || (ctx && ctx.subActive && ctx.subActive("tech")))) { dExit(); if (t !== "exam") { switchTab(t); requestAnimationFrame(onStageResize); return; } }
   // 模擬考進行中:離開檢定頁(到技巧分頁)= 中止;還在檢定頁(再點一次同一項)只重畫,不停止
   if (mock.running() && t !== "exam") mock.abort("leave");
   if (mock.running() && t === "exam" && tab === "exam") { renderExam(); requestAnimationFrame(onStageResize); return; }
@@ -87,6 +93,7 @@ const subOf = r => catOf(r.cat).sub.find(s => r.no >= s.from && r.no <= s.to);
 /* 換語言時重寫的文字:選擇器、題目、標籤、速度單位、按鈕、紀錄卡;在檢定頁時重畫檢定說明 */
 function relabel(){
   syncTarget();
+  dcard.relang(dseg);
   if (tab === "exam") renderExam();
   else if (cur) {
     renderPicker(); renderTitle();
@@ -110,6 +117,7 @@ function switchTab(t){
   ROOT.querySelectorAll(".pane").forEach(el => { el.hidden = !isExam; });
   $("picker").hidden = isExam;
   for (const id of ["quizCard", "scoreCard", "metroCard", "logCard"]) $(id).hidden = isExam;
+  $("dailyCard").hidden = isExam; if (!isExam) dcard.render();
   $("mockFoot").hidden = $("mockMsg").hidden = true;
   syncTarget();
   if (isExam) { renderExam(); return; }
@@ -169,6 +177,12 @@ function setRudiment(no){
 function renderTitle(){
   if (!play && !starting) $("playLabel").textContent = playText();
   if (mockOn()) { renderMockTitle(); return; }
+  if (dseg && target && target.daily) {   // 今日練習:標題 = 關卡(或暖身)的名稱,標籤 = 路線第幾關、速度 → 目標
+    const nm = dseg.k === "warm" ? warmName(dseg.item) : dseg.level.name;
+    $("qTitle").textContent = Array.isArray(nm) ? tr(nm[0], nm[1]) : nm;
+    $("qTags").innerHTML = dcard.segTags({ ...dseg, bpm }).map(t => `<span class="q-tag">${t}</span>`).join("");
+    renderIntro(); return;
+  }
   const pt = target && target.pattern;
   $("qTitle").textContent = pt ? patternName(pt) : `${cur.no}. ${name(cur)}`;
   // 中英文標籤數量一樣(版面才會一樣):中文 = 英文名,英文 = PAS 編號;左手先/右手先另加一個;練習型再加「App 練習型」(完整說明在目標橫幅)與「推估」(時值是推估的)。
@@ -190,7 +204,7 @@ const INTRO = {
   drag: ["兩下輕的裝飾音,再接主音", "Two soft grace notes, then the main stroke"]
 };
 function renderIntro(){
-  const txt = tab !== "exam" && !mockOn() && !S.intro[tab] ? INTRO[tab] : null;
+  const txt = tab !== "exam" && !mockOn() && !dseg && !S.intro[tab] ? INTRO[tab] : null;
   $("intro").hidden = !txt;
   if (txt) pairText($("intro"), () => tr(txt[0], txt[1])); else unpair($("intro"));
 }
@@ -198,7 +212,7 @@ function renderIntro(){
 /* ══ 已經會了 / 待加強(只是標記,不算一次練習)══ */
 function syncMastery(){
   const m = cur && S.mastery[cur.no];
-  ROOT.querySelector(".mastery").hidden = mockOn();   // 模擬考進行中不標熟練度(只管打)
+  ROOT.querySelector(".mastery").hidden = mockOn() || !!(dseg && dseg.k !== "warm");   // 模擬考進行中不標熟練度(只管打);今日練習的關卡用「穩了 / 再練」
   ROOT.querySelectorAll(".mbtn").forEach(b => { b.disabled = !cur; b.setAttribute("aria-pressed", String(b.dataset.m === m)); });
 }
 ROOT.querySelectorAll(".mbtn").forEach(b => b.onclick = () => {
@@ -432,7 +446,7 @@ function renderTrinity(d, g){
 
 /* ── 目標橫幅(技巧分頁):「RSL 3 級 · D 組 · ♩=75 · p.42」;清單鈕回檢定頁、× 離開目標(速度回到自己的) ── */
 function syncTarget(){
-  const show = !!target && tab !== "exam";
+  const show = !!target && !target.daily && tab !== "exam";
   $("target").hidden = !show;
   showBest();   // 目標模式不顯示「示範最快」(進出目標都要更新)
   if (!show) return;
@@ -469,7 +483,7 @@ const score = createScore({
   fitLand: () => fitLandZoom(score, { $ }),
   label: () => scoreLabel()
 });
-function renderScore(){ if (cur) score.load(rudimentXML(groups, { reps: S.reps, title: cur.en })); }
+function renderScore(){ if (cur) score.load(rudimentXML(groups, { reps: (dailyPlay() || {}).reps || S.reps, title: cur.en })); }   // 今日練習:反覆次數 = 這一段實際播的
 /* 無障礙:鼓譜的文字說明 = 標題(打法名稱 / 練習型名稱)+ 一輪的左右手(Flam / Drag、重音、滾奏、多次反彈、休止標出來)+ 反覆次數 */
 function scoreLabel(){
   if (!cur || !groups) return "";
@@ -615,7 +629,7 @@ let play = null, starting = 0;
 function schedulePlay(p, from){
   const { t0, beatSec, reps, cyc } = p;
   const gap = Math.min(0.032, beatSec / 10);   // 裝飾音在主音前面多久(慢速時 32ms,快速時跟著縮短)
-  if (!(p.mock || S.clickOnly)) for (let rep = 0; rep < reps; rep++) for (const s of p.list) {
+  if (!(p.mock || p.solo || S.clickOnly)) for (let rep = 0; rep < reps; rep++) for (const s of p.list) {
     const on = t0 + (rep * cyc + s.at) / DIV * beatSec;
     if (s.kind === "grace") {
       const at = on - gap * s.grace;
@@ -636,7 +650,8 @@ function schedulePlay(p, from){
   const clicks = Math.ceil(reps * cyc / DIV);
   for (let b = -COUNT_IN; b < clicks; b++) {
     const at = t0 + b * beatSec;
-    if (at >= from && !(p.oneBar && b >= 0)) audio.playClick(at, b < 0 ? b === -COUNT_IN : (b * DIV) % p.acc === 0);   // 模擬考「只聽一小節拍點」:預備拍之後沒有拍點
+    // 模擬考「只聽一小節拍點」:預備拍之後沒有拍點;今日練習的拍點模式(只響 2、4 拍、第 1 拍、中途消失 2 小節;一小節 = 4 拍)
+    if (at >= from && !(p.oneBar && b >= 0) && clickPlays(p.click, b, 4, clicks)) audio.playClick(at, b < 0 ? b === -COUNT_IN : (b * DIV) % p.acc === 0);
   }
 }
 let retempoTimer = 0;
@@ -685,7 +700,7 @@ async function startInner(){
   if (starting !== token || cur !== r0) { if (starting === token) { starting = 0; $("playLabel").textContent = playText(); } $("playBtn").classList.remove("busy"); return "busy"; }
   starting = 0; $("playBtn").classList.remove("busy");
   if (!loaded) { $("playLabel").textContent = playText(); return "failed"; }
-  const mk = mockPlay(), beatSec = 60 / bpm, cyc = cycleLength(groups), reps = mk ? mk.reps : S.reps;
+  const mk = mockPlay(), dp = dailyPlay(), beatSec = 60 / bpm, cyc = cycleLength(groups), reps = mk ? mk.reps : dp ? dp.reps : S.reps;
   // 雙擊的第二下標記出來(播放時輕一點);RSL 雙擊練習型(RRLL)照 #6 雙擊開放滾奏的播法:每一對的第二下輕一點
   const dbl = !!(target && target.pattern && target.pattern.sticking === "double");
   const list = strokes(groups).map((s, i, a) => {
@@ -693,10 +708,11 @@ async function startInner(){
     return s.kind === "roll" && !s.first && a[i - 1] && a[i - 1].kind === "roll" && a[i - 1].hand === s.hand && !a[i - 1].second ? { ...s, second: true } : s;
   });
   const t0 = actx.currentTime + 0.15 + COUNT_IN * beatSec;
-  play = { t0, real0: t0, beatSec, reps, cyc, acc: accentEvery(cyc), list, raf: 0, endBeat: reps * cyc / DIV, mock: !!mk, oneBar: !!(mk && mk.oneBar), mockId: mk ? mock.id : 0 };
+  play = { t0, real0: t0, beatSec, reps, cyc, acc: accentEvery(cyc), list, raf: 0, endBeat: reps * cyc / DIV, mock: !!mk, oneBar: !!(mk && mk.oneBar), mockId: mk ? mock.id : 0,
+    click: dp ? dp.click : "every", solo: !!(dp && dp.solo) };
   schedulePlay(play, -Infinity);
   revealScore();
-  if (!loopNext) announce(mk ? tr("開始:跟拍點打", "Started: play along with the click") : tr("開始播放示範", "Playing the demo"));
+  if (!loopNext) announce(mk || (dp && dp.solo) ? tr("開始:跟拍點打", "Started: play along with the click") : tr("開始播放示範", "Playing the demo"));
   loopNext = false;
   $("playLabel").textContent = T("stop");
   $("playIcon").innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1.5"/>';
@@ -715,7 +731,7 @@ async function startInner(){
       logPractice(sec);
       // 示範最快只記自由練習(目標模式是官方速度的練習,不算)
       if (!target && !S.clickOnly && (!S.best[cur.no] || bpm > S.best[cur.no])) { S.best[cur.no] = bpm; store.save(); showBest(); }
-      if (S.loop && cur) { if (S.ramp) setBpm(bpm + 4, true); startPlayback(); }
+      if (S.loop && cur) { if (S.ramp && !dseg) setBpm(bpm + 4, true); startPlayback(); }   // 今日練習的速度照速度階梯(不每輪加快)
       return;
     }
     play.raf = requestAnimationFrame(tick);
@@ -768,8 +784,11 @@ syncPlayOpts();
    秒數 = 真的播放的時間(預備拍之後);每週目標 = 最近 7 天的分鐘數(點一下換目標,存在 drumdrill.tech.v1 的 goal)══ */
 function logPractice(sec){ addPracticeSec(sec, 1); }
 function addPracticeSec(sec, n = 0){
+  // 今日練習的段落:秒數也算進這一段;次數改成「完成一段算一次」(dNext)
+  if (dseg && target && target.daily) { daily.addSec(sec); n = 0; }
   addLog(S.log, { sec, n });
   store.save(); renderLog();
+  if (dseg) dcard.render();
 }
 function renderLog(){
   paintLog($, S.log, S.goal);
@@ -947,12 +966,105 @@ function renderMockTitle(){
   $("qTags").innerHTML = tags.map(t => `<span class="q-tag">${t}</span>`).join("");
 }
 
+
+/* ══ 今日練習(js/shared/daily.js 引擎 + js/shared/dailycard.js 卡片;路線在 js/tech/routes.js,第一階段是暫時的示範關卡)══
+   技巧分頁最上面的卡片 → 「開始今天的練習」→ 一段一段:暖身(現有打法,不過關、只記時間)、路線的這一關、複習(用這一盒的變化)。
+   爵士鼓以真的鼓 / 打擊墊為主:看譜 + ▶ 示範(拍點陪你打)→ 自己按「穩了 / 再練」(手機鼓墊評分是下一階段);
+   拍點模式不是每拍都響的那一次,▶ 只有拍點(自己打,看有沒有跑掉)。段落用 target(daily = 段落種類):不寫進 S.bpm、不顯示目標橫幅;
+   進行中子項目分段鈕都不亮(ctx.setSubActive);點子項目或到檢定頁 = 暫停 */
+/* 暖身:有選 RSL 考試 → 本級的 PAS / 練習型(沒標「會了」的優先;畫面不寫考試名稱);沒選 → WARM 照日子輪流(標「再練」的優先) */
+function warmItem(d, today){
+  const ex = exam && !exam.auto ? exam : null;
+  if (ex && ex.system === "rsl" && dataOf("rsl")) {
+    const all = practiceItems(); let pool = all.filter(x => S.mastery[pasNoOf(x)] !== "good"); if (!pool.length) pool = all;
+    if (pool.length) {
+      const it = pool[Math.floor(Math.abs(hashDay(today)) % pool.length)], r = byNo(pasNoOf(it));
+      return it.kind === "pattern" ? { pas: it.pas, sticking: it.sticking, value: it.value, bpm: it.bpm || 60 }
+        : { pas: it.no, bpm: it.bpm || 60 };
+    }
+  }
+  const weak = WARM.filter(w => S.mastery[w.pas] === "weak"), list = weak.length ? weak : WARM;
+  const w = list[Math.abs(hashDay(today)) % list.length];
+  return { ...w, bpm: 60 };
+}
+/* 暖身項目的名稱:WARM 的寫在資料裡;本級項目照檢定清單的寫法(練習型 = PAS 名稱 + 時值;換語言重算) */
+function warmName(it){
+  if (it.name) return it.name;
+  const r = byNo(it.pas);
+  return it.value ? patternName({ pas: it.pas, sticking: it.sticking, value: it.value }) : [`${r.no}. ${r.zh}`, `${r.no}. ${r.en}`];
+}
+const hashDay = k => Number(k.replace(/-/g, "")) || 0;
+const daily = createDaily({ routes: ROUTES, load: () => S.daily, save: d => { S.daily = d; store.save(); }, extras: { warm: warmItem } });
+const dcard = createDailyCard({ $, daily, announce,
+  labels: { ok: ["穩了", "Steady"], again: ["再練", "Not yet"],
+    hint: ["按 ▶ 聽示範,拍點會陪你打;在鼓上(或打擊墊)打穩了就按「穩了」。", "Tap ▶ for the demo with the click, play along on your kit or pad, then tap Steady."],
+    solo: ["這次 ▶ 只有拍點:自己在鼓上打,穩了就按「穩了」。", "This time ▶ is click only: play it yourself, then tap Steady."] },
+  warmName: warmName, log: () => S.log,
+  onStart: () => { dShow(daily.begin()); window.scrollTo({ top: 0 }); },
+  onNext: () => dNext(), onMore: () => { const s = daily.addExtra(); if (s) dShow(s); },
+  onOk: () => dTry("ok"), onAgain: () => dTry("again"),
+  onBack: () => { stopPlayback(); if (daily.back()) dShow(daily.seg()); } });
+/* 這一段的播放:長度 4 小節(中途消失 8 小節);拍點模式不是每拍 = 只有拍點 */
+function dailyPlay(){
+  if (!dseg || !target || !target.daily || mockOn()) return null;
+  const click = dseg.click || "every", beats = click === "gap" ? 32 : 16;
+  return { reps: Math.max(1, Math.ceil(beats * DIV / cycleLength(groups))), click, solo: dseg.k !== "warm" && click !== "every" };
+}
+/* 顯示一段(暖身 / 路線 / 複習) */
+function dShow(s, status = null){
+  stopPlayback();
+  if (!s) { dExit(); return; }
+  dseg = s; dcard.showing = true;
+  if (ctx && ctx.setSubActive) ctx.setSubActive(false, "tech");
+  const it = s.k === "warm" ? s.item : s.level.rud;
+  target = { daily: s.k, no: it.pas, bpm: s.k === "warm" ? it.bpm : s.bpm, pattern: it.value ? { pas: it.pas, sticking: it.sticking, value: it.value } : null };
+  $("picker").hidden = true;
+  setRudiment(it.pas);
+  syncTarget();
+  dcard.render(); dcard.renderStep(s, { status });
+  announce(tr("今日練習:", "Today: ") + $("qTitle").textContent);
+}
+/* 離開段落(暫停或今天練完):回到一般的打法畫面 */
+function dExit(){
+  stopPlayback();
+  dseg = null; dcard.showing = false;
+  if (target && target.daily) target = null;
+  if (ctx && ctx.setSubActive) ctx.setSubActive(true, "tech");
+  dcard.renderStep(null);
+  if (tab !== "exam") { $("picker").hidden = false; dcard.render(); }
+}
+/* 自評一次:穩了 / 再練 */
+function dTry(self){
+  if (!dseg || dseg.k === "warm") return;
+  stopPlayback();
+  const s = dseg, res = daily.attempt({ bpm, self });
+  const txt = () => dcard.resultText(res, s);
+  announce(txt());
+  if (res.passed && res.cont) { dShow(daily.seg(), txt); return; }
+  dseg = daily.seg();
+  if (s.k === "route") { bpm = res.nextBpm; target.bpm = bpm; syncTempoUI(); }
+  renderTitle(); if (active) fitTitle();
+  dcard.renderStep(dseg, { status: txt, passedDone: res.passed || s.k === "review" });
+  dcard.render();
+}
+/* 下一段:練過的那一段算一次練習 */
+function dNext(){
+  stopPlayback();
+  const t = daily.today(), i = t.i, worked = t.sec[i] > 0 || t.tries[i] > 0;
+  const s = daily.next();
+  if (worked) { addLog(S.log, { n: 1 }); store.save(); renderLog(); }
+  if (s) { dShow(s); return; }
+  dExit(); switchTab(tab); window.scrollTo({ top: 0 });
+  announce(tr("今天練完了", "Done for today"));
+}
+
 /* ── 啟動(外框呼叫)── */
 export async function start(c){
   ctx = c; exam = c.exam;
   S.goal = cleanGoal(S.goal);
   renderLog();
-  window.__tech = { get target(){ return target; }, get cur(){ return cur; }, get groups(){ return groups; }, get osmd(){ return score.osmd; }, score,
+  dcard.render();
+  window.__tech = { daily, dcard, get dseg(){ return dseg; }, dTry, dNext, get target(){ return target; }, get cur(){ return cur; }, get groups(){ return groups; }, get osmd(){ return score.osmd; }, score,
     get state(){ return { play: !!play, starting: !!starting, bpm, scheduled: audio.scheduledCount(), noteXs: score.noteXs.length, landZoom: score.landZoom, lastEnd: { ...lastEnd },
       mock: mock.state, mockStep: mock.data ? mock.data.i : null, mockSteps: mock.data ? mock.data.steps.map(s => s.status) : null }; }, setRudiment, switchTab, setBpm, S,
     startMock, mockNext: () => $("mockNext").click(),

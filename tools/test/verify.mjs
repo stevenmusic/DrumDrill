@@ -13,6 +13,7 @@ import genplayback from "./checks/gen-playback.mjs";
 import genkit from "./checks/gen-kit.mjs";
 import genear from "./checks/gen-ear.mjs";
 import sightmeter from "./checks/sight-meter.mjs";
+import dailycheck from "./checks/daily.mjs";
 let fails = 0, checks = 0;
 const ok = (cond, msg) => { checks++; if (!cond) { fails++; console.log("✗ " + msg); } };
 
@@ -85,6 +86,8 @@ try { genkit(ok); } catch (e) { ok(false, "RSL 整組鼓視奏出題器檢查出
 try { genear(ok); } catch (e) { ok(false, "RSL 聽力出題器檢查出錯:" + e.stack); }
 // 6i. 視奏的拍點與小節時間軸(js/sight/meter.js:拍號的拍點、複拍子用八分音符當一拍、換拍號;Trinity / RSL 題目的事件都落在小節裡)+ 題目指紋(checks/sight-meter.mjs)
 try { sightmeter(ok); } catch (e) { ok(false, "視奏拍點時間軸檢查出錯:" + e.stack); }
+// 6j. 今日練習引擎(js/shared/daily.js;兩個 App 同一份):菜單、速度階梯、連續 N 次過關、快速通道、歡迎回來、複習盒與變化、拍點模式、消毒(checks/daily.mjs)
+try { dailycheck(ok); } catch (e) { ok(false, "今日練習引擎檢查出錯:" + e.stack); }
 // 6j. 可選:APPWWW=1 時跑 App 打包檢查(tools/test/app-www.mjs:先跑 app-www 再檢查 app/www 完整;要下載取樣,所以預設不跑)
 if (process.env.APPWWW) {
   try { console.log(execFileSync("node", [new URL("./app-www.mjs", import.meta.url).pathname], { stdio: "pipe" }).toString().trim().split("\n").pop()); checks++; }
