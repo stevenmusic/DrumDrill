@@ -89,6 +89,9 @@ async function audit(st, expect = {}){
     }
     const tl = document.getElementById("tabbar");
     if (tl.getAttribute("role") !== "tablist" || !tl.getAttribute("aria-label")) out.push("分頁列不是有名稱的 tablist");
+    // 手機橫式(左邊直欄)= vertical,其他 = horizontal
+    const vert = matchMedia("(orientation:landscape) and (max-height:500px)").matches;
+    if (tl.getAttribute("aria-orientation") !== (vert ? "vertical" : "horizontal")) out.push(`分頁列 aria-orientation 應該是 ${vert ? "vertical" : "horizontal"},實際 ${tl.getAttribute("aria-orientation")}`);
     const tabs = [...tl.querySelectorAll("[role=tab]")], sel = tabs.filter(t => t.getAttribute("aria-selected") === "true");
     if (tabs.length !== 4 || sel.length !== 1) out.push(`分頁 ${tabs.length} 個、選到 ${sel.length} 個`);
     if (tabs.some(t => (t.tabIndex === 0) !== (t === sel[0]))) out.push("分頁的 tabindex 不對(只有選到的那一個是 0)");
