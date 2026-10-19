@@ -43,7 +43,7 @@
 > 技巧:Percussive Arts Society(PAS)40 個國際標準基本打法,照官方表重新繪製鼓譜、每個音標左右手;真實鼓聲示範、預備拍,速度可以慢慢加,循環播放時每輪自動加快。
 > 視奏:依考試大綱的參數產生小鼓與整組鼓的視奏練習題,準備時間照大綱計時,用觸控鼓墊打一遍(也可以選用麥克風,在真的鼓上打)、看節奏的練習回饋,再聽正確版本。
 > 聽力:聽一段過門或律動、打回來再從譜裡選出聽到的那一個;也有「聽一句、打一句」的回打練習。
-> 檢定:選好考試系統和級數一次,技巧、視奏、聽力都照這一級;每一項要求都標出大綱頁碼。支援 Trinity Rock & Pop 與 RSL Rockschool 爵士鼓檢定的練習(Trinity、RSL Rockschool 為各自的商標,本 App 與其無關;僅供練習,實際要求以官方大綱為準)。
+> 檢定:選好考試系統和級數一次,技巧、視奏、聽力都照這一級;每一項要求都標出大綱頁碼。模擬考照大綱的準備時間與速度,一項一項打完,只看練習回饋、不算分數;練習紀錄記下每天練了多久。支援 Trinity Rock & Pop 與 RSL Rockschool 爵士鼓檢定的練習(Trinity、RSL Rockschool 為各自的商標,本 App 與其無關;僅供練習,實際要求以官方大綱為準)。
 > 鼓聲內建在 App 裡,不用網路也能用;不需要登入、沒有廣告、不收集任何資料。
 
 **English**
@@ -51,10 +51,10 @@
 > Technique: all 40 Percussive Arts Society (PAS) International Drum Rudiments, re-engraved from the official sheet with sticking under every note; real drum sounds, count-in, and a tempo you can raise step by step, speeding up each time it loops.
 > Sight-reading: snare and full-kit reading tests generated from the syllabus parameters, timed preparation, play them on the touch pads (or a real kit with the optional microphone) for rhythm feedback, then hear the correct version.
 > Aural: hear a fill or groove, play it back and pick the matching chart; plus call-and-response playback practice.
-> Exams: set your board and grade once and technique, sight-reading and aural all follow it, with a syllabus page reference for every requirement. Practice for Trinity Rock & Pop and RSL Rockschool drums exams (Trinity and RSL Rockschool are trademarks of their owners; this app is not affiliated with them. Practice only — the official syllabus is final).
+> Exams: set your board and grade once and technique, sight-reading and aural all follow it, with a syllabus page reference for every requirement. Mock exams follow the syllabus prep times and tempos item by item, with practice feedback only (no marks); a practice log tracks your daily minutes. Practice for Trinity Rock & Pop and RSL Rockschool drums exams (Trinity and RSL Rockschool are trademarks of their owners; this app is not affiliated with them. Practice only — the official syllabus is final).
 > Drum sounds are built in and work offline. No sign-in, no ads, no data collected.
 
-- S14(模擬考、練習紀錄、進度)合併後,在「檢定」那一句後面補一句模擬考;**描述只寫 App 裡真的有的功能**(審核 2.3.1)。
+- 「檢定」那一句已補上模擬考與練習紀錄;**描述只寫 App 裡真的有的功能**(審核 2.3.1)。
 - 宣傳文字(Promotional Text,170 字,可以隨時改不用送審):先留空,有新功能時再寫。
 
 ## 5. 關鍵字(100 字元,逗號分隔、不重複名稱裡的字)
