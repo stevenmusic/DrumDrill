@@ -14,5 +14,8 @@ addStrings("tech", {
   examTitle: ["本級要求", "This grade"],
   bestLabel: ["示範最快", "Demo best"],
   draw: ["隨機抽一項", "Random"], next: ["下一項", "Next"],
-  targetList: ["回到本級要求", "Back to the grade list"], targetClose: ["離開目標(速度回到自己的設定)", "Leave target (back to your tempo)"]
+  targetList: ["回到本級要求", "Back to the grade list"], targetClose: ["離開目標(速度回到自己的設定)", "Leave target (back to your tempo)"],
+  rScoreTitle: ["鼓譜", "Drum part"]   // 今日練習的路線段(js/tech/route.js)
 });
+/* 今日練習完成那一行:共用的英文「{s} parts」在 1 段時會變成「1 parts」;共用字串(i18n.js / dailycard.js)改之前,DrumDrill 先換成不用單複數的寫法 */
+addStrings("daily", { done: ["今天練完了:{s} 段 · {m} 分鐘 · 過了 {p} 關", "Done today · parts {s} · {m} min · passed {p}"] });

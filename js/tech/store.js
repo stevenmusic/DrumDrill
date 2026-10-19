@@ -9,6 +9,9 @@ export function load(){
   // 第一次進來各類的一行說明:播放過一次的類別 = true
   const intro = {}; if (S.intro && typeof S.intro === "object") for (const k of ["roll", "diddle", "flam", "drag"]) if (S.intro[k] === true) intro[k] = true;
   S.intro = intro;
+  // 今日練習:每條路線「標示左右手」自己切過的(沒切過就照關卡的預設)、手機鼓墊模式
+  const rl = {}; if (S.rl && typeof S.rl === "object") for (const [k, v] of Object.entries(S.rl)) if (typeof v === "boolean" && /^[a-z]+$/.test(k)) rl[k] = v;
+  S.rl = rl; S.padMode = S.padMode === true;
   return S;
 }
 export function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }

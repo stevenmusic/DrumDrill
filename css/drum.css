@@ -477,3 +477,39 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 /* 難度回饋三顆鈕上面一行「這題對你來說?(會調整下一題難度)」(js/shared/level.js 的 paintVotes) */
 .diff-q{margin-top:10px;font-size:var(--fs-xs);line-height:1.5;color:var(--muted-bright)}
 .diff-q + .diff-fb{margin-top:4px}
+
+/* ══ 今日練習的路線段(js/tech/route.js):鼓組譜卡 #t-rScoreCard、手機鼓墊卡 #t-rPadCard、題目卡裡的 #t-rMode ══ */
+#t-rScoreCard,#t-rPadCard{order:3}
+#t-rScoreCard .score-head{justify-content:space-between}
+#t-rlBtn{min-height:32px}
+.paper:has(#t-rOsmd:empty){min-height:96px}
+#t-rScroll{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;display:flex}
+#t-rScroll::-webkit-scrollbar{display:none}
+#t-rOsmd{flex:none;width:auto;margin:0 auto;padding:0;position:relative;will-change:transform;color:#16130D}
+#t-rOsmd .dd-stick{fill:#16130D}
+#t-rPlayline{
+  position:absolute;width:2px;left:0;top:0;bottom:0;
+  background:linear-gradient(to bottom,transparent,#B8860B 12%,#B8860B 88%,transparent);
+  box-shadow:0 0 14px 2px rgba(184,134,11,.45);
+  opacity:.5;pointer-events:none;z-index:5;will-change:transform;
+}
+#t-rPlayline::before{content:"";position:absolute;top:-2px;left:50%;transform:translateX(-50%);border:7px solid transparent;border-top:10px solid #B8860B}
+#t-rLegend{margin-top:10px}
+#t-rMode{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px}
+#t-rMode[hidden]{display:none}
+#t-rMode .text-btn{margin-top:0;min-height:44px}
+#t-rMode .daily-sp{flex:1 1 0}
+#t-rPerform{min-height:44px;height:auto;min-width:120px;white-space:normal}
+#t-quizCard.pad-mode .daily-ok,#t-quizCard.pad-mode .daily-again{display:none}
+#mod-tech .along{display:flex;flex-direction:column;gap:10px}
+#mod-tech .along .pads{width:100%}
+#mod-tech .along.you .tap-pad{box-shadow:0 0 0 2px var(--gold-bright)}
+#mod-tech .along-note{color:var(--muted);font-size:var(--fs-xs);line-height:1.5;overflow-wrap:anywhere}
+#mod-tech .along-result{border-top:1px solid var(--line);padding-top:10px;line-height:1.5}
+#mod-tech .along-result .r-head{font-size:var(--fs-xs);letter-spacing:.08em;color:var(--gold)}
+#mod-tech .along-result .big{font-family:"Noto Serif TC",serif;font-size:30px;font-weight:700;color:var(--gold-bright);line-height:1.25}
+#mod-tech .along-result .big small{font-family:"Noto Sans TC",sans-serif;font-size:var(--fs-sm);font-weight:400;color:var(--muted-bright);margin-left:4px}
+#mod-tech .along-result p{margin-top:4px;color:var(--muted-bright);font-size:var(--fs-sm);overflow-wrap:anywhere}
+#mod-tech .along-result .disclaimer{color:var(--muted);font-size:var(--fs-xs)}
+#mod-tech .along > .text-btn{align-self:flex-start;margin-top:0;min-height:44px}
+#mod-tech.route-mode .play-opts,#mod-tech.route-mode #t-bestTempo{display:none}
