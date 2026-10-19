@@ -44,6 +44,39 @@ export function createLevels({ store, save, max, start }){
   };
 }
 
+/* 難度的一句白話(題目卡「▼ 難度 2 / 4 ▲」旁邊):這個難度用到什麼。cur / prev = 這一個 / 前一個難度的出題參數
+   { values, rests, time, dyn, pieces, extra, bpm }(都可以沒有);第一個難度寫 base(),之後寫「加:…」(新的記號),記號一樣就寫速度 */
+const NM = {
+  values: { "1": ["全音符", "whole"], "2": ["二分", "half"], "2.": ["附點二分", "dotted half"], "4": ["四分", "quarter"], "4.": ["附點四分", "dotted quarter"], "8": ["八分", "eighth"],
+    "8.": ["附點八分", "dotted eighth"], "16": ["十六分", "16th"], "16.": ["附點十六分", "dotted 16th"], "32": ["三十二分", "32nd"], "8t3": ["三連音", "triplet"], "16t3": ["十六分三連音", "16th triplet"],
+    "16t6": ["六連音", "sextuplet"], "4t3": ["四分三連音", "quarter triplet"], dup: ["二連音", "duplet"] },
+  rests: { r1: ["全休止符", "whole rest"], r2: ["二分休止符", "half rest"], "r2.": ["附點二分休止符", "dotted half rest"], r4: ["四分休止符", "quarter rest"], "r4.": ["附點四分休止符", "dotted quarter rest"],
+    r8: ["八分休止符", "eighth rest"], "r8.": ["附點八分休止符", "dotted eighth rest"], r16: ["十六分休止符", "16th rest"], "r16.": ["附點十六分休止符", "dotted 16th rest"] },
+  dyn: { pp: ["pp", "pp"], p: ["p", "p"], mp: ["mp", "mp"], mf: ["mf", "mf"], f: ["f", "f"], ff: ["ff", "ff"], sfz: ["sfz", "sfz"], accent: ["重音", "accents"], cresc: ["漸強", "crescendo"], dim: ["漸弱", "diminuendo"] },
+  pieces: { snare: ["小鼓", "snare"], kick: ["大鼓", "kick"], tomHi: ["Tom 1", "tom 1"], tomMid: ["Tom 2", "tom 2"], tomFloor: ["落地鼓", "floor tom"], hh: ["Hi-hat", "hi-hat"], hhOpen: ["開 Hi-hat", "open hi-hat"],
+    hhFoot: ["腳踩 Hi-hat", "foot hi-hat"], ride: ["Ride", "ride"], rideBell: ["Ride bell", "ride bell"], crash: ["Crash", "crash"], xstick: ["Cross stick", "cross stick"], kit: ["整組鼓", "full kit"] },
+  extra: { ties: ["連結線", "ties"], footHH: ["腳踩 Hi-hat", "foot hi-hat"], offbeatBD: ["& 上的大鼓", "kick on the &"], hhOpenClose: ["開 / 關 Hi-hat", "open / closed hi-hat"], rimclick: ["Cross stick", "cross stick"],
+    roll: ["滾奏", "rolls"], flam: ["Flam", "flams"], drag: ["Drag", "drags"], ruff: ["Ruff", "ruffs"], ghost: ["幽靈音", "ghost notes"], meterChange: ["換拍號", "metre changes"], independence: ["手腳獨立", "independence"],
+    fullKit: ["整組鼓", "full kit"], anyTerms: ["各種術語", "any terms"] }
+};
+const names = (k, list) => (list || []).map(x => (k === "time" ? [x, x] : NM[k][x] || null)).filter(Boolean);
+export const valueList = (vals, rests) => {
+  const v = names("values", vals), r = names("rests", rests);
+  return tr([v.length ? v.map(x => x[0]).join("、") + "音符" : "", r.length ? r.map(x => x[0].replace(/休止符$/, "")).join("、") + "休止符" : ""].filter(Boolean).join(","),
+    [v.length ? v.map(x => x[1]).join(", ") + " notes" : "", r.length ? r.map(x => x[1].replace(/ rest$/, "")).join(", ") + " rests" : ""].filter(Boolean).join("; "));
+};
+export function paramDesc(cur, prev, base){
+  if (!prev) return base();
+  const diff = k => (cur[k] || []).filter(x => !(prev[k] || []).includes(x));
+  const add = [...names("time", diff("time")), ...names("values", diff("values")).map(x => [x[0] + "音符", x[1] + " notes"]), ...names("rests", diff("rests")),
+    ...names("dyn", diff("dyn")), ...names("pieces", diff("pieces")), ...names("extra", diff("extra"))];
+  const uniq = [...new Map(add.map(x => [x[0], x])).values()];
+  if (uniq.length) { const s = uniq.slice(0, 4); return tr("加:" + s.map(x => x[0]).join("、") + (uniq.length > 4 ? "…" : ""), "Adds " + s.map(x => x[1]).join(", ") + (uniq.length > 4 ? "…" : "")); }
+  const bp = b => (Array.isArray(b) ? (b[0] === b[1] ? `${b[0]}` : `${b[0]}–${b[1]}`) : b != null ? `${b}` : "");
+  if (bp(cur.bpm) && bp(cur.bpm) !== bp(prev.bpm)) return tr(`記號一樣,速度 ${bp(cur.bpm)}`, `Same symbols, tempo ${bp(cur.bpm)}`);
+  return tr("記號一樣,題目變化更多", "Same symbols, more variety");
+}
+
 const VOTES = [["easy", ["太簡單", "Too easy"]], ["ok", ["剛好", "Just right"]], ["hard", ["太難", "Too hard"]]];
 /* 難度的一句話(畫面與播報共用):auto = levels.auto 的回傳、vote = 選的那一顆;hint = 已經最高時的建議(模組給,例如「試試律動或樂譜」) */
 export function levelText({ auto = null, vote = null, from, to, max, hint = null }){

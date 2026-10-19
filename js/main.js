@@ -60,7 +60,7 @@ const SUBS = {
   // 技巧:PAS 40 個基本打法的四大類
   tech: () => [["roll", tr("滾奏", "Rolls")], ["diddle", tr("複點", "Diddles")], ["flam", "Flam"], ["drag", "Drag"]],
   // 視奏:照學習順序 認譜 → 節奏 → 律動 → 樂譜(級數只在檢定頁設;難度由 App 自動調整,js/sight/app.js)
-  sight: () => [["read", tr("認譜", "Symbols")], ["rhythm", tr("節奏", "Rhythm")], ["groove", tr("律動", "Groove")], ["chart", tr("樂譜", "Chart")]],
+  sight: () => [["read", tr("認譜", "Symbols")], ["rhythm", tr("小鼓譜", "Snare")], ["groove", tr("鼓組譜", "Kit")], ["chart", tr("樂譜", "Chart")]],   // 「律動」只留給今日練習與聽力
   // 聽力:子項目 = 題型(RSL 有 Fill、Groove;Trinity 有 Playback;不適用的題型 js/ear/app.js 顯示說明)
   ear: () => [["fill", tr("過門", "Fill")], ["groove", tr("律動", "Groove")], ["playback", tr("接著打", "Echo")]],
   exam: () => [["tech", tr("技巧", "Technique")], ["sight", tr("視奏", "Sight-read")], ["ear", tr("聽力", "Aural")]]   // 跟分頁列同一個短名(折疊機 280 一行放得下)

@@ -399,6 +399,7 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 @media (max-width:380px){ .rd-seg.rd-pieces .opt{font-size:var(--fs-xs);letter-spacing:-.01em} }
 /* 視奏分頁:難度在題目卡上(一直看得到,不放在收起來的設定卡) */
 #mod-sight .quiz .lvl-row{grid-column:1 / -1;margin:8px 0 0}
+#mod-ear .quiz .lvl-row{margin:8px 0 4px}
 /* 題目卡上的「正式打」(主要動作,佔整行;鼓墊卡上還有一顆,打的時候在鼓墊旁邊停) */
 #mod-sight .q-foot{flex-wrap:wrap}
 #mod-sight .s-perform-top{flex:1 1 100%;min-height:48px;height:auto;margin-top:2px;font-size:var(--fs-md)}

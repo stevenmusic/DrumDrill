@@ -48,7 +48,7 @@ import { genFill, fillOptions, genGroove, NOTES as EAR_NOTES } from "./gen.js";
 import { addLog, cleanLog, renderLog as paintLog, today, nextGoal, cleanGoal } from "../shared/practicelog.js";
 import { createMock, abortText, paintCard, mockLabel, cardToTop } from "../shared/mock.js";
 import { createMicTake, dropBleed, MIC_LANES, MIC_TEXT, micFailText, MIC_UI } from "../shared/micrhythm.js";
-import { createLevels, levelText, paintVotes } from "../shared/level.js";
+import { createLevels, levelText, paintVotes, paramDesc, valueList } from "../shared/level.js";
 import "./strings.js";
 const T = scoped("ear");
 
@@ -400,10 +400,24 @@ function renderLevel(){
   $("levelRow").hidden = !show;
   if (!show) return;
   const lv = levels.get(type), max = levels.max(type), busy = playKind === "perform" || playKind === "pass";
-  $("levelVal").textContent = lvName(lv);
+  $("levelVal").textContent = tr(`難度 ${lv} / ${max}`, `Level ${lv} / ${max}`);
   $("lvDown").disabled = lv <= 1 || busy; $("lvUp").disabled = lv >= max || busy;
   $("lvDown").setAttribute("aria-label", tr("難度降一級", "Level down")); $("lvUp").setAttribute("aria-label", tr("難度升一級", "Level up"));
-  pairText($("levelNote"), () => tr(`難度 1–${max}`, `Levels 1–${max}`));   // 「練習設定」寫在回打卡最下面那一句
+  pairText($("levelNote"), () => lvDesc(type, lv));
+}
+/* 這個難度是什麼(一句白話):難度 n = 第 n − 1 級的出題參數;第 2 個難度以後寫「加:…」 */
+function lvParams(t, lv){
+  const g = lv - 1;
+  if (t === "playback") { const p = playbackParams(g, dataOf("trinity")); return p ? { values: p.values, rests: p.rests, time: p.time, dyn: p.dyn, pieces: p.pieces, extra: p.extra } : null; }
+  const d = dataOf("rsl"), e = d && d.ear && d.ear[g]; if (!e) return null;
+  if (t === "fill") return e.fill ? { values: e.fill.values || [], rests: e.fill.rests || [] } : null;
+  return e.groove ? { pieces: e.groove.pieces, bpm: e.groove.bpm } : null;
+}
+function lvDesc(t, lv){
+  const cu = lvParams(t, lv); if (!cu) return "";
+  return paramDesc(cu, lv > 1 ? lvParams(t, lv - 1) : null, () => (t === "fill" ? valueList(cu.values, cu.rests)
+    : t === "groove" ? (cu.pieces || []).map(p => ({ hh: ["Hi-hat", "hi-hat"], snare: ["小鼓", "snare"], kick: ["大鼓", "kick"] }[p] || [p, p])).map(x => tr(x[0], x[1])).join(tr("、", ", "))
+    : tr(`${cu.time.join("、")} 拍;`, `${cu.time.join(", ")}; `) + valueList(cu.values, [])));
 }
 /* ▲ ▼:馬上換一題這個難度的 */
 function stepLevel(d){
@@ -1255,7 +1269,7 @@ const idleMsg = () => (!cur ? "" : freeLevel() && mode !== "exam" && !mockOn() &
   : tr(`先看譜 ${studySec()} 秒(${studySrc()};可以在鼓墊上試打),再按「第一次(練習)」:App 播一句,你接著打同一句。`, `Study the chart for ${studySec()} s (${studySrc()}; try it on the pads), then Play 1 (practice): the App plays a phrase, you play it back.`));
 function refreshTexts(){
   if (!cur) return;
-  const c = cur, name = freeLevel() && mode !== "exam" ? `${tr(...TYPE_LABEL[c.type])} · ${lvName(c.grade + 1)}` : `${sysName(c.sys)} ${gl(c.grade, c.sys)}`;
+  const c = cur, name = freeLevel() && mode !== "exam" ? tr(...TYPE_LABEL[c.type]) : `${sysName(c.sys)} ${gl(c.grade, c.sys)}`;   // 沒選考試:標題 = 題型(難度在題目卡自己的一列)
   $("qTitle").classList.remove("empty");
   $("qTitle").textContent = name;
   // 沒選考試(聽力分頁):不寫「依 RSL N 級參數」、practiceOnly、頁碼(跟視奏分頁一樣);譜卡標題「回打譜」

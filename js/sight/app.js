@@ -52,7 +52,8 @@ import { randomSeed } from "./random.js";
 import { addLog, cleanLog, renderLog as paintLog, today, nextGoal, cleanGoal } from "../shared/practicelog.js";
 import { createMock, abortText, paintCard, resultNote, mockLabel, cardToTop } from "../shared/mock.js";
 import { createMicTake, dropBleed, MIC_LANES, MIC_TEXT, micFailText, MIC_UI } from "../shared/micrhythm.js";
-import { createLevels, levelText, paintVotes } from "../shared/level.js";
+import { createLevels, levelText, paintVotes, paramDesc, valueList } from "../shared/level.js";
+import { ROUTES } from "../tech/routes.js";
 import { createReading, cleanRead } from "./reading.js";
 import "./strings.js";
 const T = scoped("sight");
@@ -69,8 +70,8 @@ const CAT_LEVELS = {
   groove: [4, 5].map(g => ({ sys: "rsl", g })),                   // 整組鼓 8 小節:律動、段落最後帶過門、最後 2 小節自由發展(RSL 4–5 整組鼓視奏的參數)
   chart: [0, 1, 2, 3, 4, 5, 6, 7, 8].map(g => ({ sys: "trinity", g }))   // 長譜:換拍號、力度、反覆的句子(Trinity Playback Initial–8 的參數)
 };
-const CAT_NAME = { rhythm: ["節奏", "Rhythm"], groove: ["律動", "Groove"], chart: ["樂譜", "Chart"] };
-const CAT_HINT = { rhythm: () => tr("試試律動或樂譜。", "Try Groove or Chart."), groove: () => tr("試試樂譜。", "Try Chart."), chart: null };
+const CAT_NAME = { rhythm: ["小鼓譜", "Snare"], groove: ["鼓組譜", "Kit"], chart: ["樂譜", "Chart"] };
+const CAT_HINT = { rhythm: () => tr("試試鼓組譜或樂譜。", "Try Kit or Chart."), groove: () => tr("試試樂譜。", "Try Chart."), chart: null };
 const catName = c => tr(...CAT_NAME[c]);
 const LAYOUT_KEEP = 100;
 const SS = (() => {
@@ -336,17 +337,37 @@ function renderUnsupported(){
   pairText($("unsupportedNote"), () => "");
   $("specCards").hidden = true; $("specCards").innerHTML = "";
 }
-/* 設定卡的難度(視奏分頁才有):「難度 3」+ ▲ ▼,旁邊小字「難度階段由 App 安排(練習設定)」 */
+/* 這個難度是什麼(一句白話;題目卡難度列旁邊):用到的記號,第 2 個難度以後寫「加:…」 */
+function lvParams(cat, lv){
+  const L = CAT_LEVELS[cat][lv - 1]; if (!L) return null;
+  const p = paramsOf(L.sys, L.g, cat === "chart" ? "playback" : "snare"); if (!p) return null;
+  return { values: p.values, rests: p.rests, time: Array.isArray(p.time) ? p.time : [], dyn: p.dyn, pieces: cat === "chart" ? p.pieces : [], extra: p.extra, bpm: p.bpm };
+}
+function lvDesc(cat, lv){
+  const cu = lvParams(cat, lv); if (!cu) return "";
+  return paramDesc(cu, lv > 1 ? lvParams(cat, lv - 1) : null, () => (cat === "rhythm" ? tr("小鼓:", "Snare: ") + valueList(cu.values, cu.rests)
+    : cat === "groove" ? tr("整組鼓 8 小節,最後 2 小節照前面的風格自己打", "8 bars of kit; make up the last 2 in the same style")
+    : tr(`${cu.time.join("、")} 拍;`, `${cu.time.join(", ")}; `) + valueList(cu.values, [])));
+}
+/* 鼓組譜:沒選考試、今日練習的律動還沒過 B8(讀大鼓)時一行建議(不擋) */
+const B8 = ROUTES[0].levels.findIndex(l => l.id === "B8") + 1;
+function grooveHint(){
+  if (freeCat !== "groove" || !curExam().auto) return "";
+  let passed = false;
+  try { const t = JSON.parse(localStorage.getItem("drumdrill.tech.v1") || "null"), e = t && t.daily && t.daily.lv && t.daily.lv["groove/B8"]; passed = !!(e && e.passed); } catch (e) {}
+  return passed ? "" : tr(`建議先練今日練習的律動(到第 ${B8} 關)`, `Tip: do Today's grooves first (to level ${B8})`);
+}
+/* 題目卡的難度列(視奏分頁才有):「▼ 難度 2 / 4 ▲」+ 一句白話寫這個難度是什麼 */
 function renderLevel(){
   const row = $("levelRow"), show = mode === "free" && !readOn();
   row.hidden = !show;
   if (!show) return;
   const cat = freeCat, lv = levels.get(cat), max = levels.max(cat);
-  $("levelVal").textContent = lvName(lv);
+  $("levelVal").textContent = tr(`難度 ${lv} / ${max}`, `Level ${lv} / ${max}`);
   $("lvDown").disabled = lv <= 1 || phase === "perform";
   $("lvUp").disabled = lv >= max || phase === "perform";
   $("lvDown").setAttribute("aria-label", tr("難度降一級", "Level down")); $("lvUp").setAttribute("aria-label", tr("難度升一級", "Level up"));
-  pairText($("levelNote"), () => tr(`難度 1–${max}`, `Levels 1–${max}`));   // 「練習設定」只寫在譜下面那一句
+  pairText($("levelNote"), () => [lvDesc(cat, lv), grooveHint()].filter(Boolean).join(tr(" · ", " · ")));
 }
 /* ▲ ▼:馬上換一題這個難度的 */
 function stepLevel(d){
