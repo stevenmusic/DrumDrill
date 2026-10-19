@@ -366,7 +366,7 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 /* 窄畫面(折疊機、SE):標籤放在按鈕列上面,按鈕用整個卡片寬度(英文「Practice」不被切掉、快捷鈕一行) */
 @media (max-width:380px){ .rd-row{grid-template-columns:minmax(0,1fr);gap:4px} .rd-row + .rd-row{margin-top:8px} .rd-seg{gap:4px} .rd-seg .opt{font-size:var(--fs-sm);padding:2px 3px} .rd-seg.rd-seg4 .opt{font-size:var(--fs-xs);letter-spacing:-.02em} }
 /* 矮的手機(折疊機、SE):題目卡小一點,設定卡前幾排跟題目同一個畫面 */
-@media (max-height:700px) and (orientation:portrait){ .rd-ans-grid .opt{min-height:46px} .rd-row + .rd-row{margin-top:8px} }
+@media (max-height:700px) and (orientation:portrait){ .rd-ans-grid .opt{min-height:44px} .rd-row + .rd-row{margin-top:8px} }
 .rd-seg{display:grid;gap:6px;min-width:0}
 .rd-seg2{grid-template-columns:repeat(2,minmax(0,1fr))} .rd-seg3{grid-template-columns:repeat(3,minmax(0,1fr))} .rd-seg4{grid-template-columns:repeat(4,minmax(0,1fr))}
 .rd-seg .opt{min-width:0;min-height:44px;height:auto;padding:4px 6px;justify-content:center;text-align:center;white-space:normal;line-height:1.25}
@@ -380,9 +380,21 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 .rd-ans-grid .opt.right{border-color:var(--teal);color:var(--teal);background:rgba(63,191,174,.12)}
 .rd-ans-grid .opt.wrong{border-color:var(--gold-bright);color:var(--gold-bright);background:rgba(200,85,61,.18)}
 .rd-ans-grid.idle{opacity:.45;pointer-events:none}
-.rd-pieces{grid-template-columns:repeat(3,minmax(0,1fr))}
-@media (min-width:700px){ .rd-pieces{grid-template-columns:repeat(4,minmax(0,1fr))} }
-@media (max-width:340px){ .rd-pieces{grid-template-columns:repeat(2,minmax(0,1fr))} .rd-pieces .opt{white-space:nowrap} }   /* 折疊機:兩欄,每顆一行(英文 Closed hi-hat 放得下) */
+/* 鼓件快捷(照學習順序,每一格包含前一格):窄畫面 2×2,每顆一行;單欄的寬畫面(平板直式)一排 4 顆。下面一行小字說明 */
+.rd-quick{grid-template-columns:repeat(2,minmax(0,1fr))}
+.rd-seg.rd-quick .opt{white-space:nowrap;padding:4px 1px;letter-spacing:-.01em}
+@media (min-width:700px) and (max-width:1099px){ .rd-quick{grid-template-columns:repeat(4,minmax(0,1fr))} }
+.rd-row > .rd-hint{grid-column:2;margin-top:-4px;font-size:var(--fs-xs);color:var(--muted-bright);line-height:1.4;overflow-wrap:anywhere}
+@media (max-width:380px){ .rd-row > .rd-hint{grid-column:1;margin-top:0} }
+.rd-row:has(> .rd-quick) > .lbl{align-self:start;padding-top:14px}   /* 2×2 時標籤對齊第一排 */
+@media (max-width:380px){ .rd-row:has(> .rd-quick) > .lbl{padding-top:0} }
+/* 自訂 13 顆:標籤放上面、按鈕用整個卡片寬;窄畫面 3 欄、寬的 4–5 欄,每顆一行(不換行)、高 ≥ 40 */
+.rd-row:has(> .rd-pieces){grid-template-columns:minmax(0,1fr);gap:4px}
+.rd-pieces{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.rd-seg.rd-pieces .opt{min-height:40px;padding:2px 3px;white-space:nowrap;font-size:var(--fs-sm)}
+@media (min-width:560px) and (max-width:1099px){ .rd-pieces{grid-template-columns:repeat(4,minmax(0,1fr))} }
+@media (min-width:760px) and (max-width:1099px){ .rd-pieces{grid-template-columns:repeat(5,minmax(0,1fr))} }
+@media (max-width:380px){ .rd-seg.rd-pieces .opt{font-size:var(--fs-xs);letter-spacing:-.01em} }
 /* 視奏分頁:難度在題目卡上(一直看得到,不放在收起來的設定卡) */
 #mod-sight .quiz .lvl-row{grid-column:1 / -1;margin:8px 0 0}
 /* 題目卡上的「正式打」(主要動作,佔整行;鼓墊卡上還有一顆,打的時候在鼓墊旁邊停) */
@@ -414,6 +426,11 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
   #s-rdOpts .rd-note{display:none}
   #s-rdOpts .rd-seg .opt{font-size:var(--fs-sm);padding:2px 4px}
   #s-rdOpts .rd-pieces{grid-template-columns:repeat(3,minmax(0,1fr))}   /* 每顆一行(4 欄時「腳踩 HH」「Cross stick」會拆成兩行) */
-  #s-rdOpts .rd-pieces .opt{white-space:nowrap;font-size:var(--fs-xs)}
+  #s-rdOpts .rd-seg.rd-pieces .opt{min-height:36px;white-space:nowrap;font-size:var(--fs-xs)}
+  #s-rdOpts .rd-quick{grid-template-columns:repeat(2,minmax(0,1fr))}   /* 右欄窄:2×2 */
+  #s-rdOpts .rd-seg.rd-quick .opt{font-size:var(--fs-sm);padding:2px 1px}
+  #s-rdOpts .rd-row:has(> .rd-pieces){grid-template-columns:minmax(0,1fr);gap:4px}
+  #s-rdOpts .rd-hint{margin-top:-2px}
+  #s-rdOpts .rd-row:has(> .rd-quick) > .lbl{padding-top:9px}
 }
 #mod-sight .along-result .r-next{color:var(--ivory)}

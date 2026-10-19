@@ -2,7 +2,9 @@
    一題一個記號:五線鼓組譜上畫一個鼓件(js/shared/kitnotation.js 的 legendXML + legend.js 的 setupKit / decorate,跟圖例同一套寫法),
    點下面的鼓件格子作答。答對馬上下一題;答錯:標出正確的格子、寫鼓件名稱、播那個鼓聲(Naked Drums 取樣,audio.playKit)。
    設定全部是一直看得到的按鈕(不用下拉、不收起來),點一下就換題:
-     快捷鈕(基本:小鼓 / 大鼓 / 手打 HH;筒鼓(只有三個筒鼓);加筒鼓;全套)、自訂(drumkey.json 每個鼓件一顆,開 HH、閉 HH、Cross stick、Ride 碗這種同鼓不同記號也各一顆)、
+     快捷鈕照學習順序、名稱直接寫內容,每一格包含前一格(1 小鼓 大鼓 Hi-hat → 2 + Toms(Tom 1、Tom 2、落地鼓)→ 3 + 鈸(Ride、Crash)→ 4 全部記號);
+     存的是鼓件清單(不是快捷的名字),舊版的「基本 / 加筒鼓 / 全套」讀進來剛好等於 1 / 2 / 4,「只有筒鼓」變成自訂三個 Toms;
+     自訂(drumkey.json 每個鼓件一顆,開 Hi-hat、關 Hi-hat、Cross stick、Ride bell 這種同鼓不同記號也各一顆)、
      模式(練習 / 60 秒 / 連對)
    挑戰、最高分、最常錯的 3 個(下一輪出現機率加倍)在 js/shared/drill.js;設定與紀錄存在 drumdrill.sight.v1 的 read(消毒)。
    都是 App 的練習設定;不寫級數、考試名稱、頁碼 */
@@ -14,11 +16,12 @@ import { setupKit, decorate } from "../shared/legend.js";
 import { frameStaff } from "../shared/staffframe.js";
 
 const BASIC = ["snare", "kick", "hh"], TOMS = ["tomHi", "tomMid", "tomFloor"];
+const CYMBALS = ["ride", "crash"];
 const PRESETS = [
-  ["basic", "基本", "Basic", () => BASIC],
-  ["toms", "筒鼓", "Toms", () => TOMS],
-  ["plus", "加筒鼓", "+Toms", () => [...BASIC, ...TOMS]],
-  ["all", "全套", "All", key => Object.keys(key.pieces)]
+  ["core", "小鼓 大鼓 Hi-hat", "Snare Kick Hi-hat", () => BASIC],
+  ["toms", "+ Toms", "+ Toms", () => [...BASIC, ...TOMS]],
+  ["cym", "+ 鈸", "+ Cymbals", () => [...BASIC, ...TOMS, ...CYMBALS]],
+  ["all", "全部記號", "All marks", key => Object.keys(key.pieces)]
 ];
 const MODES = ["practice", "time", "streak"];
 
@@ -61,7 +64,8 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
     const box = $("rdScore"), svg = box.querySelector("svg");
     if (!svg || !box.clientWidth) return;
     const land = matchMedia("(orientation: landscape) and (max-height: 500px)").matches;
-    const maxH = land ? Math.max(130, innerHeight - 200) : Math.max(150, Math.min(220, innerHeight * 0.26));
+    // 直式矮畫面(折疊機、SE):譜框小一點,第一個畫面連作答格子(+ Toms 兩排)下面的鼓件快捷都看得到(tools/test/tasks.mjs 檢查)
+    const maxH = land ? Math.max(130, innerHeight - 200) : innerHeight <= 700 ? Math.max(110, Math.round(innerHeight * 0.2)) : Math.max(150, Math.min(220, innerHeight * 0.26));
     frameStaff(svg, box, { key: "kit", above: 5.8, below: 4.5, spPx: 12, maxH });
   }
   let lastW = innerWidth, rzT = 0;
@@ -129,12 +133,14 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
     $("rdMode").innerHTML = [["practice", "練習", "Practice"], ["time", "60 秒", "60 s"], ["streak", "連對", "Streak"]]
       .map(([v, zh, en]) => `<button type="button" class="opt" data-v="${v}" aria-pressed="${R.mode === v}">${tr(zh, en)}</button>`).join("");
     for (const [id, zh, en] of [["rdQuickLbl", "鼓件", "Drums"], ["rdPiecesLbl", "自訂", "Custom"], ["rdModeLbl", "模式", "Mode"]]) $(id).textContent = tr(zh, en);
+    pairText($("rdQuickHint"), () => tr("每一格都包含前一格的鼓件", "Each one adds to the one before"));
     pairText($("rdNote"), () => tr("自訂:點一下加入或拿掉(至少兩個)。記號跟視奏的圖例同一套;題目與最常錯的加倍出現都是 App 的練習設定。", "Custom: tap to add or remove (two or more). Same symbols as the drum key; the doubled misses are a practice setting."));
   }
   function setText(){
     const k = key(); if (!k) return "";
     const cur = valid().slice().sort().join(","), hit = PRESETS.find(p => p[3](k).slice().sort().join(",") === cur);
-    return hit ? `${tr(hit[1], hit[2])}${tr(`(${valid().length} 個鼓件)`, ` (${valid().length} drums)`)}` : tr(`自訂 ${valid().length} 個鼓件`, `Custom: ${valid().length} drums`);
+    const n = valid().length;
+    return `${hit ? tr(hit[1], hit[2]) : tr("自訂", "Custom")} · ${tr(`${n} 個鼓件`, `${n} drums`)}`;
   }
   function paintTop(){
     pairText($("rdSet"), setText);

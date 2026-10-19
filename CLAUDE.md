@@ -32,7 +32,13 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
     **視奏分頁不寫考試名稱、級數名、頁碼、practiceOnly、推估標籤**(圖例用 `drawLegend` 的 `plain`);題目卡大標題 = 「分類 · 難度 n」;
     難度列與主要動作「正式打」(`s-performTop`)都在題目卡上(第一個畫面就看得到,不放在收起來的設定卡);結果寫下一步(▶ 聽正確版本 / 新題目)
   - **認譜**(第一格,`js/sight/reading.js`):五線鼓組譜上一個記號(`legendXML` + `setupKit` / `decorate`,跟圖例同一套),點鼓件格子作答;答錯標出正確的格子並播那個鼓聲。
-    設定都是一直看得到的按鈕:快捷(基本 = 小鼓 / 大鼓 / 手打 HH、筒鼓、加筒鼓、全套)、自訂(drumkey.json 每個鼓件一顆)、模式(練習 / 60 秒 / 連對)。
+    設定都是一直看得到的按鈕,順序:鼓件快捷 → 自訂 → 模式(練習 / 60 秒 / 連對)。
+    快捷照學習順序、名稱直接寫內容,每一格包含前一格(下面一行小字寫明):「小鼓 大鼓 Hi-hat」→「+ Toms」(Tom 1、Tom 2、落地鼓)→「+ 鈸」(Ride、Crash)→「全部記號」;
+    窄畫面 2×2、每顆一行;存的是鼓件清單(舊版「基本 / 加筒鼓 / 全套」剛好對到第 1 / 2 / 4 格,「只有筒鼓」變成自訂)。題目卡標題 =「組合名稱 · n 個鼓件」(自訂寫「自訂 · n 個鼓件」)。
+    自訂(drumkey.json 每個鼓件一顆,13 顆):標籤在上、窄畫面 3 欄、寬的 4–5 欄,每顆一行不換行、高 ≥ 40。
+    **鼓件名稱**(drumkey.json,中 / 英):小鼓 / Snare、大鼓 / Bass drum、Tom 1、Tom 2、落地鼓 / Floor tom、Hi-hat、腳踩 Hi-hat / Foot hi-hat、開 Hi-hat / Open hi-hat、關 Hi-hat / Closed hi-hat、
+    Ride、Ride bell、Crash、Cross stick;畫面上不用「HH」縮寫(初學者看不懂)、不用「筒鼓」(寫 Toms)。
+    第一個畫面(iphone-390、fold-280)要看得到子項目列、譜框、作答格子、鼓件快捷(捲動安排見 PianoDrill CLAUDE.md;tasks.mjs 的 `first` / `common` 檢查)。
     譜框(`js/shared/staffframe.js`,兩個 App 逐位元組相同):不管出哪個鼓件,框的高度與譜表位置都不變(上下一樣多、譜表垂直置中);譜與作答格子之間寫題目「這是哪個鼓件?」。
     挑戰、最高分、最常錯的 3 個(下一輪機率加倍)= `js/shared/drill.js`(兩個 App 逐位元組相同);存在 `drumdrill.sight.v1` 的 `read`;答一題算一題練習
   - **操作方便**(使用者要求;`node tools/test/tasks.mjs` 檢查):視奏頁不用下拉選單、常用設定不藏在收起來的卡、第一個畫面就能開始、改設定馬上換題、作答鈕 ≥ 44(最小 28)、

@@ -121,7 +121,7 @@ export default function check(ok){
       ok(f.score <= 20 && f.hits <= 1, `大鼓單獨晚 ${late * 1000} ms:大鼓那條不能高分,實際 ${f.score} 分、命中 ${f.hits}/${f.total}`);
       ok(r.score < 90, `大鼓單獨晚 ${late * 1000} ms:總分不能高分(< 90),實際 ${r.score}`);
       ok(f.lag && r.lagLanes.join() === "foot" && Math.abs(f.offsetMs - late * 1000) <= 20, `大鼓單獨晚 ${late * 1000} ms:應該只有大鼓有 lag 旗標、剩的偏移 ≈ ${late * 1000},實際 lag=${f.lag} lagLanes=${r.lagLanes} offset=${f.offsetMs}`);
-      ok(note && note[0].includes("大鼓・腳踩") && note[0].includes("慢約") && /Kick · HH \d+ ms behind/.test(note[1]), `大鼓單獨晚 ${late * 1000} ms 的提示:${note}`);
+      ok(note && note[0].includes("大鼓・腳踩") && note[0].includes("慢約") && /Kick · Foot \d+ ms behind/.test(note[1]), `大鼓單獨晚 ${late * 1000} ms 的提示:${note}`);
       ok(r.lanes.cym.hits === 16 && r.lanes.drum.hits === 4 && !r.lanes.cym.lag && !r.lanes.drum.lag, `大鼓單獨晚 ${late * 1000} ms:鈸、鼓應該全部命中、沒有旗標`);
     }
     const small = mk(0.04);

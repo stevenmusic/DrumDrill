@@ -133,10 +133,10 @@
       "voicesAmount": { "only": ["只有單線", "single line only"], "some": ["部分 2 聲部", "some 2-part"], "mostly": ["大多 2 聲部", "mostly 2-part"] },
       "extra": {
         "ties": ["連結線", "Ties"],
-        "footHH": ["腳踩 HH", "Foot hi-hat"],
+        "footHH": ["腳踩 Hi-hat", "Foot hi-hat"],
         "offbeatBD": ["反拍大鼓", "Off-beat bass drum"],
         "fullKit": ["全套鼓", "Full kit"],
-        "hhOpenClose": ["開/閉 HH", "Open/closed HH"],
+        "hhOpenClose": ["開/關 Hi-hat", "Open/closed hi-hat"],
         "rimclick": ["Rim-click", "Rim-click"],
         "roll": ["滾奏", "Rolls"],
         "flam": ["Flam", "Flam"],
@@ -148,7 +148,7 @@
         "meterChange": ["會換拍號", "Changes of metre"]
       }
     },
-    "pieceMap": { "LT": { "v": "tomFloor", "assumed": true, "note": ["官方寫 LT(低筒鼓);App 用落地鼓的位置與聲音", "Official: LT (low tom); the App uses the floor tom"] } },
+    "pieceMap": { "LT": { "v": "tomFloor", "assumed": true, "note": ["官方寫 LT(Low Tom);App 用落地鼓的位置與聲音", "Official: LT (low tom); the App uses the floor tom"] } },
     "note": ["速度、伴奏風格:參數表沒有這兩欄(查不到)", "Tempo and backing style: not in the parameter table"]
   },
   "improvising": {
@@ -179,14 +179,14 @@
   "ownChoice": {
     "legend": ["自選曲參數表:官方說只是一般參考(general guide),技巧是累積的", "Own-choice song parameters: a general guide only; techniques are cumulative"],
     "grades": {
-      "0": { "lengthSec": [45, 120], "bpm": [60, 130], "techniques": ["Cross stick、響弦開/關、短的記譜獨奏或過門、trashy/tight HH;五件式鼓、鼓棒", "Cross stick, snares on/off, short notated solos/fills, trashy/tight HH; 5-piece kit, sticks"], "practice": [], "src": { "p": "55" } },
+      "0": { "lengthSec": [45, 120], "bpm": [60, 130], "techniques": ["Cross stick、響弦開/關、短的記譜獨奏或過門、trashy/tight Hi-hat;五件式鼓、鼓棒", "Cross stick, snares on/off, short notated solos/fills, trashy/tight hi-hat; 5-piece kit, sticks"], "practice": [], "src": { "p": "55" } },
       "1": { "lengthSec": [60, 150], "bpm": [60, 160], "techniques": ["同初級,加重音、slash 記譜 / cont. sim.", "As Initial, plus accents, slash notation / cont. sim."], "practice": [], "src": { "p": "56" } },
-      "2": { "lengthSec": [90, 180], "bpm": [50, 160], "techniques": ["開/閉 HH、含裝飾音 rudiment 的過門、很簡單的 swing;鼓刷(不刷圈)、hot rods", "Open/closed HH, fills with grace-note rudiments, very simple swing; brushes (no sweeps), hot rods"], "practice": [{ "cat": "flam" }, { "cat": "drag" }], "src": { "p": "56" } },
-      "3": { "lengthSec": [90, 210], "bpm": null, "bpmText": ["全範圍,曲中可以變速", "Full range; may change in the song"], "techniques": ["簡單的滾奏、HH 上雙手交替的 16-beat;軟槌", "Simple rolls, 16-beat on HH with alternating hands; soft mallets"], "practice": [{ "cat": "roll" }], "src": { "p": "57" } },
+      "2": { "lengthSec": [90, 180], "bpm": [50, 160], "techniques": ["開/關 Hi-hat、含裝飾音 rudiment 的過門、很簡單的 swing;鼓刷(不刷圈)、hot rods", "Open/closed hi-hat, fills with grace-note rudiments, very simple swing; brushes (no sweeps), hot rods"], "practice": [{ "cat": "flam" }, { "cat": "drag" }], "src": { "p": "56" } },
+      "3": { "lengthSec": [90, 210], "bpm": null, "bpmText": ["全範圍,曲中可以變速", "Full range; may change in the song"], "techniques": ["簡單的滾奏、Hi-hat 上雙手交替的 16-beat;軟槌", "Simple rolls, 16-beat on hi-hat with alternating hands; soft mallets"], "practice": [{ "cat": "roll" }], "src": { "p": "57" } },
       "4": { "lengthSec": [150, 240], "techniques": ["幽靈音、鼓刷 scrub/swish、3 對 2", "Ghost notes, brush scrub/swish, 3 against 2"], "practice": [], "src": { "p": "57" } },
-      "5": { "lengthSec": [150, 240], "techniques": ["快速 HH 可能要用 Moeller/多重動作;圍繞樂句/合奏重音的獨奏;完整的鼓刷 swing", "Fast HH may need Moeller/multiple motions; solos around phrases and hits; full brush swing"], "practice": [], "src": { "p": "58" } },
-      "6": { "lengthSec": [180, 270], "techniques": ["更快的反彈大鼓、choked HH;可選雙踏", "Faster rebound bass drum, choked HH; optional double pedal"], "practice": [], "src": { "p": "58" } },
-      "7": { "lengthSec": [180, 270], "techniques": ["雙踏、筒鼓上更快的雙擊滾奏、更多左手帶領", "Double bass pedal; quicker tom double-stroke rolls; leading more with the left hand"], "practice": [{ "pas": 6 }], "src": { "p": "59" } },
+      "5": { "lengthSec": [150, 240], "techniques": ["快速 Hi-hat 可能要用 Moeller/多重動作;圍繞樂句/合奏重音的獨奏;完整的鼓刷 swing", "Fast hi-hat may need Moeller/multiple motions; solos around phrases and hits; full brush swing"], "practice": [], "src": { "p": "58" } },
+      "6": { "lengthSec": [180, 270], "techniques": ["更快的反彈大鼓、choked Hi-hat;可選雙踏", "Faster rebound bass drum, choked hi-hat; optional double pedal"], "practice": [], "src": { "p": "58" } },
+      "7": { "lengthSec": [180, 270], "techniques": ["雙踏、Toms 上更快的雙擊滾奏、更多左手帶領", "Double bass pedal; quicker tom double-stroke rolls; leading more with the left hand"], "practice": [{ "pas": 6 }], "src": { "p": "59" } },
       "8": { "lengthSec": [210, 300], "techniques": ["加長的獨奏段、更難的雙踏、多樣的音色", "Extended solos, harder double pedal, varied tones"], "practice": [], "src": { "p": "59" } }
     },
     "practiceNote": ["「去練」按鈕是 App 依類別對到技巧分頁;官方只寫類別,沒有指定是哪一個打法", "Practice links are the App's mapping; the syllabus names a category, not a specific rudiment"]

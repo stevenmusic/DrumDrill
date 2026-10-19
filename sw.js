@@ -12,7 +12,7 @@
 const APP = "drumdrill";
 // @app-end
 /*@precache-begin*/
-const CACHE = APP + "-app-9c239c41";
+const CACHE = APP + "-app-d7f817d1";
 const PRECACHE = [
   "./",
   "manifest.webmanifest",
@@ -24,11 +24,11 @@ const PRECACHE = [
   "licenses.html",
   "privacy.html",
   "support.html",
-  "css/app.css?v=06379c4de5",
-  "css/drum.css?v=a8e111b678",
+  "css/app.css?v=4947a1bb37",
+  "css/drum.css?v=b8124f8ea6",
   "vendor/opensheetmusicdisplay.min.js?v=4bfeb3d01c",
   "js/ear/app.js?v=dd30868597",
-  "js/ear/gen.js?v=ae372fb41e",
+  "js/ear/gen.js?v=9ece627df1",
   "js/ear/strings.js?v=814ce27ed7",
   "js/main.js?v=5f18bb24f9",
   "js/shared/a11y.js?v=a88a3682ab",
@@ -38,7 +38,7 @@ const PRECACHE = [
   "js/shared/examview.js?v=b4959afa11",
   "js/shared/i18n.js?v=9df2b1aeb8",
   "js/shared/kitevents.js?v=967a5358a2",
-  "js/shared/kitgen.js?v=091dc4de5b",
+  "js/shared/kitgen.js?v=d8f36a0aea",
   "js/shared/kitnotation.js?v=65e0d6b2cb",
   "js/shared/landscape.js?v=8ab1bab3eb",
   "js/shared/legend.js?v=3390865758",
@@ -47,20 +47,20 @@ const PRECACHE = [
   "js/shared/micrhythm.js?v=70a91a030f",
   "js/shared/mock.js?v=2fe1efa3e4",
   "js/shared/onsets.js?v=d8df0b9ef2",
-  "js/shared/pad.js?v=4b5ba91029",
-  "js/shared/playbackgen.js?v=25e49e3c09",
+  "js/shared/pad.js?v=1c537f175e",
+  "js/shared/playbackgen.js?v=4832482704",
   "js/shared/player.js?v=3b242c7289",
   "js/shared/practicelog.js?v=acd9cd53aa",
   "js/shared/score.js?v=6b5e241a71",
   "js/shared/staffframe.js?v=7d869b31d1",
   "js/shared/tempo.js?v=1e38af7d3f",
-  "js/shared/timing.js?v=1bb294cc17",
+  "js/shared/timing.js?v=cf85c23892",
   "js/sight/app.js?v=0d9d9ea879",
   "js/sight/fingerprint.js?v=c0cdf7916e",
   "js/sight/gen.js?v=6633bf6b2e",
   "js/sight/meter.js?v=94d1b94ae1",
   "js/sight/random.js?v=3b9b511386",
-  "js/sight/reading.js?v=e917bfdebb",
+  "js/sight/reading.js?v=dd72ce6591",
   "js/sight/stage.js?v=9ca7fb07ed",
   "js/sight/strings.js?v=fa16b45be3",
   "js/tech/app.js?v=e2dc881650",
@@ -68,9 +68,9 @@ const PRECACHE = [
   "js/tech/rudiments.js?v=cc1a2635ff",
   "js/tech/store.js?v=f34a09889a",
   "js/tech/strings.js?v=9165779752",
-  "data/drumkey.json?v=7b58a38cef",
-  "data/exam-rsl.json?v=d4a099542c",
-  "data/exam-trinity.json?v=33070e658b"
+  "data/drumkey.json?v=ccf96615ee",
+  "data/exam-rsl.json?v=0fe7ae1fe3",
+  "data/exam-trinity.json?v=5a8f14c380"
 ];
 /*@precache-end*/
 self.addEventListener("install", e => {

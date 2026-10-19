@@ -334,9 +334,9 @@
         { "id": "F", "name": ["風格練習曲", "Stylistic Study"], "bpm": null, "bpmSrc": "backing", "items": [
           { "kind": "book", "label": ["風格練習曲(三選一)", "Style study (1 of 3)"], "related": [], "note": ["選的風格同時決定 Quick Study Piece 的風格;譜見官方檢定書", "The style chosen also sets the Quick Study Piece style; see the grade book"] }
         ], "styles": [
-          { "name": ["Rock/Metal", "Rock/Metal"], "focus": ["Ride 碗 7/8 節奏、五擊滾奏", "Ride bell 7/8 pattern, 5-stroke rolls"] },
+          { "name": ["Rock/Metal", "Rock/Metal"], "focus": ["Ride bell 7/8 節奏、五擊滾奏", "Ride bell 7/8 pattern, 5-stroke rolls"] },
           { "name": ["Funk", "Funk"], "focus": ["Linear funk、九擊滾奏", "Linear funk, 9-stroke rolls"] },
-          { "name": ["Jazz/Latin/Blues", "Jazz/Latin/Blues"], "focus": ["Ride 碗 6/8 節奏、splashed hi-hat", "Ride bell 6/8 pattern, splashed hi-hat"] }
+          { "name": ["Jazz/Latin/Blues", "Jazz/Latin/Blues"], "focus": ["Ride bell 6/8 節奏、splashed hi-hat", "Ride bell 6/8 pattern, splashed hi-hat"] }
         ] }
       ]
     },
@@ -471,13 +471,13 @@
     "names": ["Debut p.31 第一句寫 Rhythmic Recall、官網 4、6 級寫 Harmonic Recall;App 用 Groove Recall", "Debut p.31 says Rhythmic Recall once, website says Harmonic Recall for 4 and 6; the App uses Groove Recall"]
   },
   "gmq": {
-    "0": { "questions": 5, "music": ["譜上的鼓件;四分、八分音符時值", "Drum voices on the stave; crotchet and quaver values"], "instrument": ["認鼓件:小鼓、高鼓、中鼓、落地鼓、hi-hat、ride、crash", "Snare, high/mid/floor tom, hi-hat, ride, crash"], "note": ["p.30 同時寫 5 題與 4 題;照配分表(p.16)以 5 題計", "p.30 says both 5 and 4 questions; the mark scheme (p.16) counts 5"], "src": { "p": "30–31" } },
+    "0": { "questions": 5, "music": ["譜上的鼓件;四分、八分音符時值", "Drum voices on the stave; crotchet and quaver values"], "instrument": ["認鼓件:小鼓、Tom 1、Tom 2、落地鼓、hi-hat、ride、crash", "Snare, Tom 1, Tom 2, floor tom, hi-hat, ride, crash"], "note": ["p.30 同時寫 5 題與 4 題;照配分表(p.16)以 5 題計", "p.30 says both 5 and 4 questions; the mark scheme (p.16) counts 5"], "src": { "p": "30–31" } },
     "1": { "questions": 5, "music": ["同 Debut,加上曲中的一個休止符", "As Debut, plus one rest in the piece"], "instrument": ["加大鼓;兩個主要的爵士鼓品牌", "Plus bass drum; two main drum brands"], "src": { "p": "35" } },
     "2": { "questions": 5, "music": ["鼓件;拍號;四分、附點八分、八分、十六分與休止符時值;反覆記號(含第一、第二結尾)", "Drum voices; time signature; note and rest values; repeats incl. 1st/2nd endings"], "instrument": ["鼓件;鼓棒部位 tip、neck、shaft、butt;兩個鼓品牌", "Drum parts; stick tip, neck, shaft, butt; two drum brands"], "src": { "p": "39" } },
     "3": { "questions": 5, "music": ["同 2 級,時值再加八分三連音", "As Grade 2, plus 8th-note triplets"], "instrument": ["同 2 級,加兩個主要的鈸品牌", "As Grade 2, plus two main cymbal brands"], "src": { "p": "43" } },
-    "4": { "questions": 5, "music": ["鼓件;拍號;bpm;反覆、第一第二結尾、D.C.、D.S. al Coda、al Fine;曲中所有時值與休止符;solo 段可用的 rudiment 與鼓件、節奏、技巧", "Voices, metre, bpm, repeats, D.C./D.S./Coda/Fine, all values and rests, a rudiment and the solo's parts/rhythms/technique"], "instrument": ["鼓組與鼓棒的任何部位;調音;cross stick、choke、ride 碗、重音", "Any kit/stick part; tuning; cross stick, choke, ride bell, accent"], "src": { "p": "48" } },
+    "4": { "questions": 5, "music": ["鼓件;拍號;bpm;反覆、第一第二結尾、D.C.、D.S. al Coda、al Fine;曲中所有時值與休止符;solo 段可用的 rudiment 與鼓件、節奏、技巧", "Voices, metre, bpm, repeats, D.C./D.S./Coda/Fine, all values and rests, a rudiment and the solo's parts/rhythms/technique"], "instrument": ["鼓組與鼓棒的任何部位;調音;cross stick、choke、Ride bell、重音", "Any kit/stick part; tuning; cross stick, choke, ride bell, accent"], "src": { "p": "48" } },
     "5": { "questions": 5, "music": ["4 級全部,加風格記譜", "All of Grade 4, plus stylistic drum notation"], "instrument": ["同 4 級", "As Grade 4"], "src": { "p": "54" } },
-    "6": { "questions": 5, "music": ["曲中任何記譜與力度;這個 groove 為什麼符合這個風格;solo 段的鼓件、節奏、技巧", "Any notation and dynamics; why the groove fits the style; the solo's parts, rhythms, technique"], "instrument": ["說明並示範:保養;依曲風調音;cross stick、choke、ride 碗、rim-shot、ghost note、半開 hi-hat、重音", "Explain and show: care, tuning to style, cross stick, choke, ride bell, rim-shot, ghost note, half-open HH, accent"], "src": { "p": "59" } },
+    "6": { "questions": 5, "music": ["曲中任何記譜與力度;這個 groove 為什麼符合這個風格;solo 段的鼓件、節奏、技巧", "Any notation and dynamics; why the groove fits the style; the solo's parts, rhythms, technique"], "instrument": ["說明並示範:保養;依曲風調音;cross stick、choke、Ride bell、rim-shot、ghost note、半開 Hi-hat、重音", "Explain and show: care, tuning to style, cross stick, choke, ride bell, rim-shot, ghost note, half-open hi-hat, accent"], "src": { "p": "59" } },
     "7": { "questions": 5, "music": ["同 6 級", "As Grade 6"], "instrument": ["同 6 級", "As Grade 6"], "src": { "p": "64" } },
     "8": { "questions": 5, "music": ["同 6 級", "As Grade 6"], "instrument": ["同 6 級", "As Grade 6"], "src": { "p": "69" } }
   },

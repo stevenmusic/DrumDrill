@@ -49,7 +49,7 @@ export function createPads(el, lanes, onHit){
   function relang(){
     for (const l of lanes) {
       const b = btns.get(l.id), name = tr(l.label[0], l.label[1]);
-      // 名稱兩種語言保留比較高的高度(窄畫面「大鼓・腳踩」會換行、「Kick · HH」不會:中英版面一樣)
+      // 名稱兩種語言保留比較高的高度(窄畫面「大鼓・腳踩」會換行、「Kick · Foot」不會:中英版面一樣)
       pairText(b.querySelector(".pad-name"), () => tr(l.label[0], l.label[1]));
       b.querySelector(".pad-key").textContent = [].concat(l.key || [])[0] ? [].concat(l.key)[0].toUpperCase() : "";
       // 無障礙:名稱 + 鍵盤按鍵(VoiceOver 念得到;aria-keyshortcuts 給輔助工具)
