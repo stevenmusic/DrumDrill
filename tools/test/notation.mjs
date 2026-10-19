@@ -169,7 +169,7 @@ async function kitPage(width, lang, shots, { kit = "all", zoom = null, query = "
       if (n > 2) srcIssues.push(`${id} 出處 ${n} 行:${e.textContent.replace(/\n/g, " / ")}`);
       if (/undefined|null|NaN|Trinity p\./.test(e.textContent)) srcIssues.push(`${id} 出處:${e.textContent}`);
     }
-    const cellSrc = Object.fromEntries([...document.querySelectorAll("#legend5 .kl-cell, #legend1 .kl-cell")].map(c => [c.closest(".kit-legend").id + ":" + c.dataset.piece, c.querySelector(".kl-src").textContent]));
+    const cellSrc = Object.fromEntries([...document.querySelectorAll("#legend5 .kl-cell, #legend1 .kl-cell")].map(c => [c.closest(".kit-legend").id + ":" + c.dataset.piece, (c.querySelector(".kl-src") || c).textContent]));
     return { out, legend, overflow, cellOverflow, srcIssues, cellSrc };
   }, { GLYPH });
   if (shots === "groups") {
@@ -196,8 +196,10 @@ async function kitPage(width, lang, shots, { kit = "all", zoom = null, query = "
   if (r.overflow) fail(`1000 寬有橫向捲動 ${r.overflow}`);
   for (const i of r.srcIssues) fail("圖例:" + i);
   // 出處的字(英文):Trinity DK p.107 + 位置待核對、Ride bell = Trinity errata、單線譜小鼓 = RSL p.31–43 + 1-line: App's choice
-  const want = { "legend5:hhFoot": "Trinity DK p.107\nPos. pending", "legend5:hhOpen": "Trinity DK p.107\nPos. pending", "legend5:rideBell": "Trinity errata", "legend5:kick": "Pending", "legend1:snare": "RSL p.31–43\n1-line: App's choice" };
+  // 畫面上「待核對」寫成「App 記法」;只有小鼓的單線譜圖例是一行字(出處接在括號裡)
+  const want = { "legend5:hhFoot": "Trinity DK p.107\nPos.: App", "legend5:hhOpen": "Trinity DK p.107\nPos.: App", "legend5:rideBell": "Trinity errata", "legend5:kick": "App notation" };
   for (const [k, v] of Object.entries(want)) if (r.cellSrc[k] !== v) fail(`圖例 ${k} 出處「${r.cellSrc[k]}」,應該「${v}」`);
+  if (!/RSL p\.31–43.*1-line: App's choice/.test(r.cellSrc["legend1:snare"] || "")) fail(`圖例 legend1:snare 出處「${r.cellSrc["legend1:snare"]}」`);
   if (bad === n0) ok(`鼓組記譜樣張 ${r.out.length} 張:OSMD 畫出來沒有錯誤,符頭數、形狀、高度(${r.out.reduce((s, o) => s + (o.checked || 0), 0)} 個音)、補畫記號、閉 HH 的 +、連音組數、開 HH 的 o(${r.out.reduce((s, o) => s + (o.oChecked || 0), 0)} 個)、抬高的記號(${r.out.reduce((s, o) => s + (o.liftChecked || 0), 0)} 個)都對;圖例出處`);
 }
 {

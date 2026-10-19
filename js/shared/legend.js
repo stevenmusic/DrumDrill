@@ -225,6 +225,9 @@ const OSMD_OPTS = { backend: "svg", autoResize: false, drawTitle: false, drawSub
   drawMeasureNumbers: false, drawingParameters: "compacttight", renderSingleHorizontalStaffline: true };
 /* el:放圖例的容器(會清空);pieces:用到的鼓件 id(照 drumkey.json 的順序,kitnotation.js 的 piecesUsed);lines:1 = 單線譜;
    plain:不寫出處小字(考試的頁碼)與考試用書的說明(視奏分頁的讀譜練習:畫面上不寫考試名稱、頁碼) */
+/* 畫面上「待核對」改寫「App 記法」(資料的 pending 不變:官方還沒核對到,這是 App 的寫法) */
+const APP_NOTE = { "待核對": ["App 記法", "App notation"], "位置待核對": ["位置:App 記法", "Pos.: App"] };
+const appNote = (zh, en) => APP_NOTE[zh] || [zh, en];
 export async function drawLegend(el, { pieces, lines = 5, key = drumKeyCached(), plain = false } = {}){
   el.innerHTML = "";
   el.classList.add("kit-legend");
@@ -237,7 +240,7 @@ export async function drawLegend(el, { pieces, lines = 5, key = drumKeyCached(),
     const ls = legendSrc(key, "snare", lines), p = key.pieces.snare;
     const line = document.createElement("p"); line.className = "kl-cell kl-line"; line.dataset.piece = "snare";
     el.appendChild(line);
-    pairText(line, () => tr(`圖例:單線 = ${p.name[0]}`, `Drum key: single line = ${p.name[1].toLowerCase()}`) + (plain ? "" : tr("(", " (") + ls.lines.map(([zh, en]) => tr(zh, en)).join(tr(";", "; ")) + tr(")", ")")));
+    pairText(line, () => tr(`圖例:單線 = ${p.name[0]}`, `Drum key: single line = ${p.name[1].toLowerCase()}`) + (plain ? "" : tr("(", " (") + ls.lines.map(([zh, en]) => tr(...appNote(zh, en))).join(tr(";", "; ")) + tr(")", ")")));
     return;
   }
   const head = document.createElement("div"); head.className = "kl-head";
@@ -258,7 +261,7 @@ export async function drawLegend(el, { pieces, lines = 5, key = drumKeyCached(),
     if (!plain) cell.append(src);
     cells.appendChild(cell);
     pairText(name, () => tr(p.name[0], p.name[1]));
-    pairText(src, () => ls.lines.map(([zh, en]) => tr(zh, en)).join("\n"));
+    pairText(src, () => ls.lines.map(([zh, en]) => tr(...appNote(zh, en))).join("\n"));
     jobs.push([note, legendXML(id, { key, lines })]);
   }
   const foot = document.createElement("p"); foot.className = "kl-foot"; el.appendChild(foot);
