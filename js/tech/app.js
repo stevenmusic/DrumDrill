@@ -160,7 +160,7 @@ function renderPicker(){
     `<div class="prow"><span class="lbl">${lbl}</span><div class="opts${k === "no" ? "" : " even"}" data-k="${k}" role="group" aria-label="${lbl}">` +
     opts.map(([v, t]) => `<button class="opt${k === "no" ? " rud" : ""}" data-v="${v}" aria-pressed="${String(v) === String(val[k])}">${t}</button>`).join("") + `</div></div>`).join("");
   // 收起來的一行只寫題目卡(標題、標籤)沒有的:這張卡是選打法的 + 反覆次數(打法名稱、左右手先已經在題目卡上)
-  $("picker").querySelector(".sum").textContent = [tr("換打法", "Change"), T("lblReps") + " ×" + S.reps].join(" · ");
+  $("picker").querySelector(".sum").textContent = [tr("選打法", "Choose"), T("lblReps") + " ×" + S.reps].join(" · ");
 }
 $("picker").querySelector(".rows").onclick = e => {
   const b = e.target.closest(".opt"); if (!b) return;
@@ -233,7 +233,7 @@ function renderIntro(){
 /* ══ 已經會了 / 待加強(只是標記,不算一次練習)══ */
 function syncMastery(){
   const m = cur && S.mastery[cur.no];
-  ROOT.querySelector(".mastery").hidden = mockOn() || !!(dseg && dseg.k !== "warm");   // 模擬考進行中不標熟練度(只管打);今日練習的關卡用「穩了 / 再練」
+  ROOT.querySelector(".mastery").hidden = mockOn() || !!dseg;   // 模擬考進行中不標熟練度(只管打);今日練習每一段(含暖身)都不標(段落用「穩了 / 還要練」)
   ROOT.querySelectorAll(".mbtn").forEach(b => { b.disabled = !cur; b.setAttribute("aria-pressed", String(b.dataset.m === m)); });
 }
 ROOT.querySelectorAll(".mbtn").forEach(b => b.onclick = () => {
@@ -1174,7 +1174,7 @@ function dTry({ self = null, score: sc = null, res = null, at = null } = {}){
   if (self) stopPlayback();
   const s = dseg, r = daily.attempt(res ? { bpm: at || bpm, score: sc } : { bpm, self });
   if (!r) return;
-  const head = res ? (res.offsetTooLarge ? () => "" : () => tr(`打中 ${sc} · `, `Score ${sc} · `)) : () => "";
+  const head = res ? (res.offsetTooLarge ? () => "" : () => tr(`準度 ${sc} · `, `Accuracy ${sc} · `)) : () => "";
   const txt = () => head() + dcard.resultText(r, s);
   announce(txt());
   if (r.passed && r.cont) { dShow(daily.seg(), txt); return; }

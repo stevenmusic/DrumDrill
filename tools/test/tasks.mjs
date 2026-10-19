@@ -28,11 +28,11 @@ const TASKS = [
   { name: "新手想練小鼓節奏", store: null, steps: [
       { sel: "#obNo", say: "第一次的問題:不考,自由練習" },
       { sel: '#tabbar [data-view="sight"]', say: "視奏分頁(預設子項目 = 節奏,題目已經出好)", start: true, wait: 1500 },
-      { sel: "#s-performTop", say: "正式打(題目卡上)", wait: 1200 },
+      { sel: "#s-performTop", say: "打一遍(題目卡上)", wait: 1200 },
       { run: async page => { await page.waitForFunction(() => window.__sight.state.phase === "perform", null, { timeout: 30000 }); await page.evaluate(() => window.__sight.finishNow()); await page.waitForTimeout(400); }, say: "(打完)" }
     ],
     check: async page => page.evaluate(() => (window.__sight.state.phase === "result" && !document.getElementById("s-alongResult").hidden ? null : "沒有結果")),
-    next: { sel: "#s-alongResult .diff-fb, #s-message", words: ["新題目", "太簡單", "New test", "Too easy"] } },
+    next: { sel: "#s-alongResult .diff-fb, #s-message", words: ["下一題", "太簡單", "Next", "Too easy"] } },
   { name: "想練認譜、練到 + Toms(第 2 格)", store: onboarded(), first: READ_FIRST, steps: [
       { sel: '#tabbar [data-view="sight"]', say: "視奏分頁", wait: 800 },
       { sel: '#subSeg [data-v="read"]', say: "認譜(題目馬上出)", wait: 800 },

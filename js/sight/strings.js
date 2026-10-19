@@ -6,7 +6,7 @@ addStrings("sight", {
   optMetro: ["準備時節拍器", "Prep click"], mockMetro: ["節拍器", "Metronome"], optClick: ["正式打的拍點", "Perform click"], bpmReset: ["官方速度", "Official tempo"],
   playAria: ["聽正確版本", "Hear the correct version"],
   countdownUnit: ["秒", "s"],
-  generate: ["新題目", "New test"],
+  generate: ["下一題", "Next"],
   scoreTitle: ["小鼓譜", "Snare part"],
   perform: ["正式打", "Perform"],
   logTitle: ["練習紀錄", "Practice log"], logStreak: ["連續天數", "Day streak"], logToday: ["今天題數", "Today"], logMin: ["今天分鐘", "Minutes"],

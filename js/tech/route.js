@@ -267,9 +267,10 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
     const el = $("rResult");
     el.hidden = false;
     const notes = [offsetNote(res), laneNote(res, LANES[3])].filter(Boolean);
-    const big = res.offsetTooLarge || !n ? "" : `<p class="big">${res.score}<small>/100</small></p>`;
+    const big = res.offsetTooLarge || !n ? "" : `<p class="big"><small class="lead"></small>${res.score}<small>/ 100</small></p>`;
     el.innerHTML = `<p class="r-head"></p>${big}<p class="r-line"></p>` + notes.map(() => `<p class="r-note"></p>`).join("") + `<p class="disclaimer"></p>`;
     pairText(el.querySelector(".r-head"), () => tr("練習回饋 · 節奏", "Practice feedback · rhythm"));
+    const lead = el.querySelector(".big .lead"); if (lead) pairText(lead, () => tr("準度", "Accuracy"));
     pairText(el.querySelector(".r-line"), () => (n ? tr(`打中 ${res.hits}/${res.total} · 漏打 ${res.missed} · 多打 ${res.extra}`, `Hit ${res.hits}/${res.total} · missed ${res.missed} · extra ${res.extra}`)
       : tr("沒有打到鼓墊", "No pad taps")));
     el.querySelectorAll(".r-note").forEach((p, i) => pairText(p, () => tr(notes[i][0], notes[i][1])));

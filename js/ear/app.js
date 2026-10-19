@@ -18,7 +18,7 @@
    - 檢定頁:考試摘要 + 規格卡(照官方大綱,每項頁碼)+「練習這一級」;不放練習紀錄、練習回饋(不跟配分、等第同一個畫面)
    - leave():停止播放、看譜倒數、回打(不算),題目保留;relang():只重寫文字,不停播放
    - 模擬考(S14,js/shared/mock.js):檢定頁的「模擬考」。RSL = Fill → Groove 各一題(自動聽兩次 → 練習 → 回打;Fill 再選譜;不能重聽、不能看答案);
-     Trinity = Playback:看譜 30 秒(不能暫停)→ 第一次(練習)→ 第二次(評時間),自動接下去。結果(.mock-res)只有各題的練習回饋(節奏吻合度、選譜對錯、完成與否):
+     Trinity = Playback:看譜 30 秒(不能暫停)→ 第一次(練習)→ 第二次(評時間),自動接下去。結果(.mock-res)只有各題的練習回饋(準度、選譜對錯、完成與否):
      不算總分、不出現等第、不換算官方分數。進行中考試摘要與規格卡藏起來;中途切分頁、背景、重新整理、旋轉 = 中止(回來時說明)
    - 用麥克風評分節奏(選用,S15;js/shared/micrhythm.js;開關 = 外框 drumdrill.v1 的 mic,經 ctx.micPref / setMicPref,視奏共用):
      RSL 回打、Trinity 第二次先開麥克風(拿到才開始),這一次鼓墊不出聲、不計分;回打 / 空檔裡不放拍點(只有預備拍,Trinity 第一次也一樣);
@@ -1349,8 +1349,8 @@ function resultSpeech(R){
   if (!R) return "";
   if (!R.taps) return R.src === "mic" ? tr(...MIC_TEXT.silent) : tr("沒有收到鼓墊的敲擊。", "No pad hits came in.");
   const r = R.kind === "rsl" ? R.r : R.all;
-  return tr(`練習回饋:${R.kind === "rsl" ? `節奏吻合度 ${r.score == null ? "—" : r.score} / 100,` : ""}打中 ${r.hits} / ${r.total}。`,
-    `Practice feedback: ${R.kind === "rsl" ? `rhythm match ${r.score == null ? "—" : r.score} / 100, ` : ""}hit ${r.hits} of ${r.total}.`);
+  return tr(`練習回饋:${R.kind === "rsl" ? `準度 ${r.score == null ? "—" : r.score} / 100,` : ""}打中 ${r.hits} / ${r.total}。`,
+    `Practice feedback: ${R.kind === "rsl" ? `accuracy ${r.score == null ? "—" : r.score} / 100, ` : ""}hit ${r.hits} of ${r.total}.`);
 }
 /* 練習回饋(不是考試分數,不出現等第字眼,也不換算成官方分數) */
 function renderResult(){
@@ -1373,8 +1373,8 @@ function renderResult(){
       // 沒有分數(整體偏移太大):不放「—/100」,下面那句說明這次不算分數
       if (r.score != null) {
         const big = document.createElement("div"); big.className = "big"; box.appendChild(big);
-        big.innerHTML = `${r.score}<small></small>`;
-        pairText(big.querySelector("small"), () => tr("/ 100 節奏吻合度", "/ 100 rhythm match"));
+        big.innerHTML = `<small class="lead"></small>${r.score}<small>/ 100</small>`;
+        pairText(big.querySelector("small.lead"), () => tr("準度", "Accuracy"));
       }
       add("", () => line(r));
       const off = offsetNote(r); if (off) add("", () => tr(off[0], off[1]));
@@ -1511,7 +1511,7 @@ $("mockBtn").onclick = () => {
 };
 $("mockClose").onclick = () => { mock.close(); render(); window.scrollTo({ top: 0 }); };
 const TYPE_NAME = { fill: "Fill Playback & Recognition", groove: "Groove Recall", playback: "Playback" };
-/* 一題的練習回饋(節奏吻合度、選譜對錯、完成與否;不算總分) */
+/* 一題的練習回饋(準度、選譜對錯、完成與否;不算總分) */
 function mockDetail(r){
   return () => {
     if (r.stopped) return tr("中途停止(這一題沒有做完)", "Stopped part-way (not finished)");
@@ -1519,7 +1519,7 @@ function mockDetail(r){
     if (r.type === "playback" && R) parts.push(tr("第一次(練習)完成", "Play 1 (practice) done"));
     if (R) {
       const x = R.kind === "rsl" ? R.r : R.all;
-      parts.push(R.taps && !R.silent ? tr(`${R.kind === "rsl" ? "打一遍" : "第二次"} · 節奏吻合度 ${x.score == null ? "—" : x.score} / 100 · 打中 ${x.hits} / ${x.total}`, `${R.kind === "rsl" ? "Play-back" : "Play 2"} · rhythm match ${x.score == null ? "—" : x.score} / 100 · hit ${x.hits} / ${x.total}`)
+      parts.push(R.taps && !R.silent ? tr(`${R.kind === "rsl" ? "打一遍" : "第二次"} · 準度 ${x.score == null ? "—" : x.score} / 100 · 打中 ${x.hits} / ${x.total}`, `${R.kind === "rsl" ? "Play-back" : "Play 2"} · accuracy ${x.score == null ? "—" : x.score} / 100 · hit ${x.hits} / ${x.total}`)
         : R.src === "mic" ? tr(`${R.kind === "rsl" ? "打一遍" : "第二次"} · 麥克風沒有聽到鼓聲`, `${R.kind === "rsl" ? "Play-back" : "Play 2"} · the mic heard no drums`)
         : tr(`${R.kind === "rsl" ? "打一遍" : "第二次"} · 沒有收到鼓墊的敲擊`, `${R.kind === "rsl" ? "Play-back" : "Play 2"} · no pad hits`));
     }
@@ -1553,8 +1553,8 @@ function renderMockCard(){
   }
   if (ms === "result") {
     paintCard($, { title: () => tr("模擬考結果", "Mock exam result"), sub: name,
-      text: () => (mock.data.res.some(x => x.r && x.r.src === "mic") ? tr("節奏吻合度只看敲擊的時間(觸控鼓墊或麥克風;麥克風全部鼓件一條;練習設定的容許範圍)。", "Rhythm match is timing only (pads or mic; the mic merges all drums; practice-setting tolerance).")
-        : tr("節奏吻合度只看觸控鼓墊的敲擊時間(練習設定的容許範圍)。", "Rhythm match is pad timing only (practice-setting tolerance).")),
+      text: () => (mock.data.res.some(x => x.r && x.r.src === "mic") ? tr("準度只看敲擊的時間(觸控鼓墊或麥克風;麥克風全部鼓件一條;練習設定的容許範圍)。", "Accuracy is timing only (pads or mic; the mic merges all drums; practice-setting tolerance).")
+        : tr("準度只看觸控鼓墊的敲擊時間(練習設定的容許範圍)。", "Accuracy is pad timing only (practice-setting tolerance).")),
       rows: rows(), btn: ok ? { label: () => mockLabel("result") } : null, close: { label: () => tr("回到規格", "Back to the spec") } });
     return;
   }
