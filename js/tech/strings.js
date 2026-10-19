@@ -6,7 +6,7 @@ addStrings("tech", {
   play: ["播放示範", "Play"], stop: ["停止", "Stop"],
   good: ["會了", "Got it"], weak: ["再練", "Needs work"],
   mGood: ["會了", "Got it"], mWeak: ["再練", "Needs work"],   // 熟練度按鈕上的小字(圖示旁)
-  scoreTitle: ["鼓譜與左右手(R 右 · L 左)", "Score & sticking (R right · L left)"],
+  scoreTitle: ["鼓譜", "Drum part"],   // 譜卡標題一律「鼓譜」(系統化規則:不加功能說明)
   metroTitle: ["速度", "Tempo"],
   bpmDown: ["慢 1(按住連續減少)", "Slower (hold)"], bpmUp: ["快 1(按住連續增加)", "Faster (hold)"], tempo: ["速度", "Tempo"],
   optLoop: ["循環播放", "Loop"], optRamp: ["每輪加快 4", "+4 each loop"], optClick: ["只聽拍點", "Click only"],
