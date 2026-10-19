@@ -146,7 +146,7 @@ function voiceOf(bar, lines, { compound, where, hands, key }){
       const notes = cells.filter(([, s]) => s[slot] !== "-").map(([k, s]) => {
         const n = { piece: lines[k], ...NOTE[s[slot]] };
         if (hands) {
-          if (cym) n.hand = CYM.has(n.piece) ? "R" : "L";
+          if (cym) { n.hand = CYM.has(n.piece) ? "R" : "L"; n.groove = true; }   // 有鈸的拍 = 律動(過門只標過門的音)
           else if (grid === 4 && mask === 1) n.hand = alt % 2 ? "L" : "R";
           else if (grid === 4) n.hand = eighthsOnly ? (slot === 0 ? "R" : "L") : (slot % 2 ? "L" : "R");
           else n.hand = alt % 2 ? "L" : "R";
@@ -173,6 +173,29 @@ function beatStart(evs, i){
 const LEN_Q = { "1": 4, "2": 2, "2.": 3, "4": 1, "4.": 1.5, "8": 0.5, "8.": 0.75, "16": 0.25, "8t3": 1 / 3, "4t3": 2 / 3 };
 const lenQ = v => LEN_Q[v[0] === "r" ? v.slice(1) : v];
 
+/* 畫面用的譜(播放照原本的 spec):
+   - 每一小節都一模一樣(兩小節一樣的律動)= 一小節 + 反覆記號 ×times(spec.repeat)
+   - 跟前一小節一模一樣的小節 = 一小節反覆記號 %(m.pct;不在每一行的開頭也照樣用)
+   回傳 { spec, len(畫面上一輪幾拍,四分音符), collapsed } */
+export function displaySpec(spec, times = 4){
+  const ms = spec.measures, sig = m => JSON.stringify(m.voices);
+  if (ms.length >= 2 && ms.every(m => sig(m) === sig(ms[0])))
+    return { spec: { ...spec, measures: [ms[0]], repeat: times, dyn: (spec.dyn || []).filter(d => d.m === 0) }, len: specBeats(spec) / ms.length, collapsed: true };
+  const out = ms.map((m, i) => (i && sig(m) === sig(ms[i - 1]) && !(spec.dyn || []).some(d => d.m === i) ? { ...m, pct: true } : m));
+  return { spec: { ...spec, measures: out }, len: specBeats(spec), collapsed: false, pct: out.map(m => !!m.pct) };
+}
+/* 這一關最短的音符(題目卡的標籤;關卡名稱不放時值括號):三連音 > 十六分 > 八分 > 四分(休止也算:十六分休止 = 十六分的律動) */
+export function valueTag(spec){
+  let min = Infinity, tri = false;
+  for (const m of spec.measures) for (const v of m.voices) for (const e of v) {
+    const val = e.value[0] === "r" ? e.value.slice(1) : e.value;
+    if (/t3/.test(val)) tri = true;
+    const q = LEN_Q[val]; if (q == null) continue;
+    min = Math.min(min, q === 0.75 ? 0.25 : q === 1.5 ? 0.5 : q);   // 附點八分 = 跟十六分一組;12/8 的附點四分 = 三個八分
+  }
+  if (tri) return ["三連音", "Triplets"];
+  return min <= 0.25 ? ["十六分音符", "16th notes"] : min <= 0.5 ? ["八分音符", "Eighth notes"] : ["四分音符", "Quarter notes"];
+}
 /* 關卡 → { spec, bars(DSL 展開後), pieces, lenBeats(四分音符), time, compound, pulse(一拍幾個四分音符), seed } */
 export function toSpec(level, seed = 1, { key = null } = {}){
   const time = level.time || "4/4", compound = time === "12/8";
@@ -205,7 +228,7 @@ export function handsOf(spec, key){
     let t = 0;
     for (const e of m.voices[0] || []) {
       const v = e.value[0] === "r" ? e.value.slice(1) : e.value;
-      if (e.notes) [...e.notes].sort((a, b) => ord(a.piece) - ord(b.piece)).forEach((n, k) => { if (n.hand) out.push({ mi, t: Math.round(t), k, hand: n.hand }); });
+      if (e.notes) [...e.notes].sort((a, b) => ord(a.piece) - ord(b.piece)).forEach((n, k) => { if (n.hand) out.push({ mi, t: Math.round(t), k, hand: n.hand, groove: !!n.groove }); });
       t += lenQ(v) * DIV;
     }
   });

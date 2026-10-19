@@ -370,7 +370,12 @@ export function scoreXML(spec){
     }
     if (mi === 0) attrs.push(`<clef><sign>percussion</sign></clef><staff-details><staff-lines>${lines}</staff-lines></staff-details>`);
     const body = [];
-    if (m.slash) {
+    if (m.pct) {
+      // 一小節反覆記號(跟前一小節一模一樣):小節裡放看不見的整小節休止,% 記號由畫譜的人畫(js/tech/route.js 的 drawPct)
+      body.push(`<note print-object="no"><rest measure="yes"/><duration>${meter.len}</duration><voice>1</voice></note>`);
+      if (feet) body.push(`<backup><duration>${meter.len}</duration></backup><note print-object="no"><rest measure="yes"/><duration>${meter.len}</duration><voice>2</voice></note>`);
+      tieCarry = [null, null];
+    } else if (m.slash) {
       body.push(...slashXML(meter, lines));
       tieCarry = [null, null];
       // 力度在斜線小節:放在對應的拍上
@@ -408,8 +413,12 @@ export function scoreXML(spec){
       }
     }
     const last = mi === measures.length - 1;
-    xm.push(`<measure number="${mi + 1}">${attrs.length ? `<attributes>${attrs.join("")}</attributes>` : ""}${body.join("")}` +
-      (last ? `<barline location="right"><bar-style>light-heavy</bar-style></barline>` : "") + `</measure>`);
+    // spec.repeat = N:整份畫反覆記號,上面寫 ×N(兩小節一樣的律動縮成一小節)
+    const rep = spec.repeat > 1;
+    const left = rep && mi === 0 ? `<barline location="left"><bar-style>heavy-light</bar-style><repeat direction="forward"/></barline>` : "";
+    const words = rep && mi === 0 ? `<direction placement="above"><direction-type><words font-size="11">×${spec.repeat}</words></direction-type><voice>1</voice></direction>` : "";
+    xm.push(`<measure number="${mi + 1}">${left}${attrs.length ? `<attributes>${attrs.join("")}</attributes>` : ""}${words}${body.join("")}` +
+      (last ? (rep ? `<barline location="right"><bar-style>light-heavy</bar-style><repeat direction="backward" times="${spec.repeat}"/></barline>` : `<barline location="right"><bar-style>light-heavy</bar-style></barline>`) : "") + `</measure>`);
   });
   if (tieCarry.some(Boolean)) throw new Error("最後一個音有連結線但後面沒有音");
   return `<?xml version="1.0" encoding="UTF-8"?>

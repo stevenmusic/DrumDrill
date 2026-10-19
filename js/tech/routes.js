@@ -16,9 +16,9 @@ const c = (zh, en) => [zh, en];
 
 const GROOVE = [
   // ── A 四分音符(手腳對齊)──
-  { id: "A1", g: "A", name: c("右手和大鼓一起(四分音符)", "Hand and kick together"), start: 56, target: 80, pat: { hh: Q, bd: Q },
+  { id: "A1", g: "A", name: c("右手和大鼓一起", "Hand and kick together"), start: 56, target: 80, pat: { hh: Q, bd: Q },
     check: [c("Hi-hat 和大鼓同時下去", "Hi-hat and kick land together"), c("數出來:1、2、3、4", "Count out loud: 1 2 3 4")] },
-  { id: "A2", g: "A", name: c("Hi-hat 和小鼓(四分音符)", "Hi-hat with snare on 2 & 4"), start: 56, target: 84, pat: { hh: Q, sd: SD24 },
+  { id: "A2", g: "A", name: c("Hi-hat 和小鼓", "Hi-hat with snare on 2 & 4"), start: 56, target: 84, pat: { hh: Q, sd: SD24 },
     check: [c("右手 Hi-hat、左手小鼓", "Right hand hi-hat, left hand snare"), c("2、4 拍兩手同時", "Both hands together on 2 and 4")] },
   { id: "A3", g: "A", name: c("大鼓和小鼓輪流", "Kick and snare trade"), start: 60, target: 96, pat: { sd: SD24, bd: BD13 },
     check: [c("大鼓 1、3,小鼓 2、4", "Kick on 1 & 3, snare on 2 & 4"), c("間隔一樣,不要越打越快", "Even spacing, don't rush")] },
@@ -59,10 +59,10 @@ const GROOVE = [
     check: [c("左腳穩定,不跟著大鼓亂", "Left foot steady, not pulled by the kick"), c("腳跟可以跟著拍子點", "Let the heel mark the beat")] },
   { id: "D3", g: "D", name: c("開 Hi-hat 在 4 拍後半", "Open hi-hat on 4&"), start: 60, target: 92, pat: { hh: "x-x- x-x- x-x- x-o-", sd: SD24, bd: BD13 },
     check: [c("4 拍後半左腳放開,讓 Hi-hat 響", "Lift the left foot on 4& so it rings"), c("下一個 1 左腳踩下去關好", "Close it with the foot on the next 1")] },
-  { id: "D4", g: "D", name: c("左腳在反拍", "Foot hi-hat on the &s"), start: 56, target: 84, pat: { ride: E8, sd: SD24, bd: BD13, hf: "--x- --x- --x- --x-" },
-    check: [c("左腳在 &,跟 Ride 同時", "Left foot on the &, with the ride"), c("拍上不要踩", "Not on the beats")] },
   { id: "D5", g: "D", name: c("四肢 + 讀大鼓(每天不一樣)", "All four limbs, read the kick"), start: 56, target: 84, pat: { ride: E8, sd: SD24, hf: SD24, bd: "@kick8" },
     check: [c("先看大鼓", "Read the kick first"), c("左腳一直在 2、4", "Left foot stays on 2 & 4")] },
+  { id: "D4", g: "D", name: c("左腳在反拍", "Foot hi-hat on the &s"), start: 56, target: 84, pat: { ride: E8, sd: SD24, bd: BD13, hf: "--x- --x- --x- --x-" },
+    check: [c("左腳在 &,跟 Ride 同時", "Left foot on the &, with the ride"), c("拍上不要踩", "Not on the beats")] },
   // ── E 十六分音符(預設不標左右手)──
   { id: "E1", g: "E", name: c("十六分 Hi-hat(一隻手)", "16th-note hi-hat, one hand"), start: 50, target: 76, rl: false, pat: { hh: S16, sd: SD24, bd: BD13 },
     check: [c("手腕放鬆,用彈的", "Loose wrist, let it bounce"), c("小鼓那一下 Hi-hat 照打", "Keep the hi-hat going on the snare")] },
@@ -71,7 +71,7 @@ const GROOVE = [
   { id: "E3", g: "E", name: c("八分 Hi-hat 下的十六分大鼓", "16th kick under eighth hi-hat"), start: 56, target: 84, rl: false, pat: { hh: E8, sd: SD24, bd: "x--- ---x x-x- ----" },
     check: [c("大鼓落在兩下 Hi-hat 中間", "The kick falls between hi-hat notes"), c("心裡數十六分", "Count 16ths in your head")] },
   // ── F 三連音感(預設不標左右手)──
-  { id: "F1", g: "F", name: c("12/8 抒情節奏", "12/8 ballad"), time: "12/8", start: 40, target: 60, up: 4, rl: false,
+  { id: "F1", g: "F", name: c("12/8 抒情節奏", "12/8 ballad"), time: "12/8", start: 40, target: 60, rl: false,
     pat: { hh: "xxx xxx xxx xxx", sd: "--- x-- --- x--", bd: "x-- --- x-- ---" },
     check: [c("一拍三下平均", "Three even notes per beat"), c("小鼓在第 2、4 大拍", "Snare on big beats 2 & 4")] },
   { id: "F2", g: "F", name: c("Shuffle", "Shuffle"), start: 60, target: 96, rl: false, pat: { hh: "x-x x-x x-x x-x", sd: "--- x-- --- x--", bd: "x-- --- x-- ---" },
@@ -94,7 +94,7 @@ const FILLS = [
   { id: "FA4", g: "FA", name: c("第 4 拍小鼓八分兩下", "Two snare eighths on 4"), start: 60, target: 100,
     pat: fill({ hh: HH123, sd: "---- x--- ---- x-x-", bd: BD13 }),
     check: [c("第 4 拍的兩下一樣大", "Both notes on 4 even"), c("過門完馬上回到 Crash", "Straight back to the crash")] },
-  { id: "FA5", g: "FA", name: c("落地鼓加大鼓(八分)", "Floor tom with kick (eighths)"), start: 60, target: 92,
+  { id: "FA5", g: "FA", name: c("落地鼓加大鼓", "Floor tom with kick"), start: 60, target: 92,
     pat: fill({ hh: HH12, sd: "---- x--- x-x- ----", ft: "---- ---- ---- x-x-", bd: "x--- ---- ---- x-x-" }),
     check: [c("落地鼓和大鼓同時", "Floor tom and kick together"), c("最後落在 Crash", "Land on the crash")] },
   // ── FB 十六分音符的過門 ──
@@ -145,6 +145,14 @@ const FILLS = [
     check: [c("先看譜再打", "Read it before you play"), c("落地準", "Land exactly on 1")] }
 ];
 
+/* 律動:C 組以後預設不標左右手(審查定案 2026-10;A、B 組標,只標第 1 小節);
+   重點那一行第一個固定寫手怎麼分(「右手 Hi-hat、左手小鼓」,有 Ride 寫「右手 Ride」;check 裡已經寫了的不重複;dailycard 的 level.handsLine) */
+for (const L of GROOVE) {
+  if (["C", "D"].includes(L.g) && L.rl == null) L.rl = false;
+  const pats = Array.isArray(L.pat) ? L.pat : [L.pat], has = k => pats.some(p => p && p[k]);
+  if ((has("sd") || has("xs")) && (has("ride") || has("hh")) && !L.check.some(x => /右手/.test(x[0])))
+    L.handsLine = has("ride") ? c("右手 Ride、左手小鼓", "RH ride, LH snare") : c("右手 Hi-hat、左手小鼓", "RH hi-hat, LH snare");
+}
 export const ROUTES = [
   { id: "groove", name: ["律動", "Grooves"], levels: GROOVE },
   { id: "fill", name: ["過門", "Fills"], unlock: { route: "groove", passed: "B2" }, levels: FILLS }
@@ -154,7 +162,7 @@ export const ROUTES = [
    一開始是 RSL 練習型的寫法(rudiments.js 的 pattern():單擊四分、八分),PAS 原譜(三十二分、滾奏斜線)等到十六分那一組練過才出現。
    after = 律動過了哪一關才加進來 */
 export const WARM = [
-  { pas: 1, sticking: "single", value: "4", name: ["單擊 四分音符 RL", "Singles in quarters, RL"] },
+  { pas: 1, sticking: "single", value: "4", name: ["單擊 四分音符 RL", "Singles in quarters, RL"], check: [c("鼓棒高度一樣", "Same stick height"), c("兩手音量一樣", "Both hands equally loud")] },
   { pas: 1, sticking: "single", value: "8", after: "A2", name: ["單擊 八分音符 RLRL", "Singles in eighths, RLRL"] },
   { pas: 6, sticking: "double", value: "8", after: "B2", name: ["雙擊 八分音符 RRLL", "Doubles in eighths, RRLL"] },
   { pas: 16, value: "8", after: "B2" },

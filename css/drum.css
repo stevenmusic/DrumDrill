@@ -513,5 +513,5 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 #mod-tech .along > .text-btn{align-self:flex-start;margin-top:0;min-height:44px}
 #mod-tech.route-mode .play-opts,#mod-tech.route-mode #t-bestTempo{display:none}
 @media (min-width:1100px){ #t-rStage{max-width:820px;margin-left:auto;margin-right:auto} }
-/* 窄畫面:段落面板的文字鈕(回上一關、沒有鼓?)一行,按鈕(再練、穩了、打一遍)下一行靠右,不會掉一顆到左邊 */
-@media (max-width:360px){ #t-dailyStep .daily-acts .daily-sp{flex:1 0 100%;height:0} #t-dailyStep .daily-acts .daily-sp + .btn{margin-left:auto} }
+/* 段落按鈕列:文字縮短以後折疊機也排得進一行(放不下才自然換行) */
+@media (max-width:360px){ #t-dailyStep .daily-acts .daily-sp + .btn{margin-left:auto} }   /* 換行時按鈕靠右 */

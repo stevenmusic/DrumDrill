@@ -17,6 +17,7 @@ import { createDaily, clickPlays, dayNum } from "../shared/daily.js";
 import { createDailyCard } from "../shared/dailycard.js";
 import { ROUTES, WARM } from "./routes.js";
 import { createRouteView } from "./route.js";
+import { toSpec, valueTag } from "./routespec.js";
 import "./strings.js";
 const T = scoped("tech");
 
@@ -1019,7 +1020,7 @@ function warmItem(d, today){
   const list0 = open.filter(w => tiers.includes(w.after || ""));
   const weak = list0.filter(w => S.mastery[w.pas] === "weak"), list = weak.length ? weak : list0;
   const w = list[Math.abs(hashDay(today)) % list.length];
-  return { pas: w.pas, sticking: w.sticking, value: w.value, name: w.name, bpm: w.value ? 60 : S.bpm[w.pas] || 56 };
+  return { pas: w.pas, sticking: w.sticking, value: w.value, name: w.name, check: w.check, bpm: w.value ? 60 : S.bpm[w.pas] || 56 };
 }
 /* 暖身項目的名稱:WARM 有寫的照寫;練習型 = PAS 名稱 + 時值;PAS 原譜 = 編號 + 名稱(換語言重算) */
 function warmName(it){
@@ -1041,8 +1042,8 @@ const daily = createDaily({ routes: ROUTES, load: () => S.daily, save: d => { S.
 const dcard = createDailyCard({ $, daily, announce,
   // 段落按鈕「穩了 / 還要練」(不跟熟練度的「會了 / 再練」撞名);狀態一句短話(fold-280 不超過兩行)
   labels: { ok: ["穩了", "Steady"], again: ["還要練", "Not yet"],
-    hint: ["▶ 聽示範,在鼓上跟著打;穩了按 ✓", "▶ for the demo; play along on your kit, then ✓"],
-    solo: ["▶ 只有拍點:在鼓上自己打,穩了按 ✓", "▶ is click only: play it, then ✓"] },
+    hint: ["▶ 聽示範,在鼓上跟著打;穩了按 ✓", "▶ Demo; play along, then ✓"],
+    solo: ["▶ 只有拍點:在鼓上自己打,穩了按 ✓", "Click only: play it, then ✓"] },
   mark: s => (s && s.level && s.level.time === "12/8" ? "♩.=" : "♩="),   // 12/8 的速度是附點四分
   warmName: warmName, log: () => S.log,
   onStart: () => { dShow(daily.begin()); window.scrollTo({ top: 0 }); },
@@ -1102,7 +1103,16 @@ function paintStep(s, o){ dcard.renderStep(s, o); }
 const stepStatus = () => stepText || (routeOn() && rv.pad ? () => { const s = dseg; return (s.welcome ? TS("daily.welcome").replace("{b}", s.bpm).replace("♩=", s.level && s.level.time === "12/8" ? "♩.=" : "♩=") + tr("", " ") : "") + tr(...(s.click && s.click !== "every" ? PAD_HINT.solo : PAD_HINT.hint)); } : null);
 /* 路線段的標籤:[律動 第 3 關] [♩=68 → 90](現在的實際速度;12/8 寫 ♩.) */
 function routeTags(){
-  return dcard.segTags({ ...dseg, bpm });   // 12/8 的 ♩.= 由 dailycard 的 mark 處理
+  // 時值放在標籤(關卡名稱不放時值括號):[律動 第 1 關] [四分音符] [♩=56 → 80]
+  const tags = dcard.segTags({ ...dseg, bpm }), vt = valueOfSeg(dseg);
+  if (vt) tags.splice(1, 0, tr(vt[0], vt[1]));
+  return tags;   // 12/8 的 ♩.= 由 dailycard 的 mark 處理
+}
+let vtCache = { k: null, v: null };
+function valueOfSeg(s){
+  const k = s.level ? s.level.id + ":" + seedOf(s) : null; if (!k) return null;
+  if (vtCache.k !== k) { let v = null; try { v = valueTag(toSpec(s.level, seedOf(s)).spec); } catch (e) { console.error(e); } vtCache = { k, v }; }
+  return vtCache.v;
 }
 function paintTags(){ if (dseg && target && target.daily) $("qTags").innerHTML = (dseg.k === "warm" ? dcard.segTags({ ...dseg, bpm }) : routeTags()).map(t => `<span class="q-tag">${t}</span>`).join(""); }
 /* 路線段:藏起打法的鼓譜卡、選擇器的選項;顯示鼓組譜卡(鼓墊卡看模式) */
