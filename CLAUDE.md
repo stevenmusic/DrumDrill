@@ -86,7 +86,7 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
   - 整組鼓 `audio.loadKit`(進度在題目卡);測試掛鉤 `window.__ear`(`state`、`finishNow`、`expected`…)
 - **模擬考**(S14,`js/shared/mock.js`;照 PianoDrill 的 `t-mockBtn` / `e-mockBtn` 與 `.mock-res`):每個模組的檢定頁一張模擬考卡(`#t-mockCard`、`#s-mockCard`、`#e-mockCard`),不做跨模組的整場模擬
   - 技巧(RSL):每一組抽一項(只抽 `pas`、`pattern`;`book` 組顯示「這一組請用檢定書練」並跳過),依組的順序一項一項;官方速度 + 拍點(預備拍 1 小節),
-    Debut–3 可選「只聽一小節拍點」(`tech[g].click === "optional"`,p.30 等),4–8 一定跟拍點;只播拍點、不播示範;每項 4 小節(練習設定);Trinity 沒有技巧模擬考(在 Song 3 評)
+    Debut–3 可選「只聽一小節拍點」(`tech[g].click === "optional"`,p.30 等),4–8 一定跟拍點;只播拍點、不播示範;每項 4 小節(練習設定);Trinity 沒有技巧模擬考(在 Song 3 評;不放模擬考卡,本級要求底下一行字)
   - 視奏:出一題 → 官方準備時間計時,不能暫停、不能提早結束(RSL 90 秒 / Trinity Playback 看譜 30 秒)→ 時間到自動正式打一次;RSL 用這一題的官方速度,Trinity 用自己的練習速度(練習設定);RSL 6–8 沒有模擬考
   - 聽力:RSL = Fill → Groove 各一題(自動聽兩次、不能重聽、不能看答案;練習後回打;Fill 再選譜);Trinity = Playback(看譜 30 秒 → 第一次 → 第二次,自動接下去)
   - 進行中、結果、中止的說明:考試摘要(配分、等第)與規格卡 / 本級要求藏起來;結果只有各項的練習回饋(節奏吻合度、選譜對錯、完成與否),
@@ -95,7 +95,7 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
     說明的系統與級數用 `mockRun` 存的 {sys, grade}(`mock.who`),不用現在的考試);自動開始的那一步(聽力自動聽題目、Trinity 自動第一次 / 第二次)鼓聲載入失敗 = 中止(`abort("load")`)
   - 按「停止模擬考」= `close()`(不算、回到檢定頁);開始、結果、中止時把模擬考卡捲到頂欄下(`cardToTop`;手機橫式、折疊機才看得到);模擬考中不能換題(視奏的 N 鍵也不行)
   - 準備 / 看譜的倒數照 `performance.now()` 的終點算(主執行緒卡住也不會變慢)
-  - 技巧:練習型標「App 依大綱時值排的練習型 · 不是官方譜」(`t-mockMsg`)、時值推估的加「推估」標籤;進行中的說明寫官方速度的頁碼;混合組(pattern + book)結果註明檢定書的項目這次沒練;沒選考試時不顯示模擬考卡(跟視奏、聽力一樣)
+  - 技巧:練習型標「App 依大綱時值排的練習型 · 不是官方譜」(`t-mockMsg`;題目卡標籤只放官方速度與「推估」,組別在下面那一列)、「只聽一小節拍點」鈕不寫頁碼(說明裡有);進行中的說明寫官方速度的頁碼;混合組(pattern + book)結果註明檢定書的項目這次沒練;沒選考試時不顯示模擬考卡(跟視奏、聽力一樣)
   - 進行中、結果也算進練習紀錄(真的打了);測試掛鉤:`__tech.startMock / mockNext / mockFinishRun`、`__sight.startMock / mockSkipPrep`、`__ear.startMock / mockNext / mockSkipStudy`
 - **任務腳本** `tools/test/tasks.mjs`(兩個 App 同一份,@app 區段放各自的任務;sync.json markers):模擬真人從打開 App 完成任務,記錄點幾下才開始練、要不要捲動、
   有沒有點到收起來的卡、有沒有下拉選單、點擊區域 ≥ 28、最後的畫面有沒有寫下一步。改版面一定要跑(這一個可以跑,不用跑整套 layout / bilingual)
@@ -131,6 +131,8 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
   - 文字對比 ≥ 4.5:1(大字 3:1;深淺兩種主題,`a11y.mjs` 量實際背景);改顏色代幣要兩邊同步並看截圖
 - **精簡**(2026-10 使用者要求;兩個 App 一樣):同一件事一個畫面只說一次;收起來的設定列(`#t-picker`、`#s-setup`、`#e-setup`)只寫題目卡標題 / 標籤沒有的(例如「♩=80 · 節拍器 開」);
   頁尾兩行:一行簡短出處 +「授權與出處 · 隱私權政策 · 支援」(完整內容在 `licenses.html`);聽力「看答案」聽過一次題目才出現、答完藏起來,「下一題」是次要按鈕(模擬考裡才是主要)
+- 技巧分頁(精簡):速度卡副標「建議:慢 → 快 → 慢」、拍點燈號在 BPM 數字那一行右邊、「每輪加快 4」只在開了循環播放時出現;選擇器的起手 / 反覆列平分整行;
+  檢定頁本級要求:開頭一句「名稱後面寫時值的是 App 依大綱排的練習型,不是官方譜(RSL p.42)」,組的速度 / 頁碼跟前一組一樣就不寫,同一段附註第二次縮成「配置見檢定書」
 - 中英雙語(預設英文,切過就記住):外框字串 `js/shared/i18n.js`、技巧 `js/tech/strings.js`(前綴 `tech.`)、視奏 `js/sight/strings.js`(前綴 `sight.`)、聽力 `js/ear/strings.js`(前綴 `ear.`);程式產生的文字用 `tr("中", "EN")`
 - 用詞:「檢定」「考試」,不用「考級」(只有 App Store 關鍵字可以放)
 - localStorage:`drumdrill.v1`(外框;`mic` = 麥克風評分開關)、`drumdrill.tech.v1`(技巧:熟練度、速度、`log`、`goal`、`mockOneBar`、`mockRun`)、`drumdrill.sight.v1`(視奏:節拍器 / 拍點開關、`bpmOverride` 練習速度(`rsl-3`、`trinity-4`、`rhythm-2`)、

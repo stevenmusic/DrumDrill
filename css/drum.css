@@ -439,3 +439,11 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
   #s-rdOpts .rd-row:has(> .rd-quick) > .lbl{padding-top:9px}
 }
 #mod-sight .along-result .r-next{color:var(--ivory)}
+/* 精簡(2026-10):技巧選擇器的起手、反覆列平分整行(×1 ×2 ×4 ×8 四欄);拍點燈號併到 BPM 數字那一行右邊;本級要求的組間距 16px */
+#t-picker .opts.even{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
+#t-picker .opts.even .opt{justify-content:center}
+#t-metroCard .bpm{flex-wrap:wrap}
+#t-metroCard .bpm .beats{margin-left:auto;align-self:center;gap:4px}
+#t-metroCard .bpm .beats i{width:10px;height:10px}
+#t-qGroups .xgroup{padding-top:8px;margin-top:8px}
+#t-metroCard .play-opts{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}   /* 「每輪加快 4」藏起來時兩顆平分 */

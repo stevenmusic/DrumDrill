@@ -9,7 +9,7 @@ addStrings("tech", {
   scoreTitle: ["鼓譜與左右手", "Score & sticking"],
   metroTitle: ["速度", "Tempo"],
   bpmDown: ["慢 1(按住連續減少)", "Slower (hold)"], bpmUp: ["快 1(按住連續增加)", "Faster (hold)"], tempo: ["速度", "Tempo"],
-  optLoop: ["循環播放", "Loop"], optRamp: ["每輪 +4", "+4 / loop"], optClick: ["只聽拍點", "Click only"],
+  optLoop: ["循環播放", "Loop"], optRamp: ["每輪加快 4", "+4 each loop"], optClick: ["只聽拍點", "Click only"],
   logTitle: ["練習紀錄", "Practice log"], logStreak: ["連續天數", "Day streak"], logToday: ["今天次數", "Today"], logMin: ["今天分鐘", "Minutes"],
   examTitle: ["本級要求", "This grade"],
   bestLabel: ["示範最快", "Demo best"],
