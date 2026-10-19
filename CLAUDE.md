@@ -9,7 +9,8 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
 
 ## 架構(照 PianoDrill)
 - 底部四個分頁:**技巧 / 視奏 / 聽力 / 檢定**。頂欄下面的子項目分段鈕:技巧 = 滾奏/複點/Flam/Drag(PAS 四大類)、視奏 = 級數 0–8(第一格 RSL 寫 D、Trinity 寫 I,aria-label 寫完整級名;沒選考試時用 RSL)、檢定 = 技巧/視奏/聽力
-- 檢定:考試系統 **Trinity Rock & Pop Drums**(初級 Initial、1–8 級)與 **RSL Rockschool Drums**(入門 Debut、1–8 級),在外框設一次(`js/main.js`)
+- 檢定:考試系統 **Trinity Rock & Pop Drums**(初級 Initial、1–8 級)與 **RSL Rockschool Drums**(入門 Debut、1–8 級),在外框設一次(`js/main.js`)。
+    檢定頁的考試卡(`#examSetup`)不收起來:系統兩顆大鈕(`#systemSeg`)+ 級數一排按鈕(`#gradeSeg`,第一格 D / I,aria-label 寫完整級名),點一下就換;第一次的問題同樣是按鈕列(`#obGradeSeg`),不用下拉選單
   - Trinity 只採用 Rock & Pop 大綱;不用 Drum Kit & Percussion 系列的要求(記譜圖例用到 DK p.107 是例外,要標出處)
   - 檢定頁不顯示練習紀錄(模擬考的進行中 / 結果 / 中止說明例外:那個畫面藏起配分、等第與規格卡,只有各項練習回饋,不算總分)
 - 第一次打開問「你在準備爵士鼓檢定嗎?」:選了 → 打開檢定分頁;不考 → 技巧分頁自由練習

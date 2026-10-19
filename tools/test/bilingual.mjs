@@ -108,9 +108,9 @@ for (const [name, w, h, mobile] of VPS) {
   await page.evaluate(() => { localStorage.clear(); localStorage.setItem("drumdrill-lang", "zh"); });
   await page.reload(); await page.waitForFunction(() => window.__stageReady >= 1);
   await compare(page, name, "對話框");
-  await page.selectOption("#obGrade", "5"); await page.click("#obYes"); await page.waitForTimeout(300);
+  await page.click('#obGradeSeg button[data-v="5"]'); await page.click("#obYes"); await page.waitForTimeout(300);
   await compare(page, name, "檢定 收合");
-  await expand("#examSetup"); await compare(page, name, "檢定 展開");
+  await page.click('#gradeSeg button[data-v="3"]'); await page.waitForTimeout(300); await compare(page, name, "檢定 換級數");
   await page.click('#systemSeg button[data-v="rsl"]'); await page.waitForTimeout(300);
   await compare(page, name, "檢定 RSL");
   await sub("sight"); await compare(page, name, "檢定 視奏");

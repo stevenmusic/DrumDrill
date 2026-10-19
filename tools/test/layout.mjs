@@ -165,7 +165,7 @@ for (const [name, w, h, mobile] of VPS) {
   await page.evaluate(() => { localStorage.clear(); localStorage.setItem("drumdrill-lang", "zh"); });
   await page.reload(); await page.waitForFunction(() => window.__stageReady >= 1);
   await audit(page, name, "對話框"); await shot("onboard");
-  await page.click('#obSystem button[data-v="rsl"]'); await page.selectOption("#obGrade", "8"); await page.click("#obYes");
+  await page.click('#obSystem button[data-v="rsl"]'); await page.click('#obGradeSeg button[data-v="8"]'); await page.click("#obYes");
   await page.waitForTimeout(300);
   // 檢定:技巧(本級要求還沒有)、視奏、聽力
   await audit(page, name, "檢定 技巧"); await shot("exam");
@@ -190,7 +190,7 @@ for (const [name, w, h, mobile] of VPS) {
     await page.click("#t-targetClose"); await page.waitForTimeout(200);
   }
   await page.evaluate(() => { window.__shell.setExam("rsl", 8); window.__shell.showView("exam", "tech"); }); await page.waitForTimeout(250);
-  await expand("#examSetup"); await page.click('#systemSeg button[data-v="trinity"]'); await page.waitForTimeout(300);
+  await page.click('#gradeSeg button[data-v="0"]'); await page.click('#systemSeg button[data-v="trinity"]'); await page.waitForTimeout(300);
   await audit(page, name, "檢定 Trinity 設定展開");
   await sub("sight"); await audit(page, name, "檢定 視奏");
   await sub("ear"); await audit(page, name, "檢定 聽力");
