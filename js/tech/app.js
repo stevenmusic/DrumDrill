@@ -101,7 +101,7 @@ const subOf = r => catOf(r.cat).sub.find(s => r.no >= s.from && r.no <= s.to);
 /* 換語言時重寫的文字:選擇器、題目、標籤、速度單位、按鈕、紀錄卡;在檢定頁時重畫檢定說明 */
 function relabel(){
   syncTarget();
-  dcard.relang(dseg);
+  modeHome(); dcard.relang(dseg); modeIn();
   rv.relang();
   if (tab === "exam") renderExam();
   else if (cur || routeOn()) {
@@ -1043,7 +1043,7 @@ const rlFor = level => { const r = level.route ? level.route.id : null, v = S.rl
 rv = createRouteView({ $, tempo, drumKey: () => (ctx && ctx.drumKey ? ctx.drumKey() : Promise.resolve(null)), getBpm: () => bpm,
   isActive: () => active,
   addSec: sec => addPracticeSec(sec),
-  onResult: ({ score: sc, res }) => dTry({ score: sc, res }),
+  onResult: ({ score: sc, res, bpm: b }) => dTry({ score: sc, res, at: b }),
   onPlayState: st => {
     $("playBtn").classList.toggle("busy", st === "busy");
     const on = st === "demo";
@@ -1076,10 +1076,20 @@ function setPadMode(on){
   S.padMode = !!on; store.save();
   rv.pad = !!on;
   $("quizCard").classList.toggle("pad-mode", !!on && routeOn());
-  if (dseg) dcard.renderStep(dseg, { status: stepStatus(), passedDone: stepDone });
+  if (dseg) paintStep(dseg, { status: stepStatus(), passedDone: stepDone });
   if (on) requestAnimationFrame(() => revealRoute(true));
 }
 let stepDone = false, stepText = null;
+/* 段落面板(dailycard.js 畫的)的按鈕列:「沒有鼓?用手機鼓墊」接在「回上一關」後面、「打一遍」放在最右邊(主要按鈕);
+   面板每次重畫前先把這兩顆搬回 #t-rMode(重畫會清掉面板的內容),畫完再搬進去 */
+function modeHome(){ const m = $("rMode"); if (m) { m.append($("rModeBtn")); m.append($("rPerform")); } }
+function modeIn(){
+  const acts = $("dailyStep").querySelector(".daily-acts");
+  if (!acts || !routeOn()) return;
+  acts.insertBefore($("rModeBtn"), acts.querySelector(".daily-sp"));
+  acts.append($("rPerform"));
+}
+function paintStep(s, o){ modeHome(); dcard.renderStep(s, o); modeIn(); }
 const stepStatus = () => stepText || (routeOn() && rv.pad ? () => { const s = dseg; return (s.welcome ? TS("daily.welcome").replace("{b}", s.bpm) + tr("", " ") : "") + tr(...(s.click && s.click !== "every" ? PAD_HINT.solo : PAD_HINT.hint)) +
     (s.k === "route" && !s.tries ? tr("", " ") + TS("daily.need").replace("{b}", s.target).replace("{n}", s.need) : ""); } : null);
 /* 路線段的標籤:[律動 第 3 關] [♩=68 → 90](現在的實際速度;12/8 寫 ♩.) */
@@ -1125,7 +1135,7 @@ function dShow(s, status = null){
     $("playBtn").disabled = false;
   }
   syncTarget();
-  dcard.render(); dcard.renderStep(s, { status: stepStatus() });
+  dcard.render(); paintStep(s, { status: stepStatus() });
   announce(tr("今日練習:", "Today: ") + $("qTitle").textContent);
 }
 /* 離開段落(暫停或今天練完):回到一般的打法畫面 */
@@ -1136,14 +1146,14 @@ function dExit(){
   if (target && target.daily) target = null;
   routeMode(false);
   if (ctx && ctx.setSubActive) ctx.setSubActive(true, "tech");
-  dcard.renderStep(null);
+  paintStep(null);
   if (tab !== "exam") { $("picker").hidden = false; dcard.render(); if (wasRoute && cur) setRudiment(cur.no); }
 }
 /* 一次嘗試:自評(穩了 / 再練)或鼓墊的分數 */
-function dTry({ self = null, score: sc = null, res = null } = {}){
+function dTry({ self = null, score: sc = null, res = null, at = null } = {}){
   if (!dseg || dseg.k === "warm") return;
   if (self) stopPlayback();
-  const s = dseg, r = daily.attempt(res ? { bpm, score: sc } : { bpm, self });
+  const s = dseg, r = daily.attempt(res ? { bpm: at || bpm, score: sc } : { bpm, self });
   if (!r) return;
   const head = res ? (res.offsetTooLarge ? () => "" : () => tr(`打中 ${sc} · `, `Score ${sc} · `)) : () => "";
   const txt = () => head() + dcard.resultText(r, s);
@@ -1153,7 +1163,7 @@ function dTry({ self = null, score: sc = null, res = null } = {}){
   if (s.k === "route") { bpm = r.nextBpm; target.bpm = bpm; syncTempoUI(); }
   renderTitle(); if (active) fitTitle();
   stepDone = r.passed || s.k === "review"; stepText = txt;
-  dcard.renderStep(dseg, { status: txt, passedDone: stepDone });
+  paintStep(dseg, { status: txt, passedDone: stepDone });
   $("rPerform").hidden = !rv.pad || stepDone;
   dcard.render();
 }

@@ -212,7 +212,7 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
     const res = scoreLanes(expectedByLane(ev, R.qbpm, LANES[3]), taps, { tempoBpm: R.qbpm });
     const sc = taps.length ? res.score : 0;
     paintResult(res, taps.length);
-    onResult({ score: res.offsetTooLarge ? null : sc, res, taps: taps.length });
+    onResult({ score: res.offsetTooLarge ? null : sc, res, taps: taps.length, bpm: Math.round(R.qbpm / r.pulse) });   // 速度 = 開始打的那一個(打的時候改了不算)
   }
   function paintResult(res, n){
     const el = $("rResult");
@@ -236,7 +236,7 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
   function syncPadUI(){
     const on = !!cur && pad;
     $("rPadCard").hidden = !on;
-    $("rMode").hidden = !cur;
+    $("rMode").hidden = true;   // 只是暫放的地方:兩顆按鈕搬進段落面板的按鈕列(app.js modeIn)
     $("rModeBtn").hidden = on;
     $("rPerform").hidden = !on;
     pairText($("rModeBtn"), () => tr("沒有鼓?用手機鼓墊", "No kit? Use the phone pads"));

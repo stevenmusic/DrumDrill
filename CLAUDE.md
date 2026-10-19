@@ -121,7 +121,7 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
   - 技巧:連續天數 / 今天次數 / 今天分鐘;視奏:連續天數 / 今天題數 / 今天分鐘 + 各分類練過題數與目前難度(`#s-statsCard`);聽力:連續天數 / 今天題數 / 今天正確率(`e-logAcc` = 回打命中的音 + 選對的譜 ÷ 全部)+ 各題型正確率(`#e-statsCard`)
   - 秒數只算真的播放、準備、作答的時間(技巧:預備拍之後的播放;視奏:準備、正式打、聽正確版本;聽力:聽題目、看譜、回打);保留 400 天
   - 紀錄卡、統計卡是練習回饋:檢定頁不放(`app.css` 的 `body.view-exam`,兩個 App 一樣);統計卡沒有資料時整張藏起來(認譜不顯示 `#s-statsCard`);檢定頁三格進度(`examStatus`)只寫進度(會了 n/m、已練 n 題),不寫打中率
-- **今日練習**(2026-10 使用者要求;兩個 App 同一套,第一階段 = 共用引擎與卡片 + 暫時的示範關卡,正式路線下一階段):技巧分頁最上面一張卡(`#t-dailyCard`),一顆大按鈕「開始今天的練習」,App 帶著練約 10 分鐘(固定,不給選);檢定頁不顯示
+- **今日練習**(2026-10 使用者要求;兩個 App 同一套:第一階段 = 共用引擎與卡片,第二階段 = 各 App 的正式路線):技巧分頁最上面一張卡(`#t-dailyCard`),一顆大按鈕「開始今天的練習」,App 帶著練約 10 分鐘(固定,不給選);檢定頁不顯示
   - 引擎 `js/shared/daily.js`(純邏輯、不 import、node 可測;兩個 App 逐位元組相同,sync.json same;檢查 `tools/test/checks/daily.mjs`,兩邊 verify 都跑,也是 same)。
     數字都是練習設定,寫在 daily.js 開頭,路線 / 關卡資料可以覆寫(`up` / `down` / `need` / `click` / `vary`):
     - 慢練優先:新的一關從起始速度(`start`);快速通道 = 上一關從頭到過關一次都沒失手 → 下一關從目標速度開始,任何一次不穩就關掉
@@ -140,8 +140,22 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
   - 外框(main.js 共用部分):`ctx.setSubActive(on, view)` / `ctx.subActive(view)`:段落進行中子項目分段鈕都不亮;點任何子項目 = 暫停(模組 leave + enter,卡片寫「繼續今天的練習」);到檢定頁也暫停;到別的分頁再回來照原樣
   - 每段的秒數 = 真的在練的時間(播放),同時記進練習紀錄;完成一段(練過或試過)紀錄的「今天次數」+1(段落裡的播放不另外算次數)
   - 任務 `tasks.mjs`「打開技巧分頁、開始今天的練習」:1 下開始、不用捲動、第一個畫面看得到卡片、標題、▶
-  - DrumDrill:以真的鼓 / 打擊墊為主:看譜 + ▶ 示範(拍點陪你打)→ 自己按「穩了 / 再練」(穩了只有在目標速度才算過關的一次);手機鼓墊(打中 ≥ 85 = 穩)是沒有鼓時的替代,下一階段加「沒有鼓?用手機鼓墊」。
-    段落用技巧模組的 `target`(`daily` = 段落種類;不寫進 S.bpm、不顯示目標橫幅、選擇器藏起來);路線 `js/tech/routes.js`(示範:單擊 S1–S2、雙擊 D1–D2,雙擊在單擊過了 S1 開放);暖身 `WARM` 或 RSL 本級的 pas / pattern
+  - DrumDrill 路線(第二階段;`js/tech/routes.js` 資料、`js/tech/routespec.js` 譜的寫法(純函式)、`js/tech/route.js` 畫面與播放;檢查 `tools/test/checks/routes.mjs`,verify 跑):
+    - **律動 28 關**(A 四分 4 → B 八分 8 Beat 8 → C 手的變化 5 → D 加入左腳 5 → E 十六分 3 → F 三連音 3)、**過門 19 關**(FA 四分 / 八分 5 → FB 十六分 5 → FC 一整小節 3 → FT 三連音 3 → FD 樂句與讀譜 3;律動過了 B2「8 Beat 基本節奏」(第 6 關)才開放)
+    - **時值由慢到快**(使用者要求,完全初學):每條路線第 1 關只有四分音符(過門第 1 關連律動都是四分)→ 八分 → 十六分 / 三連音;checks/routes.mjs 檢查
+    - 譜的寫法(DSL):每個鼓件一行、4 拍用空白隔開,一拍 4 字 = 十六分、2 字 = 八分、3 字 = 三連音(12/8 = 八分);x X(重音)o(開 Hi-hat)g(幽靈音);
+      `@kick8` / `@snare8` / `@fill2` = 每天不一樣(種子 = 日期序數 × 100 + 關卡序號,同一天同一題;規則:第 1 拍一定有大鼓、兩小節不一樣、不能三個八分大鼓連續、過門鼓件由高到低)
+    - **左右手**:手打的音下面寫 R / L(和弦上下疊,鈸在上;腳不標):有鈸的拍 = 鈸 R、鼓 L;過門 = 兩手交替(十六分照位置、八分 R L、四分 / 三連音一路交替)。
+      預設都標,難度明顯上升的關(律動 E、F 組,過門第 10 關以後)預設不標(關卡 `rl: false`);鼓譜卡的「標示左右手」自己切,每條路線記住(`S.rl`)
+    - 以真的鼓 / 打擊墊為主:▶ 示範(整組鼓 + 拍點,一直循環到停止,最多 150 秒)→ 自己按「穩了 / 再練」(穩了只有在目標速度才算過關的一次);
+      拍點模式不是每拍的那一次(複習的變化)▶ 只有拍點。段落面板按鈕列多一顆「沒有鼓?用手機鼓墊」(`#t-rModeBtn`,搬進 dailycard 的 `.daily-acts`)→
+      鼓墊卡 `#t-rPadCard`(LANES[3]、鍵盤 F / J / K)+ 按鈕列最右邊「打一遍」(`#t-rPerform`;穩了 / 再練藏起來):預備拍 1 小節 → 4 小節(中途消失 8 小節)只有拍點 → `scoreLanes` 打中 ≥ 85 = 穩;存 `S.padMode`
+    - 鼓譜卡 `#t-rScoreCard`(score.js 一整行;放不下寬度時縮到放得下,最小 0.45;圖例 plain);12/8 的速度是 ♩.(標籤寫 ♩.=);速度卡藏起循環 / 每輪 +4 / 只聽拍點,副標「今日練習會自動調整」
+    - 整組鼓:技巧模組 enter 時 `audio.holdKit("tech")`、leave 時 `dropKit("tech")`;路線段 `audio.loadKit(這一關的鼓件 + 鼓墊的聲音)`,進度畫在 ▶ 外圈
+    - 段落用技巧模組的 `target`(`daily` = 段落種類、`route` = 路線段;不寫進 S.bpm、不顯示目標橫幅、選擇器藏起來);標籤的速度 = 現在實際的速度(自己改了速度也跟著變)
+    - 暖身(`WARM`):照律動的進度一層一層加,從最新的兩層照日子輪流(「再練」的優先):單擊四分音符(RSL 練習型寫法)→ 單擊八分(A2)→ 雙擊 RRLL、#16 八分(B2)→ #20、#31 四分(C5)→ #22、#19 八分(D5)→ PAS 原譜(E3 以後);
+      有選 RSL 考試 → 本級的 pas / pattern(畫面不寫考試名稱);Trinity Rock & Pop 沒有技巧項目 → 一般暖身。考試資料晚到、換了考試:今天的暖身還沒開始就重排(`replanWarm`,`onCtx` / `setExam` 時)
+    - 英文「1 parts」:共用字串改之前,`js/tech/strings.js` 先把 `daily.done` 換成不用單複數的寫法
 - **麥克風評分:目前藏起來,之後再開**(使用者 2026-10):`micrhythm.js` 的 `MIC_UI = false`、index.html 的 `.mic-row` 加 `hidden`、`micOn()` 一律 false;程式與 mic.js 留著;
   隱私權頁、APPSTORE.md、IOS.md 註明「目前版本未開放」;`mic-check.mjs` 只跑 node 側。下面是開放時的規則
 - **用麥克風評分節奏**(S15,選用;`js/shared/mic.js` 跟 PianoDrill 逐位元組相同(sync.json same)、`js/shared/micrhythm.js` 是 DrumDrill 自己的):
@@ -185,7 +199,7 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
   視奏速度卡的「回到預設 / 回到官方速度」只在自己改過速度時出現;寬畫面(≥1100)鼓墊卡在左欄
 - 中英雙語(預設英文,切過就記住):外框字串 `js/shared/i18n.js`、技巧 `js/tech/strings.js`(前綴 `tech.`)、視奏 `js/sight/strings.js`(前綴 `sight.`)、聽力 `js/ear/strings.js`(前綴 `ear.`);程式產生的文字用 `tr("中", "EN")`
 - 用詞:「檢定」「考試」,不用「考級」(只有 App Store 關鍵字可以放)
-- localStorage:`drumdrill.v1`(外框;`mic` = 麥克風評分開關)、`drumdrill.tech.v1`(技巧:熟練度、速度、`log`、`goal`、`mockOneBar`、`mockRun`、`daily` = 今日練習)、`drumdrill.sight.v1`(視奏:節拍器 / 拍點開關、`bpmOverride` 練習速度(`rsl-3`、`trinity-4`、`rhythm-2`)、
+- localStorage:`drumdrill.v1`(外框;`mic` = 麥克風評分開關)、`drumdrill.tech.v1`(技巧:熟練度、速度、`log`、`goal`、`mockOneBar`、`mockRun`、`daily` = 今日練習、`rl` = 每條路線「標示左右手」、`padMode` = 今日練習用手機鼓墊)、`drumdrill.sight.v1`(視奏:節拍器 / 拍點開關、`bpmOverride` 練習速度(`rsl-3`、`trinity-4`、`rhythm-2`)、
   出題歷史、`stats`〔"rsl-3": {n, hits, total}〕檢定頁各級練過幾題、`cats`〔rhythm: {n, hits, total}〕視奏分頁各分類、`level` / `streak`(自動難度)、`log`、`goal`、`mockRun`、譜面排法;讀進來先消毒)、`drumdrill.ear.v1`(聽力:`level` / `streak`(沒選考試時各題型的難度;舊版的 `grades`、`examSeen` 丟掉)、Trinity 每一級的練習速度 `bpmBy`(`trinity-4`)、`hideChart`、
   `stats`〔"rsl-3-fill": {n, picks, ok, hits, total}〕、`log`〔日期: {n, sec, hits, total}〕、`goal`、`mockRun`;讀進來先消毒)、`drumdrill-lang`(語言)。
   `log` 的格式三個模組一樣:`{ "YYYY-MM-DD": { n, sec } }`,聽力另外有 `hits`、`total`(今天正確率);三個模組讀進來都用 `cleanLog` 消毒(技巧在 `js/tech/store.js`);`mockRun` = 進行中的模擬考標記(正常結束拿掉;重新整理後還在 = 說明「模擬考已中止」)
