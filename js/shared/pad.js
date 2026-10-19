@@ -22,6 +22,8 @@ const CLICK_DUP_MS = 800;   // pointerdown 之後這麼久內同一個鼓墊的 
 export const A11Y_MIN_MS = 60;   // 同一個鼓墊兩個 a11y click 至少隔這麼久(按鍵自動重複約 30 ms 一次;人按 Enter / 點兩下不會這麼快)
 
 /* 事件時間(performance 的毫秒)→ 音訊時間(秒);沒有 AudioContext 時 null */
+/* 只有觸控螢幕(手機、沒接鍵盤的平板)不顯示鍵盤提示(鼓墊上的 J、「鍵盤 J / F」);按鍵照樣能用 */
+export const showKeys = () => !(typeof matchMedia === "function" && matchMedia("(hover:none) and (pointer:coarse)").matches);
 export function eventToAudioTime(ts){
   const perfNow = performance.now();
   // 有的舊瀏覽器 timeStamp 是 1970 年起的毫秒或 0:不能用就當作現在

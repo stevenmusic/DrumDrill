@@ -64,7 +64,7 @@ body.land-play #e-stage{flex:1;display:flex;flex-direction:column;justify-conten
 /* 題目卡上的說明(整組鼓的自由發展、Trinity 的 Playback 看譜練習):小字,手機橫式的格狀排法也佔整行 */
 #mod-sight .mode-note{grid-column:1 / -1;margin:0;font-size:var(--fs-xs);color:var(--muted-bright);line-height:1.55;overflow-wrap:anywhere}
 #mod-sight .mode-note[hidden]{display:none}
-/* 譜:白紙(深淺主題都一樣);播放時目前小節上淡金色、播放軸照 ScrollScore */
+/* 譜:白紙(深淺主題都一樣);一行的小鼓譜比 96px 矮 → 上下置中(stage.js 的 origin 照實際位置量,色塊與播放軸跟著);播放時目前小節上淡金色、播放軸照 ScrollScore */
 #mod-sight .stage{position:relative;background:var(--paper);border-radius:var(--radius-sm);padding:4px 6px 6px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06);min-height:0}
 @media (max-width:600px){ #mod-sight .stage{padding:2px 2px 4px} }
 #mod-sight .measure-highlight{position:absolute;display:none;background:var(--paper-gold);opacity:.16;border-radius:3px;pointer-events:none;z-index:0;
@@ -73,9 +73,10 @@ body.land-play #e-stage{flex:1;display:flex;flex-direction:column;justify-conten
   background:linear-gradient(to bottom,transparent,#B8860B 12%,#B8860B 88%,transparent);box-shadow:0 0 14px 2px rgba(184,134,11,.45);
   opacity:.5;pointer-events:none;z-index:5;transition:transform .12s linear}
 #mod-sight .playline::before{content:"";position:absolute;top:-2px;left:50%;transform:translateX(-50%);border:7px solid transparent;border-top:10px solid #B8860B}
-#mod-sight .score{position:relative;z-index:1;min-height:96px;color:#16130D;opacity:1;transform:translateY(0);transition:opacity .22s ease-out, transform .22s ease-out}
+#mod-sight .score{position:relative;z-index:1;min-height:96px;display:flex;flex-direction:column;justify-content:center;color:#16130D;opacity:1;transform:translateY(0);transition:opacity .22s ease-out, transform .22s ease-out}
 #mod-sight .score.entering{opacity:0;transform:translateY(4px);transition:none}
 #mod-sight .score .kit-mark{fill:#16130D}
+#mod-sight .score svg{display:block}   /* inline 的 svg 下面會多一條字的下伸空間,置中會偏上 */
 @media (prefers-reduced-motion:reduce){ #mod-sight .score{transition:none} }
 #s-legend{margin-top:10px}
 #s-confidence{padding:0 4px}
@@ -208,6 +209,8 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 .pads{--fs-2xs:11px;--fs-md:14px;--fs-lg:16px;--fs-xl:19px}
 .pads .pad-key{font-family:inherit;font-size:var(--fs-2xs);font-weight:500;letter-spacing:.06em;color:var(--muted-bright);border:1px solid var(--line);border-radius:4px;padding:1px 6px}
 .pads .tap-pad.hit .pad-key{color:inherit;border-color:currentColor}
+/* 觸控螢幕(手機、沒接鍵盤的平板)不顯示鍵盤提示(pad.js 的 showKeys 同一個條件) */
+@media (hover:none) and (pointer:coarse){ .pads .pad-key{display:none} }
 @media (max-width:360px){ .pads:not([data-n="1"]) .tap-pad{font-size:var(--fs-lg)} }
 @media (max-width:300px){ .pads:not([data-n="1"]){gap:6px;margin:0 -11px} .pads:not([data-n="1"]) .tap-pad{font-size:var(--fs-md);padding:6px 2px} }
 @media (orientation:landscape) and (max-height:500px){ .pads .tap-pad{height:96px} }

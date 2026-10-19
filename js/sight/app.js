@@ -30,7 +30,7 @@ import { playbackFor } from "../shared/examdata.js";
 import * as V from "../shared/examview.js";
 import * as audio from "../shared/audio.js";
 import { createPlayer } from "../shared/player.js";
-import { createPads } from "../shared/pad.js";
+import { createPads, showKeys } from "../shared/pad.js";
 import { LANES, expectedByLane, scoreLanes, offsetNote, laneNote } from "../shared/timing.js";
 import { scoreXML, osmdXML, piecesUsed } from "../shared/kitnotation.js";
 import { setupKit, decorate, drawLegend } from "../shared/legend.js";
@@ -554,8 +554,9 @@ function refreshTexts(){
   renderAlongLabel();
   const ci = t.tl.countIn.bars, keys = keysText(lanesOf(c));
   pairText($("alongNote"), () => (c.kind === "playback"
-    ? tr(`預備拍 ${ci} 小節(官方有預備拍;長度${TS("srcAssumed")})· 鍵盤 ${keys}`, `${ci}-bar count-in (count-in is official; length ${TS("srcAssumed").toLowerCase()}) · keys ${keys}`)
-    : tr(`預備拍 ${ci} 小節(${TS("srcAssumed")}:大綱沒寫)· 鍵盤 ${keys}`, `${ci}-bar count-in (${TS("srcAssumed").toLowerCase()}: not stated) · keys ${keys}`)));
+    ? tr(`預備拍 ${ci} 小節(官方有預備拍;長度${TS("srcAssumed")})`, `${ci}-bar count-in (count-in is official; length ${TS("srcAssumed").toLowerCase()})`)
+    : tr(`預備拍 ${ci} 小節(${TS("srcAssumed")}:大綱沒寫)`, `${ci}-bar count-in (${TS("srcAssumed").toLowerCase()}: not stated)`))
+    + (showKeys() ? tr(`· 鍵盤 ${keys}`, ` · keys ${keys}`) : ""));
   renderConfidence();
   if (lastMsg) say(lastMsg);
   showChecklist(checkKind);
@@ -1190,8 +1191,9 @@ function renderResult(){
   if (byMic && (R.silent || !R.taps)) {
     add("", () => tr(...MIC_TEXT.silent));
   } else if (!R.taps) {
-    add("", () => tr(`沒有收到鼓墊的敲擊。正式打時點鼓墊,或用鍵盤 ${keysText(R.lanes)}。`,
-      `No pad hits came in. Tap the pads while you perform, or use keys ${keysText(R.lanes)}.`));
+    add("", () => (showKeys() ? tr(`沒有收到鼓墊的敲擊。正式打時點鼓墊,或用鍵盤 ${keysText(R.lanes)}。`,
+      `No pad hits came in. Tap the pads while you perform, or use keys ${keysText(R.lanes)}.`)
+      : tr("沒有收到鼓墊的敲擊。正式打時點鼓墊。", "No pad hits came in. Tap the pads while you perform.")));
   } else {
     const big = document.createElement("div"); big.className = "big"; box.appendChild(big);
     big.innerHTML = `${r.score == null ? "—" : r.score}<small></small>`;

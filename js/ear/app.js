@@ -33,7 +33,7 @@ import { playbackFor } from "../shared/examdata.js";
 import * as V from "../shared/examview.js";
 import * as audio from "../shared/audio.js";
 import { createPlayer } from "../shared/player.js";
-import { createPads } from "../shared/pad.js";
+import { createPads, showKeys } from "../shared/pad.js";
 import { LANES, expectedByLane, scoreLanes, offsetNote, laneNote } from "../shared/timing.js";
 import { scoreXML, osmdXML, parseTime, piecesUsed, DIV } from "../shared/kitnotation.js";
 import { setupKit, decorate, drawLegend } from "../shared/legend.js";
@@ -1213,9 +1213,9 @@ function refreshTexts(){
 }
 function alongNote(){
   if (!cur) return "";
-  const keys = cur.lanes.length === 1 ? tr("鍵盤 J / F", "keys J / F") : tr("鍵盤 F 鈸 · J 鼓 · K 大鼓", "keys F cymbal · J drum · K kick");
-  if (isRsl()) return tr(`回打前面 1 小節預備拍(推估:大綱只寫考官數拍)· ${keys}`, `1-bar count-in before you play (assumed: the syllabus says the examiner counts in) · ${keys}`);
-  return tr(`看譜 ${studySec()} 秒(${studySrc()})· 照抄,不要變化也不要即興 · 官方配伴奏音軌;App 只有拍點 · ${keys}`, `${studySec()} s to study (${studySrc()}) · copy it exactly — no variation or improvising · the exam has a backing track; the App has a click only · ${keys}`);
+  const keys = !showKeys() ? "" : " · " + (cur.lanes.length === 1 ? tr("鍵盤 J / F", "keys J / F") : tr("鍵盤 F 鈸 · J 鼓 · K 大鼓", "keys F cymbal · J drum · K kick"));
+  if (isRsl()) return tr(`回打前面 1 小節預備拍(推估:大綱只寫考官數拍)${keys}`, `1-bar count-in before you play (assumed: the syllabus says the examiner counts in)${keys}`);
+  return tr(`看譜 ${studySec()} 秒(${studySrc()})· 照抄,不要變化也不要即興 · 官方配伴奏音軌;App 只有拍點${keys}`, `${studySec()} s to study (${studySrc()}) · copy it exactly — no variation or improvising · the exam has a backing track; the App has a click only${keys}`);
 }
 /* 題目卡的標籤 */
 function renderMeta(){
@@ -1285,14 +1285,15 @@ function renderResult(){
   const add = (cls, fn) => { const p = document.createElement("p"); if (cls) p.className = cls; box.appendChild(p); pairText(p, fn); return p; };
   const line = r => tr(`命中 ${r.hits} / ${r.total} · 漏 ${r.missed} · 多 ${r.extra} · 平均差 ${r.meanErrorMs} 毫秒(容許 ±${r.toleranceMs} 毫秒)`,
     `Hit ${r.hits} / ${r.total} · missed ${r.missed} · extra ${r.extra} · average ${r.meanErrorMs} ms off (±${r.toleranceMs} ms allowed)`);
-  const keys = cur.lanes.length === 1 ? tr("J / F", "J / F") : tr("F / J / K", "F / J / K");
+  const keys = cur.lanes.length === 1 ? "J / F" : "F / J / K";
+  const orKeys = (zh, en) => (showKeys() ? [`${zh},或用鍵盤 ${keys}。`, `${en}, or use keys ${keys}.`] : [`${zh}。`, `${en}.`]);
   const byMic = R.src === "mic";
   if (R.kind === "rsl") {
     add("r-head", () => (byMic ? tr(...MIC_TEXT.head) : tr("練習回饋 · 節奏(觸控鼓墊)", "Practice feedback · rhythm (touch pads)")));
     if (R.micFail) add("", () => tr(...micFailText(R.micFail)));
     const r = R.r;
     if (byMic && (R.silent || !R.taps)) add("", () => tr(...MIC_TEXT.silent));
-    else if (!R.taps) add("", () => tr(`沒有收到鼓墊的敲擊。回打時點鼓墊,或用鍵盤 ${keys}。`, `No pad hits came in. Tap the pads while you play, or use keys ${keys}.`));
+    else if (!R.taps) add("", () => tr(...orKeys("沒有收到鼓墊的敲擊。回打時點鼓墊", "No pad hits came in. Tap the pads while you play")));
     else {
       const big = document.createElement("div"); big.className = "big"; box.appendChild(big);
       big.innerHTML = `${r.score == null ? "—" : r.score}<small></small>`;
@@ -1305,7 +1306,7 @@ function renderResult(){
     add("r-head", () => (byMic ? tr("練習回饋 · 第二次(麥克風,每一句的節奏)", "Practice feedback · play 2 (mic, rhythm per phrase)") : tr("練習回饋 · 第二次(每一句的節奏)", "Practice feedback · play 2 (rhythm per phrase)")));
     if (R.micFail) add("", () => tr(...micFailText(R.micFail)));
     if (byMic && (R.silent || !R.taps)) add("", () => tr(...MIC_TEXT.silent));
-    else if (!R.taps) add("", () => tr(`沒有收到鼓墊的敲擊。輪到你打的時候點鼓墊,或用鍵盤 ${keys}。`, `No pad hits came in. Tap the pads on your turn, or use keys ${keys}.`));
+    else if (!R.taps) add("", () => tr(...orKeys("沒有收到鼓墊的敲擊。輪到你打的時候點鼓墊", "No pad hits came in. Tap the pads on your turn")));
     else {
       const ol = document.createElement("ol"); ol.className = "e-phrases"; box.appendChild(ol);
       for (const row of R.rows) {
