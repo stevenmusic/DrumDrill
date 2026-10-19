@@ -41,7 +41,7 @@ export const codeDur = c => Math.round(QV[String(c).replace(/^r/, "")] * DIV);
 
 /* 說明 key(UI 用 tr(zh, en) 顯示;kind = assumed 推估 / practice 練習設定 / omit 不出的項目) */
 export const NOTES = {
-  totalExcludesRepeat: { kind: "assumed", text: ["總長度不含回打的小節:譜上每一句寫一次", "Total bars exclude the repeats: each phrase is written once"] },
+  totalExcludesRepeat: { kind: "assumed", text: ["總長度不含你接著打的小節:譜上每一句寫一次", "Total bars exclude the repeats: each phrase is written once"] },
   noTempo: { kind: "omit", text: ["速度:官方沒寫,出題器不定速度", "Tempo: not in the syllabus; not set by the generator"] },
   design: { kind: "practice", text: ["拍型與組合方式是 App 的出題設計,不是官方題目", "Patterns and their combination are the App's design, not official tests"] },
   voices: { kind: "assumed", text: ["聲部數 = 同時打的肢體數;「部分 / 大多」是 App 的解讀", "Parts = limbs struck together; 'some / mostly' is the App's reading"] },

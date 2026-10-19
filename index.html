@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/app.css?v=e18a6f673b">
-<link rel="stylesheet" href="css/drum.css?v=19d8c0c73b">
+<link rel="stylesheet" href="css/drum.css?v=abc26adff0">
 </head>
 <body>
 <header>
@@ -155,7 +155,7 @@
           </div>
         </section>
         <section class="card" id="t-scoreCard">
-          <div class="score-head"><div class="card-title" style="margin:0"><b data-i18n="tech.scoreTitle">鼓譜與左右手</b></div></div>
+          <div class="score-head"><div class="card-title" style="margin:0"><b data-i18n="tech.scoreTitle">鼓譜與左右手(R 右 · L 左)</b></div></div>
           <div class="paper" id="t-stage"><div id="t-scroll"><div id="t-osmd"></div></div><div id="t-playline" hidden></div><div class="paper-msg" id="t-paperMsg"></div></div>
         </section>
         <section class="card" id="t-metroCard">
@@ -163,7 +163,7 @@
           <div class="metro">
             <button class="btn round" id="t-bpmDown" data-i18n-attr="aria-label:tech.bpmDown,title:tech.bpmDown" aria-label="慢 1(按住連續減少)" title="慢 1(按住連續減少)">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
-            <div class="bpm"><b id="t-bpmVal">60</b><small id="t-bpmUnit">♩ / 分</small><div class="beats" id="t-beats"><i class="first"></i><i></i><i></i><i></i></div></div>
+            <div class="bpm"><b id="t-bpmVal">60</b><small id="t-bpmUnit">拍 / 分鐘</small><div class="beats" id="t-beats"><i class="first"></i><i></i><i></i><i></i></div></div>
             <button class="btn round" id="t-bpmUp" data-i18n-attr="aria-label:tech.bpmUp,title:tech.bpmUp" aria-label="快 1(按住連續增加)" title="快 1(按住連續增加)">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
             <input type="range" id="t-bpmRange" min="30" max="240" step="1" value="60" data-i18n-attr="aria-label:tech.tempo" aria-label="速度" style="grid-column:1 / -1">
@@ -194,7 +194,7 @@
             <div class="metro">
               <button class="btn round" id="s-bpmDown" data-i18n-attr="aria-label:sight.bpmDown,title:sight.bpmDown" aria-label="慢 1(按住連續減少)" title="慢 1(按住連續減少)">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
-              <div class="bpm"><b id="s-bpmVal">80</b><small id="s-bpmUnit">♩ / 分</small></div>
+              <div class="bpm"><b id="s-bpmVal">80</b><small id="s-bpmUnit">拍 / 分鐘</small></div>
               <button class="btn round" id="s-bpmUp" data-i18n-attr="aria-label:sight.bpmUp,title:sight.bpmUp" aria-label="快 1(按住連續增加)" title="快 1(按住連續增加)">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
               <input type="range" id="s-bpmRange" min="30" max="240" step="1" value="80" data-i18n-attr="aria-label:sight.tempo" aria-label="速度" style="grid-column:1 / -1">
@@ -268,6 +268,7 @@
           <div class="rd-paper"><div id="s-rdScore" class="rd-score-box"></div>
             <button class="btn primary rd-start" id="s-rdStart" type="button" hidden><span id="s-rdStartLbl"></span></button></div>
           <p class="feedback rd-msg" id="s-rdMsg"></p>
+          <p class="rd-guess" id="s-rdGuess" hidden></p>
           <div class="rd-ans-grid" id="s-rdAns" role="group"></div>
           <p class="rd-miss" id="s-rdMiss"></p>
         </section>
@@ -348,7 +349,7 @@
             <div class="metro">
               <button class="btn round" id="e-bpmDown" data-i18n-attr="aria-label:ear.bpmDown,title:ear.bpmDown" aria-label="慢 1(按住連續減少)" title="慢 1(按住連續減少)">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
-              <div class="bpm"><b id="e-bpmVal">80</b><small id="e-bpmUnit">♩ / 分</small></div>
+              <div class="bpm"><b id="e-bpmVal">80</b><small id="e-bpmUnit">拍 / 分鐘</small></div>
               <button class="btn round" id="e-bpmUp" data-i18n-attr="aria-label:ear.bpmUp,title:ear.bpmUp" aria-label="快 1(按住連續增加)" title="快 1(按住連續增加)">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
               <input type="range" id="e-bpmRange" min="30" max="240" step="1" value="80" data-i18n-attr="aria-label:ear.tempo" aria-label="速度" style="grid-column:1 / -1">
@@ -492,9 +493,9 @@
   </div>
 </div>
 
-<script type="importmap">{"imports":{"./js/ear/app.js":"./js/ear/app.js?v=decde838ec","./js/ear/gen.js":"./js/ear/gen.js?v=353441acde","./js/ear/strings.js":"./js/ear/strings.js?v=1716a7d679","./js/main.js":"./js/main.js?v=c6e4d79ccd","./js/shared/a11y.js":"./js/shared/a11y.js?v=a88a3682ab","./js/shared/audio.js":"./js/shared/audio.js?v=453f7237f3","./js/shared/drill.js":"./js/shared/drill.js?v=9f698a5f44","./js/shared/examdata.js":"./js/shared/examdata.js?v=48f1b46bf2","./js/shared/examview.js":"./js/shared/examview.js?v=b4959afa11","./js/shared/i18n.js":"./js/shared/i18n.js?v=d4bada6d23","./js/shared/kitevents.js":"./js/shared/kitevents.js?v=967a5358a2","./js/shared/kitgen.js":"./js/shared/kitgen.js?v=62dcae587f","./js/shared/kitnotation.js":"./js/shared/kitnotation.js?v=65e0d6b2cb","./js/shared/landscape.js":"./js/shared/landscape.js?v=8ab1bab3eb","./js/shared/legend.js":"./js/shared/legend.js?v=32309a03b5","./js/shared/level.js":"./js/shared/level.js?v=8cd64a3754","./js/shared/mic.js":"./js/shared/mic.js?v=5450b68a2d","./js/shared/micrhythm.js":"./js/shared/micrhythm.js?v=5cf0c5d447","./js/shared/mock.js":"./js/shared/mock.js?v=7e54be8c58","./js/shared/onsets.js":"./js/shared/onsets.js?v=d8df0b9ef2","./js/shared/pad.js":"./js/shared/pad.js?v=1076ad7ccb","./js/shared/playbackgen.js":"./js/shared/playbackgen.js?v=bb16cf9be2","./js/shared/player.js":"./js/shared/player.js?v=3b242c7289","./js/shared/practicelog.js":"./js/shared/practicelog.js?v=acd9cd53aa","./js/shared/score.js":"./js/shared/score.js?v=6b5e241a71","./js/shared/staffframe.js":"./js/shared/staffframe.js?v=7d869b31d1","./js/shared/tempo.js":"./js/shared/tempo.js?v=1e38af7d3f","./js/shared/timing.js":"./js/shared/timing.js?v=dfff79a71a","./js/sight/app.js":"./js/sight/app.js?v=6c82f5e6c7","./js/sight/fingerprint.js":"./js/sight/fingerprint.js?v=c0cdf7916e","./js/sight/gen.js":"./js/sight/gen.js?v=6633bf6b2e","./js/sight/meter.js":"./js/sight/meter.js?v=94d1b94ae1","./js/sight/random.js":"./js/sight/random.js?v=3b9b511386","./js/sight/reading.js":"./js/sight/reading.js?v=c8486ddfdf","./js/sight/stage.js":"./js/sight/stage.js?v=9ca7fb07ed","./js/sight/strings.js":"./js/sight/strings.js?v=2b03e5348e","./js/tech/app.js":"./js/tech/app.js?v=47322e075a","./js/tech/notation.js":"./js/tech/notation.js?v=5bee65ac3d","./js/tech/rudiments.js":"./js/tech/rudiments.js?v=cc1a2635ff","./js/tech/store.js":"./js/tech/store.js?v=bac7c6be8f","./js/tech/strings.js":"./js/tech/strings.js?v=3a2e283327"}}</script>
-<script type="application/json" id="pdVersions">{"data/drumkey.json":"a479cd9dd6","data/exam-rsl.json":"0fe7ae1fe3","data/exam-trinity.json":"5a8f14c380"}</script>
+<script type="importmap">{"imports":{"./js/ear/app.js":"./js/ear/app.js?v=61fe8c6f0b","./js/ear/gen.js":"./js/ear/gen.js?v=353441acde","./js/ear/strings.js":"./js/ear/strings.js?v=1716a7d679","./js/main.js":"./js/main.js?v=85af7374ab","./js/shared/a11y.js":"./js/shared/a11y.js?v=a88a3682ab","./js/shared/audio.js":"./js/shared/audio.js?v=453f7237f3","./js/shared/drill.js":"./js/shared/drill.js?v=9f698a5f44","./js/shared/examdata.js":"./js/shared/examdata.js?v=48f1b46bf2","./js/shared/examview.js":"./js/shared/examview.js?v=3f2d59a5c9","./js/shared/i18n.js":"./js/shared/i18n.js?v=d4bada6d23","./js/shared/kitevents.js":"./js/shared/kitevents.js?v=967a5358a2","./js/shared/kitgen.js":"./js/shared/kitgen.js?v=62dcae587f","./js/shared/kitnotation.js":"./js/shared/kitnotation.js?v=65e0d6b2cb","./js/shared/landscape.js":"./js/shared/landscape.js?v=8ab1bab3eb","./js/shared/legend.js":"./js/shared/legend.js?v=45383e9692","./js/shared/level.js":"./js/shared/level.js?v=2c20cabef5","./js/shared/mic.js":"./js/shared/mic.js?v=5450b68a2d","./js/shared/micrhythm.js":"./js/shared/micrhythm.js?v=5cf0c5d447","./js/shared/mock.js":"./js/shared/mock.js?v=7e54be8c58","./js/shared/onsets.js":"./js/shared/onsets.js?v=d8df0b9ef2","./js/shared/pad.js":"./js/shared/pad.js?v=1076ad7ccb","./js/shared/playbackgen.js":"./js/shared/playbackgen.js?v=584722ac47","./js/shared/player.js":"./js/shared/player.js?v=3b242c7289","./js/shared/practicelog.js":"./js/shared/practicelog.js?v=acd9cd53aa","./js/shared/score.js":"./js/shared/score.js?v=6b5e241a71","./js/shared/staffframe.js":"./js/shared/staffframe.js?v=7d869b31d1","./js/shared/tempo.js":"./js/shared/tempo.js?v=1e38af7d3f","./js/shared/timing.js":"./js/shared/timing.js?v=f714307c9a","./js/sight/app.js":"./js/sight/app.js?v=494e627ff6","./js/sight/fingerprint.js":"./js/sight/fingerprint.js?v=c0cdf7916e","./js/sight/gen.js":"./js/sight/gen.js?v=6633bf6b2e","./js/sight/meter.js":"./js/sight/meter.js?v=94d1b94ae1","./js/sight/random.js":"./js/sight/random.js?v=3b9b511386","./js/sight/reading.js":"./js/sight/reading.js?v=19aa666a96","./js/sight/stage.js":"./js/sight/stage.js?v=9ca7fb07ed","./js/sight/strings.js":"./js/sight/strings.js?v=2b03e5348e","./js/tech/app.js":"./js/tech/app.js?v=bd530e51dc","./js/tech/notation.js":"./js/tech/notation.js?v=5bee65ac3d","./js/tech/rudiments.js":"./js/tech/rudiments.js?v=cc1a2635ff","./js/tech/store.js":"./js/tech/store.js?v=bac7c6be8f","./js/tech/strings.js":"./js/tech/strings.js?v=14d45c1f5f"}}</script>
+<script type="application/json" id="pdVersions">{"data/drumkey.json":"a479cd9dd6","data/exam-rsl.json":"0fe7ae1fe3","data/exam-trinity.json":"293a58e0d7"}</script>
 <script src="vendor/opensheetmusicdisplay.min.js?v=4bfeb3d01c"></script>
-<script type="module" src="js/main.js?v=c6e4d79ccd"></script>
+<script type="module" src="js/main.js?v=85af7374ab"></script>
 </body>
 </html>

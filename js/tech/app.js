@@ -93,7 +93,7 @@ function relabel(){
     if (active) fitTitle();
   }
   syncTempoUI(); showBest();
-  $("playLabel").textContent = play ? T("stop") : starting ? tr("準備中…", "Preparing…") : T("play");
+  $("playLabel").textContent = play ? T("stop") : starting ? tr("準備中…", "Preparing…") : playText();
   remsg();
   renderLog();
 }
@@ -167,16 +167,19 @@ function setRudiment(no){
 }
 
 function renderTitle(){
+  if (!play && !starting) $("playLabel").textContent = playText();
   if (mockOn()) { renderMockTitle(); return; }
   const pt = target && target.pattern;
   $("qTitle").textContent = pt ? patternName(pt) : `${cur.no}. ${name(cur)}`;
   // 中英文標籤數量一樣(版面才會一樣):中文 = 英文名,英文 = PAS 編號;左手先/右手先另加一個;練習型再加「App 練習型」(完整說明在目標橫幅)與「推估」(時值是推估的)。
   // 類別不放(上面分段鈕已經看得到,放了標籤列會擠不下)。英文名太長時縮成「…」;示範最快的速度放在速度卡
-  const tags = [getLang() === "en" ? "PAS No. " + cur.no : cur.en,
+  // 英文原名跟中文名一樣(Flam、Drag…):標題已經寫了,第一個標籤兩種語言都不放(標籤數量一樣)
+  const tags = [cur.en === cur.zh ? null : getLang() === "en" ? "PAS No. " + cur.no : cur.en,
     cur.second ? (S.lead === "L" ? tr("左手先", "Left lead") : tr("右手先", "Right lead")) : null,
     pt ? tr("App 練習型", "App drill") : null,
     pt && target.assumed ? TS("srcAssumed") : null].filter(Boolean);   // 時值是推估的(4 級 C 組 Flam tap 的四分音符)
-  $("qTags").innerHTML = tags.map((t, i) => `<span class="q-tag${i ? "" : " fold"}" title="${t}">${t}</span>`).join("");
+  const fold = cur.en !== cur.zh;   // 第一個標籤(英文名)太長時縮成「…」
+  $("qTags").innerHTML = tags.map((t, i) => `<span class="q-tag${i || !fold ? "" : " fold"}" title="${t}">${t}</span>`).join("");
   renderIntro();
 }
 /* 第一次進來這一類的一行說明(題目卡標籤下):這一類播放過一次就不再出現(S.intro[類別] = true) */
@@ -258,10 +261,10 @@ function renderSummary(sys, g, d){
     $("examSummary").textContent = tr(`考試摘要 · 技巧 ${it.max} 分`, `Exam summary · Technique ${it.max} marks`);
   } else {
     const sp = d.marks.songParts.parts.find(p => p.id === "technical"), b = d.songBands.song3;
-    rows.push({ k: () => tr("本項配分", "This section"), v: () => tr(`在 Song 3 評:Technical control ${sp.song3} 分(Song 3 滿分 ${b.max};Song 1、2 的 Technical control 是 ${sp.song12})`,
+    rows.push({ k: () => tr("本項配分", "This section"), v: () => tr(`在 Song 3 評:Technical control(技巧控制)${sp.song3} 分(Song 3 滿分 ${b.max};Song 1、2 的 Technical control 是 ${sp.song12})`,
       `Marked in Song 3: Technical control ${sp.song3} (Song 3 out of ${b.max}; Songs 1–2: ${sp.song12})`), src: srcOf(sys, d.marks.songParts.src.p) });
     rows.push({ k: () => tr("Song 3 等第", "Song 3 bands"), v: () => bandsText(b.bands), src: srcOf(sys, d.songBands.src.p) });
-    $("examSummary").textContent = tr("考試摘要 · 技巧在 Song 3 評", "Exam summary · Technique in Song 3");
+    $("examSummary").textContent = tr("考試摘要", "Exam summary");   // 「在 Song 3 評」只寫在進度格與本級要求
   }
   rows.push(...summaryRows(sys, d, g));
   if (sys === "trinity") rows.push({ k: () => tr("數位考試", "Digital exam"), v: () => L(d.digitalNote.text), src: srcOf(sys, d.digitalNote.src.p) });
@@ -284,7 +287,7 @@ function renderRsl(d, g){
   // 開頭只說一次:名稱後面寫時值的是練習型(拍點、抽考方式寫在模擬考卡,不重複);頁碼接在後面
   const hasPattern = items.some(x => x.kind === "pattern");
   if (hasPattern) $("listRule").dataset.src = srcOf("rsl", t.src.p);
-  para($("listRule"), () => (hasPattern ? tr("名稱後面寫時值的是 App 依大綱排的練習型,不是官方譜", "Items with a note value are App drills in the syllabus values, not official parts") : ""));
+  para($("listRule"), () => (hasPattern ? tr("名稱後面寫時值的是 App 依大綱排的練習型,不是官方譜;同一個打法的練習型一起算", "Items with a note value are App drills in the syllabus values, not official parts; variants of one rudiment count together") : ""));
   // 同一段附註(「官方用小鼓和 Tom… App 只在小鼓上練左右手」)第二次出現時縮成「配置見檢定書」
   let snareNoteSeen = false;
   const noteFn = n => {
@@ -424,7 +427,7 @@ function renderTrinity(d, g){
     const n = el("p", "xnote"); G.appendChild(n); pairText(n, () => L(d.ownChoice.practiceNote));
   }
   const f = el("p", "xnote"); G.appendChild(f);
-  pairText(f, () => tr("技巧分頁的 PAS 40 個基本打法照常可以自由練習。沒有技巧模擬考(技巧在 Song 3 評)。", "The 40 PAS rudiments in Technique are always free to practise. No technique mock (it's assessed in Song 3)."));
+  pairText(f, () => tr("技巧分頁的 PAS 40 個基本打法照常可以自由練習。沒有技巧模擬考。", "The 40 PAS rudiments in Technique are always free to practise. No technique mock."));
 }
 
 /* ── 目標橫幅(技巧分頁):「RSL 3 級 · D 組 · ♩=75 · p.42」;清單鈕回檢定頁、× 離開目標(速度回到自己的) ── */
@@ -564,7 +567,7 @@ if (typeof ResizeObserver !== "undefined") new ResizeObserver(() => requestAnima
 const MIN_BPM = 30, MAX_BPM = 240;
 const tempo = createTempo({ $, min: MIN_BPM, max: MAX_BPM, get: () => bpm, set: v => setBpm(v, true) });
 function syncTempoUI(){
-  tempo.sync(`♩ / ${tr("分", "min")}`);
+  tempo.sync(tr("拍 / 分鐘", "beats / min"));
   $("examTempo").textContent = tr("建議:慢 → 快 → 慢", "Slow → fast → slow");   // PAS 的 open – close – open
   const beats = Math.max(1, Math.round(accentEvery(cycleLength(groups || [[{ dur: 4 * DIV }]])) / DIV));
   tempo.setBeats(Math.min(8, beats));
@@ -660,7 +663,7 @@ async function startPlayback(){
     console.error(e);
     starting = 0; $("playBtn").classList.remove("busy");
     if (play) stopPlayback();
-    $("playLabel").textContent = T("play");
+    $("playLabel").textContent = playText();
     setMsg("loadingMsg", () => tr("播放失敗:", "Playback failed: ") + (e && e.message || e));
   }
   if (r === "failed") land.release();
@@ -679,9 +682,9 @@ async function startInner(){
   if (actx.state !== "running") await within(actx.resume().catch(() => {}), 1500);
   const loaded = await preloadSamples();
   await within(audio.masterReady, 1500);
-  if (starting !== token || cur !== r0) { if (starting === token) { starting = 0; $("playLabel").textContent = T("play"); } $("playBtn").classList.remove("busy"); return "busy"; }
+  if (starting !== token || cur !== r0) { if (starting === token) { starting = 0; $("playLabel").textContent = playText(); } $("playBtn").classList.remove("busy"); return "busy"; }
   starting = 0; $("playBtn").classList.remove("busy");
-  if (!loaded) { $("playLabel").textContent = T("play"); return "failed"; }
+  if (!loaded) { $("playLabel").textContent = playText(); return "failed"; }
   const mk = mockPlay(), beatSec = 60 / bpm, cyc = cycleLength(groups), reps = mk ? mk.reps : S.reps;
   // 雙擊的第二下標記出來(播放時輕一點);RSL 雙擊練習型(RRLL)照 #6 雙擊開放滾奏的播法:每一對的第二下輕一點
   const dbl = !!(target && target.pattern && target.pattern.sticking === "double");
@@ -737,7 +740,7 @@ function stopPlayback(natural, keepView){
     if (!natural) audio.stopAll();
   }
   score.home();
-  $("playLabel").textContent = T("play");
+  $("playLabel").textContent = playText();
   $("playIcon").innerHTML = '<path d="M7 4v16l13-8z"/>';
   tempo.showBeat(null);
 }
@@ -782,6 +785,8 @@ $("goalBtn").onclick = () => { S.goal = nextGoal(S.goal); store.save(); renderLo
    Trinity Rock & Pop 沒有技巧項目(在 Song 3 評),沒有技巧模擬考 ══ */
 const MOCK_BEATS = 16;
 const mockOn = () => tab === "exam" && mock.running();
+/* ▶ 的名稱(無障礙):模擬考只播拍點,不播示範 */
+const playText = () => (mockOn() ? tr("開始(只有拍點)", "Start (click only)") : T("play"));
 const mockStep = () => (mock.running() && mock.data ? mock.data.steps[mock.data.i] : null);
 const mockGrade = () => (mock.data ? mock.data.grade : curExam().grade);
 const oneBarOK = g => { const d = dataOf("rsl"), t = d && d.tech && d.tech[g]; return !!t && t.click === "optional"; };
@@ -883,7 +888,7 @@ function renderMockCard(d, g){
   $("mockOpts").hidden = !((ms === "idle" || ms === "run") && ex.system === "rsl" && oneBarOK(g0));
   if (!$("mockOpts").hidden) {
     $("mockOneBar").setAttribute("aria-pressed", String(!!S.mockOneBar));
-    pairText($("mockOneBar"), () => tr("只聽一小節拍點", "One bar of click only"));   // 頁碼在說明裡
+    pairText($("mockOneBar"), () => tr("拍點只響第一小節", "Count-in only"));   // 頁碼在說明裡
   }
   const rows = mock.data && (ms === "run" || ms === "result") ? mock.data.steps.map((st, i) => ({ id: st.gr.id, name: stepName(st), detail: stepDetail(st, i), mark: stepMark(st, i) })) : null;
   if (ms === "aborted") {
@@ -905,19 +910,15 @@ function renderMockCard(d, g){
     const m = mock.data;
     paintCard($, { title: () => tr("模擬考 · 技巧", "Mock exam · Technique"), sub: tr(`${m.i + 1} / ${m.steps.length} 組`, `Group ${m.i + 1} / ${m.steps.length}`),
       text: () => { const p = d && d.tech && d.tech[m.grade] ? srcOf("rsl", d.tech[m.grade].src.p) : "";
-        return oneBarOK(m.grade) ? tr(`每一組抽一項,照官方速度(${p});按 ▶ 開始(預備拍 1 小節)。`, `One item per group at the official tempo (${p}); tap ▶ to start (1-bar count-in).`)
-          : tr(`每一組抽一項,照官方速度(${p})跟拍點打;按 ▶ 開始(預備拍 1 小節)。`, `One item per group with the click at the official tempo (${p}); tap ▶ to start (1-bar count-in).`); },
+        return tr(`每一組抽一項,照官方速度(${p})。`, `One item per group at the official tempo (${p}).`); },
       rows, btn: { label: () => mockLabel("run") }, note: () => tr(`每一項 ${MOCK_BEATS / 4} 小節(${TS("srcPractice")})。`, `${MOCK_BEATS / 4} bars each (${TS("srcPractice").toLowerCase()}).`) + " " + resultNote() });
     return;
   }
   // idle(檢定頁):RSL 說明 + 開始(Trinity 沒有技巧模擬考:卡片藏起來,本級要求底下一行字)
   const t = d && d.tech && d.tech[g];
   paintCard($, { title: () => tr("模擬考", "Mock exam"), sub: name("rsl", g),
-    text: () => (!t ? tr("考試資料還沒載好。", "Exam data isn't loaded yet.") : (oneBarOK(g)
-      ? tr(`照考試形式:每一組抽一項,依組的順序,照官方速度打;可以跟著拍點打,或只聽一小節拍點(${srcOf("rsl", t.src.p)})。只有檢定書譜的組請用檢定書練。App 只放拍點,不放示範。`,
-        `Like the exam: one item from each group, in order, at the official tempo — with the click, or after one bar of it (${srcOf("rsl", t.src.p)}). Groups that are only in the grade book: use the book. Click only, no demo.`)
-      : tr(`照考試形式:每一組抽一項,依組的順序,照官方速度跟拍點打(一定要跟拍點,${srcOf("rsl", t.src.p)})。只有檢定書譜的組請用檢定書練。App 只放拍點,不放示範。`,
-        `Like the exam: one item from each group, in order, with the click at the official tempo (click required, ${srcOf("rsl", t.src.p)}). Groups that are only in the grade book: use the book. Click only, no demo.`))),
+    // 說明只寫一句(「拍點只響第一小節」的開關在標題列、只有檢定書譜的組在結果裡註明)
+    text: () => (!t ? tr("考試資料還沒載好。", "Exam data isn't loaded yet.") : tr(`每一組抽一項,照官方速度(${srcOf("rsl", t.src.p)})。`, `One item per group at the official tempo (${srcOf("rsl", t.src.p)}).`)),
     btn: t && !ex.auto ? { label: () => mockLabel("idle"), disabled: !techItems(g, d).some(x => x.kind === "pas" || x.kind === "pattern") } : null,
     note: () => resultNote() });
 }

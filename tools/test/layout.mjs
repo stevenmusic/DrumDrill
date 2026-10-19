@@ -233,7 +233,7 @@ for (const [name, w, h, mobile] of VPS) {
     await audit(page, name, `${at} 準備中`); if (g === 3) await shot("sight-prep");
     await sClick("s-prepare"); await page.waitForTimeout(200);
     await page.evaluate(() => window.__sight.setBpm(240));
-    await sClick("s-playAlong");
+    await sClick("s-performTop");
     await page.waitForFunction(() => window.__sight.state.phase === "perform", null, { timeout: 20000 }); await page.waitForTimeout(1200);
     for (let k = 0; k < 4; k++) { await page.keyboard.press("j"); await page.waitForTimeout(150); }
     await audit(page, name, `${at} 作答中`);

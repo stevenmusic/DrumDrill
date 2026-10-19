@@ -251,9 +251,11 @@ export function scoreLanes(expected, taps, { tempoBpm = 80, offsetLimit = OFFSET
 /* 整體偏移的說明 [中, 英](不用提時 null) */
 export function offsetNote(r){
   const ms = Math.abs(r.offsetMs);
+  // 偏移太大(不給分數):用秒寫(自學者看得懂),結果不放「—/100」
+  const sec = (ms / 1000).toFixed(1);
   if (r.offsetTooLarge) return r.offsetMs > 0
-    ? [`整體慢約 ${ms} 毫秒,太多了沒有扣掉;跟著預備拍再打一次(藍牙耳機延遲較大)`, `About ${ms} ms late overall — too much to remove; follow the count-in and try again (Bluetooth adds delay)`]
-    : [`整體快約 ${ms} 毫秒,太多了沒有扣掉;跟著預備拍再打一次`, `About ${ms} ms early overall — too much to remove; follow the count-in and try again`];
+    ? [`整體晚了約 ${sec} 秒,這次不算分數;跟著預備拍再打一次(藍牙耳機會晚一點)`, `About ${sec} s late overall — no score this time; follow the count-in (Bluetooth adds delay)`]
+    : [`整體早了約 ${sec} 秒,這次不算分數;跟著預備拍再打一次`, `About ${sec} s early overall — no score this time; follow the count-in`];
   if (ms < LAG_NOTE_MS) return null;
   return r.offsetMs > 0 ? [`整體慢約 ${ms} 毫秒(已先扣掉)`, `About ${ms} ms late overall (removed first)`]
     : [`整體快約 ${ms} 毫秒(已先扣掉)`, `About ${ms} ms early overall (removed first)`];

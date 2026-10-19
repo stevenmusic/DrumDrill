@@ -149,11 +149,11 @@ for (const [name, w, h, mobile] of VPS) {
     await sClick("s-prepare"); await page.waitForTimeout(500); await compare(page, name, `${at} 準備中`);
     await sClick("s-prepare"); await page.waitForTimeout(200);
     await page.evaluate(() => window.__sight.setBpm(40));   // 慢一點:作答中比對完再停
-    await sClick("s-playAlong"); await page.waitForFunction(() => window.__sight.state.phase === "perform", null, { timeout: 20000 }); await page.waitForTimeout(800);
+    await sClick("s-performTop"); await page.waitForFunction(() => window.__sight.state.phase === "perform", null, { timeout: 20000 }); await page.waitForTimeout(800);
     await compare(page, name, `${at} 作答中`);
-    await sClick("s-playAlong"); await page.waitForTimeout(200);
+    await sClick("s-performTop"); await page.waitForTimeout(200);
     await page.evaluate(() => window.__sight.setBpm(240));
-    await sClick("s-playAlong"); await page.waitForFunction(() => window.__sight.state.phase === "perform", null, { timeout: 20000 });
+    await sClick("s-performTop"); await page.waitForFunction(() => window.__sight.state.phase === "perform", null, { timeout: 20000 });
     await page.waitForTimeout(1100);
     for (let k = 0; k < 4; k++) { await page.keyboard.press(k % 2 ? "j" : "f"); await page.waitForTimeout(300); }
     if (sys === "trinity") await page.evaluate(() => window.__sight.finishNow());

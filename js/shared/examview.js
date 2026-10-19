@@ -64,7 +64,10 @@ const VALUE_SHORT = {
 const DYN_NAMES = { accent: ["重音", "accents"], cresc: ["漸強", "crescendo"], dim: ["漸弱", "diminuendo"] };
 const SEP = () => tr("、", ", ");
 export const valueName = c => L(VALUE_SHORT[c] || VALUE_NAMES[c] || [c, c]);
-export const values = list => (list || []).map(c => L(VALUE_NAMES[c] || [c, c])).join(SEP());
+/* 英文的英式音符名後面加美式(規格表的「音符」那一列;自學者、美國用的人看得懂):crotchets (quarter notes) */
+const US_NAMES = { "1": "whole notes", "2": "half notes", "2.": "dotted halves", "4": "quarter notes", "4.": "dotted quarters", "8": "eighth notes", "8.": "dotted eighths",
+  "16": "16th notes", "16.": "dotted 16ths", "32": "32nd notes" };
+export const values = list => (list || []).map(c => { const n = VALUE_NAMES[c] || [c, c]; return US_NAMES[c] ? tr(n[0], `${n[1]} (${US_NAMES[c]})`) : L(n); }).join(SEP());
 export const rests = list => (list || []).map(c => L(REST_NAMES[c.slice(1)] || [c, c])).join(SEP());
 export const dyns = list => (list || []).map(c => (DYN_NAMES[c] ? L(DYN_NAMES[c]) : c)).join(SEP());
 /* 鼓件(名稱照 data/drumkey.json;kit = 整組鼓) */

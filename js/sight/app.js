@@ -284,6 +284,7 @@ export function onKey(e){
 /* ══ 畫面:檢定頁(規格 / 練習這一級 / 模擬考)/ 視奏分頁(分類 + 自動難度)══ */
 function render(){
   const isExam = mode === "exam";
+  syncOpts();
   // 檢定頁的練習只在模擬考沒有進行、沒有結果時;這一級不出題(RSL 6–8)、沒選考試就回到規格
   if (xp && (!isExam || mock.state !== "idle" || curExam().auto || !practicable(curExam().system, curExam().grade))) { if (isExam) xp = false; }
   const run = isExam && mock.running(), only = isExam && (mock.state === "result" || mock.state === "aborted"), xpo = xpOn();
@@ -477,7 +478,7 @@ function renderTrinity(d, g, withPractice){
     { k: () => tr("音符", "Notes"), v: () => V.values(pb.values), src },
     { k: () => tr("休止符", "Rests"), v: () => V.rests(pb.rests), src },
     { k: () => tr("力度、奏法", "Dynamics"), v: () => (pb.dyn.length ? V.dyns(pb.dyn) : tr("沒有力度或分句記號", "None")), src },
-    { k: () => tr("鼓件", "Kit"), v: () => V.pieces(pb.pieces, key) + (lt && pb.pieces.includes(lt.v) ? tr("(LT 用落地鼓", " (LT as floor tom") + V.assumed(lt.assumed) + tr(")", ")") : ""), src },
+    { k: () => tr("鼓件", "Kit"), v: () => V.pieces(pb.pieces, key) + (lt && pb.pieces.includes(lt.v) ? tr("(LT 用落地鼓", " (low tom as floor tom") + V.assumed(lt.assumed) + tr(")", ")") : ""), src },
     { k: () => tr("聲部", "Voices"), v: () => (pb.voicesAmount ? V.L(codes.voicesAmount[pb.voicesAmount]) : tr(`${pb.voices} 聲部協調`, `${pb.voices}-way coordination`)), src },
     pb.extra.length && { k: () => tr("其他", "Also"), v: () => pb.extra.map(x => V.L(codes.extra[x])).join(tr("、", ", ")), src },
     { k: () => tr("速度", "Tempo"), v: notStated }
@@ -588,7 +589,7 @@ function applyBpm(){
   else if (playKind === "metro") { stopPlayer(); startMetro(); }
 }
 function tempoUI(){
-  tempo.sync(`♩ / ${tr("分", "min")}`);
+  tempo.sync(tr("拍 / 分鐘", "beats / min"));
   if (!cur) return;
   const pb = cur.kind === "playback";
   // 「回到預設 / 回到官方速度」:自己改過速度才出現
@@ -608,6 +609,8 @@ function tempoUI(){
 }
 $("bpmReset").onclick = () => resetBpm();
 function syncOpts(){
+  // 視奏分頁沒有準備倒數:「準備時節拍器」藏起來(元素留著:檢定頁模擬考卡的 s-mockMetro 會轉按它)
+  $("optMetro").hidden = mode === "free";
   $("optMetro").setAttribute("aria-pressed", String(!!SS.metroPractice));
   $("optClick").setAttribute("aria-pressed", String(!!SS.clickPerform));
 }
@@ -625,9 +628,9 @@ function refreshTexts(){
   if (!cur) return;
   const c = cur, t = c.test;
   $("title").classList.remove("empty");
-  $("title").textContent = curName(c);
+  $("title").textContent = c.free ? catName(c.cat) : curName(c);   // 視奏分頁:大標題只寫分類,難度在難度列
   $("scoreSub").textContent = c.free ? "" : t.src;
-  $("scoreTitle").textContent = tr(...SCORE_TITLE[c.kind]);
+  $("scoreTitle").textContent = tr(...(c.free && c.kind === "playback" ? SCORE_TITLE.kit : SCORE_TITLE[c.kind]));   // 視奏分頁的「樂譜」:整組鼓譜(不寫 Playback)
   // 視奏分頁不寫「依 RSL N 級參數」、practiceOnly(那些在檢定頁);題目卡的大標題 = 分類 · 難度
   $("practiceOnly").hidden = c.free;
   if (c.free) pairText($("practiceOnly"), () => "");
@@ -652,10 +655,10 @@ function refreshTexts(){
   renderPrepareLabel();
   renderAlongLabel();
   const ci = t.tl.countIn.bars, keys = keysText(lanesOf(c));
-  pairText($("alongNote"), () => (c.free ? tr(`預備拍 ${ci} 小節`, `${ci}-bar count-in`) : c.kind === "playback"
+  pairText($("alongNote"), () => (c.free ? tr(`先響 ${ci} 小節拍點再開始打`, ci > 1 ? `${ci} bars of clicks first` : "1 bar of clicks first") : c.kind === "playback"
     ? tr(`預備拍 ${ci} 小節(官方有預備拍;長度${TS("srcAssumed")})`, `${ci}-bar count-in (count-in is official; length ${TS("srcAssumed").toLowerCase()})`)
     : tr(`預備拍 ${ci} 小節(${TS("srcAssumed")}:大綱沒寫)`, `${ci}-bar count-in (${TS("srcAssumed").toLowerCase()}: not stated)`))
-    + (showKeys() ? tr(`· 鍵盤 ${keys}`, ` · keys ${keys}`) : ""));
+    + (showKeys() ? tr(` · 鍵盤 ${keys}`, ` · keys ${keys}`) : ""));
   renderConfidence();
   if (lastMsg) say(lastMsg);
   showChecklist(checkKind);
@@ -707,7 +710,9 @@ function renderMeta(){
 function renderSum(){
   if (!cur) return;
   // 收起來的一行只寫題目卡(標題、標籤)沒有的:分類、難度、「練習速度」都已經在題目卡上
-  $("sum").textContent = [`♩=${bpmNow()}`, tr("節拍器", "Metronome") + " " + (SS.metroPractice ? tr("開", "on") : tr("關", "off"))].join(" · ");
+  // 視奏分頁:速度已經在標籤上,只寫正式打的拍點開關;檢定頁照舊(速度 + 準備時節拍器)
+  $("sum").textContent = mode === "free" ? tr("拍點", "Click") + " " + (SS.clickPerform ? tr("開", "on") : tr("關", "off"))
+    : [`♩=${bpmNow()}`, tr("節拍器", "Metronome") + " " + (SS.metroPractice ? tr("開", "on") : tr("關", "off"))].join(" · ");
 }
 function renderPrepareLabel(){
   const sec = prepSec(), pb = cur && cur.kind === "playback";
@@ -1017,13 +1022,13 @@ function setLoading(p){
   } else if (!on && was != null && lastMsg && lastMsg.loadMsg) { say(msgBeforeLoad || startMsg, true); msgBeforeLoad = null; }
 }
 /* 視奏分頁(自由練習)的題目卡只有兩顆:左邊小的「新題目」、右邊大的「正式打」(進行中變停止);沒有準備倒數(官方準備時間留在檢定頁),
-   鼓墊卡沒有「正式打」長條鈕。▶(聽正確版本)還沒打過這一題前不顯示(visibility 保留位置,標題行不跳),打完或停止才出現;檢定頁照舊 */
+   鼓墊卡沒有「正式打」長條鈕(檢定頁也一樣)。▶(聽正確版本)還沒打過這一題前不顯示(visibility 保留位置,標題行不跳),打完或停止才出現;檢定頁照舊 */
 function syncFree(){
   const free = freeQ();
   $("quiz").classList.toggle("free", free);
   $("prepare").hidden = free;
   if (free) $("countdown").hidden = true;
-  $("playAlong").hidden = free;
+  $("playAlong").hidden = true;   // 「正式打」只在題目卡上(s-performTop);鼓墊卡的長條鈕留著元素不顯示(檢定頁練習這一級也是,不重複)
   $("generate").classList.toggle("small", free);
   $("play").style.visibility = free && !played ? "hidden" : "";
 }
@@ -1333,9 +1338,12 @@ function renderResult(){
       `No pad hits came in. Tap the pads while you perform, or use keys ${keysText(R.lanes)}.`)
       : tr("沒有收到鼓墊的敲擊。正式打時點鼓墊。", "No pad hits came in. Tap the pads while you perform.")));
   } else {
-    const big = document.createElement("div"); big.className = "big"; box.appendChild(big);
-    big.innerHTML = `${r.score == null ? "—" : r.score}<small></small>`;
-    pairText(big.querySelector("small"), () => tr("/ 100 節奏吻合度", "/ 100 rhythm match"));
+    // 沒有分數(整體偏移太大):不放「—/100」,下面那句說明這次不算分數
+    if (r.score != null) {
+      const big = document.createElement("div"); big.className = "big"; box.appendChild(big);
+      big.innerHTML = `${r.score}<small></small>`;
+      pairText(big.querySelector("small"), () => tr("/ 100 節奏吻合度", "/ 100 rhythm match"));
+    }
     add("", () => tr(`打中 ${r.hits} / ${r.total} · 漏打 ${r.missed} · 多打 ${r.extra}`,
       `Hit ${r.hits} / ${r.total} · missed ${r.missed} · extra ${r.extra}`));
     if (multi) add("", () => R.lanes.map(l => { const x = r.lanes[l.id] || { hits: 0, total: 0 }; return `${tr(l.label[0], l.label[1])} ${x.hits} / ${x.total}`; }).join(" · "));

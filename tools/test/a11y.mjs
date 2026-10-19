@@ -233,7 +233,7 @@ for (const [sys, g] of [["rsl", 0], ["rsl", 4], ["trinity", 4]]) {
   await audit(`${at} 準備中`, { sight: true });
   await ev(() => document.getElementById("s-prepare").click()); await page.waitForTimeout(200);
   await ev(() => window.__sight.setBpm(240));
-  await ev(() => document.getElementById("s-playAlong").click());
+  await ev(() => document.getElementById("s-performTop").click());
   await wait(() => window.__sight.state.phase === "perform", null, 20000); await page.waitForTimeout(800);
   for (let k = 0; k < 3; k++) { await page.keyboard.press("j"); await page.waitForTimeout(120); }
   await ev(() => window.__sight.finishNow());
@@ -253,7 +253,7 @@ const eGo = async (sys, g, t) => {
 await eGo("rsl", 4, "fill");
 await audit("聽力 rsl fill");
 await ev(() => window.__ear.perform()); await wait(() => window.__ear.state.kind === "perform", null, 60000); await page.waitForTimeout(400);
-if (!/回打/.test(await ev(() => document.getElementById("srLive").textContent))) fail("聽力 回打", "#srLive 沒有寫回打開始");
+if (!/開始打/.test(await ev(() => document.getElementById("srLive").textContent))) fail("聽力 回打", "#srLive 沒有寫「開始打」");
 await ev(() => window.__ear.finishNow());
 await wait(() => window.__ear.state.optsDrawn === window.__ear.state.options && window.__ear.state.options > 0, null, 20000); await page.waitForTimeout(500);
 await audit("聽力 rsl fill 選譜");

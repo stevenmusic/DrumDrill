@@ -180,7 +180,7 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 
 /* ══ 鼓組譜的圖例(js/shared/legend.js;S5):格子固定寬度,中英版面一樣(名稱、出處、說明都是 pairText) ══ */
 .kit-legend{min-width:0}
-.kit-legend .kl-head{font-size:var(--fs-2xs);letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin-bottom:6px;line-height:1.4}
+.kit-legend .kl-head{font-size:var(--fs-2xs);letter-spacing:.06em;color:var(--muted);margin-bottom:6px;line-height:1.4}   /* 不轉大寫:英文「Drum key」跟其他地方的寫法一樣 */
 .kl-cells{display:grid;grid-template-columns:repeat(auto-fill, 52px);gap:6px;justify-content:start}   /* 約 54px:iphone-390 一行 6 格 */
 .kl-cell{margin:0;min-width:0;display:flex;flex-direction:column;align-items:stretch;gap:3px}
 .kl-note{height:68px;background:var(--paper);border-radius:var(--radius-sm);overflow:hidden;color:#16130D}
@@ -360,6 +360,8 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 .rd-msg.ok{color:var(--teal)} .rd-msg.no{color:var(--gold-bright)}
 .rd-miss{margin-top:8px;font-size:var(--fs-xs);color:var(--muted-bright);line-height:1.5;overflow-wrap:anywhere}
 .rd-miss:empty{display:none}
+/* 作答格子上面一行「不知道就先猜…」(答對 3 題以前) */
+.rd-guess{margin-top:2px;text-align:center;font-size:var(--fs-xs);line-height:1.5;color:var(--muted-bright)}
 .rd-row{display:grid;grid-template-columns:4.6em minmax(0,1fr);align-items:center;gap:8px;min-width:0}
 .rd-row + .rd-row{margin-top:10px}
 .rd-row > .lbl{font-size:var(--fs-xs);color:var(--muted-bright)}
@@ -409,9 +411,10 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 @media (orientation:landscape) and (max-height:500px){
   .rd-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:4px 12px;align-items:start}
   .rd-card .rd-head,.rd-card .rd-miss{grid-column:1 / -1}
-  .rd-card .rd-paper{grid-column:1;grid-row:2 / span 2;min-height:120px;margin-top:2px}
+  .rd-card .rd-paper{grid-column:1;grid-row:2 / span 3;min-height:120px;margin-top:2px}
   .rd-card .rd-msg{grid-column:2;grid-row:2;margin-top:0;min-height:1.4em}
-  .rd-card .rd-ans-grid{grid-column:2;grid-row:3;margin-top:0}
+  .rd-card .rd-guess{grid-column:2;grid-row:3;margin-top:0}
+  .rd-card .rd-ans-grid{grid-column:2;grid-row:4;margin-top:0}
   .rd-ans-grid .opt{min-height:44px;font-size:var(--fs-sm);padding:2px 4px}
 }
 /* 手機橫式的檢定頁:視奏的模擬考卡(開始模擬考 / 練習這一級)放在考試卡右邊(第一個畫面就看得到),考試摘要排到下面 */
@@ -471,3 +474,6 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 .src-notes > .score-note{margin-top:2px}
 .src-notes.plain > summary{display:none}
 .src-notes.plain > .score-note{margin-top:0}
+/* 難度回饋三顆鈕上面一行「這題對你來說?(會調整下一題難度)」(js/shared/level.js 的 paintVotes) */
+.diff-q{margin-top:10px;font-size:var(--fs-xs);line-height:1.5;color:var(--muted-bright)}
+.diff-q + .diff-fb{margin-top:4px}

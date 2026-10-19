@@ -247,6 +247,7 @@ export async function drawLegend(el, { pieces, lines = 5, key = drumKeyCached(),
   el.appendChild(head); pairText(head, () => tr("圖例", "Drum key"));
   const cells = document.createElement("div"); cells.className = "kl-cells"; el.appendChild(cells);
   const jobs = [];
+  let anyApp = false;
   for (const id of list) {
     const p = key.pieces[id], cell = document.createElement("figure");
     cell.className = "kl-cell"; cell.dataset.piece = id;
@@ -261,11 +262,16 @@ export async function drawLegend(el, { pieces, lines = 5, key = drumKeyCached(),
     if (!plain) cell.append(src);
     cells.appendChild(cell);
     pairText(name, () => tr(p.name[0], p.name[1]));
-    pairText(src, () => ls.lines.map(([zh, en]) => tr(...appNote(zh, en))).join("\n"));
+    // 「待核對」(= App 的寫法)不在每一格寫,圖例下面寫一次;格子裡只留官方出處
+    const official = ls.lines.filter(([zh]) => !APP_NOTE[zh]);
+    if (official.length < ls.lines.length) anyApp = true;
+    pairText(src, () => official.map(([zh, en]) => tr(zh, en)).join("\n"));
     jobs.push([note, legendXML(id, { key, lines })]);
   }
   const foot = document.createElement("p"); foot.className = "kl-foot"; el.appendChild(foot);
-  pairText(foot, () => (plain ? tr("記法以譜上的圖例為準", "Follow the key printed with the music") : tr("記法以考試用書上的圖例為準", "Follow the exam book's key")));
+  pairText(foot, () => (plain ? tr("記法以譜上的圖例為準", "Follow the key printed with the music")
+    : anyApp ? tr("沒標頁碼的是 App 的寫法;記法以考試用書上的圖例為準", "No page = the App's notation; follow the exam book's key")
+    : tr("記法以考試用書上的圖例為準", "Follow the exam book's key")));
   // 一格一個 OSMD(放在格子裡、寬度固定);畫完補畫 o 等記號
   const svgs = [];
   for (const [box, xml] of jobs) {

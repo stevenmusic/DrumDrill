@@ -59,11 +59,15 @@ export function levelText({ auto = null, vote = null, from, to, max, hint = null
 }
 /* 在 box 最後加上「這一題的難度」一排三顆鈕 + 一句話。onVote(v) 由模組處理(levels.vote、重畫設定卡、播報);
    R.lvText = 目前要顯示的那一句(函式,換語言重寫) */
+let qSeq = 0;
 export function paintVotes(box, R, onVote){
   const msg = document.createElement("p"); msg.className = "diff-msg"; box.appendChild(msg);
   if (R.lvText) pairText(msg, R.lvText); else msg.hidden = true;
+  // 三顆鈕上面一行:問什麼、按了會怎樣(群組名稱用同一句)
+  const q = document.createElement("p"); q.className = "diff-q"; q.id = "diffQ" + (++qSeq); box.appendChild(q);
+  pairText(q, () => tr("這題對你來說?(會調整下一題難度)", "How was it? (sets the next level)"));
   const row = document.createElement("div"); row.className = "diff-fb"; row.setAttribute("role", "group");
-  row.setAttribute("aria-label", tr("這一題的難度", "How hard was this?"));
+  row.setAttribute("aria-labelledby", q.id);
   for (const [v, t] of VOTES) {
     const b = document.createElement("button");
     b.type = "button"; b.className = "chip"; b.dataset.v = v; b.setAttribute("aria-pressed", String(R.vote === v));

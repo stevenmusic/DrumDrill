@@ -29,7 +29,8 @@ export function cleanRead(o){
   const r = o && typeof o === "object" && !Array.isArray(o) ? o : {};
   return { pieces: Array.isArray(r.pieces) ? r.pieces.filter(x => typeof x === "string").slice(0, 20) : [...BASIC],
     mode: MODES.includes(r.mode) ? r.mode : "practice", best: r.best, miss: r.miss,
-    seen: r.seen === true };   // 答過一題:題目那行不再寫第一次的說明
+    seen: r.seen === true,   // 答過一題:題目那行不再寫第一次的說明
+    okN: Number.isInteger(r.okN) && r.okN > 0 ? Math.min(r.okN, 99) : 0 };   // 答對幾題(滿 3 題「不知道就先猜」那行不再出現)
 }
 
 export function createReading({ $, store, save, drumKey, onAnswered = () => {} }){
@@ -41,6 +42,9 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
   const setting = () => valid().slice().sort().join(",");
   const nameOf = id => { const p = key() && key().pieces[id]; return p ? tr(p.name[0], p.name[1]) : id; };
   const order = () => Object.keys(key() ? key().pieces : {});
+  // 自訂那一排照學習順序:小鼓、大鼓、Hi-hat → Tom 1、Tom 2、落地鼓 → Ride、Crash → 其他記號(照 drumkey.json 的順序)
+  const LEARN = ["snare", "kick", "hh", "tomHi", "tomMid", "tomFloor", "ride", "crash"];
+  const learnOrder = () => { const all = order(); return [...LEARN.filter(id => all.includes(id)), ...all.filter(id => !LEARN.includes(id))]; };
 
   /* ── 畫一個記號(跟圖例同一套;放大、留譜號)── */
   let drawSeq = 0;
@@ -66,7 +70,9 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
     if (!svg || !box.clientWidth) return;
     const land = matchMedia("(orientation: landscape) and (max-height: 500px)").matches;
     // 直式矮畫面(折疊機、SE):譜框小一點,第一個畫面連作答格子(+ Toms 兩排)下面的鼓件快捷都看得到(tools/test/tasks.mjs 檢查)
-    const maxH = land ? Math.max(130, innerHeight - 200) : innerHeight <= 700 ? Math.max(110, Math.round(innerHeight * 0.2)) : Math.max(150, Math.min(220, innerHeight * 0.26));
+    // 「不知道就先猜」那行出現時(答對 3 題以前)直式矮畫面的譜框再小一點,鼓件快捷才留在第一個畫面
+    const guess = !$("rdGuess").hidden && !land && innerHeight <= 700 ? 22 : 0;
+    const maxH = land ? Math.max(130, innerHeight - 200) : innerHeight <= 700 ? Math.max(100, Math.round(innerHeight * 0.2) - guess) : Math.max(150, Math.min(220, innerHeight * 0.26));
     frameStaff(svg, box, { key: "kit", above: 5.8, below: 4.5, spPx: 12, maxH });
   }
   let lastW = innerWidth, rzT = 0;
@@ -89,7 +95,7 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
     if (R.mode !== "practice" && !drill.running) return;
     const ok = id === q;
     session.n++; if (ok) session.ok++;
-    if (!R.seen) { R.seen = true; save(); }
+    if (!R.seen || (ok && R.okN < 3)) { R.seen = true; if (ok) R.okN++; save(); }
     onAnswered((performance.now() - t0) / 1000);
     lock = true;
     wrongName = ok ? null : q;
@@ -114,6 +120,9 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
 
   /* ── 作答:這一輪的鼓件格子(照圖例的順序)── */
   function paintAns(tapped = null, ok = null){
+    // 作答格子上面一行:答對 3 題以前寫「不知道就先猜」
+    $("rdGuess").hidden = R.okN >= 3 || !q;
+    if (!$("rdGuess").hidden) pairText($("rdGuess"), () => tr("不知道就先猜,答錯會告訴你答案和聲音", "Just guess — a miss shows the answer and its sound"));
     const box = $("rdAns"), list = valid().sort((a, b) => order().indexOf(a) - order().indexOf(b));
     const sig = list.join(",");
     if (box.dataset.sig !== sig) {
@@ -134,8 +143,8 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
     const k = key(); if (!k) return;
     const cur = valid().slice().sort().join(","), hit = PRESETS.find(p => p[3](k).slice().sort().join(",") === cur);
     $("rdQuick").innerHTML = PRESETS.map(([v, zh, en]) => `<button type="button" class="opt" data-v="${v}" aria-pressed="${!!hit && hit[0] === v}">${tr(zh, en)}</button>`).join("");
-    $("rdPieces").innerHTML = order().map(id => `<button type="button" class="opt" data-v="${id}" aria-pressed="${R.pieces.includes(id)}">${nameOf(id)}</button>`).join("");
-    $("rdMode").innerHTML = [["practice", "練習", "Practice"], ["time", "60 秒", "60 s"], ["streak", "連對", "Streak"]]
+    $("rdPieces").innerHTML = learnOrder().map(id => `<button type="button" class="opt" data-v="${id}" aria-pressed="${R.pieces.includes(id)}">${nameOf(id)}</button>`).join("");
+    $("rdMode").innerHTML = [["practice", "練習", "Practice"], ["time", "60 秒", "60 s"], ["streak", "連續答對", "Streak"]]
       .map(([v, zh, en]) => `<button type="button" class="opt" data-v="${v}" aria-pressed="${R.mode === v}">${tr(zh, en)}</button>`).join("");
     for (const [id, zh, en] of [["rdQuickLbl", "鼓件", "Drums"], ["rdPiecesLbl", "自訂", "Custom"], ["rdModeLbl", "模式", "Mode"]]) $(id).textContent = tr(zh, en);
     pairText($("rdQuickHint"), () => tr("每一格都包含前一格的鼓件", "Each one adds to the one before"));
@@ -153,13 +162,13 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
     const run = drill.running, m = R.mode;
     let s = "";
     if (m === "practice") s = session.n ? tr(`答對 ${session.ok} / ${session.n}`, `${session.ok} / ${session.n} right`) : "";
-    else if (run) s = m === "time" ? tr(`${drill.score} 題 · 剩 ${drill.left()} 秒`, `${drill.score} · ${drill.left()} s left`) : tr(`連對 ${drill.score}`, `Streak ${drill.score}`);
+    else if (run) s = m === "time" ? tr(`${drill.score} 題 · 剩 ${drill.left()} 秒`, `${drill.score} · ${drill.left()} s left`) : tr(`連續答對 ${drill.score}`, `Streak ${drill.score}`);
     else s = tr(`最高 ${drill.best(setting(), m)}`, `Best ${drill.best(setting(), m)}`);
     $("rdScoreTxt").textContent = s;
     const waiting = m !== "practice" && !run;
     $("rdStart").hidden = !waiting;
     $("rdAns").classList.toggle("idle", waiting);
-    if (waiting) $("rdStartLbl").textContent = endRes ? tr("再挑戰一次", "Try again") : m === "time" ? tr("開始 60 秒挑戰", "Start 60 s challenge") : tr("開始連對挑戰", "Start streak challenge");
+    if (waiting) $("rdStartLbl").textContent = endRes ? tr("再挑戰一次", "Try again") : m === "time" ? tr("開始 60 秒挑戰", "Start 60 s challenge") : tr("開始連續答對挑戰", "Start streak challenge");
   }
   function paintMiss(){
     const t = drill.top(setting());
@@ -170,7 +179,7 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
     endRes = res; clearTimeout(nextTimer); lock = true;
     if (res.reason === "stop" || res.reason === "restart") { paintTop(); return; }
     const wn = res.reason === "wrong" ? wrongName : null;
-    say(() => (wn ? tr(`答案是${nameOf(wn)}。`, `It was ${nameOf(wn)}. `) : "") + (res.kind === "time" ? tr(`時間到:答對 ${res.score} 題`, `Time's up: ${res.score} right`) : tr(`連對 ${res.score} 題`, `Streak: ${res.score}`))
+    say(() => (wn ? tr(`答案是${nameOf(wn)}。`, `It was ${nameOf(wn)}. `) : "") + (res.kind === "time" ? tr(`時間到:答對 ${res.score} 題`, `Time's up: ${res.score} right`) : tr(`連續答對 ${res.score} 題`, `Streak: ${res.score}`))
       + (res.newBest ? tr(" · 新紀錄!", " · New best!") : tr(` · 最高 ${res.best}`, ` · best ${res.best}`)), res.newBest ? "ok" : "");
     paintTop(); paintMiss();
   }

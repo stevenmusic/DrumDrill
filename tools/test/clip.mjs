@@ -126,7 +126,7 @@ async function more(page, view, s, report){
       await click("s-prepare"); await page.waitForTimeout(500); await report(`${label} 準備中`);
       await click("s-prepare"); await page.waitForTimeout(200);
       await page.evaluate(() => window.__sight.setBpm(240));
-      await click("s-playAlong"); await page.waitForFunction(() => window.__sight.state.phase === "perform", null, { timeout: 20000 });
+      await click("s-performTop"); await page.waitForFunction(() => window.__sight.state.phase === "perform", null, { timeout: 20000 });
       for (let k = 0; k < 3; k++) { await page.keyboard.press("j"); await page.waitForTimeout(300); }
       if (playback) await page.evaluate(() => window.__sight.finishNow());
       await page.waitForFunction(() => window.__sight.state.phase === "result", null, { timeout: 30000 }); await page.waitForTimeout(300);

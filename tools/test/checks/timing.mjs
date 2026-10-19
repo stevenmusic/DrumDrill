@@ -2,7 +2,7 @@
 // 也可以單獨跑:node tools/test/checks/timing.mjs
 //  1. 一個鼓墊:已知整體偏移 0 / 80 / 200 ms 加 ±15 ms 抖動 → 偏移估對(差 ≤ 15 ms)、全部命中、沒有多的;估出來 ≥ 80 ms 才有「整體慢約」說明
 //  2. 漏一下 → missed 1;多一下(敲在休止的地方)→ extra 1;偏移照樣估對
-//  3. 偏移超過上限(450 ms)→ 不扣、有旗標、不給分數、說明是「太多了沒有扣掉」
+//  3. 偏移超過上限(450 ms)→ 不扣、有旗標、不給分數、說明是「這次不算分數」
 //  4. 三個鼓墊(鈸 / 鼓 / 大鼓與腳踩 HH):expectedByLane 分組正確(同一條 lane 同一時間算一下);各自評分,
 //     漏打大鼓只算在大鼓那條、多敲小鼓只算在鼓那條,鈸全部命中;打錯鼓墊 = 那條漏、另一條多
 //  5. 一條 lane 單獨晚(大鼓整條晚 100 / 300 / 600 ms,其他對):整體偏移不受影響、大鼓那條不另外扣偏移 → 那條低分、總分 < 90,
@@ -61,7 +61,7 @@ export default function check(ok){
     ok(Math.abs(r.offsetMs - 450) <= JIT * 1000, `偏移 450 ms:估成 ${r.offsetMs}`);
     ok(r.hits < r.total && r.missed > 0, `偏移 450 ms 不扣:照原本的時間不會全部對到,實際命中 ${r.hits}/${r.total}`);
     const note = offsetNote(r);
-    ok(note && /太多了沒有扣掉/.test(note[0]) && /too much/.test(note[1]), `偏移 450 ms 的說明不對:${note}`);
+    ok(note && /這次不算分數/.test(note[0]) && /no score/.test(note[1]), `偏移 450 ms 的說明不對:${note}`);
   }
   // 4. 三個鼓墊
   {

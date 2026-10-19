@@ -204,7 +204,7 @@ async function sightTake(mode, grade = 3, bpm = 150, { bump = false } = {}){
     const a = await import("./js/shared/audio.js"), orig = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
     navigator.mediaDevices.getUserMedia = async c => { await a.ensureAudio().suspend(); await new Promise(r => setTimeout(r, 150)); return orig(c); };
   });
-  await page.click("#s-playAlong");
+  await page.click("#s-performTop");
   await page.waitForFunction(() => window.__sight.state.phase === "result", null, { timeout: (seconds + 30) * 1000 });
   const out = await page.evaluate(() => ({ r: window.__sight.state.result, mic: window.__sight.lastMic, text: document.getElementById("s-alongResult").innerText.replace(/\s+/g, " "),
     note: document.getElementById("s-alongMicNote").textContent, checked: document.getElementById("s-alongMic").checked, micActive: window.__sight.state.micActive }));

@@ -53,7 +53,7 @@ const appActions = ({ page, tap, tapAny }) => [
   [1, "離開目標", async () => tap("#t-targetClose")],
   // S8 視奏
   [3, "視奏 準備 / 結束準備", async () => tap("#s-prepare")],
-  [3, "視奏 正式打 / 停止", async () => tap("#s-playAlong")],
+  [3, "視奏 正式打 / 停止", async () => tap("#s-performTop")],
   [3, "視奏 聽正確版本", async () => tap("#s-play")],
   [3, "視奏 點鼓墊", async () => tapAny("#s-pads .tap-pad")],
   [2, "視奏 新題目", async () => tap("#s-generate")],
@@ -61,7 +61,7 @@ const appActions = ({ page, tap, tapAny }) => [
   [2, "視奏 正式打到結果", async () => {
     const ok = await page.evaluate(() => !document.getElementById("mod-sight").hidden && !document.getElementById("s-quiz").hidden && !!window.__sight.test && window.__sight.mock.state !== "run");   // 模擬考有自己的動作
     if (!ok) return false;
-    await page.evaluate(() => { const S = window.__sight; if (S.state.phase === "perform") document.getElementById("s-playAlong").click(); S.setBpm(240); document.getElementById("s-playAlong").click(); });
+    await page.evaluate(() => { const S = window.__sight; if (S.state.phase === "perform") document.getElementById("s-performTop").click(); S.setBpm(240); document.getElementById("s-performTop").click(); });
     try { await page.waitForFunction(() => window.__sight.state.phase === "perform", null, { timeout: 60000 }); } catch (e) { return false; }
     for (let k = 0; k < 5; k++) { if (!(await tapAny("#s-pads .tap-pad"))) await page.keyboard.press("j"); await page.waitForTimeout(250); }
     // Trinity Playback 一首很長(8 級 24 小節):打幾下就結束(測試用的 finishNow);RSL 照常打完
@@ -212,7 +212,7 @@ const appCheck = async () => {
       if (s.timer) out.push("視奏不在畫面上,準備的倒數還在跑");
       if (s.phase === "perform" || s.phase === "prep") out.push(`視奏不在畫面上還在 ${s.phase}`);
     } else {
-      const lbl = document.getElementById("s-playAlong").textContent;
+      const lbl = document.getElementById("s-performTop").textContent;
       if ((s.phase === "perform") !== ["停止", "Stop"].includes(lbl)) out.push(`視奏 ${s.phase} 但正式打按鈕寫「${lbl}」`);
       if ((s.kind === "listen") !== document.getElementById("s-play").classList.contains("is-active")) out.push(`視奏播放鈕狀態不一致(${s.kind})`);
       if ((s.phase === "prep") !== s.timer) out.push(`視奏準備倒數不一致(${s.phase}, timer ${s.timer})`);
