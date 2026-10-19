@@ -14,6 +14,8 @@ import * as audio from "./audio.js";
 import { detectHits, LANES } from "./timing.js";
 
 export const MIC_LANES = LANES[1];   // 全部鼓件合併成一條(LANES[1] 的 pieces = null:每個鼓件都算在這一條)
+/* 用麥克風評分節奏:目前版本藏起來(使用者 2026-10:之後再開)。開關那一列(.mic-row)不顯示、micOn 一律 false;程式留著,改成 true 並拿掉 index.html 的 hidden 就回來 */
+export const MIC_UI = false;
 export const BLEED_WINDOW = 0.35;    // App 的聲音之後這麼久內的第一個起音,當作收到的那個聲音(估來回延遲用;練習設定)
 export const BLEED_TOL = 0.04;       // 落在「App 的聲音 + 來回延遲」± 這麼多的起音拿掉(練習設定)
 

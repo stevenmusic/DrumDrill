@@ -121,6 +121,8 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
   - 技巧:連續天數 / 今天次數 / 今天分鐘;視奏:連續天數 / 今天題數 / 今天分鐘 + 各分類練過題數與目前難度(`#s-statsCard`);聽力:連續天數 / 今天題數 / 今天正確率(`e-logAcc` = 回打命中的音 + 選對的譜 ÷ 全部)+ 各題型正確率(`#e-statsCard`)
   - 秒數只算真的播放、準備、作答的時間(技巧:預備拍之後的播放;視奏:準備、正式打、聽正確版本;聽力:聽題目、看譜、回打);保留 400 天
   - 紀錄卡、統計卡是練習回饋:檢定頁不放(`app.css` 的 `body.view-exam`,兩個 App 一樣);統計卡沒有資料時整張藏起來(認譜不顯示 `#s-statsCard`);檢定頁三格進度(`examStatus`)只寫進度(會了 n/m、已練 n 題),不寫打中率
+- **麥克風評分:目前藏起來,之後再開**(使用者 2026-10):`micrhythm.js` 的 `MIC_UI = false`、index.html 的 `.mic-row` 加 `hidden`、`micOn()` 一律 false;程式與 mic.js 留著;
+  隱私權頁、APPSTORE.md、IOS.md 註明「目前版本未開放」;`mic-check.mjs` 只跑 node 側。下面是開放時的規則
 - **用麥克風評分節奏**(S15,選用;`js/shared/mic.js` 跟 PianoDrill 逐位元組相同(sync.json same)、`js/shared/micrhythm.js` 是 DrumDrill 自己的):
   視奏「正式打」、聽力「回打 / Trinity 第二次」有「用麥克風評分節奏(選用)」(`s-alongMic`、`e-alongMic`,照 PianoDrill `s-alongMic`),預設關,開關存 `drumdrill.v1` 的 `mic`(視奏、聽力共用,經 ctx 的 `micPref` / `setMicPref`)
   - 錄在播放用的同一個 AudioContext(`createRecorder({ context: audio.ensureAudio })`);getUserMedia 關 echoCancellation / noiseSuppression / autoGainControl;

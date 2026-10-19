@@ -13,6 +13,7 @@
 //    預備拍的拍點也混進去(慢 60 ms、小聲),模擬喇叭被麥克風收到
 import { open } from "./harness.mjs";
 import { detectHits } from "../../js/shared/timing.js";
+import { MIC_UI } from "../../js/shared/micrhythm.js";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -327,8 +328,10 @@ async function earSide(){
 
 try {
   if (!ONLY || ONLY === "node") await nodeSide();
-  if (!ONLY || ONLY === "sight") await sightSide();
-  if (!ONLY || ONLY === "ear") await earSide();
+  // 麥克風評分目前藏起來(micrhythm.js 的 MIC_UI = false):畫面上的檢查跳過,只跑 node 側的偵測
+  if (!MIC_UI && ONLY !== "node") console.log("略過視奏、聽力的畫面檢查:麥克風評分目前藏起來(MIC_UI = false)");
+  if (MIC_UI && (!ONLY || ONLY === "sight")) await sightSide();
+  if (MIC_UI && (!ONLY || ONLY === "ear")) await earSide();
 } finally { if (!process.env.KEEP) fs.rmSync(TMP, { recursive: true, force: true }); else console.log("wav:", TMP); }
 if (problems.length) { console.error("\n✗ " + problems.length + " 項問題:\n - " + problems.join("\n - ")); process.exit(1); }
 console.log("\n✓ 麥克風節奏評分全部通過");

@@ -47,7 +47,7 @@ import { genChart, phraseSpec, playbackParams, NOTES as PB_NOTES } from "../shar
 import { genFill, fillOptions, genGroove, NOTES as EAR_NOTES } from "./gen.js";
 import { addLog, cleanLog, renderLog as paintLog, today, nextGoal, cleanGoal } from "../shared/practicelog.js";
 import { createMock, abortText, paintCard, mockLabel, cardToTop } from "../shared/mock.js";
-import { createMicTake, dropBleed, MIC_LANES, MIC_TEXT, micFailText } from "../shared/micrhythm.js";
+import { createMicTake, dropBleed, MIC_LANES, MIC_TEXT, micFailText, MIC_UI } from "../shared/micrhythm.js";
 import { createLevels, levelText, paintVotes } from "../shared/level.js";
 import "./strings.js";
 const T = scoped("ear");
@@ -101,7 +101,7 @@ let tl = null;         // 正在播的時間軸(timeline())
 const mic = createMicTake();   // 麥克風(選用):RSL 回打、Trinity 第二次錄一整段
 let micFail = null;            // 上一次打開麥克風失敗的原因(denied / none / error)
 let lastMic = null;            // 測試用(tools/test/mic-check.mjs):上一次麥克風的 { expected, detected, removed, lagMs }
-const micOn = () => !!(ctx && ctx.micPref && ctx.micPref());
+const micOn = () => MIC_UI && !!(ctx && ctx.micPref && ctx.micPref());   // 麥克風評分目前藏起來(MIC_UI = false)
 let lastMsg = null, starting = 0, countdown = 0, left = 0, studyStarted = 0, studyEnd = 0, drawn = 0;   // 看譜倒數照 performance.now() 的終點算
 
 const curExam = () => exam || { system: "trinity", grade: 1, auto: true };

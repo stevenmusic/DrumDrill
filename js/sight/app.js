@@ -51,7 +51,7 @@ import { createHistory, generateUnique } from "./fingerprint.js";
 import { randomSeed } from "./random.js";
 import { addLog, cleanLog, renderLog as paintLog, today, nextGoal, cleanGoal } from "../shared/practicelog.js";
 import { createMock, abortText, paintCard, resultNote, mockLabel, cardToTop } from "../shared/mock.js";
-import { createMicTake, dropBleed, MIC_LANES, MIC_TEXT, micFailText } from "../shared/micrhythm.js";
+import { createMicTake, dropBleed, MIC_LANES, MIC_TEXT, micFailText, MIC_UI } from "../shared/micrhythm.js";
 import { createLevels, levelText, paintVotes } from "../shared/level.js";
 import { createReading, cleanRead } from "./reading.js";
 import "./strings.js";
@@ -126,7 +126,7 @@ let starting = 0;
 const mic = createMicTake();  // 麥克風(選用):正式打時錄一整段
 let micFail = null;           // 上一次打開麥克風失敗的原因(denied / none / error;下一次成功或改開關時清掉)
 let lastMic = null;           // 測試用(tools/test/mic-check.mjs):上一次麥克風的 { expected, detected, removed, lagMs }(從第一拍算起的秒數)
-const micOn = () => !!(ctx && ctx.micPref && ctx.micPref());
+const micOn = () => MIC_UI && !!(ctx && ctx.micPref && ctx.micPref());   // 麥克風評分目前藏起來(MIC_UI = false)
 
 const curExam = () => exam || { system: "trinity", grade: 1, auto: true };
 const keyOf = (sys, g) => `${sys}-${g}`;

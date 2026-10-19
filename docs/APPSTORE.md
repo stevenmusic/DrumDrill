@@ -15,7 +15,7 @@
 | 隱私權政策(中英) | `privacy.html` → `https://stevenmusic.github.io/DrumDrill/privacy.html` |
 | 支援頁(中英) | `support.html` → `https://stevenmusic.github.io/DrumDrill/support.html`(常見問題、GitHub 回報;支援信箱設好才顯示寄信) |
 | 授權與出處(中英) | `licenses.html`(Naked Drums CC BY 4.0 + 修改說明、OSMD BSD-3 全文、PAS 出處、商標聲明) |
-| 麥克風 | 視奏「正式打」、聽力「回打」可選用(S15):**要加** `NSMicrophoneUsageDescription` 與中英文 InfoPlist.strings(`docs/IOS.md` 第 4 節)、AudioSession 外掛(第 3b 節) |
+| 麥克風 | **目前版本未開放**(畫面藏起來,之後再開);開放時視奏「正式打」、聽力「接著打」可選用(S15):**要加** `NSMicrophoneUsageDescription` 與中英文 InfoPlist.strings(`docs/IOS.md` 第 4 節)、AudioSession 外掛(第 3b 節) |
 | 商店截圖 | **還沒有**(第 7 節的清單;要真實畫面) |
 
 ## 2. 2026 年的硬性規定(先看)
@@ -41,7 +41,7 @@
 **繁體中文**
 > 準備爵士鼓檢定的學生、上課的老師,或只想把基本功練好的鼓手都可以用。
 > 技巧:Percussive Arts Society(PAS)40 個國際標準基本打法,照官方表重新繪製鼓譜、每個音標左右手;真實鼓聲示範、預備拍,速度可以慢慢加,循環播放時每輪自動加快。
-> 視奏:依考試大綱的參數產生小鼓與整組鼓的視奏練習題,準備時間照大綱計時,用觸控鼓墊打一遍(也可以選用麥克風,在真的鼓上打)、看節奏的練習回饋,再聽正確版本。
+> 視奏:依考試大綱的參數產生小鼓與整組鼓的視奏練習題,準備時間照大綱計時,用觸控鼓墊打一遍、看節奏的練習回饋,再聽正確版本。
 > 聽力:聽一段過門或律動、打回來再從譜裡選出聽到的那一個;也有「聽一句、打一句」的回打練習。
 > 檢定:選好考試系統和級數一次,技巧、視奏、聽力都照這一級;每一項要求都標出大綱頁碼。模擬考照大綱的準備時間與速度,一項一項打完,只看練習回饋、不算分數;練習紀錄記下每天練了多久。支援 Trinity Rock & Pop 與 RSL Rockschool 爵士鼓檢定的練習(Trinity、RSL Rockschool 為各自的商標,本 App 與其無關;僅供練習,實際要求以官方大綱為準)。
 > 鼓聲內建在 App 裡,不用網路也能用;不需要登入、沒有廣告、不收集任何資料。
@@ -49,7 +49,7 @@
 **English**
 > For drum kit students preparing for a grade exam, teachers, and any drummer who wants solid fundamentals.
 > Technique: all 40 Percussive Arts Society (PAS) International Drum Rudiments, re-engraved from the official sheet with sticking under every note; real drum sounds, count-in, and a tempo you can raise step by step, speeding up each time it loops.
-> Sight-reading: snare and full-kit reading tests generated from the syllabus parameters, timed preparation, play them on the touch pads (or a real kit with the optional microphone) for rhythm feedback, then hear the correct version.
+> Sight-reading: snare and full-kit reading tests generated from the syllabus parameters, timed preparation, play them on the touch pads for rhythm feedback, then hear the correct version.
 > Aural: hear a fill or groove, play it back and pick the matching chart; plus call-and-response playback practice.
 > Exams: set your board and grade once and technique, sight-reading and aural all follow it, with a syllabus page reference for every requirement. Mock exams follow the syllabus prep times and tempos item by item, with practice feedback only (no marks); a practice log tracks your daily minutes. Practice for Trinity Rock & Pop and RSL Rockschool drums exams (Trinity and RSL Rockschool are trademarks of their owners; this app is not affiliated with them. Practice only — the official syllabus is final).
 > Drum sounds are built in and work offline. No sign-in, no ads, no data collected.
@@ -72,7 +72,7 @@
 - Rudiments follow the Percussive Arts Society (PAS) International Drum Rudiments (© 1984 PAS); the notation is re-engraved by the app for practice. PAS is a trademark of its owner and is not affiliated with this app.
 - Sight-reading and aural tests are generated on the device by the app from the syllabus parameters (time signatures, note values, tempo ranges). They are not official test pieces.
 - Native functionality beyond a web page: native audio session (plays with the silent switch on), bundled multi-velocity drum samples with on-device mixing, interactive touch drum pads with rhythm feedback, generated exercises, offline use.
-- Microphone (optional): only in Sight-reading "Perform" and Aural "Play back", only after the user ticks "Score my rhythm with the mic" and allows access; audio is analysed on the device for stroke times only and never recorded or uploaded. Declining keeps every other feature working (the touch pads are used instead).
+- Microphone: not used in this version (the feature is switched off). When it returns (optional): only in Sight-reading "Perform" and Aural "Echo", only after the user ticks "Score my rhythm with the mic" and allows access; audio is analysed on the device for stroke times only and never recorded or uploaded. Declining keeps every other feature working (the touch pads are used instead).
 - No data is collected; no tracking; no analytics or advertising SDKs. Practice settings stay on the device.
 - How to test: open the Technique tab and press play; open Exams, choose a board and grade, then try Sight-reading and Aural.
 ```
