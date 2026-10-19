@@ -28,7 +28,8 @@ const MODES = ["practice", "time", "streak"];
 export function cleanRead(o){
   const r = o && typeof o === "object" && !Array.isArray(o) ? o : {};
   return { pieces: Array.isArray(r.pieces) ? r.pieces.filter(x => typeof x === "string").slice(0, 20) : [...BASIC],
-    mode: MODES.includes(r.mode) ? r.mode : "practice", best: r.best, miss: r.miss };
+    mode: MODES.includes(r.mode) ? r.mode : "practice", best: r.best, miss: r.miss,
+    seen: r.seen === true };   // 答過一題:題目那行不再寫第一次的說明
 }
 
 export function createReading({ $, store, save, drumKey, onAnswered = () => {} }){
@@ -78,7 +79,8 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
     q = drill.pick(list, setting(), Math.random, last); last = q; t0 = performance.now();
     // 譜和作答格子之間這一行不空著:平常寫題目,答了寫對錯
     // 60 秒 / 連對還沒開始:不寫題目(先按「開始」)
-    say(() => (R.mode === "practice" || drill.running ? tr("哪個鼓件?", "Which drum?") : ""));
+    // 第一次(還沒答過):寫這一格在練什麼、怎麼作答
+    say(() => (R.mode === "practice" || drill.running ? (R.seen ? tr("哪個鼓件?", "Which drum?") : tr("看記號,點出是哪個鼓", "Read the mark, tap the drum")) : ""));
     paintAns();
     draw();
   }
@@ -87,6 +89,7 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
     if (R.mode !== "practice" && !drill.running) return;
     const ok = id === q;
     session.n++; if (ok) session.ok++;
+    if (!R.seen) { R.seen = true; save(); }
     onAnswered((performance.now() - t0) / 1000);
     lock = true;
     wrongName = ok ? null : q;

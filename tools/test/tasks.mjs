@@ -44,7 +44,7 @@ const TASKS = [
     next: { sel: "#s-rdMsg, #s-rdSet", words: ["答案", "對了", "Toms", "Right", "It was"] } },
   { name: "考 RSL 2 級的人想練這一級的視奏題", store: onboarded({ exam: { system: "rsl", grade: 2 }, view: "tech" }), steps: [
       { sel: '#tabbar [data-view="exam"]', say: "檢定分頁", wait: 600 },
-      { sel: '#examParts [data-part="sight"]', say: "視奏", wait: 800 },
+      { sel: '#subSeg [data-v="sight"]', say: "視奏(子項目列)", wait: 800 },
       { sel: "#s-mockClose", say: "練習這一級(在檢定頁出題)", start: true, wait: 1500 },
       { sel: "#s-prepare", say: "準備 90 秒" }
     ],

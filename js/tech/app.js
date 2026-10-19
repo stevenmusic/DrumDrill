@@ -3,7 +3,7 @@
 import * as store from "./store.js";
 import { RUDIMENTS, CATEGORIES, byNo, withLead, strokes, cycleLength, DIV, pattern } from "./rudiments.js";
 import { rudimentXML } from "./notation.js";
-import { tr, T as TS, scoped, getLang, pairText } from "../shared/i18n.js";
+import { tr, T as TS, scoped, getLang, pairText, unpair } from "../shared/i18n.js";
 import { techItems, techPasNos } from "../shared/examdata.js";
 import { L, srcOf, assumed, fillSpec, para, valueName, bandsText, summaryRows, notInApp, dataRow, pairStack } from "../shared/examview.js";
 import * as audio from "../shared/audio.js";
@@ -63,7 +63,7 @@ export function examStatus(){
   if (ex.system === "trinity") return tr("在 Song 3 評", "Assessed in Song 3");
   const nos = d ? techPasNos(ex.grade, d) : RUDIMENTS.map(r => r.no);
   const n = nos.filter(no => S.mastery[no] === "good").length;
-  return tr(`已會 ${n}/${nos.length}`, `${n}/${nos.length} known`);
+  return tr(`會了 ${n}/${nos.length}`, `Got it ${n}/${nos.length}`);
 }
 export function onKey(e){
   if (tab === "exam" && mock.running()) {   // 模擬考:空白鍵 = 開始 / 停止、N = 下一組
@@ -177,6 +177,19 @@ function renderTitle(){
     pt ? tr("App 練習型", "App drill") : null,
     pt && target.assumed ? TS("srcAssumed") : null].filter(Boolean);   // 時值是推估的(4 級 C 組 Flam tap 的四分音符)
   $("qTags").innerHTML = tags.map((t, i) => `<span class="q-tag${i ? "" : " fold"}" title="${t}">${t}</span>`).join("");
+  renderIntro();
+}
+/* 第一次進來這一類的一行說明(題目卡標籤下):這一類播放過一次就不再出現(S.intro[類別] = true) */
+const INTRO = {
+  roll: ["兩手交替,連續打出密集的聲音", "Strokes hand to hand, close together"],
+  diddle: ["單擊和雙擊混在一起,例如 RLRR LRLL", "Singles and doubles mixed, e.g. RLRR LRLL"],
+  flam: ["小音符先輕打,幾乎同時重打主音", "A soft grace note just before the main stroke"],
+  drag: ["兩下輕的裝飾音,再接主音", "Two soft grace notes, then the main stroke"]
+};
+function renderIntro(){
+  const txt = tab !== "exam" && !mockOn() && !S.intro[tab] ? INTRO[tab] : null;
+  $("intro").hidden = !txt;
+  if (txt) pairText($("intro"), () => tr(txt[0], txt[1])); else unpair($("intro"));
 }
 
 /* ══ 已經會了 / 待加強(只是標記,不算一次練習)══ */
@@ -265,7 +278,7 @@ const itemName = it => (it.kind === "pas" ? `${it.no}. ${name(byNo(it.no))}` : i
 function renderRsl(d, g){
   const t = d.tech[g], items = techItems(g, d), nos = techPasNos(g, d);
   const good = nos.filter(no => S.mastery[no] === "good").length;
-  $("listSub").textContent = tr(`已會 ${good}/${nos.length}`, `${good}/${nos.length} known`);
+  $("listSub").textContent = tr(`會了 ${good}/${nos.length}`, `Got it ${good}/${nos.length}`);
   $("progress").hidden = false;
   $("progressBar").style.width = (nos.length ? 100 * good / nos.length : 0) + "%";
   // 開頭只說一次:名稱後面寫時值的是練習型(拍點、抽考方式寫在模擬考卡,不重複);頁碼接在後面
@@ -651,7 +664,9 @@ async function startPlayback(){
     setMsg("loadingMsg", () => tr("播放失敗:", "Playback failed: ") + (e && e.message || e));
   }
   if (r === "failed") land.release();
-  if (r !== "started") loopNext = false;   // 沒有開始(失敗、被取代):下一次使用者按播放要照常播報
+  if (r !== "started") loopNext = false;
+  // 這一類播放過一次:說明不再出現(換打法、換類別時才收起來,播放中版面不動)
+  else if (tab !== "exam" && !S.intro[tab]) { S.intro[tab] = true; store.save(); }   // 沒有開始(失敗、被取代):下一次使用者按播放要照常播報
   return r;
 }
 /* 回傳 "started"(開始播了)、"busy"(正在準備 / 被換題或停止取代)、"failed"(取樣沒載到) */
@@ -849,7 +864,7 @@ const stepName = st => () => (st.it ? itemName(st.it) : L(st.gr.name));
 const stepDetail = (st, i) => () => {
   const b = st.gr.bpm ? `♩=${st.gr.bpm}` : "";
   const mk = mock.state === "result" && mock.data.marks ? mock.data.marks[i] : "";
-  const mark = (mk === "good" ? tr(" · 會了", " · got it") : mk === "weak" ? tr(" · 待加強", " · practise") : "")
+  const mark = (mk === "good" ? tr(" · 會了", " · got it") : mk === "weak" ? tr(" · 再練", " · needs work") : "")
     + (mock.state === "result" && st.book ? tr(` · 這一組另有 ${st.book} 項只在檢定書(這次沒練)`, ` · ${st.book} more in the grade book (not practised)`) : "");
   if (st.status === "skip") return tr("這一組請用檢定書練(App 沒有譜)", "Use the grade book for this group (no part in the App)");
   if (st.status === "done") return tr(`跟拍點打完 · ${b}`, `Played through with the click · ${b}`) + mark;
@@ -882,7 +897,7 @@ function renderMockCard(d, g){
     paintCard($, { title: () => tr("模擬考結果", "Mock exam result"), sub: name("rsl", mock.data.grade),
       text: () => [tr(`跟拍點打完 ${c("done")} 組`, `${c("done")} played through`), c("stopped") ? tr(`中途停止 ${c("stopped")} 組`, `${c("stopped")} stopped`) : "",
         c("none") ? tr(`沒有打 ${c("none")} 組`, `${c("none")} not played`) : "", c("skip") ? tr(`用檢定書練 ${c("skip")} 組`, `${c("skip")} from the grade book`) : ""].filter(Boolean).join(tr(" · ", " · ")) +
-        tr("。「會了 / 待加強」是你在技巧分頁自己標的。", ". Got it / Practise are your own marks (Technique tab)."),
+        tr("。「會了 / 再練」是你在技巧分頁自己標的。", ". Got it / Needs work are your own marks (Technique tab)."),
       rows, btn: ex.system === "rsl" && !ex.auto && d ? { label: () => mockLabel("result") } : null, close: { label: () => tr("回到本級要求", "Back to the list") } });
     return;
   }

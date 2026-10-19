@@ -7,6 +7,6 @@ addStrings("ear", {
   playAria: ["聽題目", "Play the test"],
   countdownUnit: ["秒", "s"],
   next: ["下一題", "Next"],
-  logTitle: ["練習紀錄", "Practice log"], logStreak: ["連續天數", "Day streak"], logToday: ["今天題數", "Today"], logAcc: ["今天正確率", "Accuracy"],
+  logTitle: ["練習紀錄", "Practice log"], logStreak: ["連續天數", "Day streak"], logToday: ["今天題數", "Today"], logAcc: ["今天打中率", "Today's hit rate"],
   statsTitle: ["各題型正確率", "Accuracy by test"]
 });

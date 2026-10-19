@@ -98,6 +98,8 @@ const SS = (() => {
   s.log = cleanLog(s.log);
   s.goal = cleanGoal(s.goal);
   s.read = cleanRead(s.read);
+  // 第一次進來各分類的一行說明(題目卡狀態那行):正式打完一題的分類 = true
+  { const o = {}; if (s.intro && typeof s.intro === "object") for (const c of CATS) if (s.intro[c] === true) o[c] = true; s.intro = o; }
   return s;
 })();
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(SS)); } catch (e) {} };
@@ -536,7 +538,13 @@ function setTest(tg, kind, P, test){
   preload();
   syncButtons();
 }
-const startMsg = () => (freeQ() ? tr("看完譜就按「正式打」", "Read it, then press Perform") : cur && cur.kind === "playback"
+/* 視奏分頁:第一次進來這個分類(還沒正式打完一題)寫這個分類在練什麼、怎麼打;之後寫下一步 */
+const INTRO = {
+  rhythm: ["看小鼓節奏,跟拍點打一遍", "Read a snare rhythm, play it with the click"],
+  groove: ["看整組鼓的節奏,手腳一起跟拍點打", "Read a kit beat, play it hands and feet"],
+  chart: ["看整份鼓譜(有過門和鈸),跟拍點打", "Read a full kit chart, play it with the click"]
+};
+const startMsg = () => (freeQ() ? (!SS.intro[cur.cat] && INTRO[cur.cat] ? tr(...INTRO[cur.cat]) : tr("看完譜就按「正式打」", "Read it, then press Perform")) : cur && cur.kind === "playback"
   ? tr("先按「看譜」看 30 秒,或直接「正式打」。", "Study 30 s (tap Study), or just Perform.")
   : tr("按「準備」看譜,或直接「正式打」。", "Prep when ready, or just Perform."));
 /* 準備時間:RSL 90 秒(大綱 sight[g].prepSec)、Trinity Playback 看譜 30 秒(大綱 p.60 flow.studySec) */
@@ -659,11 +667,9 @@ function refreshTexts(){
 function renderConfidence(){
   const c = cur, t = c.test, box = $("confBox");
   box.classList.toggle("plain", c.free);
-  if (c.free) {
-    box.open = true;
-    pairText($("confidence"), () => tr("難度階段、節奏型、速度與預備拍都是 App 的練習設定。", "Levels, patterns, tempo and count-in are App practice settings."));
-    return;
-  }
+  // 視奏分頁(自由練習):不放任何出處標記(推估、練習設定、大綱沒寫),整塊藏起來
+  box.hidden = c.free;
+  if (c.free) return;
   const items = [];
   if (c.kind === "snare") {
     const mixed = t.mixed, half = (c.spec.values || []).includes("2");
@@ -692,7 +698,7 @@ function renderMeta(){
   if (!cur) return;
   const t = cur.test, b = bpmNow(), pb = cur.kind === "playback";
   const metre = cur.kind === "snare" ? (cur.free ? "4/4" : `4/4 · ${TS("srcAssumed")}`) : pb ? t.times.join(" ") : t.time;
-  const tags = cur.free ? [metre, tr(`${t.bars} 小節`, `${t.bars} bars`), overridden() || (pb && custom()) ? `♩=${b} · ${tr("練習", "Practice")}` : `♩=${b}`]
+  const tags = cur.free ? [metre, tr(`${t.bars} 小節`, `${t.bars} bars`), `♩=${b}`]   // 視奏分頁:速度不標「練習」
     : [metre, tr(`${t.bars} 小節`, `${t.bars} bars`), pb ? `♩=${b} · ${custom() ? tr("練習", "Practice") : TS("srcPractice")}` : overridden() ? `♩=${b} · ${tr("練習", "Practice")}` : `♩=${b}`];
   $("meta").innerHTML = tags.map(x => `<span class="q-tag">${x}</span>`).join("");
   imgLabel($("score"), scoreLabel);   // 速度改了:譜的說明跟著改
@@ -1285,7 +1291,7 @@ function finishPerform(){
   st.n++;
   if (taps.length) { st.hits += r.hits; st.total += r.total; }   // 沒有敲鼓墊、麥克風沒聽到(例如在真的鼓上打、沒開麥克風):只算題數,不算進命中率
   addSec((performance.now() - p.startedAt) / 1000, 1);
-  if (freeQ()) played = true;
+  if (freeQ()) { played = true; if (!SS.intro[cur.cat]) { SS.intro[cur.cat] = true; save(); } }
   renderAlongLabel(); renderPrepareLabel(); syncButtons();
   renderResult();
   showChecklist("self");
@@ -1309,7 +1315,7 @@ function resultSpeech(R){
   if (!R) return "";
   if (!R.taps) return R.src === "mic" ? tr(...MIC_TEXT.silent) : tr("沒有收到鼓墊的敲擊。", "No pad hits came in.");
   const r = R.r;
-  return tr(`練習回饋:節奏吻合度 ${r.score == null ? "—" : r.score} / 100,命中 ${r.hits} / ${r.total}。`, `Practice feedback: rhythm match ${r.score == null ? "—" : r.score} / 100, hit ${r.hits} of ${r.total}.`);
+  return tr(`練習回饋:節奏吻合度 ${r.score == null ? "—" : r.score} / 100,打中 ${r.hits} / ${r.total}。`, `Practice feedback: rhythm match ${r.score == null ? "—" : r.score} / 100, hit ${r.hits} of ${r.total}.`);
 }
 /* 練習回饋(不是考試分數,不出現等第字眼,也不換算成官方分數) */
 function renderResult(){
@@ -1330,8 +1336,8 @@ function renderResult(){
     const big = document.createElement("div"); big.className = "big"; box.appendChild(big);
     big.innerHTML = `${r.score == null ? "—" : r.score}<small></small>`;
     pairText(big.querySelector("small"), () => tr("/ 100 節奏吻合度", "/ 100 rhythm match"));
-    add("", () => tr(`命中 ${r.hits} / ${r.total} · 漏打 ${r.missed} · 多打 ${r.extra} · 平均差 ${r.meanErrorMs} 毫秒(容許 ±${r.toleranceMs} 毫秒)`,
-      `Hit ${r.hits} / ${r.total} · missed ${r.missed} · extra ${r.extra} · average ${r.meanErrorMs} ms off (±${r.toleranceMs} ms allowed)`));
+    add("", () => tr(`打中 ${r.hits} / ${r.total} · 漏打 ${r.missed} · 多打 ${r.extra}`,
+      `Hit ${r.hits} / ${r.total} · missed ${r.missed} · extra ${r.extra}`));
     if (multi) add("", () => R.lanes.map(l => { const x = r.lanes[l.id] || { hits: 0, total: 0 }; return `${tr(l.label[0], l.label[1])} ${x.hits} / ${x.total}`; }).join(" · "));
     const off = offsetNote(r);
     if (off) add("", () => tr(off[0], off[1]));
@@ -1436,7 +1442,7 @@ function renderStats(){
   const box = $("statsList");
   box.innerHTML = CATS.map(c => {
     const st = SS.cats[c] || { n: 0, hits: 0, total: 0 }, p = st.total ? Math.round(100 * st.hits / st.total) : null;
-    return `<div class="srow"><span>${catName(c)} · ${lvName(levels.get(c))}</span><div class="bar"><i class="${p != null && p < 70 ? "low" : ""}" style="width:${p || 0}%"></i></div><small>${tr(`${st.n} 題`, `${st.n}`)}${p != null ? ` · ${p}%` : ""}</small></div>`;
+    return `<div class="srow"><span>${catName(c)} · ${lvName(levels.get(c))}</span><div class="bar"><i class="${p != null && p < 70 ? "low" : ""}" style="width:${p || 0}%"></i></div><small>${tr(`${st.n} 題`, `${st.n} q`)}${p != null ? tr(` · 打中 ${p}%`, ` · hit ${p}%`) : ""}</small></div>`;
   }).join("");
 }
 
@@ -1509,7 +1515,7 @@ function renderMockCard(){
     const r2 = { id: "2", name: () => tr("正式打一次", "Perform once") };
     if (ms === "run") { r2.detail = () => (st === "perform" ? tr("進行中", "Now") : tr("準備時間到自動開始", "Starts when the time is up")); r2.mark = st === "perform" ? "cur" : "todo"; }
     else if (d.stopped) { r2.detail = () => tr("中途停止(這一次沒有打完)", "Stopped part-way (not finished)"); r2.mark = "no"; }
-    else if (R && R.taps && !R.silent) { const r = R.r; r2.detail = () => tr(`打完了 · 節奏吻合度 ${r.score == null ? "—" : r.score} / 100 · 命中 ${r.hits} / ${r.total}${R.practice && !R.pb ? ` · 練習速度 ♩=${R.bpm}` : ` · ♩=${R.bpm}`}`,
+    else if (R && R.taps && !R.silent) { const r = R.r; r2.detail = () => tr(`打完了 · 節奏吻合度 ${r.score == null ? "—" : r.score} / 100 · 打中 ${r.hits} / ${r.total}${R.practice && !R.pb ? ` · 練習速度 ♩=${R.bpm}` : ` · ♩=${R.bpm}`}`,
       `Finished · rhythm match ${r.score == null ? "—" : r.score} / 100 · hit ${r.hits} / ${r.total} · ♩=${R.bpm}`); r2.mark = "ok"; }
     else if (R && R.src === "mic") { r2.detail = () => tr("打完了 · 麥克風沒有聽到鼓聲,沒有節奏回饋", "Finished · the mic heard no drums, so no rhythm feedback"); r2.mark = "ok"; }
     else { r2.detail = () => tr("打完了 · 沒有收到鼓墊的敲擊,沒有節奏回饋", "Finished · no pad hits, so no rhythm feedback"); r2.mark = "ok"; }
