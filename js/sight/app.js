@@ -533,8 +533,8 @@ function setTest(tg, kind, P, test){
   syncButtons();
 }
 const startMsg = () => (cur && cur.kind === "playback"
-  ? tr("先看譜 30 秒(按「看譜」);也可以直接「正式打」。", "Study the chart for 30 s (tap Study), or go straight to Perform.")
-  : tr("看譜準備好就按「準備」;也可以直接「正式打」。", "Start the prep when ready, or go straight to Perform."));
+  ? tr("先按「看譜」看 30 秒,或直接「正式打」。", "Study 30 s (tap Study), or just Perform.")
+  : tr("按「準備」看譜,或直接「正式打」。", "Prep when ready, or just Perform."));
 /* 準備時間:RSL 90 秒(大綱 sight[g].prepSec)、Trinity Playback 看譜 30 秒(大綱 p.60 flow.studySec) */
 function prepSec(){
   if (!cur) return 90;

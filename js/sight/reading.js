@@ -11,6 +11,7 @@ import * as audio from "../shared/audio.js";
 import { createDrill } from "../shared/drill.js";
 import { legendXML, osmdXML } from "../shared/kitnotation.js";
 import { setupKit, decorate } from "../shared/legend.js";
+import { frameStaff } from "../shared/staffframe.js";
 
 const BASIC = ["snare", "kick", "hh"], TOMS = ["tomHi", "tomMid", "tomFloor"];
 const PRESETS = [
@@ -38,26 +39,41 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
   const order = () => Object.keys(key() ? key().pieces : {});
 
   /* ── 畫一個記號(跟圖例同一套;放大、留譜號)── */
+  let drawSeq = 0;
   async function draw(){
     if (!q || typeof opensheetmusicdisplay === "undefined" || !key()) return;
     const box = $("rdScore");
     if (!osmd) osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(box, { backend: "svg", autoResize: false, drawTitle: false, drawSubtitle: false, drawComposer: false,
       drawPartNames: false, drawMeasureNumbers: false, drawingParameters: "compacttight", renderSingleHorizontalStaffline: true });
+    const my = ++drawSeq;
     try {
       const xml = legendXML(q, { key: key(), lines: 5 });
       setupKit(osmd, 5, xml);
       await osmd.load(osmdXML(xml));
-      osmd.zoom = 1.35; osmd.render();
+      if (my !== drawSeq) return;   // 載入中又換了題目:交給新的那一次畫
+      osmd.zoom = 1; osmd.render();
       decorate(osmd, xml, box.querySelector("svg"));
+      fit();
     } catch (e) { console.error(e); }
   }
+  /* 譜框:不管出哪個鼓件(上面的 Crash、下面的腳踩 HH),框的高度與譜表位置都不變;譜表在框裡垂直置中(js/shared/staffframe.js) */
+  function fit(){
+    const box = $("rdScore"), svg = box.querySelector("svg");
+    if (!svg || !box.clientWidth) return;
+    const land = matchMedia("(orientation: landscape) and (max-height: 500px)").matches;
+    const maxH = land ? Math.max(130, innerHeight - 200) : Math.max(150, Math.min(220, innerHeight * 0.26));
+    frameStaff(svg, box, { key: "kit", above: 5.8, below: 5.8, symmetric: true, spPx: 12, maxH });
+  }
+  let lastW = innerWidth, rzT = 0;
+  addEventListener("resize", () => { if (innerWidth === lastW) return; lastW = innerWidth; clearTimeout(rzT); rzT = setTimeout(() => { if (active) fit(); }, 150); });
 
   function next(){
     clearTimeout(nextTimer); lock = false;
     const list = valid();
     if (list.length < 2) { q = null; $("rdScore").innerHTML = ""; say(() => tr("至少選兩個鼓件。", "Pick at least two drums.")); paintAns(); return; }
     q = drill.pick(list, setting(), Math.random, last); last = q; t0 = performance.now();
-    say(() => "");
+    // 譜和作答格子之間這一行不空著:平常寫題目,答了寫對錯
+    say(() => tr("這是哪個鼓件?點下面作答", "Which drum? Tap below"));
     paintAns();
     draw();
   }
