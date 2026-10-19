@@ -206,15 +206,16 @@ function renderTitle(){
   $("qTags").innerHTML = tags.map((t, i) => `<span class="q-tag${i || !fold ? "" : " fold"}" title="${t}">${t}</span>`).join("");
   renderIntro();
 }
-/* 第一次進來這一類的一行說明(題目卡標籤下):這一類播放過一次就不再出現(S.intro[類別] = true) */
+/* 這一類在練什麼(題目卡標籤下一行):Flam、Drag、複點是鼓手通用的名稱(老師、教材都這樣叫,保留),但初學者看不懂 → 一直顯示一句白話說明(使用者要求);
+   模擬考、檢定頁、今日練習的段落不顯示 */
 const INTRO = {
-  roll: ["兩手交替,連續打出密集的聲音", "Strokes hand to hand, close together"],
-  diddle: ["單擊和雙擊混在一起,例如 RLRR LRLL", "Singles and doubles mixed, e.g. RLRR LRLL"],
-  flam: ["小音符先輕打,幾乎同時重打主音", "A soft grace note just before the main stroke"],
-  drag: ["兩下輕的裝飾音,再接主音", "Two soft grace notes, then the main stroke"]
+  roll: ["滾奏:兩手交替,連續打出密集的聲音", "Rolls: hand to hand, close together"],
+  diddle: ["複點:單擊和雙擊混在一起,例如 RLRR LRLL", "Diddles: singles and doubles mixed, e.g. RLRR LRLL"],
+  flam: ["Flam:主音前面先輕打一個小音符,兩下幾乎同時", "Flam: one soft grace note just before the main stroke"],
+  drag: ["Drag:主音前面先輕打兩個小音符,再打主音", "Drag: two soft grace notes, then the main stroke"]
 };
 function renderIntro(){
-  const txt = tab !== "exam" && !mockOn() && !dseg && !S.intro[tab] ? INTRO[tab] : null;
+  const txt = tab !== "exam" && !mockOn() && !dseg ? INTRO[tab] : null;
   $("intro").hidden = !txt;
   if (txt) pairText($("intro"), () => tr(txt[0], txt[1])); else unpair($("intro"));
 }
