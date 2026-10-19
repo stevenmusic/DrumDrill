@@ -135,14 +135,18 @@ function switchTab(t){
   $("mockCard").hidden = true;
   S.cat = t; store.save();
   const list = RUDIMENTS.filter(r => r.cat === t);
-  // 滾奏第一次進來 = 初學的「單擊 四分音符」練習型(不是 #1 原譜的三十二分音符;原譜在選單裡照舊)
-  if (t === "roll" && (S.pick.roll == null || BEGIN[S.pick.roll])) { freePat = BEGIN[S.pick.roll || "s4"]; setRudiment(1); return; }
+  // 滾奏第一次進來 = 初學的練習型(不是 #1 原譜的三十二分音符;原譜在選單裡照舊):沒選考試、今日練習的律動還在第 0–B 組 = 單擊 八分音符 RL(系統化 2026-10),其他 = 單擊 四分音符
+  if (t === "roll" && (S.pick.roll == null || BEGIN[S.pick.roll])) { freePat = BEGIN[S.pick.roll || beginPick()]; setRudiment(1); return; }
   freePat = null;
   const no = S.pick[t] && list.some(r => r.no === S.pick[t]) ? S.pick[t] : list[0].no;
   setRudiment(no);
 }
 /* 初學的練習型(自由練習的滾奏分頁最前面兩格;rudiments.js 的 pattern(),PAS #1 的 RL 交替 + 四分 / 八分音符;熟練度、速度記在 #1) */
 const BEGIN = { s4: { pas: 1, sticking: "single", value: "4" }, s8: { pas: 1, sticking: "single", value: "8" } };
+function beginPick(){
+  const at = daily.data.prog.groove && daily.data.prog.groove.at, L = at && ROUTES[0].levels.find(l => l.id === at);
+  return (!exam || exam.auto) && L && ["0", "A", "B"].includes(L.g) ? "s8" : "s4";
+}
 let freePat = null;
 const curPattern = () => (target && target.pattern) || (!target ? freePat : null);
 
@@ -194,7 +198,13 @@ function setRudiment(no){
   preloadSamples();
 }
 
+/* ▶ 下面一行小字:示範 / 示範 + 拍點(今日練習的路線段)/ 拍點(只有拍點的時候) */
+function syncPlayCap(){
+  const solo = mockOn() || clickOnlyOn() || !!(dseg && dseg.k !== "warm" && dseg.click && dseg.click !== "every");
+  $("playBtn").dataset.cap = solo ? tr("拍點", "Click") : routeOn() ? tr("示範 + 拍點", "Demo + click") : tr("示範", "Demo");
+}
 function renderTitle(){
+  syncPlayCap();
   if (!play && !starting) $("playLabel").textContent = playText();
   if (mockOn()) { renderMockTitle(); return; }
   if (dseg && target && target.daily) {   // 今日練習:標題 = 關卡(或暖身)的名稱,標籤 = 路線第幾關、速度 → 目標
@@ -604,7 +614,7 @@ const MIN_BPM = 30, MAX_BPM = 240;
 const tempo = createTempo({ $, min: MIN_BPM, max: MAX_BPM, get: () => bpm, set: v => setBpm(v, true) });
 function syncTempoUI(){
   tempo.sync(tr("拍 / 分鐘", "beats / min"));
-  $("examTempo").textContent = dseg ? tr("今日練習會自動調整", "Set by today's practice") : tr("建議:慢 → 快 → 慢", "Slow → fast → slow");   // PAS 的 open – close – open
+  $("examTempo").textContent = dseg ? tr("自動調整", "Auto") : tr("建議:慢 → 快 → 慢", "Slow → fast → slow");   // PAS 的 open – close – open
   if (routeOn()) { tempo.setBeats(4); return; }
   const beats = Math.max(1, Math.round(accentEvery(cycleLength(groups || [[{ dur: 4 * DIV }]])) / DIV));
   tempo.setBeats(Math.min(8, beats));
@@ -802,6 +812,7 @@ function syncPlayOpts(){
   $("optRamp").setAttribute("aria-pressed", String(!!S.ramp));
   $("optRamp").hidden = !S.loop;   // 沒開循環播放時「每輪加快 4」沒有作用:藏起來(不放一顆不能按的鈕)
   $("optClick").setAttribute("aria-pressed", String(!!S.clickOnly));
+  if (cur || dseg) syncPlayCap();
 }
 /* 今日練習的段落不用循環 / 只聽拍點(速度卡的選項藏起來,播放照段落的設定) */
 function loopOn(){ return !!S.loop && !dseg; }
@@ -1047,7 +1058,9 @@ const dcard = createDailyCard({ $, daily, announce,
   mark: s => (s && s.level && s.level.time === "12/8" ? "♩.=" : "♩="),   // 12/8 的速度是附點四分
   warmName: warmName, log: () => S.log,
   onStart: () => { dShow(daily.begin()); window.scrollTo({ top: 0 }); },
-  onNext: () => dNext(), onMore: () => { const s = daily.addExtra(); if (s) dShow(s); },
+  onNext: () => dNext(), onPause: () => { dExit(); announce(tr("今日練習暫停了", "Today's practice paused")); },
+  onMore: () => { const s = daily.addExtra(); if (s) dShow(s); },
+  barHost: el => { if (ctx && ctx.subBar) ctx.subBar(el, "tech"); },   // 進行中:子項目列換成今日練習的那一行
   onOk: () => dTry({ self: "ok" }), onAgain: () => dTry({ self: "again" }),
   onBack: () => { stopPlayback(); if (daily.back()) dShow(daily.seg()); },
   // 路線段的按鈕列:「沒有鼓?用手機鼓墊」接在「回上一關」後面、「打一遍」放在最右邊(主要按鈕;藏不藏照鼓墊模式,route.js syncPadUI)
@@ -1177,6 +1190,7 @@ function dTry({ self = null, score: sc = null, res = null, at = null } = {}){
   const head = res ? (res.offsetTooLarge ? () => "" : () => tr(`準度 ${sc} · `, `Accuracy ${sc} · `)) : () => "";
   const txt = () => head() + dcard.resultText(r, s);
   announce(txt());
+  if (r.passed || r.verdict === "steady") cue();
   if (r.passed && r.cont) { dShow(daily.seg(), txt); return; }
   dseg = daily.seg();
   if (s.k === "route") { bpm = r.nextBpm; target.bpm = bpm; syncTempoUI(); }
@@ -1186,6 +1200,8 @@ function dTry({ self = null, score: sc = null, res = null, at = null } = {}){
   $("rPerform").hidden = !rv.pad || stepDone;
   dcard.render();
 }
+/* 過關、穩了:一個短的取樣音(Naked Drums xstick,跟拍點同一個取樣;不用合成音) */
+function cue(){ audio.ensureAudio(); audio.loadClick().then(() => audio.playClick(audio.audioNow() + 0.03, true)).catch(() => {}); }
 /* 下一段:練過的那一段算一次練習 */
 function dNext(){
   stopPlayback();

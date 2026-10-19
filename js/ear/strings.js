@@ -4,7 +4,7 @@ addStrings("ear", {
   tempo: ["速度", "Tempo"],
   bpmDown: ["慢 1(按住連續減少)", "Slower (hold)"], bpmUp: ["快 1(按住連續增加)", "Faster (hold)"],
   optHide: ["不看譜", "No chart"],
-  playAria: ["聽題目", "Play the test"],
+  playAria: ["聽題目", "Play the test"], playCap: ["題目", "Question"],
   countdownUnit: ["秒", "s"],
   next: ["下一題", "Next"],
   logTitle: ["練習紀錄", "Practice log"], logStreak: ["連續天數", "Day streak"], logToday: ["今天題數", "Today"], logAcc: ["今天打中率", "Today's hit rate"],

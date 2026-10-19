@@ -1,5 +1,6 @@
 /* 今日練習的路線與關卡(DrumDrill;引擎 js/shared/daily.js、卡片 js/shared/dailycard.js、譜的寫法 js/tech/routespec.js)。
-   全部都是 App 編排的練習(練習設定,不是考試要求):律動 28 關 + 過門 19 關(過門在律動過了第 6 關「8 Beat 基本節奏」才開放)。
+   全部都是 App 編排的練習(練習設定,不是考試要求):律動 30 關(第 0 組 1 + A 4 + B 8 + C 5 + D 6 + E 3 + F 3)+ 過門 19 關(過門在律動過了 B2「8 Beat 基本節奏」才開放)。
+   - 第 0 組(初學基礎,系統化 2026-10):「跟拍點數拍」只用右手四分音符跟拍點(oneHand: "R" = 左右手全部標 R);快速通道照舊可以快速跳過
    - 時值由慢到快(使用者要求,給完全初學的人):每條路線第 1 關一定是四分音符 → 八分 → 後面才十六分 / 三連音
    - start / target(♩;12/8 是 ♩.)、up(每穩一次加快;沒寫 = 8)、check(重點 2–3 項:鼓墊量不到的手腳、音量,自己檢查)
    - pat = 譜(寫法見 routespec.js);「@kick8」之類 = 每天不一樣(種子 = 日期 + 關卡,同一天同一題)
@@ -15,6 +16,9 @@ const fill = bar2 => [LAND, bar2];
 const c = (zh, en) => [zh, en];
 
 const GROOVE = [
+  // ── 0 初學基礎 ──
+  { id: "G01", g: "0", name: c("跟拍點數拍", "Count with the click"), start: 56, target: 80, oneHand: "R", pat: { sd: Q },
+    check: [c("只用右手,邊打邊數 1 2 3 4", "Right hand only; count 1 2 3 4 out loud"), c("跟拍點同時下去", "Land with the click")] },
   // ── A 四分音符(手腳對齊)──
   { id: "A1", g: "A", name: c("右手和大鼓一起", "Hand and kick together"), start: 56, target: 80, pat: { hh: Q, bd: Q },
     check: [c("Hi-hat 和大鼓同時下去", "Hi-hat and kick land together"), c("數出來:1、2、3、4", "Count out loud: 1 2 3 4")] },
@@ -52,9 +56,11 @@ const GROOVE = [
     check: [c("小鼓只在第 3 拍", "Snare only on 3"), c("感覺慢一半,Hi-hat 照常", "Feels half as fast; hi-hat as usual")] },
   { id: "C5", g: "C", name: c("讀小鼓(每天不一樣)", "Read the snare (new daily)"), start: 60, target: 88, pat: { hh: E8, sd: "@snare8", bd: BD13 },
     check: [c("先看譜再打", "Read it before you play"), c("右手不停", "Right hand keeps going")] },
-  // ── D 加入左腳(四肢)──
-  { id: "D1", g: "D", name: c("Ride + 左腳踩 2、4", "Ride, foot hi-hat on 2 & 4"), start: 60, target: 96, pat: { ride: E8, sd: SD24, bd: BD13, hf: SD24 },
-    check: [c("右手換到 Ride", "Right hand moves to the ride"), c("左腳和小鼓同時", "Left foot with the snare")] },
+  // ── D 加入左腳(四肢;先換到 Ride,再加左腳:每一關只加一件新東西)──
+  { id: "DR", g: "D", name: c("Ride 上的 8 Beat", "8-beat on the ride"), start: 60, target: 96, pat: { ride: E8, sd: SD24, bd: BD13 },
+    check: [c("右手換到 Ride", "Right hand moves to the ride"), c("跟 Hi-hat 上一樣平均", "As even as on the hi-hat")] },
+  { id: "D1", g: "D", name: c("加左腳:踩 2、4", "Add the foot: hi-hat on 2 & 4"), start: 60, target: 92, pat: { ride: E8, sd: SD24, bd: BD13, hf: SD24 },
+    check: [c("左腳和小鼓同時", "Left foot with the snare"), c("右手 Ride 不受影響", "Ride hand stays steady")] },
   { id: "D2", g: "D", name: c("左腳每一拍踩", "Foot hi-hat on every beat"), start: 60, target: 92, pat: { ride: E8, sd: SD24, bd: BD13, hf: Q },
     check: [c("左腳穩定,不跟著大鼓亂", "Left foot steady, not pulled by the kick"), c("腳跟可以跟著拍子點", "Let the heel mark the beat")] },
   { id: "D3", g: "D", name: c("開 Hi-hat 在 4&", "Open hi-hat on 4&"), start: 60, target: 92, pat: { hh: "x-x- x-x- x-x- x-o-", sd: SD24, bd: BD13 },

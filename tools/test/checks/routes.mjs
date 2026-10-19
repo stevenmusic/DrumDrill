@@ -1,7 +1,7 @@
 // 今日練習的路線與關卡(js/tech/routes.js + routespec.js)的檢查;verify.mjs 呼叫,也可以單獨跑:node tools/test/checks/routes.mjs
 //   每一關的譜轉得成 spec、kitnotation 畫得出來、每小節拍數對、手 / 腳聲部分對、起始 < 目標、id 不重複、unlock 指到存在的關、中英名字都有、
 //   時值由慢到快(每條路線第 1 關只有四分音符;十六分 / 三連音不早於八分)、左右手(手打的音都有 R / L,腳沒有)、
-//   每天不一樣的關(@kick8 / @snare8 / @fill2)每個 1000 個種子:規則都對、同種子同題、兩小節不一樣、不能三個八分大鼓連續;暖身清單的打法都存在
+//   第 0 組、D 組拆兩關、數拍用語;每天不一樣的關(@kick8 / @snare8 / @fill2)每個 1000 個種子:規則都對、同種子同題、兩小節不一樣、不能三個八分大鼓連續;暖身清單的打法都存在
 import fs from "node:fs";
 import { ROUTES, WARM } from "../../../js/tech/routes.js";
 import { toSpec, barsOf, hasGen, threeInRow, eventsOf, handsOf, HAND_LINES, FOOT_LINES } from "../../../js/tech/routespec.js";
@@ -100,7 +100,17 @@ export default function check(ok){
     });
   }
   ok(!bad.length, `路線關卡:${ROUTES.map(R => R.id + " " + R.levels.length + " 關").join("、")};${n} 份譜都畫得出來、規則都對` + (bad.length ? "\n    " + bad.slice(0, 12).join("\n    ") : ""));
-  ok(ROUTES[0].levels.length === 28 && ROUTES[1].levels.length === 19, "律動 28 關、過門 19 關");
+  ok(ROUTES[0].levels.length === 30 && ROUTES[1].levels.length === 19, "律動 30 關(含第 0 組)、過門 19 關");
+  // 系統化(2026-10):第 0 組在主路線最前面(「跟拍點數拍」只用右手四分)、D 組先換到 Ride 再加左腳(每一關只加一件新東西)、過門等律動的基礎關(B2)過了才開放
+  const G = ROUTES[0].levels, g0 = G[0], r0 = toSpec(g0, 1, { key });
+  ok(g0.g === "0" && g0.id === "G01" && r0.spec.measures.every(m => m.voices[0].every(e => (e.notes || []).every(x => x.hand === "R"))) && finest(r0.spec) === 4,
+    "第 0 組:跟拍點數拍(右手、四分音符)");
+  const iDR = G.findIndex(l => l.id === "DR"), iD1 = G.findIndex(l => l.id === "D1");
+  ok(iDR >= 0 && iD1 === iDR + 1 && !JSON.stringify(G[iDR].pat).includes("hf") && JSON.stringify(G[iD1].pat).includes("hf"), "D 組:先「Ride 上的 8 Beat」、再加左腳");
+  ok(ROUTES[1].unlock && ROUTES[1].unlock.route === "groove" && ROUTES[1].unlock.passed === "B2", "過門在律動 B2 過了才開放");
+  // 數拍用語一律「3&」(不寫「3 拍後半」「反拍」)
+  const words = ROUTES.flatMap(R => R.levels.flatMap(L => [L.name[0], ...L.check.map(c => c[0])]));
+  ok(!words.some(w => /拍後半|反拍/.test(w)), "數拍用語一律「3&」:" + words.filter(w => /拍後半|反拍/.test(w)).join("、"));
   // 暖身:打法存在、練習型做得出來、after 指到律動的關、第一個是四分音符的練習型
   const gids = new Set(ROUTES[0].levels.map(l => l.id));
   const wbad = WARM.filter(w => {

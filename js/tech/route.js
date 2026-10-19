@@ -90,13 +90,14 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
     const sysOf = y => tops.reduce((b, t, i) => (y + 2 >= t ? i : b), 0);
     const inkTop = tops.map(() => Infinity);
     let sp = 10;
-    svg.querySelectorAll(".vf-stavenote, .vf-beam, .vf-stem, .staffline, text:not(.rt-hand), .rt-pct").forEach(g => { const b = g.getBBox(); if (b.height || b.width) { const i = sysOf(b.y + b.height / 2); inkTop[i] = Math.min(inkTop[i], b.y); } });
+    const isRep = g => g.tagName === "text" && /^×\d+$/.test(g.textContent.trim());   // ×N 下面另外放(不墊高 R / L)
+    svg.querySelectorAll(".vf-stavenote, .vf-beam, .vf-stem, .staffline, text:not(.rt-hand), .rt-pct").forEach(g => { if (isRep(g)) return; const b = g.getBBox(); if (b.height || b.width) { const i = sysOf(b.y + b.height / 2); inkTop[i] = Math.min(inkTop[i], b.y); } });
     const h0 = svg.querySelector(".vf-notehead"); if (h0) sp = h0.getBBox().height || sp;
     const fs = sp * 1.45, cols = new Map();
     for (const h of hs) {
       const g = gns.find(x => x.mi === h.mi && x.t === h.t && x.k === h.k), hb = g && headBox(g.gn);
       if (!hb) continue;
-      const key = h.mi + ":" + h.t, col = cols.get(key) || { x: hb.head.x + hb.head.width / 2, top: inkTop[sysOf(hb.head.y + hb.head.height / 2)], hands: [] };
+      const si = sysOf(hb.head.y + hb.head.height / 2), key = h.mi + ":" + h.t, col = cols.get(key) || { x: hb.head.x + hb.head.width / 2, top: inkTop[si], si, hands: [] };
       col.hands.push([h.k, h.hand]); cols.set(key, col);
     }
     const frag = document.createDocumentFragment();
@@ -112,6 +113,12 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
       });
     }
     svg.appendChild(frag);
+    // 反覆的「×N」(kitnotation 寫在第一個音上方)跟第一個 R / L 撞在一起:移到第一個 R / L 的左邊、同一條基線(譜號、拍號上面是空的)
+    const first = [...cols.values()].filter(c => c.si === 0).sort((a, b) => a.x - b.x)[0];
+    if (first) {
+      const n = new Set(first.hands.map(x => x[1])).size, y = (isFinite(first.top) ? first.top : 0) - fs * 0.3 - (n - 1) * fs * 1.05;
+      svg.querySelectorAll(".vf-text text").forEach(t => { if (isRep(t)) { t.setAttribute("x", first.x - fs * 1.2); t.setAttribute("y", y); t.setAttribute("text-anchor", "end"); } });
+    }
     const vb = svg.viewBox.baseVal, bb = svg.getBBox();
     if (vb && vb.height && bb.y - 4 < vb.y) {
       const k = parseFloat(svg.getAttribute("height")) / vb.height, y0 = bb.y - 4;

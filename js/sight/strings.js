@@ -4,7 +4,7 @@ addStrings("sight", {
   tempo: ["速度", "Tempo"],
   bpmDown: ["慢 1(按住連續減少)", "Slower (hold)"], bpmUp: ["快 1(按住連續增加)", "Faster (hold)"],
   optMetro: ["準備時節拍器", "Prep click"], mockMetro: ["節拍器", "Metronome"], optClick: ["正式打的拍點", "Perform click"], bpmReset: ["官方速度", "Official tempo"],
-  playAria: ["聽正確版本", "Hear the correct version"],
+  playAria: ["聽正確版本", "Hear the correct version"], playCap: ["正確版本", "Correct"],
   countdownUnit: ["秒", "s"],
   generate: ["下一題", "Next"],
   scoreTitle: ["小鼓譜", "Snare part"],

@@ -206,6 +206,8 @@ export function toSpec(level, seed = 1, { key = null } = {}){
     const where = `${level.id} 第 ${mi + 1} 小節`;
     return { voices: [voiceOf(b, HAND_LINES, { compound, where: where + " 手", hands: true }), voiceOf(b, FOOT_LINES, { compound, where: where + " 腳", hands: false })] };
   });
+  // 只用一隻手的關(第 0 組「跟拍點數拍」:右手):手打的音全部標這隻手
+  if (level.oneHand) for (const m of measures) for (const e of m.voices[0]) for (const n of e.notes || []) if (n.hand) n.hand = level.oneHand;
   const spec = { lines: 5, time, measures, dyn: level.dyn || [] };
   if (key) spec.key = key;
   const pieces = new Set();
