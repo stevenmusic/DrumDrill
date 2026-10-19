@@ -137,7 +137,8 @@ async function audit(st, expect = {}){
 
 /* 焦點順序:從頁首按 Tab 走 n 步:每一步的焦點元素看得到、有焦點框,而且一直往後(不會卡住、不會跳回去) */
 async function tabWalk(st, n = 30){
-  await ev(() => { document.activeElement && document.activeElement.blur(); window.scrollTo(0, 0); });
+  // 從頁首開始:blur() 之後 Chromium 的「循序焦點起點」還留在上一個焦點的位置(例如頁尾),所以先把焦點放在頂欄(暫時 tabindex=-1)
+  await ev(() => { document.activeElement && document.activeElement.blur(); window.scrollTo(0, 0); const h = document.querySelector("header"); h.tabIndex = -1; h.focus({ preventScroll: true }); h.removeAttribute("tabindex"); });
   const seen = [];
   for (let i = 0; i < n; i++) {
     await page.keyboard.press("Tab");
@@ -153,7 +154,7 @@ async function tabWalk(st, n = 30){
     if (!f.ring) fail(st, `Tab 聚焦時沒有焦點框:${f.id}`);
     seen.push(f);
   }
-  if (seen.length < 5) fail(st, `Tab 只走到 ${seen.length} 個元素`);
+  if (seen.length < 5) fail(st, `Tab 只走到 ${seen.length} 個元素(${seen.map(f => f.id).join("、")})`);
   // 往後走:允許從頁尾回到頂欄一次(分頁列在 DOM 的後面)
   let backs = 0;
   for (let i = 1; i < seen.length; i++) if (seen[i].idx <= seen[i - 1].idx) backs++;
