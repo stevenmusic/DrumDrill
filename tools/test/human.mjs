@@ -80,7 +80,10 @@ const appActions = ({ page, tap, tapAny }) => [
   [2, "聽力 看譜", async () => tap("#e-studyBtn")],
   [3, "聽力 點鼓墊", async () => tapAny("#e-pads .tap-pad")],
   [2, "聽力 下一題", async () => tap("#e-nextBtn")],
-  [1, "聽力 級數", async () => tapAny("#e-grades .opt")],
+  [1, "聽力 難度", async () => tapAny("#e-levelRow button")],
+  [1, "視奏 難度", async () => tapAny("#s-levelRow button")],
+  [2, "難度回饋(太簡單 / 剛好 / 太難)", async () => tapAny("#s-alongResult .diff-fb button, #e-alongResult .diff-fb button")],
+  [1, "檢定頁 練習這一級的視奏 / 回到規格", async () => tapAny("#s-specCards .s-go, #s-mockClose")],
   [1, "聽力 不看譜", async () => tap("#e-optHide")],
   // S14 模擬考
   [3, "模擬考 開始/停止", async () => tapAny("#t-mockBtn, #s-mockBtn, #e-mockBtn")],

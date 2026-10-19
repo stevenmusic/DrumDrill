@@ -114,6 +114,8 @@ for (const [name, w, h, mobile] of VPS) {
   await page.click('#systemSeg button[data-v="rsl"]'); await page.waitForTimeout(300);
   await compare(page, name, "檢定 RSL");
   await sub("sight"); await compare(page, name, "檢定 視奏");
+  // 檢定頁的「練習這一級的視奏」(在檢定頁直接出題;沒選考試時不動作)
+  if (await page.evaluate(() => { window.__sight.startXp(); return window.__sight.xp; })) { await page.waitForTimeout(1200); await compare(page, name, "檢定 視奏 練習這一級"); await page.click("#s-mockClose").catch(() => {}); await page.waitForTimeout(300); }
   await sub("ear"); await compare(page, name, "檢定 聽力");
   // S3:檢定頁 RSL 0/3/8、Trinity 0/4/8 × 技巧/視奏/聽力
   for (const [sys, g] of [["rsl", 0], ["rsl", 3], ["rsl", 8], ["trinity", 0], ["trinity", 4], ["trinity", 8]]) {
@@ -142,7 +144,7 @@ for (const [name, w, h, mobile] of VPS) {
   const sightReady = () => page.waitForFunction(() => window.__sight.state.drawn > 0 && !window.__sight.state.pending && window.__sight.state.loading == null && !document.querySelector("#s-score[aria-busy]"), null, { timeout: 60000 }).then(() => page.waitForTimeout(500));
   for (const [sys, g] of [["rsl", 0], ["rsl", 3], ["rsl", 4], ["rsl", 5], ["trinity", 0], ["trinity", 4], ["trinity", 8]]) {
     const at = `視奏 ${sys} ${g}`;
-    await page.evaluate(([s, g]) => { window.__shell.setExam(s, g); window.__shell.showView("sight", String(g)); }, [sys, g]); await sightReady();
+    await page.evaluate(([s, g]) => { window.__shell.setExam(s, g); window.__sight.goto(s, g); }, [sys, g]); await sightReady();
     await compare(page, name, at);
     await sClick("s-prepare"); await page.waitForTimeout(500); await compare(page, name, `${at} 準備中`);
     await sClick("s-prepare"); await page.waitForTimeout(200);
@@ -163,7 +165,7 @@ for (const [name, w, h, mobile] of VPS) {
     await sClick("s-play"); await page.waitForTimeout(200);
     await page.evaluate(() => window.__sight.setBpm(window.__sight.test.bpm));
   }
-  await page.evaluate(() => { window.__shell.setExam("rsl", 6); window.__shell.showView("sight", "6"); }); await page.waitForTimeout(400);
+  await page.evaluate(() => { window.__shell.setExam("rsl", 6); window.__sight.goto("rsl", 6); }); await page.waitForTimeout(400);
   await compare(page, name, "視奏 rsl 6 說明卡");
   await page.evaluate(() => { window.__shell.setExam("rsl", 4); window.__shell.showView("exam", "sight"); }); await page.waitForTimeout(400);
   await compare(page, name, "檢定 rsl 4 視奏");

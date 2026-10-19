@@ -1,4 +1,4 @@
-/* 視奏(DrumDrill 也用在聽力)的自動難度:PianoDrill / DrumDrill 共用,逐位元組相同(tools/test/sync.json)。
+/* 自動難度(DrumDrill 的視奏分頁,與沒選考試時的聽力;PianoDrill 不用,視奏是另一套「範圍階段」)。
    - 每個分類各自記一個難度(1–max[cat]);還沒調過時用 start(cat)(模組照考試級數換算;沒選考試 = 1)
    - 設定卡的 ▲ ▼ 手動調(step);每題結果下面一排「太簡單 / 剛好 / 太難」(vote:+1 / 0 / −1,以這一題出結果時的難度為準,改選只算最後一次)
    - auto(cat, 分數):節奏回饋(0–100)連續 AUTO_UP.n 題 ≥ AUTO_UP.score 升一級、連續 AUTO_DOWN.n 題 < AUTO_DOWN.score 降一級;

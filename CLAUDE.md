@@ -8,7 +8,7 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
 - 每次更新(每次 push)都要用中文條列解釋這次改了什麼、為什麼改
 
 ## 架構(照 PianoDrill)
-- 底部四個分頁:**技巧 / 視奏 / 聽力 / 檢定**。頂欄下面的子項目分段鈕:技巧 = 滾奏/複點/Flam/Drag(PAS 四大類)、視奏 = 級數 0–8(第一格 RSL 寫 D、Trinity 寫 I,aria-label 寫完整級名;沒選考試時用 RSL)、檢定 = 技巧/視奏/聽力
+- 底部四個分頁:**技巧 / 視奏 / 聽力 / 檢定**。頂欄下面的子項目分段鈕:技巧 = 滾奏/複點/Flam/Drag(PAS 四大類)、視奏 = 讀譜分類「節奏 / 律動 / 樂譜」(級數只在檢定頁設)、檢定 = 技巧/視奏/聽力
 - 檢定:考試系統 **Trinity Rock & Pop Drums**(初級 Initial、1–8 級)與 **RSL Rockschool Drums**(入門 Debut、1–8 級),在外框設一次(`js/main.js`)。
     檢定頁的考試卡(`#examSetup`)不收起來:系統兩顆大鈕(`#systemSeg`)+ 級數一排按鈕(`#gradeSeg`,第一格 D / I,aria-label 寫完整級名),點一下就換;第一次的問題同樣是按鈕列(`#obGradeSeg`),不用下拉選單
   - Trinity 只採用 Rock & Pop 大綱;不用 Drum Kit & Percussion 系列的要求(記譜圖例用到 DK p.107 是例外,要標出處)
@@ -23,28 +23,37 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
 - 共用元件(`js/shared/`):`score.js`(技巧、聽力:一整行譜面 + 播放軸,看不到時延後重畫;視奏不用,考卷排法用 `js/sight/stage.js`)、`tempo.js`(速度 − / + / 滑桿 / 拍點燈號)、`landscape.js`(手機橫式)。
   **共用元件不寫死前綴**:一律接收模組自己的 `$`(`id => getElementById(前綴 + id)`)(`grep -n '"t-' js/shared/*.js` 要沒結果);
   共用的 CSS 用 class,或在 `drum.css` 補 `#s-…`、`#e-…` 的規則,`app.css` 不動(兩個 App 共用的規則例外:改了要兩邊同步,例如 S16 的焦點框、字級、對比)
-- 視奏(`js/sight/`,卡片 id 與流程照 PianoDrill 視奏;S8 + S9 + S10/S11 的介面):三種題目,都標「依 RSL N 級參數的練習 · 」或「依 Trinity Playback N 級參數的練習 · 」+ practiceOnly
+- 視奏(`js/sight/`,卡片 id 與流程照 PianoDrill 視奏;S8 + S9 + S10/S11 的介面)分兩個地方(2026-10 使用者決定的新架構):
+  - **視奏分頁 = 練讀譜**:子項目 = 分類(`CATS`:節奏 rhythm / 律動 groove / 樂譜 chart;`main.js` @app 的 `SUBS.sight`,舊版存的級數讀進來改成節奏);
+    **難度由 App 自動調整**(`js/shared/level.js`,每個分類各自記在 `drumdrill.sight.v1` 的 `level` / `streak`):難度 n = 一組已有的出題參數(`CAT_LEVELS`,不自己編更難的):
+    節奏 1–4 = RSL Debut–3 小鼓、律動 1–2 = RSL 4–5 整組鼓、樂譜 1–9 = Trinity Playback Initial–8;到頂時提示換分類。
+    起點:有選考試 → 對應級數(節奏 = 級數 0–3 夾住、律動 = 4–5 級用那一級(6–8 用最高)、其他 1、樂譜 = 級數 + 1);沒選考試 → 1。
+    結果下面「太簡單 / 剛好 / 太難」(+1 / 0 / −1);節奏回饋連續 3 題 ≥ 90 自動 +1、連續 2 題 < 50 自動 −1(結果與播報寫出來);設定卡「難度 n」+ ▼ ▲ +「難度階段由 App 安排(練習設定)」。
+    **視奏分頁不寫考試名稱、級數名、頁碼、practiceOnly、推估標籤**(圖例用 `drawLegend` 的 `plain`);題目卡大標題 = 「分類 · 難度 n」
+  - **檢定頁 = 照考試級數出題**:「練習這一級的視奏」在檢定頁直接出題作答(`xp`;準備 → 正式打 → 回饋 → 正確版本;考試摘要與規格卡藏起來,模擬考卡當標題列:回到規格 / 開始模擬考);
+    模擬考結果的「看譜、聽正確版本」也回到這個畫面。三種題目,都標「依 RSL N 級參數的練習 · 」或「依 Trinity Playback N 級參數的練習 · 」+ practiceOnly
   - RSL Debut–3 小鼓視奏:`gen.js` 出題(純函式,照 `data/exam-rsl.json` sight[g] 的白名單時值、休止符、小節數、速度;4/4 標推估;節奏格、結尾規則、混合格標練習設定;
     範圍速度隨機取整數;同種子同題、`fingerprint.js` 的歷史避免重複);單線譜、1 個鼓墊(J / F)
   - RSL 4–5 整組鼓視奏:`js/shared/kitgen.js` 的 `genRslKit`;五線鼓組譜 + 圖例;最後 2 小節自由發展(斜線,位置推估):播放只有拍點、正式打不評分(那裡的敲擊不算多打);
     3 個鼓墊(鈸 F / 鼓 J / 大鼓與腳踩 HH K,`timing.scoreLanes`,評分前 `hitsOnly`);鼓件範圍、預備拍標推估,節奏型、速度隨機標練習設定(出題器的 NOTES 放在譜下面的小字)
   - Trinity Initial–8:Rock & Pop 沒有視奏;「Playback 看譜練習」(`js/shared/playbackgen.js` 的 `genChart(playbackParams(g))`):看譜 30 秒(官方 p.60)→ 跟拍點打一遍 → 聽正確版本;
     題目卡寫明「官方是聽一句打一句、配伴奏音軌;App 只有拍點」;速度官方沒寫:預設 ♩=80 標練習設定、可以改(改了寫練習速度);預備拍官方有、長度推估;力度的播放音量是練習設定(`kitevents`)
-  - RSL 6–8 Quick Study Piece(拍號、時值、速度大綱沒寫)不出題:說明卡 + 規格卡 +「用 5 級整組鼓參數練讀譜」(帶到 RSL 5 級,標明是 5 級參數);I&I(1–5)只列規格
+  - RSL 6–8 Quick Study Piece(拍號、時值、速度大綱沒寫)不出題:說明卡 + 規格卡 +「到視奏頁練整組鼓讀譜(律動;不是 QSP)」;I&I(1–5)只列規格
   - 流程:出題 → 準備(RSL 90 秒 / Trinity 30 秒,官方;節拍器可開關;鼓墊可試打、不計分)→ 正式打(預備拍 = 第一小節的拍號 1 小節,3/8 是 2 小節)→ 結果(觸控鼓墊的節奏「練習回饋」+ 自我檢查,
     不出現等第字眼、不換算成官方分數)→ 聽正確版本(`js/shared/player.js` + `kitevents.toEvents` + `stage.js`)。RSL 使用者改了速度、在官方範圍外寫「練習速度(官方 ♩=…)」
   - 拍點與小節時間軸:`js/sight/meter.js`(DrumDrill 自己的;PianoDrill 的 meter.js 是它出題器的節奏格換算,用不到,不列入 sync.json):
     x/4 每個四分、x/2 每個二分、複拍子每個附點四分、5/8 = 3+2、7/8 = 2+2+3;有 x/8 的譜播放器用八分音符當一拍;換拍號照小節算(`checks/sight-meter.mjs`)
   - 整組鼓取樣:`audio.loadKit(這一題用到的鼓件)`,載入時 ▶ 外圈畫進度、▶ 與正式打先不能按(載完才能開始;promise 有 catch,失敗再按重試;載入訊息只在還沒開始時寫,載完還原先前的訊息);整組鼓的釋放見下面「整組鼓所有權」
   - 譜面像考卷(下面「版面」);小鼓視奏每小節一樣寬(FixedMeasureWidth),整組鼓 / Playback 照內容排寬度(換拍號、7/4 與 3/8 混在一起);一小節比 4/4 長、兩小節一行放不下時交給 OSMD 換行(縮放 0.55)
-  - 檢定頁:RSL 0–5 規格卡有「練習這一級的視奏」;Trinity 視奏卡寫明 Rock & Pop 沒有視奏,按鈕「練習 Playback 看譜」(沒選考試時改成提示先選 Trinity);
-    examStatus:RSL 0–5「已練 n 題」、6–8「只列規格」、Trinity「Playback 看譜 n 題」
+  - 檢定頁:RSL 0–5 規格卡有「練習這一級的視奏」(在檢定頁出題);Trinity 視奏卡寫明 Rock & Pop 沒有視奏,按鈕「練習 Playback 看譜」(沒選考試時改成提示先選 Trinity);
+    examStatus:RSL 0–5「已練 n 題」、6–8「只列規格」、Trinity「Playback 看譜 n 題」(只算檢定頁出的題目,`stats`;視奏分頁的算在 `cats`)
   - `stage.js`、`random.js` 跟 PianoDrill(`js/sight/stage.js`、`js/sight/generator/random.js`)一模一樣;`fingerprint.js` 只有 `@app` 區段(`fingerprintOf`)不同;三個都列在 `sync.json`
-  - 視奏分頁的級數(`S.sub.sight`)還沒自己選過時跟著考試級數(`main.js` 的 `@app` 區段):第一次選了考試,視奏分頁預設就是那一級
-  - 速度:使用者設的速度每一級各自記住(跟這一題的官方速度脫鉤);RSL 設在官方範圍外才標「練習速度」,Trinity(官方沒寫速度)改了就標「練習速度」、預設 ♩=80 標「練習設定」
+  - 速度:使用者設的速度每一級(檢定頁 `rsl-3`)/ 每個分類的每個難度(視奏分頁 `rhythm-2`)各自記住;RSL 設在官方範圍外才標「練習速度」,Trinity(官方沒寫速度)改了就標「練習速度」、預設 ♩=80 標「練習設定」
+  - 測試掛鉤:`__sight.goto(sys, g)`(舊的「視奏分頁某一級」換成同一組參數的分類 + 難度;RSL 6–8 → 檢定頁)、`level` / `setLevel`、`startXp` / `xp`
 - 聽力(`js/ear/`,卡片 id 照 PianoDrill 聽音;S12 + S13):子項目 = 題型「過門 Fill / 律動 Groove / 回打 Playback」(`main.js` 的 `@app` 區段;還沒自己選過時 Trinity → 回打、其他 → 過門;
   考試系統換了而且選的題型不適用新系統 → 改成新系統的預設)。
-  有選考試時照考試系統(不適用的題型只有說明卡 + 規格卡);沒選考試時 Fill / Groove 用 RSL、Playback 用 Trinity。級數在設定卡選(`e-grades`;選了考試或換級數時跟著考試)
+  有選考試時照考試系統與級數(級數只在檢定頁設;不適用的題型只有說明卡 + 規格卡);沒選考試時 Fill / Groove 用 RSL、Playback 用 Trinity,
+  級數 = 每個題型的自動難度(`level.js`;難度 n = 第 n − 1 級,從 1 開始;設定卡 `e-levelRow` 的 ▼ ▲、結果下面三顆回饋鈕、節奏回饋自動升降,跟視奏一樣)
   - RSL Fill(`gen.js` 的 `genFill` / `fillOptions`):配拍點聽兩次、各 1 小節預備拍(官方)→ 練習(時間自己定,鼓墊試打不計分)→ 回打(預備拍 1 小節 = 推估;1 個鼓墊)
     → 從 2 / 3 個單線譜選(`e-answers`,每個選項一個 OSMD)→ 揭曉正確的譜 + 節奏練習回饋。♩=70 固定(官方,不能改)
   - RSL Groove(`genGroove`):同流程,兩小節播兩遍(推估)、回打長度一樣(推估)、3 個鼓墊;速度在官方範圍內每題隨機;4–8 級說出風格不出
@@ -71,7 +80,7 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
   - 技巧:練習型標「App 依大綱時值排的練習型 · 不是官方譜」(`t-mockMsg`)、時值推估的加「推估」標籤;進行中的說明寫官方速度的頁碼;混合組(pattern + book)結果註明檢定書的項目這次沒練;沒選考試時不顯示模擬考卡(跟視奏、聽力一樣)
   - 進行中、結果也算進練習紀錄(真的打了);測試掛鉤:`__tech.startMock / mockNext / mockFinishRun`、`__sight.startMock / mockSkipPrep`、`__ear.startMock / mockNext / mockSkipStudy`
 - **練習紀錄**(`js/shared/practicelog.js`;三個模組同一個格式,PianoDrill 的樣式):三格數字 + 每週目標(`.goal`,最近 7 天的分鐘數;點一下換 15/30/60/90/120/180,預設 60,存各自 localStorage 的 `goal`)+ 最近 7 天
-  - 技巧:連續天數 / 今天次數 / 今天分鐘;視奏:連續天數 / 今天題數 / 今天分鐘 + 各級練過題數(`#s-statsCard`);聽力:連續天數 / 今天題數 / 今天正確率(`e-logAcc` = 回打命中的音 + 選對的譜 ÷ 全部)+ 各題型正確率(`#e-statsCard`)
+  - 技巧:連續天數 / 今天次數 / 今天分鐘;視奏:連續天數 / 今天題數 / 今天分鐘 + 各分類練過題數與目前難度(`#s-statsCard`);聽力:連續天數 / 今天題數 / 今天正確率(`e-logAcc` = 回打命中的音 + 選對的譜 ÷ 全部)+ 各題型正確率(`#e-statsCard`)
   - 秒數只算真的播放、準備、作答的時間(技巧:預備拍之後的播放;視奏:準備、正式打、聽正確版本;聽力:聽題目、看譜、回打);保留 400 天
   - 紀錄卡、統計卡是練習回饋:檢定頁不放;檢定頁三格進度(`examStatus`)只寫進度(已會 n/m、已練 n 題),不寫命中率
 - **用麥克風評分節奏**(S15,選用;`js/shared/mic.js` 跟 PianoDrill 逐位元組相同(sync.json same)、`js/shared/micrhythm.js` 是 DrumDrill 自己的):
@@ -102,8 +111,8 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
   - 文字對比 ≥ 4.5:1(大字 3:1;深淺兩種主題,`a11y.mjs` 量實際背景);改顏色代幣要兩邊同步並看截圖
 - 中英雙語(預設英文,切過就記住):外框字串 `js/shared/i18n.js`、技巧 `js/tech/strings.js`(前綴 `tech.`)、視奏 `js/sight/strings.js`(前綴 `sight.`)、聽力 `js/ear/strings.js`(前綴 `ear.`);程式產生的文字用 `tr("中", "EN")`
 - 用詞:「檢定」「考試」,不用「考級」(只有 App Store 關鍵字可以放)
-- localStorage:`drumdrill.v1`(外框;`mic` = 麥克風評分開關)、`drumdrill.tech.v1`(技巧:熟練度、速度、`log`、`goal`、`mockOneBar`、`mockRun`)、`drumdrill.sight.v1`(視奏:pick、節拍器 / 拍點開關、`bpmOverride` 每一級各自的練習速度(`rsl-3`、`trinity-4`)、
-  出題歷史、`stats`〔"rsl-3": {n, hits, total}〕各級練過幾題、`log`、`goal`、`mockRun`、譜面排法;讀進來先消毒)、`drumdrill.ear.v1`(聽力:`grades` 各系統的級數、`examSeen`、Trinity 每一級的練習速度 `bpmBy`(`trinity-4`)、`hideChart`、
+- localStorage:`drumdrill.v1`(外框;`mic` = 麥克風評分開關)、`drumdrill.tech.v1`(技巧:熟練度、速度、`log`、`goal`、`mockOneBar`、`mockRun`)、`drumdrill.sight.v1`(視奏:節拍器 / 拍點開關、`bpmOverride` 練習速度(`rsl-3`、`trinity-4`、`rhythm-2`)、
+  出題歷史、`stats`〔"rsl-3": {n, hits, total}〕檢定頁各級練過幾題、`cats`〔rhythm: {n, hits, total}〕視奏分頁各分類、`level` / `streak`(自動難度)、`log`、`goal`、`mockRun`、譜面排法;讀進來先消毒)、`drumdrill.ear.v1`(聽力:`level` / `streak`(沒選考試時各題型的難度;舊版的 `grades`、`examSeen` 丟掉)、Trinity 每一級的練習速度 `bpmBy`(`trinity-4`)、`hideChart`、
   `stats`〔"rsl-3-fill": {n, picks, ok, hits, total}〕、`log`〔日期: {n, sec, hits, total}〕、`goal`、`mockRun`;讀進來先消毒)、`drumdrill-lang`(語言)。
   `log` 的格式三個模組一樣:`{ "YYYY-MM-DD": { n, sec } }`,聽力另外有 `hits`、`total`(今天正確率);三個模組讀進來都用 `cleanLog` 消毒(技巧在 `js/tech/store.js`);`mockRun` = 進行中的模擬考標記(正常結束拿掉;重新整理後還在 = 說明「模擬考已中止」)
 

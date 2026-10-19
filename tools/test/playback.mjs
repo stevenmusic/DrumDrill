@@ -448,7 +448,7 @@ const click = () => page.click("#t-playBtn");
 {
   const n0 = bad;
   const sightGo = async (sys, g) => {
-    await page.evaluate(([s, g]) => { window.__shell.setExam(s, g); window.__shell.showView("sight", String(g)); }, [sys, g]);
+    await page.evaluate(([s, g]) => { window.__shell.setExam(s, g); window.__sight.goto(s, g); }, [sys, g]);
     await waitFor(() => window.__sight.state.drawn > 0 && window.__sight.state.loaded && window.__sight.state.loading == null, null, 60000);
   };
   const expected = clickOn => page.evaluate(async clickOn => {

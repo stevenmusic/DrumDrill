@@ -193,6 +193,8 @@ for (const [name, w, h, mobile] of VPS) {
   await page.click('#gradeSeg button[data-v="0"]'); await page.click('#systemSeg button[data-v="trinity"]'); await page.waitForTimeout(300);
   await audit(page, name, "檢定 Trinity 設定展開");
   await sub("sight"); await audit(page, name, "檢定 視奏");
+  // 檢定頁的「練習這一級的視奏」(在檢定頁直接出題;沒選考試時不動作)
+  if (await page.evaluate(() => { window.__sight.startXp(); return window.__sight.xp; })) { await page.waitForTimeout(1200); await audit(page, name, "檢定 視奏 練習這一級"); await page.click("#s-mockClose").catch(() => {}); await page.waitForTimeout(300); }
   await sub("ear"); await audit(page, name, "檢定 聽力");
   // 技巧:四大類,選擇器展開;最長的打法(40 三 Ratamacue × 8)
   await tab("tech");
@@ -221,7 +223,7 @@ for (const [name, w, h, mobile] of VPS) {
   const sClick = id => page.evaluate(id => document.getElementById(id).click(), id);
   for (const [sys, g] of [["rsl", 0], ["rsl", 3], ["rsl", 4], ["rsl", 5], ["trinity", 0], ["trinity", 4], ["trinity", 8]]) {
     const at = `視奏 ${sys} ${g}`;
-    await page.evaluate(([s, g]) => { window.__shell.setExam(s, g); window.__shell.showView("sight", String(g)); }, [sys, g]); await sightReady();
+    await page.evaluate(([s, g]) => { window.__shell.setExam(s, g); window.__sight.goto(s, g); }, [sys, g]); await sightReady();
     await audit(page, name, at);
     if (g === 4 || g === 8) await shot(`sight-${sys}${g}`);
     const lanes = await page.evaluate(() => window.__sight.state.lanes);
@@ -243,7 +245,7 @@ for (const [name, w, h, mobile] of VPS) {
     await sClick("s-play"); await page.waitForTimeout(200);
     await page.evaluate(() => window.__sight.setBpm(window.__sight.test.bpm));
   }
-  await page.evaluate(() => { window.__shell.setExam("rsl", 6); window.__shell.showView("sight", "6"); }); await page.waitForTimeout(400);
+  await page.evaluate(() => { window.__shell.setExam("rsl", 6); window.__sight.goto("rsl", 6); }); await page.waitForTimeout(400);
   await audit(page, name, "視奏 rsl 6 說明卡"); await shot("sight-rsl6");
   if (!(await page.evaluate(() => !!document.querySelector("#s-specCards .s-go")))) report(name, "視奏 rsl 6 說明卡", "沒有「用 5 級整組鼓參數練讀譜」");
   // S12 / S13 聽力:RSL 0/4/8 × Fill(題目 / 聽題目 / 練習 / 回打中 / 選譜 / 結果)、Groove(題目 / 回打中 / 結果);

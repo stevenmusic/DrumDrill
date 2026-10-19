@@ -192,6 +192,13 @@ export async function start(c){
     newTest, startPrep, startPerform, toggleListen, setBpm: v => setBpm(v), SS,
     /* 測試用:視奏分頁的分類與難度、檢定頁的「練習這一級的視奏」 */
     get cat(){ return freeCat; }, level: c => levels.get(c || freeCat), setLevel: (c, n) => { levels.set(c, n); renderLevel(); renderStats(); }, startXp: () => startXp(), get xp(){ return xpOn(); },
+    /* 測試用:舊的「視奏分頁某一級」換成新架構的同一組參數(RSL 0–3 = 節奏、4–5 = 律動、Trinity = 樂譜,難度設成那一組;RSL 6–8 不出題 → 檢定頁的視奏) */
+    goto(sys, g){
+      const cat = CATS.find(c => CAT_LEVELS[c].some(L => L.sys === sys && L.g === g));
+      if (!cat) { ctx.showView("exam", "sight"); return null; }
+      levels.set(cat, CAT_LEVELS[cat].findIndex(L => L.sys === sys && L.g === g) + 1);
+      ctx.showView("sight", cat); return cat;
+    },
     /* 測試用:正式打中馬上結束、照目前收到的敲擊出結果(Trinity 8 級一首要打很久;layout / bilingual / clip 看結果畫面用) */
     finishNow(){ if (phase === "perform" && playKind === "perform") { playKind = null; player.stop(true); tempo.showBeat(null); finishPerform(); } }, get layout(){ return lastLayout; }, perfT0: () => (perf ? perf.t0 : null),
     get unloadMs(){ return audio.kitRelease.ms; }, set unloadMs(v){ audio.kitRelease.ms = v; },   // 等待時間在 audio.js(視奏、聽力共用)

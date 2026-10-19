@@ -95,7 +95,7 @@ function rng(seed){ return () => { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; le
 async function collectPlans(page){
   const plans = [];
   const sightPlan = async (sys, g) => {
-    await page.evaluate(([sys, g]) => { if (sys === "trinity") window.__shell.setExam("trinity", g); window.__shell.showView("sight", String(g)); }, [sys, g]);
+    await page.evaluate(([sys, g]) => { if (sys === "trinity") window.__shell.setExam("trinity", g); window.__sight.goto("trinity", g); }, [sys, g]);
     await page.waitForFunction(([sys, g]) => { const s = window.__sight.state; return s.key === `${sys}-${g}`; }, [sys, g], { timeout: 30000 });
     const p = await page.evaluate(() => window.__sight.micPlan());
     plans.push({ name: `視奏 ${sys} ${g}`, ...p });
@@ -190,8 +190,10 @@ async function writeWav(page, wav, plan, mode, seconds){
 
 async function sightTake(mode, grade = 3, bpm = 150, { bump = false } = {}){
   const wav = path.join(TMP, `sight-${grade}-${mode}.wav`);
-  const { page, errors, close } = await openApp(wav, { "drumdrill.v1": { onboarded: true, view: "sight", exam: null, mic: true, sub: { sight: String(grade) } } });
-  await page.waitForFunction(g => { const s = window.__sight && window.__sight.state; return s && s.key === "rsl-" + g && s.drawn > 0 && s.loaded; }, grade, { timeout: 60000 });
+  // 視奏分頁的分類 + 難度(RSL 0–3 = 節奏難度 1–4、RSL 4–5 = 律動難度 1–2)
+  const cat = grade <= 3 ? "rhythm" : "groove", lv = grade <= 3 ? grade + 1 : grade - 3;
+  const { page, errors, close } = await openApp(wav, { "drumdrill.v1": { onboarded: true, view: "sight", exam: null, mic: true, sub: { sight: cat } }, "drumdrill.sight.v1": { level: { [cat]: lv } } });
+  await page.waitForFunction(k => { const s = window.__sight && window.__sight.state; return s && s.key === k && s.drawn > 0 && s.loaded; }, `${cat}-${lv}`, { timeout: 60000 });
   if (bpm) await page.evaluate(b => window.__sight.setBpm(b), bpm);   // 練習速度(短一點);null = 這一題的官方速度
   const plan = await page.evaluate(() => window.__sight.micPlan());
   const seconds = LEAD0 + plan.countIn + Math.max(...plan.expected) + 3;

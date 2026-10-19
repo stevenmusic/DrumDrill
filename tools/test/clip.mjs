@@ -104,7 +104,7 @@ async function mockTour(page, check){
 const START = { onboarded: true, view: "tech", exam: { system: "rsl", grade: 5 } };
 // 子項目 "" = 這一頁沒有子項目
 // 視奏:子項目 = 級數(Debut、3 級有題目;6 級是說明卡);more() 再看準備中 / 結果 / 正確版本與 Trinity 的說明卡
-const VIEWS = [["tech", ["roll", "diddle", "flam", "drag"]], ["sight", ["0", "3", "4", "6"]], ["ear", ["fill", "groove", "playback"]], ["exam", ["tech", "sight", "ear"]]];
+const VIEWS = [["tech", ["roll", "diddle", "flam", "drag"]], ["sight", ["rhythm", "groove", "chart"]], ["ear", ["fill", "groove", "playback"]], ["exam", ["tech", "sight", "ear"]]];
 // 聽力:子項目 = 題型(START 是 RSL 5 級:Fill、Groove 有題目,Playback 是說明卡);more() 再看 Fill 的選譜 / 結果、Groove 結果、Trinity 4 級 Playback 的看譜 / 結果
 // 同一個畫面再多看幾種內容:技巧每一類的每個打法(不同長度、g j p y 的名稱)
 async function more(page, view, s, report){
@@ -134,13 +134,13 @@ async function more(page, view, s, report){
       await click("s-play"); await page.waitForTimeout(600); await report(`${label} 正確版本`);
       await click("s-play"); await page.evaluate(() => window.__sight.setBpm(window.__sight.test.bpm));
     };
-    if (s === "6") {   // Trinity 0、4、8 級:Playback 看譜練習(最後回到 START 的考試)
+    if (s === "chart") {   // 樂譜 = Trinity 0、4、8 級的 Playback 參數(最後回到 START 的考試)
       for (const g of [0, 4, 8]) {
-        await page.evaluate(g => { window.__shell.setExam("trinity", g); window.__shell.showView("sight", String(g)); }, g); await page.waitForTimeout(500);
+        await page.evaluate(g => { window.__shell.setExam("trinity", g); window.__sight.goto("trinity", g); }, g); await page.waitForTimeout(500);
         await ready(); await report(`${view} trinity ${g}`);
         await states(`${view} trinity ${g}`, true);
       }
-      await page.evaluate(ex => { window.__shell.setExam(ex.system, ex.grade); window.__shell.showView("sight", "6"); }, START.exam); await page.waitForTimeout(300);
+      await page.evaluate(ex => window.__shell.setExam(ex.system, ex.grade), START.exam); await page.waitForTimeout(300);
       return;
     }
     await states(`${view}/${s}`, false);

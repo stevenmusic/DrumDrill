@@ -235,11 +235,11 @@ async function kitPage(width, lang, shots, { kit = "all", zoom = null, query = "
 for (const width of [1000, 280]) {
   const n0 = bad;
   const { page, errors, close } = await open({ viewport: { width, height: 900 }, mobile: width < 600 });
-  await page.evaluate(() => { localStorage.clear(); localStorage.setItem("drumdrill-lang", "zh"); localStorage.setItem("drumdrill.v1", JSON.stringify({ onboarded: true, view: "sight", sub: { sight: "0", tech: "roll", exam: "tech" } })); });
+  await page.evaluate(() => { localStorage.clear(); localStorage.setItem("drumdrill-lang", "zh"); localStorage.setItem("drumdrill.v1", JSON.stringify({ onboarded: true, view: "sight", sub: { sight: "rhythm", tech: "roll", exam: "tech" } })); });
   await page.reload(); await page.waitForFunction(() => window.__stageReady >= 1);
   let tests = 0;
   for (const g of [0, 1, 2, 3]) {
-    await page.evaluate(g => { window.__shell.setExam("rsl", g); window.__shell.showView("sight", String(g)); }, g);
+    await page.evaluate(g => { window.__shell.setExam("rsl", g); window.__sight.goto("rsl", g); }, g);
     for (let k = 0; k < 4; k++) {
       if (k) { const d = await page.evaluate(() => window.__sight.state.drawn); await page.evaluate(() => window.__sight.newTest()); await page.waitForFunction(d => window.__sight.state.drawn > d, d, { timeout: 20000 }).catch(() => {}); }
       await page.waitForFunction(() => window.__sight.state.drawn > 0 && !document.querySelector("#s-score[aria-busy]"), null, { timeout: 20000 }).catch(() => {});
@@ -321,11 +321,11 @@ for (const width of [1000, 280]) {
 for (const width of [1000, 320]) {
   const n0 = bad;
   const { page, errors, close } = await open({ viewport: { width, height: 900 }, mobile: width < 600 });
-  await page.evaluate(() => { localStorage.clear(); localStorage.setItem("drumdrill-lang", "zh"); localStorage.setItem("drumdrill.v1", JSON.stringify({ onboarded: true, view: "sight", sub: { sight: "4", tech: "roll", exam: "tech" } })); });
+  await page.evaluate(() => { localStorage.clear(); localStorage.setItem("drumdrill-lang", "zh"); localStorage.setItem("drumdrill.v1", JSON.stringify({ onboarded: true, view: "sight", sub: { sight: "groove", tech: "roll", exam: "tech" } })); });
   await page.reload(); await page.waitForFunction(() => window.__stageReady >= 1);
   let tests = 0;
   for (const [sys, g] of [["rsl", 4], ["rsl", 5], ...[0, 1, 2, 3, 4, 5, 6, 7, 8].map(g => ["trinity", g])]) {
-    await page.evaluate(([s, g]) => { window.__shell.setExam(s, g); window.__shell.showView("sight", String(g)); }, [sys, g]);
+    await page.evaluate(([s, g]) => { window.__shell.setExam(s, g); window.__sight.goto(s, g); }, [sys, g]);
     for (let k = 0; k < 2; k++) {
       if (k) { const d = await page.evaluate(() => window.__sight.state.drawn); await page.evaluate(() => window.__sight.newTest()); await page.waitForFunction(d => window.__sight.state.drawn > d, d, { timeout: 30000 }).catch(() => {}); }
       await page.waitForFunction(() => window.__sight.state.drawn > 0 && !document.querySelector("#s-score[aria-busy]"), null, { timeout: 30000 }).catch(() => {});

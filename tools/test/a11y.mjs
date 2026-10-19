@@ -225,7 +225,7 @@ for (const c of ["roll", "diddle", "flam", "drag"]) {
 const sightReady = () => wait(() => window.__sight.state.drawn > 0 && !window.__sight.state.pending && window.__sight.state.loading == null && !document.querySelector("#s-score[aria-busy]")).then(() => page.waitForTimeout(400));
 for (const [sys, g] of [["rsl", 0], ["rsl", 4], ["trinity", 4]]) {
   const at = `視奏 ${sys} ${g}`;
-  await ev(([s, g]) => { window.__shell.setExam(s, g); window.__shell.showView("sight", String(g)); }, [sys, g]); await sightReady();
+  await ev(([s, g]) => { window.__shell.setExam(s, g); window.__sight.goto(s, g); }, [sys, g]); await sightReady();
   await audit(at, { sight: true });
   await ev(() => document.getElementById("s-prepare").click()); await page.waitForTimeout(300);
   const live = await ev(() => document.getElementById("srLive").textContent);
@@ -301,7 +301,7 @@ await page.click("#themeToggle"); await page.waitForTimeout(300);
 await audit("淺色 技巧", { tech: true });
 await ev(() => window.__shell.showView("exam", "tech")); await page.waitForTimeout(400); await audit("淺色 檢定");
 await eGo("rsl", 4, "fill"); await audit("淺色 聽力");
-await ev(() => { window.__shell.setExam("rsl", 4); window.__shell.showView("sight", "4"); }); await sightReady(); await audit("淺色 視奏", { sight: true });
+await ev(() => { window.__shell.setExam("rsl", 4); window.__sight.goto("rsl", 4); }); await sightReady(); await audit("淺色 視奏", { sight: true });
 await page.click("#themeToggle"); await page.waitForTimeout(200);
 
 for (const e of errors) fail("console", e);
