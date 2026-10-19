@@ -113,6 +113,7 @@ let ctx = null, exam = null, active = false, mode = "free";
 let freeCat = "rhythm";       // 視奏分頁的分類(外框的子項目)
 let xp = false;               // 檢定頁的「練習這一級的視奏」:在檢定頁直接出這一級的題目作答(規格卡、考試摘要藏起來)
 let cur = null;               // { key:"rsl-3" | "rhythm-2", free, cat, lv, sys, grade, kind:"snare"|"kit"|"playback", spec(出題參數), test, xml }
+let played = false;            // 視奏分頁:這一題打過(打完或停止)了沒有(▶ 打過才出現)
 let phase = "idle";           // idle | prep | ready(準備時間到)| perform | result
 let left = 0, countdown = 0, prepStarted = 0, prepEnd = 0;   // 倒數照 performance.now() 的終點算(主執行緒卡住也不會變慢)
 let perf = null;              // 正式打:{ t0, bpm, taps:[{lane, time}], startedAt }
@@ -149,6 +150,7 @@ const curName = c => (c.free ? `${catName(c.cat)} · ${lvName(c.lv)}` : `${sysNa
 /* 題目在畫面上(視奏分頁、模擬考進行中、檢定頁的練習) */
 const xpOn = () => mode === "exam" && xp && !mock.running();
 const readOn = () => mode === "free" && freeCat === "read";
+const freeQ = () => mode === "free" && !readOn() && !!cur && cur.free;   // 視奏分頁(自由練習)的題目
 const onPage = () => (mode === "free" && !readOn()) || mockOn() || xpOn();
 /* 認譜(視奏分頁的第一格;js/sight/reading.js):一題一個記號,答一題算一題練習 */
 const reading = createReading({ $, store: SS.read, save, drumKey: () => drumKey(), onAnswered: sec => addSec(sec, 1) });
@@ -271,7 +273,9 @@ export function onKey(e){
   if (pads.key(e)) return;   // J / F(小鼓)、F / J / K(鈸 / 鼓 / 大鼓與腳踩 HH)= 鼓墊
   if (e.code === "Space") {
     e.preventDefault();       // 不要捲動頁面
-    if (phase === "perform") stopPerform(); else if (!$("play").disabled) toggleListen();
+    if (phase === "perform") stopPerform();
+    else if (freeQ() && !played) startPerform();   // 視奏分頁還沒打過(▶ 還沒出現):空白鍵 = 正式打
+    else if (!$("play").disabled) toggleListen();
   } else if ((e.key === "n" || e.key === "N") && !mockOn() && !$("generate").disabled) newTest();   // 模擬考中不能換題(換題會繞過「不能提早結束」)
 }
 
@@ -518,7 +522,7 @@ function setTest(tg, kind, P, test){
   const { sys, g } = tg;
   cur = { key: tg.key, free: tg.free, cat: tg.cat || null, lv: tg.lv || null, sys, grade: g, kind, spec: P, test, xml: null, padCym: "hh" };
   if (kind !== "snare") cur.padCym = mainCymbal(eventsAt(bpmNow()));
-  phase = "idle"; lastResult = null; perf = null;
+  phase = "idle"; lastResult = null; perf = null; played = false;
   $("alongResult").hidden = true; showChecklist(null);
   $("countdown").hidden = false; $("countdown").className = "countdown"; $("countdownValue").textContent = String(prepSec());
   ensurePads();
@@ -532,7 +536,7 @@ function setTest(tg, kind, P, test){
   preload();
   syncButtons();
 }
-const startMsg = () => (cur && cur.kind === "playback"
+const startMsg = () => (freeQ() ? tr("先看譜,準備好就按「正式打」。", "Read it, then press Perform.") : cur && cur.kind === "playback"
   ? tr("先按「看譜」看 30 秒,或直接「正式打」。", "Study 30 s (tap Study), or just Perform.")
   : tr("按「準備」看譜,或直接「正式打」。", "Prep when ready, or just Perform."));
 /* 準備時間:RSL 90 秒(大綱 sight[g].prepSec)、Trinity Playback 看譜 30 秒(大綱 p.60 flow.studySec) */
@@ -1002,7 +1006,19 @@ function setLoading(p){
     fn.loadMsg = true; say(fn);
   } else if (!on && was != null && lastMsg && lastMsg.loadMsg) { say(msgBeforeLoad || startMsg, true); msgBeforeLoad = null; }
 }
+/* 視奏分頁(自由練習)的題目卡只有兩顆:左邊小的「新題目」、右邊大的「正式打」(進行中變停止);沒有準備倒數(官方準備時間留在檢定頁),
+   鼓墊卡沒有「正式打」長條鈕。▶(聽正確版本)還沒打過這一題前不顯示(visibility 保留位置,標題行不跳),打完或停止才出現;檢定頁照舊 */
+function syncFree(){
+  const free = freeQ();
+  $("quiz").classList.toggle("free", free);
+  $("prepare").hidden = free;
+  if (free) $("countdown").hidden = true;
+  $("playAlong").hidden = free;
+  $("generate").classList.toggle("small", free);
+  $("play").style.visibility = free && !played ? "hidden" : "";
+}
 function syncButtons(){
+  syncFree();
   const ok = !!(cur && cur.xml), busy = loading != null, mk = mockOn();
   // 模擬考:不能聽正確版本、不能換題、準備時間不能提早結束;準備中不能開始正式打(時間到自動開始)
   $("play").disabled = !ok || busy || mk;
@@ -1219,8 +1235,9 @@ function abortPerform(){
   mic.cancel();   // 中途停止:丟掉這次錄音,不評分
   if (perf) addSec((performance.now() - perf.startedAt) / 1000);
   perf = null; phase = "idle"; stage && stage.end();
+  if (freeQ()) played = true;
   renderAlongLabel(); renderPrepareLabel(); syncButtons();
-  if (active) say(() => tr("停止了(這一次不算)。", "Stopped (not counted)."));
+  if (active) say(() => (freeQ() ? tr("停止了(不算)。按 ▶ 對照正確版本,或新題目。", "Stopped (not counted). Press ▶ to compare, or New test.") : tr("停止了(這一次不算)。", "Stopped (not counted).")));
   if (mockOn()) { mock.data.stopped = true; mock.finish(); render(); cardToTop($("mockCard")); }   // 模擬考:自己按停止 = 結束(正式打記「中途停止」)
 }
 /* 打完:照題目的每一個音評節奏(js/shared/timing.js;扣掉整體的固定延遲)→ 練習回饋 + 自我檢查;算一題練習。
@@ -1264,10 +1281,11 @@ function finishPerform(){
   st.n++;
   if (taps.length) { st.hits += r.hits; st.total += r.total; }   // 沒有敲鼓墊、麥克風沒聽到(例如在真的鼓上打、沒開麥克風):只算題數,不算進命中率
   addSec((performance.now() - p.startedAt) / 1000, 1);
+  if (freeQ()) played = true;
   renderAlongLabel(); renderPrepareLabel(); syncButtons();
   renderResult();
   showChecklist("self");
-  say(() => tr("打完了。看下面的練習回饋;按 ▶ 聽正確版本,或按「新題目」再一題。", "Done. See the feedback below; tap ▶ to hear it, or New test for another."), true);
+  say(() => (freeQ() ? tr("按 ▶ 對照正確版本,或新題目。", "Press ▶ to compare, or New test.") : tr("打完了。看下面的練習回饋;按 ▶ 聽正確版本,或按「新題目」再一題。", "Done. See the feedback below; tap ▶ to hear it, or New test for another.")), true);
   announce(tr("打完了。", "Done. ") + resultSpeech(lastResult) + (lastResult.lvText ? " " + lastResult.lvText() : ""));
   if (mockOn()) { mock.data.result = lastResult; mock.finish(); render(); cardToTop($("mockCard")); }   // 模擬考:正式打完 = 結果
   renderStats();

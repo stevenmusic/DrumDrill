@@ -4,7 +4,7 @@
 #t-picker,#t-paneExam{order:1} #t-target,#t-listCard{order:2} #t-quizCard{order:2} #t-scoreCard{order:3} #t-metroCard{order:4} #t-logCard{order:5}
 
 /* 打法清單:固定格子(號碼 + 名稱,最多兩行),中英文每列個數、高度都一樣 */
-#mod-tech .picker .opts[data-k="no"]{display:grid;grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));gap:6px}
+#mod-tech .picker .opts[data-k="no"]{display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:6px}
 #mod-tech .picker .opt.rud{height:44px;min-width:0;padding:0 10px;display:flex;align-items:center;gap:8px;text-align:left;
   border-radius:var(--radius-sm);white-space:normal;font-size:var(--fs-sm)}
 .opt.rud b{flex:none;width:1.6em;text-align:right;font-variant-numeric:tabular-nums;color:var(--gold)}
@@ -158,7 +158,7 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 .xi-rel{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .xi-rel .chip{gap:6px;font-variant-numeric:tabular-nums}
 .xnote.strong{color:var(--ivory);font-size:var(--fs-sm)}
-.xcats{display:grid;grid-template-columns:repeat(auto-fill, minmax(180px, 1fr));gap:6px;margin-top:8px}
+.xcats{display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:6px;margin-top:8px}
 .xcat{display:flex;align-items:center;gap:8px;min-height:40px;padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--gold);background:transparent;
   color:var(--gold);font-family:inherit;font-size:var(--fs-sm);text-align:left;cursor:pointer;min-width:0}
 .xcat span{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
@@ -240,7 +240,7 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 @media (max-width:340px){ #e-studyBtn .btn-label{display:none} }
 #e-practiceOnly{margin-top:0}
 #e-stepQ{margin-top:2px}
-#e-answers{grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));gap:10px}
+#e-answers{grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:10px}
 @media (max-width:360px){ #e-answers{grid-template-columns:1fr} }
 #e-answers .e-opt{display:flex;align-items:center;gap:8px;min-height:72px;padding:6px 8px 6px 10px;text-align:left;font-weight:400}
 #e-answers .e-letter{flex:none;width:28px;height:28px;border-radius:50%;border:1px solid var(--gold);color:var(--gold);display:inline-flex;align-items:center;justify-content:center;
@@ -398,8 +398,13 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 /* 視奏分頁:難度在題目卡上(一直看得到,不放在收起來的設定卡) */
 #mod-sight .quiz .lvl-row{grid-column:1 / -1;margin:8px 0 0}
 /* 題目卡上的「正式打」(主要動作,佔整行;鼓墊卡上還有一顆,打的時候在鼓墊旁邊停) */
-#mod-sight .s-perform-top{grid-column:1 / -1;width:100%;min-height:48px;margin-top:10px;font-size:var(--fs-md)}
-@media (max-width:340px){ #s-generate .btn-label{display:none} #s-generate{padding:0 12px} }
+#mod-sight .q-foot{flex-wrap:wrap}
+#mod-sight .s-perform-top{flex:1 1 100%;min-height:48px;height:auto;margin-top:2px;font-size:var(--fs-md)}
+/* 視奏分頁(.free):最後一行 左 = 小的「新題目」、右 = 大的「正式打」(唯一的主要動作);沒有準備倒數 */
+#s-quiz.free #s-generate{order:-1}
+#s-quiz.free .s-perform-top{flex:0 1 auto;min-width:48%;margin-top:0;padding:0 22px}
+#s-quiz.free .q-foot{margin-top:6px}
+@media (max-width:340px){ #s-generate .btn-label{display:none} #s-generate{padding:0 12px} #s-quiz.free #s-generate .btn-label{display:inline} }
 /* 手機橫式:認譜的題目卡左右排(左 = 譜、右 = 訊息與作答),設定卡的第一排在同一個畫面看得到 */
 @media (orientation:landscape) and (max-height:500px){
   .rd-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:4px 12px;align-items:start}
