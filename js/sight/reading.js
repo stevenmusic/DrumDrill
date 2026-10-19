@@ -56,13 +56,13 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
       fit();
     } catch (e) { console.error(e); }
   }
-  /* 譜框:不管出哪個鼓件(上面的 Crash、下面的腳踩 HH),框的高度與譜表位置都不變;譜表在框裡垂直置中(js/shared/staffframe.js) */
+  /* 譜框:不管出哪個鼓件(上面的 Crash、下面的腳踩 HH),框的高度與譜表位置都不變;上面留 5.8 間距(Crash 的加線 + 朝上的符桿)、下面 4.5(實測全套 60 題最多 5.79 / 4.43;js/shared/staffframe.js) */
   function fit(){
     const box = $("rdScore"), svg = box.querySelector("svg");
     if (!svg || !box.clientWidth) return;
     const land = matchMedia("(orientation: landscape) and (max-height: 500px)").matches;
     const maxH = land ? Math.max(130, innerHeight - 200) : Math.max(150, Math.min(220, innerHeight * 0.26));
-    frameStaff(svg, box, { key: "kit", above: 5.8, below: 5.8, symmetric: true, spPx: 12, maxH });
+    frameStaff(svg, box, { key: "kit", above: 5.8, below: 4.5, spPx: 12, maxH });
   }
   let lastW = innerWidth, rzT = 0;
   addEventListener("resize", () => { if (innerWidth === lastW) return; lastW = innerWidth; clearTimeout(rzT); rzT = setTimeout(() => { if (active) fit(); }, 150); });
