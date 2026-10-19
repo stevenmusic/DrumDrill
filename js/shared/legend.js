@@ -223,8 +223,9 @@ export function setupKit(osmd, lines = 5, xml = ""){
 /* ── 圖例 ── */
 const OSMD_OPTS = { backend: "svg", autoResize: false, drawTitle: false, drawSubtitle: false, drawComposer: false, drawPartNames: false,
   drawMeasureNumbers: false, drawingParameters: "compacttight", renderSingleHorizontalStaffline: true };
-/* el:放圖例的容器(會清空);pieces:用到的鼓件 id(照 drumkey.json 的順序,kitnotation.js 的 piecesUsed);lines:1 = 單線譜 */
-export async function drawLegend(el, { pieces, lines = 5, key = drumKeyCached() } = {}){
+/* el:放圖例的容器(會清空);pieces:用到的鼓件 id(照 drumkey.json 的順序,kitnotation.js 的 piecesUsed);lines:1 = 單線譜;
+   plain:不寫出處小字(考試的頁碼)與考試用書的說明(視奏分頁的讀譜練習:畫面上不寫考試名稱、頁碼) */
+export async function drawLegend(el, { pieces, lines = 5, key = drumKeyCached(), plain = false } = {}){
   el.innerHTML = "";
   el.classList.add("kit-legend");
   if (!key) { imgLabel(el, null); return; }
@@ -244,15 +245,17 @@ export async function drawLegend(el, { pieces, lines = 5, key = drumKeyCached() 
     // 出處小字(kitnotation.js 的 legendSrc;單線譜的小鼓 = singleLine.src + 「單線譜為 App 的選擇」,佔兩格寬)
     const ls = legendSrc(key, id, lines);
     if (ls.pending) cell.classList.add("pending");
-    if (ls.wide) cell.classList.add("wide");
-    cell.append(note, name, src);
+    if (ls.wide && !plain) cell.classList.add("wide");
+    cell.append(note, name);
+    if (!plain) cell.append(src);
     cells.appendChild(cell);
     pairText(name, () => tr(p.name[0], p.name[1]));
     pairText(src, () => ls.lines.map(([zh, en]) => tr(zh, en)).join("\n"));
     jobs.push([note, legendXML(id, { key, lines })]);
   }
   const foot = document.createElement("p"); foot.className = "kl-foot"; el.appendChild(foot);
-  pairText(foot, () => tr("App 採用的記譜方式;考試用書可能不同,以書上圖例為準。", "The App's notation. Exam books may differ: follow the book's key."));
+  pairText(foot, () => (plain ? tr("App 採用的記譜方式;別的譜可能寫法不同,以譜上的圖例為準。", "The App's notation. Other music may differ: follow its key.")
+    : tr("App 採用的記譜方式;考試用書可能不同,以書上圖例為準。", "The App's notation. Exam books may differ: follow the book's key.")));
   // 一格一個 OSMD(放在格子裡、寬度固定);畫完補畫 o 等記號
   const svgs = [];
   for (const [box, xml] of jobs) {

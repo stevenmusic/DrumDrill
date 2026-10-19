@@ -18,7 +18,7 @@
 <title>DrumDrill 爵士鼓檢定特訓</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/app.css?v=802382267a">
+<link rel="stylesheet" href="css/app.css?v=14c20da76c">
 <link rel="stylesheet" href="css/drum.css?v=5349f5251e">
 </head>
 <body>
@@ -183,6 +183,15 @@
         <section class="card picker" id="s-setup">
           <button class="setup-summary" aria-expanded="false"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span class="sum" id="s-sum"></span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
           <div class="setup-body">
+            <!-- 自動難度(視奏分頁;js/shared/level.js):難度 n + ▼ ▲,小字「難度階段由 App 安排(練習設定)」 -->
+            <div class="lvl-row" id="s-levelRow">
+              <div class="lvl">
+                <button class="btn round" id="s-lvDown" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+                <b id="s-levelVal"></b>
+                <button class="btn round" id="s-lvUp" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg></button>
+              </div>
+              <p class="info" id="s-levelNote"></p>
+            </div>
             <div class="metro">
               <button class="btn round" id="s-bpmDown" data-i18n-attr="aria-label:sight.bpmDown,title:sight.bpmDown" aria-label="慢 1(按住連續減少)" title="慢 1(按住連續減少)">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
@@ -218,9 +227,9 @@
           <div class="goal"><div class="progress"><i id="s-goalBar" style="width:0"></i></div><button class="chip" id="s-goalBtn"></button></div>
           <div class="log-week" id="s-logWeek"></div>
         </section>
-        <!-- 各級練過題數(練習回饋:檢定頁不放) -->
+        <!-- 各分類練過題數 + 目前難度(練習回饋:檢定頁不放) -->
         <section class="card stats-card" id="s-statsCard">
-          <div class="card-title"><b data-i18n="sight.statsTitle">各級練過題數</b><span class="sub" id="s-statsSub"></span></div>
+          <div class="card-title"><b data-i18n="sight.statsTitle">各分類練過題數</b><span class="sub" id="s-statsSub"></span></div>
           <div class="stats" id="s-statsList"></div>
         </section>
         <!-- 模擬考(S14,js/shared/mock.js):檢定頁的說明 + 開始;進行中:每一項的進度;結果:各項的練習回饋(.mock-res;不算總分、不出現等第、不換算官方分數);中止的說明 -->
@@ -307,7 +316,15 @@
         <section class="card picker" id="e-setup">
           <button class="setup-summary" aria-expanded="false"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span class="sum" id="e-sum"></span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
           <div class="setup-body">
-            <div class="prow"><span class="lbl" id="e-gradesLbl" data-i18n="ear.gradeLbl">級數</span><div class="opts" data-k="grade" id="e-grades" role="group" aria-labelledby="e-gradesLbl"></div></div>
+            <!-- 沒選考試時的自動難度(js/shared/level.js);有選考試照檢定頁的級數,這一列藏起來 -->
+            <div class="lvl-row" id="e-levelRow" hidden>
+              <div class="lvl">
+                <button class="btn round" id="e-lvDown" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+                <b id="e-levelVal"></b>
+                <button class="btn round" id="e-lvUp" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg></button>
+              </div>
+              <p class="info" id="e-levelNote"></p>
+            </div>
             <div class="metro">
               <button class="btn round" id="e-bpmDown" data-i18n-attr="aria-label:ear.bpmDown,title:ear.bpmDown" aria-label="慢 1(按住連續減少)" title="慢 1(按住連續減少)">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
@@ -453,9 +470,9 @@
   </div>
 </div>
 
-<script type="importmap">{"imports":{"./js/ear/app.js":"./js/ear/app.js?v=7ceb83303e","./js/ear/gen.js":"./js/ear/gen.js?v=ae372fb41e","./js/ear/strings.js":"./js/ear/strings.js?v=68aadd7791","./js/main.js":"./js/main.js?v=2aec715487","./js/shared/a11y.js":"./js/shared/a11y.js?v=a88a3682ab","./js/shared/audio.js":"./js/shared/audio.js?v=453f7237f3","./js/shared/examdata.js":"./js/shared/examdata.js?v=48f1b46bf2","./js/shared/examview.js":"./js/shared/examview.js?v=b4959afa11","./js/shared/i18n.js":"./js/shared/i18n.js?v=9df2b1aeb8","./js/shared/kitevents.js":"./js/shared/kitevents.js?v=967a5358a2","./js/shared/kitgen.js":"./js/shared/kitgen.js?v=091dc4de5b","./js/shared/kitnotation.js":"./js/shared/kitnotation.js?v=65e0d6b2cb","./js/shared/landscape.js":"./js/shared/landscape.js?v=8ab1bab3eb","./js/shared/legend.js":"./js/shared/legend.js?v=2a0d16776c","./js/shared/mic.js":"./js/shared/mic.js?v=5450b68a2d","./js/shared/micrhythm.js":"./js/shared/micrhythm.js?v=70a91a030f","./js/shared/mock.js":"./js/shared/mock.js?v=2fe1efa3e4","./js/shared/onsets.js":"./js/shared/onsets.js?v=d8df0b9ef2","./js/shared/pad.js":"./js/shared/pad.js?v=4b5ba91029","./js/shared/playbackgen.js":"./js/shared/playbackgen.js?v=25e49e3c09","./js/shared/player.js":"./js/shared/player.js?v=3b242c7289","./js/shared/practicelog.js":"./js/shared/practicelog.js?v=acd9cd53aa","./js/shared/score.js":"./js/shared/score.js?v=6b5e241a71","./js/shared/tempo.js":"./js/shared/tempo.js?v=1e38af7d3f","./js/shared/timing.js":"./js/shared/timing.js?v=1bb294cc17","./js/sight/app.js":"./js/sight/app.js?v=ffb6700ea7","./js/sight/fingerprint.js":"./js/sight/fingerprint.js?v=c0cdf7916e","./js/sight/gen.js":"./js/sight/gen.js?v=6633bf6b2e","./js/sight/meter.js":"./js/sight/meter.js?v=94d1b94ae1","./js/sight/random.js":"./js/sight/random.js?v=3b9b511386","./js/sight/stage.js":"./js/sight/stage.js?v=9ca7fb07ed","./js/sight/strings.js":"./js/sight/strings.js?v=37f0abcea1","./js/tech/app.js":"./js/tech/app.js?v=e2dc881650","./js/tech/notation.js":"./js/tech/notation.js?v=5bee65ac3d","./js/tech/rudiments.js":"./js/tech/rudiments.js?v=cc1a2635ff","./js/tech/store.js":"./js/tech/store.js?v=f34a09889a","./js/tech/strings.js":"./js/tech/strings.js?v=9165779752"}}</script>
+<script type="importmap">{"imports":{"./js/ear/app.js":"./js/ear/app.js?v=dd30868597","./js/ear/gen.js":"./js/ear/gen.js?v=ae372fb41e","./js/ear/strings.js":"./js/ear/strings.js?v=814ce27ed7","./js/main.js":"./js/main.js?v=23ce5d78a6","./js/shared/a11y.js":"./js/shared/a11y.js?v=a88a3682ab","./js/shared/audio.js":"./js/shared/audio.js?v=453f7237f3","./js/shared/examdata.js":"./js/shared/examdata.js?v=48f1b46bf2","./js/shared/examview.js":"./js/shared/examview.js?v=b4959afa11","./js/shared/i18n.js":"./js/shared/i18n.js?v=9df2b1aeb8","./js/shared/kitevents.js":"./js/shared/kitevents.js?v=967a5358a2","./js/shared/kitgen.js":"./js/shared/kitgen.js?v=091dc4de5b","./js/shared/kitnotation.js":"./js/shared/kitnotation.js?v=65e0d6b2cb","./js/shared/landscape.js":"./js/shared/landscape.js?v=8ab1bab3eb","./js/shared/legend.js":"./js/shared/legend.js?v=3390865758","./js/shared/level.js":"./js/shared/level.js?v=07ac2ba3fd","./js/shared/mic.js":"./js/shared/mic.js?v=5450b68a2d","./js/shared/micrhythm.js":"./js/shared/micrhythm.js?v=70a91a030f","./js/shared/mock.js":"./js/shared/mock.js?v=2fe1efa3e4","./js/shared/onsets.js":"./js/shared/onsets.js?v=d8df0b9ef2","./js/shared/pad.js":"./js/shared/pad.js?v=4b5ba91029","./js/shared/playbackgen.js":"./js/shared/playbackgen.js?v=25e49e3c09","./js/shared/player.js":"./js/shared/player.js?v=3b242c7289","./js/shared/practicelog.js":"./js/shared/practicelog.js?v=acd9cd53aa","./js/shared/score.js":"./js/shared/score.js?v=6b5e241a71","./js/shared/tempo.js":"./js/shared/tempo.js?v=1e38af7d3f","./js/shared/timing.js":"./js/shared/timing.js?v=1bb294cc17","./js/sight/app.js":"./js/sight/app.js?v=ebce70da1e","./js/sight/fingerprint.js":"./js/sight/fingerprint.js?v=c0cdf7916e","./js/sight/gen.js":"./js/sight/gen.js?v=6633bf6b2e","./js/sight/meter.js":"./js/sight/meter.js?v=94d1b94ae1","./js/sight/random.js":"./js/sight/random.js?v=3b9b511386","./js/sight/stage.js":"./js/sight/stage.js?v=9ca7fb07ed","./js/sight/strings.js":"./js/sight/strings.js?v=fa16b45be3","./js/tech/app.js":"./js/tech/app.js?v=e2dc881650","./js/tech/notation.js":"./js/tech/notation.js?v=5bee65ac3d","./js/tech/rudiments.js":"./js/tech/rudiments.js?v=cc1a2635ff","./js/tech/store.js":"./js/tech/store.js?v=f34a09889a","./js/tech/strings.js":"./js/tech/strings.js?v=9165779752"}}</script>
 <script type="application/json" id="pdVersions">{"data/drumkey.json":"7b58a38cef","data/exam-rsl.json":"d4a099542c","data/exam-trinity.json":"33070e658b"}</script>
 <script src="vendor/opensheetmusicdisplay.min.js?v=4bfeb3d01c"></script>
-<script type="module" src="js/main.js?v=2aec715487"></script>
+<script type="module" src="js/main.js?v=23ce5d78a6"></script>
 </body>
 </html>

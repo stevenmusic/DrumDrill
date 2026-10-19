@@ -4,7 +4,6 @@ addStrings("ear", {
   tempo: ["速度", "Tempo"],
   bpmDown: ["慢 1(按住連續減少)", "Slower (hold)"], bpmUp: ["快 1(按住連續增加)", "Faster (hold)"],
   optHide: ["不看譜", "No chart"],
-  gradeLbl: ["級數", "Grade"],
   playAria: ["聽題目", "Play the test"],
   countdownUnit: ["秒", "s"],
   next: ["下一題", "Next"],

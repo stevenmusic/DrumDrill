@@ -26,15 +26,10 @@ const S = (() => {
   saved = saved || {};
   if (saved.exam && !["trinity", "rsl"].includes(saved.exam.system)) saved.exam = null;
   const s = { view: "tech", exam: null, onboarded: false, theme: "dark", ...saved,
-    sub: { tech: "roll", exam: "tech", sight: String(saved.exam ? saved.exam.grade : 0), ...(saved.sub || {}) } };
+    sub: { tech: "roll", exam: "tech", sight: "rhythm", ...(saved.sub || {}) } };
   s.mic = s.mic === true;   // 用麥克風評分節奏(選用;視奏、聽力共用一個開關,預設關;js/shared/micrhythm.js)
-  /* 視奏分頁的級數還沒自己選過(或還沒回答第一次的問題):跟著考試級數走,第一次選了考試 → 視奏分頁預設就是那一級;
-     自己點過子項目(setter)就照點的。存檔時照目前的值存(下次打開就固定了) */
-  if (!s.onboarded || !(saved.sub && saved.sub.sight != null)) {
-    let picked = null;
-    Object.defineProperty(s.sub, "sight", { enumerable: true, configurable: true,
-      get: () => picked ?? String(s.exam && Number.isInteger(s.exam.grade) ? s.exam.grade : 0), set: v => { picked = v; } });
-  }
+  // 視奏分頁的子項目 = 分類(節奏 / 律動 / 樂譜;難度由 js/sight/app.js 自動調整)。舊版存的是級數 0–8 → 節奏
+  if (!["rhythm", "groove", "chart"].includes(s.sub.sight)) s.sub.sight = "rhythm";
   /* 聽力分頁的題型:還沒自己選過就跟著考試系統走(Trinity → 回打 Playback;RSL、沒選考試 → 過門 Fill)。
      選過的題型在選的時候那個系統下照選的(RSL 也可以點 Playback 看說明);之後考試系統換了、選的題型不適用新系統,
      就改成新系統的預設題型(RSL → Fill、Trinity → Playback) */
@@ -56,25 +51,23 @@ const S = (() => {
 /* ── 考試:Trinity Rock & Pop Drums(Initial、1–8 級)、RSL Rockschool Drums(Debut、1–8 級) ── */
 const SYSTEMS = { trinity: "Trinity", rsl: "RSL" };
 const DEFAULT_EXAM = { system: "trinity", grade: 1 };   // 第一次打開的問題、沒選考試時檢定分頁暫時看的
-/* 視奏分頁沒選考試時用 RSL(只有 RSL 有視奏項目;Trinity Rock & Pop 沒有):子項目的第一格寫 D、aria-label 寫 Debut,跟 js/sight/app.js 一致 */
-const FREE_SIGHT_SYSTEM = "rsl";
-const examSystem = () => (S.exam ? S.exam.system : S.view === "sight" ? FREE_SIGHT_SYSTEM : autoExam.system);
+const examSystem = () => (S.exam ? S.exam.system : autoExam.system);
 export const gradeLabel = (g, sys = examSystem()) => g === 0 ? (sys === "rsl" ? tr("入門(Debut)", "Debut") : tr("初級", "Initial")) : tr(g + " 級", "Grade " + g);
-/* 級數按鈕上的短名(視奏的子項目、檢定頁與第一次的問題的級數列):第一格 RSL 寫 D(Debut)、Trinity 寫 I(Initial);aria-label 另外寫完整級名 */
+/* 級數按鈕上的短名(檢定頁與第一次的問題的級數列):第一格 RSL 寫 D(Debut)、Trinity 寫 I(Initial);aria-label 另外寫完整級名 */
 const gradeShort = (g, sys = examSystem()) => g === 0 ? (sys === "rsl" ? "D" : "I") : String(g);
 /* 子項目分段鈕;檢定分頁三項的名稱 */
 const SUBS = {
   // 技巧:PAS 40 個基本打法的四大類
   tech: () => [["roll", tr("滾奏", "Rolls")], ["diddle", tr("複點", "Diddles")], ["flam", "Flam"], ["drag", "Drag"]],
-  // 視奏:子項目列放級數 0–8(跟技巧的四大類同一個位置);第一格 RSL 寫 D(Debut)、Trinity 寫 I(Initial),aria-label 寫完整級名
-  sight: () => [0, 1, 2, 3, 4, 5, 6, 7, 8].map(g => [String(g), gradeShort(g)]),
+  // 視奏:練讀譜的分類(級數只在檢定頁設;難度由 App 自動調整,js/sight/app.js)
+  sight: () => [["rhythm", tr("節奏", "Rhythm")], ["groove", tr("律動", "Groove")], ["chart", tr("樂譜", "Chart")]],
   // 聽力:子項目 = 題型(RSL 有 Fill、Groove;Trinity 有 Playback;不適用的題型 js/ear/app.js 顯示說明)
   ear: () => [["fill", tr("過門", "Fill")], ["groove", tr("律動", "Groove")], ["playback", tr("回打", "Playback")]],
   exam: () => [["tech", tr("技巧", "Technique")], ["sight", tr("視奏", "Sight-read")], ["ear", tr("聽力", "Aural")]]   // 跟分頁列同一個短名(折疊機 280 一行放得下)
 };
 const PART_LABEL = () => ({ tech: tr("技巧", "Technique"), sight: tr("視奏", "Sight-reading"), ear: tr("聽力", "Aural") });
 /* 子項目分段鈕的群組名稱(無障礙:role="group" 的 aria-label) */
-const SUB_LABEL = () => ({ tech: tr("打法類別", "Rudiment family"), sight: tr("級數", "Grade"), ear: tr("題型", "Question type"), exam: tr("檢定項目", "Exam section") });
+const SUB_LABEL = () => ({ tech: tr("打法類別", "Rudiment family"), sight: tr("讀譜類別", "Reading type"), ear: tr("題型", "Question type"), exam: tr("檢定項目", "Exam section") });
 /* 考試資料(data/exam-rsl.json、data/exam-trinity.json、data/drumkey.json;js/shared/examdata.js):一打開就一起讀(跟模組載入同時進行),
    經 ctx.examData(sys)、ctx.drumKey() 給模組;讀不到是 null(模組照「資料還沒載好」顯示;逾時見共用區段的 APP_CTX_MS) */
 import { loadExam, loadDrumKey } from "./shared/examdata.js";
@@ -141,9 +134,8 @@ function renderSubnav(){
   const opts = SUBS[S.view]();
   $("subnav").hidden = !opts.length;
   document.body.classList.toggle("no-subnav", !opts.length);
-  // 視奏的子項目是級數:按鈕上只有數字,aria-label 寫完整級名
   const keep = keepFocus($("subSeg"), "data-v");
-  $("subSeg").innerHTML = opts.map(([v, t]) => `<button data-v="${v}" aria-pressed="${S.sub[S.view] === v}"${S.view === "sight" ? ` aria-label="${gradeLabel(Number(v))}"` : ""}>${t}</button>`).join("");
+  $("subSeg").innerHTML = opts.map(([v, t]) => `<button data-v="${v}" aria-pressed="${S.sub[S.view] === v}">${t}</button>`).join("");
   $("subSeg").setAttribute("aria-label", SUB_LABEL()[S.view] || "");
   keep();
 }

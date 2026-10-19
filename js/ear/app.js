@@ -1,7 +1,8 @@
 /* 聽力模組(docs/STAGES.md S12 + S13;卡片、id、流程照 PianoDrill 聽音 js/ear/app.js 與 DrumDrill 視奏 js/sight/app.js)。
    外框(js/main.js)負責頂欄、分頁、考試設定與語言;這裡的元素 id 都加 "e-" 前綴。
    - 子項目 = 題型:過門 Fill / 律動 Groove(RSL;js/ear/gen.js,照 data/exam-rsl.json ear[g])、回打 Playback(Trinity;js/shared/playbackgen.js)。
-     有選考試時照考試的系統(不適用的題型只有說明卡 + 規格卡);沒選考試時 Fill / Groove 用 RSL、Playback 用 Trinity。級數在設定卡選(選考試、換級數時跟著考試)
+     有選考試時照考試的系統與級數(級數只在檢定頁設;不適用的題型只有說明卡 + 規格卡);沒選考試時 Fill / Groove 用 RSL、Playback 用 Trinity,
+     級數 = 每個題型各自的自動難度(js/shared/level.js;難度 n = 第 n − 1 級的參數,從 1 開始;設定卡 ▲ ▼、結果下面「太簡單 / 剛好 / 太難」、節奏回饋連續 3 題 ≥ 90 升 / 連續 2 題 < 50 降)
    - RSL Fill(RSL §5.1):配拍點聽兩次,每次前面 1 小節預備拍(官方)→ 練習(使用者自己決定多久,鼓墊試打不計分)→ 回打(預備拍 1 小節〔推估:大綱只寫考官數拍〕+ 拍點;
      1 個鼓墊 = 小鼓)→ 從 2 或 3 個印出來的譜(單線譜)選一個 → 揭曉正確的譜 + 節奏練習回饋。♩=70 固定(官方)
    - RSL Groove:同一個流程,2 小節(播放時兩小節播兩遍,推估)、3 個鼓墊;回打的長度跟播放一樣(推估);4–8 級說出風格那一題不出(風格清單大綱沒寫)
@@ -25,9 +26,9 @@
      拒絕權限 / 沒有麥克風:這一次照鼓墊評分、說明原因
    - 練習紀錄(js/shared/practicelog.js):連續天數、今天題數、今天正確率(回打命中的音 + 選對的譜 ÷ 全部)+ 每週目標 + 最近 7 天;
      秒數 = 聽題目、看譜、回打的時間;各題型正確率(#e-statsCard:Fill 選譜、各題型的回打命中率)
-   - localStorage drumdrill.ear.v1:{ grades:{ rsl, trinity }(設定卡選的級數), bpmBy(Trinity 每一級的練習速度), hideChart, examSeen,
+   - localStorage drumdrill.ear.v1:{ level:{ fill: 2 }、streak(沒選考試時各題型的難度;level.js), bpmBy(Trinity 每一級的練習速度), hideChart,
      stats:{ "rsl-3-fill": {n, picks, ok, hits, total} }, log:{ 日期: {n, sec, hits, total} }, goal(每週目標分鐘), mockRun(進行中的模擬考標記) }
-     讀進來先消毒:級數 0–8、速度 30–240、數字 */
+     讀進來先消毒:速度 30–240、數字;舊版的 grades、examSeen(設定卡選的級數)丟掉 */
 import { tr, T as TS, scoped, getLang, pairText } from "../shared/i18n.js";
 import { playbackFor } from "../shared/examdata.js";
 import * as V from "../shared/examview.js";
@@ -47,6 +48,7 @@ import { genFill, fillOptions, genGroove, NOTES as EAR_NOTES } from "./gen.js";
 import { addLog, cleanLog, renderLog as paintLog, today, nextGoal, cleanGoal } from "../shared/practicelog.js";
 import { createMock, abortText, paintCard, mockLabel, cardToTop } from "../shared/mock.js";
 import { createMicTake, dropBleed, MIC_LANES, MIC_TEXT, micFailText } from "../shared/micrhythm.js";
+import { createLevels, levelText, paintVotes } from "../shared/level.js";
 import "./strings.js";
 const T = scoped("ear");
 
@@ -63,12 +65,12 @@ const okGrade = g => Number.isInteger(g) && g >= 0 && g <= 8;
 const SS = (() => {
   let s = null;
   try { s = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) {}
-  s = { grades: {}, bpmBy: {}, hideChart: false, stats: {}, log: {}, ...(s && typeof s === "object" ? s : {}) };
-  for (const k of ["grades", "bpmBy", "stats", "log"]) if (!s[k] || typeof s[k] !== "object" || Array.isArray(s[k])) s[k] = {};
-  for (const sys of ["rsl", "trinity"]) if (!okGrade(s.grades[sys])) s.grades[sys] = sys === "trinity" ? 1 : 0;
-  // Trinity 的練習速度每一級各自記("trinity-4": 90;跟視奏的 bpmOverride 一樣);舊版的單一 bpm 當作目前 Trinity 級數的
-  if (typeof s.bpm === "number" && Number.isFinite(s.bpm) && s.bpm !== BPM_DEFAULT && s.bpmBy["trinity-" + s.grades.trinity] == null) s.bpmBy["trinity-" + s.grades.trinity] = s.bpm;
-  delete s.bpm;
+  s = { bpmBy: {}, hideChart: false, stats: {}, log: {}, ...(s && typeof s === "object" ? s : {}) };
+  for (const k of ["bpmBy", "stats", "log"]) if (!s[k] || typeof s[k] !== "object" || Array.isArray(s[k])) s[k] = {};
+  // Trinity 的練習速度每一級各自記("trinity-4": 90;跟視奏的 bpmOverride 一樣);舊版的單一 bpm 當作舊版設定卡 Trinity 級數的
+  const oldTri = s.grades && okGrade(s.grades.trinity) ? s.grades.trinity : 1;
+  if (typeof s.bpm === "number" && Number.isFinite(s.bpm) && s.bpm !== BPM_DEFAULT && s.bpmBy["trinity-" + oldTri] == null) s.bpmBy["trinity-" + oldTri] = s.bpm;
+  delete s.bpm; delete s.grades; delete s.examSeen;   // 舊版:設定卡選的級數(現在有考試跟著考試,沒有考試用自動難度)
   for (const [k, v] of Object.entries(s.bpmBy)) { if (/^trinity-[0-8]$/.test(k) && typeof v === "number" && Number.isFinite(v)) s.bpmBy[k] = Math.max(30, Math.min(240, Math.round(v))); else delete s.bpmBy[k]; }
   // 練過幾題、練習紀錄:數字消毒(負數、非整數、不是數字的丟掉或歸零)
   const cnt = v => (typeof v === "number" && Number.isFinite(v) && v > 0 ? Math.floor(v) : 0);
@@ -79,7 +81,6 @@ const SS = (() => {
   s.log = cleanLog(s.log);
   s.goal = cleanGoal(s.goal);
   s.hideChart = !!s.hideChart;
-  if (typeof s.examSeen !== "string") s.examSeen = null;
   return s;
 })();
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(SS)); } catch (e) {} };
@@ -106,9 +107,13 @@ const sysName = sys => (sys === "rsl" ? "RSL" : "Trinity");
 const gl = (g, sys) => (ctx ? ctx.gradeLabel(g, sys) : String(g));
 const dataOf = sys => (ctx && ctx.examData ? ctx.examData(sys) : null);
 const drumKey = () => (ctx && ctx.drumKey ? ctx.drumKey() : null);
-/* 有選考試:照考試的系統;沒選考試:Fill / Groove 用 RSL、Playback 用 Trinity */
+/* 有選考試:照考試的系統與級數;沒選考試:Fill / Groove 用 RSL、Playback 用 Trinity,級數 = 這個題型的自動難度 − 1 */
 const sysNow = () => (!curExam().auto ? curExam().system : type === "playback" ? "trinity" : "rsl");
-const gradeNow = sys => SS.grades[sys];
+const freeLevel = () => curExam().auto;
+const levels = createLevels({ store: SS, save, max: { fill: 9, groove: 9, playback: 9 }, start: () => 1 });
+const gradeNow = sys => (!curExam().auto ? curExam().grade : levels.get(type) - 1);
+const TYPE_LABEL = { fill: ["過門", "Fill"], groove: ["律動", "Groove"], playback: ["回打", "Playback"] };
+const lvName = lv => tr(`難度 ${lv}`, `Level ${lv}`);
 const typeOK = (sys, t) => (sys === "rsl" ? t === "fill" || t === "groove" : t === "playback");
 const keyOf = (sys, g, t) => `${sys}-${g}-${t}`;
 const isRsl = () => !!cur && cur.sys === "rsl";
@@ -121,7 +126,6 @@ const practicable = (sys, g, t) => {
 /* ══ 外框呼叫 ══ */
 export async function start(c){
   ctx = c; exam = c.exam;
-  followExam(exam);
   renderLog(); renderStats(); renderMic();
   window.__ear = {
     get play(){ return player.state.playing; },
@@ -175,15 +179,7 @@ export function setExam(ex){
   exam = ex;
   if (same) return;
   if (!mock.abort("exam") && mock.state === "result") mock.close();   // 換了考試或級數:進行中的模擬考中止;結果收起來
-  followExam(ex);
   if (active) render();
-}
-/* 選了考試(或換了考試、級數):這個系統的級數跟著考試;同一個考試不重設(設定卡自己選的級數保留) */
-function followExam(ex){
-  if (!ex || ex.auto || !okGrade(ex.grade) || !["rsl", "trinity"].includes(ex.system)) return;
-  const k = `${ex.system}-${ex.grade}`;
-  if (SS.examSeen === k) return;
-  SS.examSeen = k; SS.grades[ex.system] = ex.grade; save();
 }
 /* 外框的 appCtx(考試資料、圖例)晚到 */
 export function onCtx(){ renderMic(); if (active) render(); if (ctx) ctx.examChanged(); }
@@ -310,13 +306,13 @@ function card(title, src){
 }
 const specIn = (c, rows) => { const box = document.createElement("div"); c.appendChild(box); V.fillSpec(box, rows); return box; };
 const notStated = () => tr("大綱沒寫", "Not stated");
-/* 檢定頁「練習這一級」:帶到聽力分頁的那個題型,級數設成這一級 */
+/* 檢定頁「練習這一級」:帶到聽力分頁的那個題型(有選考試就是這一級;沒選考試時把那個題型的難度設成這一級) */
 function goBtn(c, label, sub, sys, g){
   const b = document.createElement("button");
   b.className = "xcat e-go"; b.type = "button"; b.dataset.sub = sub;
   b.innerHTML = '<span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>';
   pairText(b.querySelector("span"), label);
-  b.onclick = () => { SS.grades[sys] = g; save(); ctx.showView("ear", sub); };
+  b.onclick = () => { if (curExam().auto) levels.set(sub, g + 1); ctx.showView("ear", sub); };
   const w = document.createElement("div"); w.className = "xcats"; w.appendChild(b); c.appendChild(w);
 }
 
@@ -383,22 +379,34 @@ function renderTrinity(d, g, withPractice){
   V.addPara(c2, () => V.L(im.legend));
 }
 
-/* ══ 設定卡:級數、速度(Trinity 可以改;RSL 照官方)、不看譜 ══ */
+/* ══ 設定卡:難度(沒選考試時;有選考試照檢定頁的級數)、速度(Trinity 可以改;RSL 照官方)、不看譜 ══ */
 function renderSetup(){
-  const sys = sysNow(), g = gradeNow(sys);
-  $("grades").innerHTML = [0, 1, 2, 3, 4, 5, 6, 7, 8].map(k =>
-    `<button class="opt" data-v="${k}" aria-pressed="${k === g}" aria-label="${gl(k, sys)}">${k === 0 ? (sys === "rsl" ? "D" : "I") : k}</button>`).join("");
+  const sys = sysNow();
+  renderLevel();
   $("optHide").hidden = sys !== "trinity";
   $("optHide").setAttribute("aria-pressed", String(!!SS.hideChart));
   tempoUI();
 }
-$("grades").onclick = e => {
-  const b = e.target.closest(".opt[data-v]"); if (!b) return;
-  const sys = sysNow(), g = Number(b.dataset.v);
-  if (!okGrade(g) || g === SS.grades[sys]) return;
-  SS.grades[sys] = g; save();
+function renderLevel(){
+  const show = freeLevel() && mode !== "exam";
+  $("levelRow").hidden = !show;
+  if (!show) return;
+  const lv = levels.get(type), max = levels.max(type), busy = playKind === "perform" || playKind === "pass";
+  $("levelVal").textContent = lvName(lv);
+  $("lvDown").disabled = lv <= 1 || busy; $("lvUp").disabled = lv >= max || busy;
+  $("lvDown").setAttribute("aria-label", tr("難度降一級", "Level down")); $("lvUp").setAttribute("aria-label", tr("難度升一級", "Level up"));
+  pairText($("levelNote"), () => tr(`沒選考試:難度 1–${max} · 難度階段由 App 安排(練習設定)`, `No exam: levels 1–${max} · set by the App (practice setting)`));
+}
+/* ▲ ▼:馬上換一題這個難度的 */
+function stepLevel(d){
+  if (!freeLevel() || mode === "exam" || playKind === "perform" || playKind === "pass") return;
+  const was = levels.get(type), lv = levels.step(type, d);
+  if (lv === was) return;
+  announce(tr(`${tr(...TYPE_LABEL[type])}難度 ${lv}`, `${tr(...TYPE_LABEL[type])} level ${lv}`));
   render();
-};
+}
+$("lvDown").onclick = () => stepLevel(-1);
+$("lvUp").onclick = () => stepLevel(1);
 $("optHide").onclick = () => { SS.hideChart = !SS.hideChart; save(); renderSetup(); renderSum(); coverChart(); };
 
 /* ── 速度:RSL 照官方(Fill ♩=70;Groove 在官方範圍內每題隨機);Trinity 官方沒寫 → 預設 ♩=80(練習設定),可以改 ── */
@@ -429,6 +437,7 @@ function tempoUI(){
 function lockTempo(){
   const fixed = !cur || cur.sys !== "trinity" || playKind === "pass";
   for (const id of ["bpmDown", "bpmUp", "bpmRange"]) $(id).disabled = fixed;
+  renderLevel();   // 回打中不能換難度
 }
 
 /* ══ 出題 ══ */
@@ -739,6 +748,7 @@ function finishPerform(){
   // 麥克風:整體偏移(裝置的輸入、輸出延遲)不設上限,跟 PianoDrill 視奏的 scoreRhythm 一樣
   const r = scoreLanes(expectedByLane(hitsOnly(ev), p.bpm, lanes), taps, { tempoBpm: p.bpm, ...(p.mic ? { offsetLimit: Infinity } : {}) });
   cur.result = { kind: "rsl", r, taps: taps.length, bpm: p.bpm, src: p.mic ? "mic" : "pad", silent, micFail: p.mic || !micOn() ? null : micFail };
+  levelAfter(cur.result, taps.length && !silent ? r.score : null);
   const st = stat();
   st.n++;
   if (taps.length) { st.hits += r.hits; st.total += r.total; }   // 沒有敲鼓墊(在真的鼓上打):只算題數,不算進命中率
@@ -754,7 +764,7 @@ function finishPerform(){
     phase = "result";
     doReveal();
     say(() => tr("打完了。看下面的正確的譜與練習回饋。", "Done. See the correct chart and the feedback below."), false, true);
-    announce(tr("打完了。", "Done. ") + resultSpeech(cur.result));
+    announce(tr("打完了。", "Done. ") + resultSpeech(cur.result) + (cur.result.lvText ? " " + cur.result.lvText() : ""));
   }
   renderResult(); syncButtons(); renderStats();
   if (mr) { renderMockCard(); if (mr.stage === "done") mockDoneMsg(); }
@@ -978,14 +988,33 @@ function finishPass(){
     cur.result = { ...passResult(p, MIC_LANES, m.taps), src: "mic", silent: m.silent };
     lastMic = { expected: expected(p, MIC_LANES).map(x => x.time), detected: m.d.hits, all: m.hits, removed: m.d.removed, lagMs: m.d.lagMs };
   } else cur.result = { ...passResult(p), src: "pad", micFail: wantMicFail(p) };
+  levelAfter(cur.result, cur.result.taps && !cur.result.silent ? cur.result.all.score : null);
   const st = stat(); st.n++;
   if (cur.result.taps) { st.hits += cur.result.all.hits; st.total += cur.result.all.total; addSec(0, 0, cur.result.all.hits, cur.result.all.total); }
   save(); renderLog(); renderStats();
   renderResult(); syncButtons();
   say(() => tr("第二次完成:下面是每一句的節奏練習回饋。", "Play 2 done: rhythm feedback for each phrase below."), false, true);
-  announce(tr("第二次完成。", "Play 2 done. ") + resultSpeech(cur.result));
+  announce(tr("第二次完成。", "Play 2 done. ") + resultSpeech(cur.result) + (cur.result.lvText ? " " + cur.result.lvText() : ""));
   if (mockRes()) { mockRes().r = cur.result; mockRes().stage = "done"; finishMock(); }   // 模擬考:第二次完成 = 結果
   if (ctx) ctx.examChanged();
+}
+/* 沒選考試(自動難度):節奏回饋連續 3 題 ≥ 90 升、連續 2 題 < 50 降(js/shared/level.js);結果下面「太簡單 / 剛好 / 太難」 */
+function levelAfter(R, score){
+  if (!freeLevel() || mode === "exam" || mockOn() || !cur) return;
+  R.free = true; R.cat = cur.type;
+  const ch = levels.auto(cur.type, score);
+  R.lv = levels.get(cur.type);
+  if (ch) R.lvText = () => levelText({ auto: ch });
+  renderLevel(); renderSum();
+}
+function vote(R, v){
+  if (!cur || cur.result !== R || !R.free) return;
+  const from = R.lv != null ? R.lv : levels.get(R.cat), to = levels.vote(R.cat, R, v), max = levels.max(R.cat);
+  R.lvText = () => levelText({ vote: v, from, to, max });
+  const keep = document.activeElement && document.activeElement.closest(".diff-fb") ? v : null;
+  renderResult(); renderLevel(); renderSum();
+  if (keep) { const b = $("alongResult").querySelector(`.diff-fb [data-v="${keep}"]`); if (b) b.focus({ preventScroll: true }); }
+  announce(R.lvText());
 }
 /* 每一句分開評:那一句空檔裡的敲擊(前後各多收半拍 / 0.4 拍)對那一句的音 */
 const wantMicFail = p => (p.pass === 2 && micOn() ? micFail : null);   // 第二次想用麥克風但沒打開:照鼓墊評,結果寫原因
@@ -1193,7 +1222,7 @@ const idleMsg = () => (!cur ? "" : isRsl() ? tr("按 ▶ 聽題目:配拍點聽�
   : tr(`先看譜 ${studySec()} 秒(${studySrc()};可以在鼓墊上試打),再按「第一次(練習)」:App 播一句,你接著打同一句。`, `Study the chart for ${studySec()} s (${studySrc()}; try it on the pads), then Play 1 (practice): the App plays a phrase, you play it back.`));
 function refreshTexts(){
   if (!cur) return;
-  const c = cur, name = `${sysName(c.sys)} ${gl(c.grade, c.sys)}`;
+  const c = cur, name = freeLevel() && mode !== "exam" ? `${tr(...TYPE_LABEL[c.type])} · ${lvName(c.grade + 1)}` : `${sysName(c.sys)} ${gl(c.grade, c.sys)}`;
   $("qTitle").classList.remove("empty");
   $("qTitle").textContent = name;
   pairText($("practiceOnly"), () => tr(`依 ${sysName(c.sys)} ${gl(c.grade, c.sys)}參數的練習 · `, `Practice by ${sysName(c.sys)} ${gl(c.grade, c.sys)} parameters · `) + TS("practiceOnly"));
@@ -1233,7 +1262,7 @@ function renderMeta(){
 }
 function renderSum(){
   const sys = sysNow(), g = gradeNow(sys);
-  const parts = [`${sysName(sys)} ${gl(g, sys)}`];
+  const parts = [freeLevel() ? `${tr(...TYPE_LABEL[type])} · ${lvName(g + 1)}` : `${sysName(sys)} ${gl(g, sys)}`];
   if (cur && cur.sys === sys) parts.push(cur.sys === "rsl" ? `♩=${bpmNow()}` : `♩=${bpmNow()} ${tr("練習速度", "practice")}`);
   if (sys === "trinity" && SS.hideChart) parts.push(T("optHide"));
   $("sum").textContent = parts.join(" · ");
@@ -1323,6 +1352,7 @@ function renderResult(){
   if (byMic) add("disclaimer", () => tr(...MIC_TEXT.disclaimer));
   else add("disclaimer", () => tr("只看敲擊的時間,不看力度與音色;容許範圍是練習設定。這是練習回饋,不是考試分數,也不能換算成官方分數。",
     "Timing only (not dynamics or tone); the tolerance is a practice setting. This is practice feedback, not an exam mark, and it doesn't convert to one."));
+  if (R.free && R.cat) paintVotes(box, R, v => vote(R, v));   // 沒選考試:這一題的難度(下一題照新的難度出)
   box.hidden = false;
 }
 const summary = R => (R.kind === "rsl" ? { score: R.r.score, hits: R.r.hits, total: R.r.total, taps: R.taps } : { rows: R.rows.map(x => x.r.score), hits: R.all.hits, total: R.all.total, taps: R.taps });

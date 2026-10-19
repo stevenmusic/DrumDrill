@@ -1,11 +1,15 @@
 /* 視奏模組(docs/STAGES.md S8 + S9 + S10/S11 的介面;卡片、id、流程照 PianoDrill 的視奏:js/sight/app.js、stage.js、docs/sight/CLAUDE.md)。
    外框(js/main.js)負責頂欄、分頁、考試設定與語言;這裡的元素 id 都加 "s-" 前綴。
-   - 子項目 = 級數 0–8(外框的子項目列;沒選考試時用 RSL)。三種題目(mode):
+   - 視奏分頁(自由練習)練讀譜:子項目 = 分類「節奏 / 律動 / 樂譜」(外框的子項目列),難度由 App 自動調整(js/shared/level.js;每個分類各自記)。
+     難度 n = 一組已有的出題參數(CAT_LEVELS;App 的練習設定),畫面上不寫考試名稱、級數名、頁碼、practiceOnly:
+       節奏 1–4 = 小鼓單線譜(RSL Debut–3 的參數)、律動 1–2 = 整組鼓 8 小節(RSL 4–5 的參數)、樂譜 1–9 = 長譜(Trinity Playback Initial–8 的參數)
+     起點:有選考試 → 對應考試級數(startLevel),沒選 → 1;結果下面「太簡單 / 剛好 / 太難」;節奏回饋連續 3 題 ≥ 90 升一級、連續 2 題 < 50 降一級(畫面寫出來)
+   - 檢定頁照考試級數出題(「練習這一級的視奏」= 在檢定頁直接出題作答,xp;模擬考),標「依 RSL N 級參數的練習 · 」+ practiceOnly。三種題目(kind):
        snare    RSL Debut–3 小鼓視奏(js/sight/gen.js,照 data/exam-rsl.json sight[g];單線譜、1 個鼓墊)
        kit      RSL 4–5 整組鼓視奏(js/shared/kitgen.js genRslKit;五線鼓組譜、最後 2 小節自由發展〔斜線,推估〕播放只有拍點、3 個鼓墊)
        playback Trinity Initial–8:Rock & Pop 沒有視奏;Session skills Playback 的看譜練習(js/shared/playbackgen.js genChart;
                 30 秒看譜〔官方 p.60〕→ 跟拍點打一遍 → 聽正確版本;速度官方沒寫,預設 ♩=80 = 練習設定;官方配伴奏音軌,App 只有拍點)
-     RSL 6–8 Quick Study Piece(拍號、時值、速度大綱沒寫)不出題,只有說明 + 規格卡 + 「用 5 級整組鼓參數練讀譜」;I&I(1–5 級)只列規格
+     RSL 6–8 Quick Study Piece(拍號、時值、速度大綱沒寫)不出題,只有說明 + 規格卡 + 「到視奏頁練律動」;I&I(1–5 級)只列規格
    - 流程:出題 → 準備(RSL 90 秒 / Trinity 看譜 30 秒,官方;節拍器可開可關;可以在鼓墊上試打,不計分)
      → 正式打(預備拍:第一小節的拍號 1 小節〔長度推估〕;拍點可開關;鼓墊 / 鍵盤)→ 結果(鼓墊的節奏回饋〔練習回饋,不是考試分數〕+ 自我檢查清單)
      → 聽正確版本(js/shared/player.js + js/shared/kitevents.js toEvents〔力度的播放音量是練習設定〕;stage.js 畫目前小節的底色與播放軸)
@@ -18,13 +22,14 @@
    - 模擬考(S14,js/shared/mock.js):檢定頁的「模擬考」= 出一題 → 照官方準備時間計時、不能暫停也不能提早結束(RSL 90 秒 / Trinity 看譜 30 秒)
      → 時間到自動正式打一次(RSL 用這一題的官方速度;Trinity 官方沒寫速度,用自己的練習速度)→ 結果(.mock-res:準備、正式打的練習回饋;不算總分、不出現等第、不換算官方分數)。
      進行中考試摘要與規格卡藏起來;中途切分頁、背景、重新整理、旋轉 = 中止(回來時說明)
-   - 練習紀錄(js/shared/practicelog.js):連續天數、今天題數、今天分鐘 + 每週目標 + 最近 7 天;秒數 = 準備、正式打、聽正確版本的時間;各級練過題數(#s-statsCard)
+   - 練習紀錄(js/shared/practicelog.js):連續天數、今天題數、今天分鐘 + 每週目標 + 最近 7 天;秒數 = 準備、正式打、聽正確版本的時間;各分類練過題數 + 目前難度(#s-statsCard)
    - 用麥克風評分節奏(選用,S15;js/shared/micrhythm.js;開關 = 外框 drumdrill.v1 的 mic,經 ctx.micPref / setMicPref,聽力共用):
      勾了以後正式打先開麥克風(拿到才開始預備拍),這一次鼓墊不出聲、不計分,正式打只有預備拍的拍點(拍點跟真的鼓同時響分不開);
      打完整段在裝置上找起音(全部鼓件合併成一條,只評時間),預備拍的拍點被收進去的拿掉(dropBleed);拒絕權限 / 沒有麥克風:這一次照鼓墊評分、說明原因
-   - localStorage drumdrill.sight.v1:{ pick, metroPractice, clickPerform, bpmOverride:{ "rsl-3": 75, "trinity-4": 96 }, history(出過的題目指紋),
-     stats:{ "rsl-3": {n, hits, total} }, log:{ 日期: {n, sec} }, goal(每週目標分鐘), mockRun(進行中的模擬考標記), layout:{ 形狀: {measuresPerLine, zoom} } }
-     讀進來先消毒:bpmOverride 夾在 30–240、不是有限數的刪掉;layout 每一項 zoom 夾在 0.45–1、每行小節數不對的刪掉;stats、log 的數字 */
+   - localStorage drumdrill.sight.v1:{ metroPractice, clickPerform, bpmOverride:{ "rsl-3": 75, "rhythm-2": 90 }(檢定頁每一級 / 視奏頁每個分類的每個難度), history(出過的題目指紋),
+     stats:{ "rsl-3": {n, hits, total} }(檢定頁的題目), cats:{ rhythm: {n, hits, total} }(視奏頁), level:{ rhythm: 2 }、streak(level.js), log:{ 日期: {n, sec} },
+     goal(每週目標分鐘), mockRun(進行中的模擬考標記), layout:{ 形狀: {measuresPerLine, zoom} } }
+     讀進來先消毒:bpmOverride 夾在 30–240、不是有限數的刪掉;layout 每一項 zoom 夾在 0.45–1、每行小節數不對的刪掉;stats、cats、log 的數字;舊版的 pick 丟掉 */
 import { tr, T as TS, scoped, getLang, pairText } from "../shared/i18n.js";
 import { playbackFor } from "../shared/examdata.js";
 import * as V from "../shared/examview.js";
@@ -47,6 +52,7 @@ import { randomSeed } from "./random.js";
 import { addLog, cleanLog, renderLog as paintLog, today, nextGoal, cleanGoal } from "../shared/practicelog.js";
 import { createMock, abortText, paintCard, resultNote, mockLabel, cardToTop } from "../shared/mock.js";
 import { createMicTake, dropBleed, MIC_LANES, MIC_TEXT, micFailText } from "../shared/micrhythm.js";
+import { createLevels, levelText, paintVotes } from "../shared/level.js";
 import "./strings.js";
 const T = scoped("sight");
 
@@ -55,12 +61,23 @@ const ROOT = document.getElementById("mod-sight");
 
 /* ── 設定與紀錄(localStorage;讀不到就用預設值)── */
 const KEY = "drumdrill.sight.v1";
+/* 視奏分頁(自由練習)的三個分類;難度 n = 用哪一組已有的出題參數(App 的練習設定;不自己編更難的參數,到頂就建議換分類) */
+const CATS = ["rhythm", "groove", "chart"];
+const CAT_LEVELS = {
+  rhythm: [0, 1, 2, 3].map(g => ({ sys: "rsl", g })),             // 小鼓單線譜(RSL Debut–3 小鼓視奏的參數)
+  groove: [4, 5].map(g => ({ sys: "rsl", g })),                   // 整組鼓 8 小節:律動、段落最後帶過門、最後 2 小節自由發展(RSL 4–5 整組鼓視奏的參數)
+  chart: [0, 1, 2, 3, 4, 5, 6, 7, 8].map(g => ({ sys: "trinity", g }))   // 長譜:換拍號、力度、反覆的句子(Trinity Playback Initial–8 的參數)
+};
+const CAT_NAME = { rhythm: ["節奏", "Rhythm"], groove: ["律動", "Groove"], chart: ["樂譜", "Chart"] };
+const CAT_HINT = { rhythm: () => tr("試試律動或樂譜。", "Try Groove or Chart."), groove: () => tr("試試樂譜。", "Try Chart."), chart: null };
+const catName = c => tr(...CAT_NAME[c]);
 const LAYOUT_KEEP = 100;
 const SS = (() => {
   let s = null;
   try { s = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) {}
-  s = { pick: { system: "rsl", grade: 0 }, metroPractice: true, clickPerform: true, bpmOverride: {}, history: [], stats: {}, log: {}, layout: {}, ...(s || {}) };
-  for (const k of ["bpmOverride", "stats", "log", "layout"]) if (!s[k] || typeof s[k] !== "object" || Array.isArray(s[k])) s[k] = {};
+  s = { metroPractice: true, clickPerform: true, bpmOverride: {}, history: [], stats: {}, cats: {}, log: {}, layout: {}, ...(s || {}) };
+  delete s.pick;   // 舊版:視奏分頁選的級數(現在是分類 + 自動難度)
+  for (const k of ["bpmOverride", "stats", "cats", "log", "layout"]) if (!s[k] || typeof s[k] !== "object" || Array.isArray(s[k])) s[k] = {};
   if (!Array.isArray(s.history)) s.history = [];
   for (const [k, v] of Object.entries(s.bpmOverride)) { if (typeof v === "number" && Number.isFinite(v)) s.bpmOverride[k] = Math.max(30, Math.min(240, Math.round(v))); else delete s.bpmOverride[k]; }
   for (const [k, v] of Object.entries(s.layout)) {
@@ -72,6 +89,10 @@ const SS = (() => {
   for (const [k, v] of Object.entries(s.stats)) {
     if (!/^(rsl|trinity)-[0-8]$/.test(k) || !v || typeof v !== "object") { delete s.stats[k]; continue; }
     s.stats[k] = { n: cnt(v.n), total: cnt(v.total), hits: Math.min(cnt(v.hits), cnt(v.total)) };
+  }
+  for (const [k, v] of Object.entries(s.cats)) {
+    if (!CATS.includes(k) || !v || typeof v !== "object") { delete s.cats[k]; continue; }
+    s.cats[k] = { n: cnt(v.n), total: cnt(v.total), hits: Math.min(cnt(v.hits), cnt(v.total)) };
   }
   s.log = cleanLog(s.log);
   s.goal = cleanGoal(s.goal);
@@ -87,8 +108,9 @@ const history = createHistory({ capacity: 60, load: () => SS.history, save: e =>
 
 /* ── 狀態 ── */
 let ctx = null, exam = null, active = false, mode = "free";
-let freeGrade = Number.isInteger(SS.pick.grade) ? Math.max(0, Math.min(8, SS.pick.grade)) : 0;
-let cur = null;               // { key:"rsl-3", sys, grade, kind:"snare"|"kit"|"playback", spec(出題參數), test, xml }
+let freeCat = "rhythm";       // 視奏分頁的分類(外框的子項目)
+let xp = false;               // 檢定頁的「練習這一級的視奏」:在檢定頁直接出這一級的題目作答(規格卡、考試摘要藏起來)
+let cur = null;               // { key:"rsl-3" | "rhythm-2", free, cat, lv, sys, grade, kind:"snare"|"kit"|"playback", spec(出題參數), test, xml }
 let phase = "idle";           // idle | prep | ready(準備時間到)| perform | result
 let left = 0, countdown = 0, prepStarted = 0, prepEnd = 0;   // 倒數照 performance.now() 的終點算(主執行緒卡住也不會變慢)
 let perf = null;              // 正式打:{ t0, bpm, taps:[{lane, time}], startedAt }
@@ -102,10 +124,29 @@ let lastMic = null;           // 測試用(tools/test/mic-check.mjs):上一次�
 const micOn = () => !!(ctx && ctx.micPref && ctx.micPref());
 
 const curExam = () => exam || { system: "trinity", grade: 1, auto: true };
-/* 自由練習:沒選考試時用 RSL(外框的子項目列也照這個寫 D);檢定頁照考試 */
-const sysNow = () => (mode === "exam" || !curExam().auto ? curExam().system : "rsl");
-const gradeNow = () => (mode === "exam" ? curExam().grade : freeGrade);
 const keyOf = (sys, g) => `${sys}-${g}`;
+/* 自動難度(js/shared/level.js):起點 = 考試級數換算(節奏 = 級數 0–3 夾住、律動 = 4–5 級用那一級,更高用最高、其他最低、樂譜 = 級數 + 1);沒選考試 = 1 */
+function startLevel(cat){
+  const ex = curExam();
+  if (ex.auto) return 1;
+  const g = ex.grade;
+  if (cat === "rhythm") return Math.min(g, 3) + 1;
+  if (cat === "groove") return g >= 4 ? Math.min(g, 5) - 3 : 1;
+  return g + 1;
+}
+const levels = createLevels({ store: SS, save, max: Object.fromEntries(CATS.map(c => [c, CAT_LEVELS[c].length])), start: startLevel });
+/* 現在要出哪一題:檢定頁照考試級數;視奏分頁照分類與難度 */
+function target(){
+  if (mode === "exam") { const ex = curExam(); return { free: false, sys: ex.system, g: ex.grade, key: keyOf(ex.system, ex.grade) }; }
+  const cat = freeCat, lv = levels.get(cat), L = CAT_LEVELS[cat][lv - 1];
+  return { free: true, cat, lv, sys: L.sys, g: L.g, key: `${cat}-${lv}` };
+}
+/* 題目卡、譜的說明、設定卡用的名字:檢定頁「RSL 3 級」;視奏分頁「節奏 · 難度 2」 */
+const lvName = lv => tr(`難度 ${lv}`, `Level ${lv}`);
+const curName = c => (c.free ? `${catName(c.cat)} · ${lvName(c.lv)}` : `${sysName(c.sys)} ${gl(c.grade, c.sys)}`);
+/* 題目在畫面上(視奏分頁、模擬考進行中、檢定頁的練習) */
+const xpOn = () => mode === "exam" && xp && !mock.running();
+const onPage = () => mode === "free" || mockOn() || xpOn();
 const dataOf = sys => (ctx && ctx.examData ? ctx.examData(sys) : null);
 const drumKey = () => (ctx && ctx.drumKey ? ctx.drumKey() : null);
 const specOf = (sys, g) => (sys === "rsl" && dataOf("rsl") && dataOf("rsl").sight ? dataOf("rsl").sight[g] : null);
@@ -149,6 +190,8 @@ export async function start(c){
     get test(){ return cur && cur.test; }, get xml(){ return cur && cur.xml; }, get osmd(){ return osmd; }, get timeline(){ return cur && cur.test.tl; },
     eventsAt: b => (cur ? eventsAt(b) : []),
     newTest, startPrep, startPerform, toggleListen, setBpm: v => setBpm(v), SS,
+    /* 測試用:視奏分頁的分類與難度、檢定頁的「練習這一級的視奏」 */
+    get cat(){ return freeCat; }, level: c => levels.get(c || freeCat), setLevel: (c, n) => { levels.set(c, n); renderLevel(); renderStats(); }, startXp: () => startXp(), get xp(){ return xpOn(); },
     /* 測試用:正式打中馬上結束、照目前收到的敲擊出結果(Trinity 8 級一首要打很久;layout / bilingual / clip 看結果畫面用) */
     finishNow(){ if (phase === "perform" && playKind === "perform") { playKind = null; player.stop(true); tempo.showBeat(null); finishPerform(); } }, get layout(){ return lastLayout; }, perfT0: () => (perf ? perf.t0 : null),
     get unloadMs(){ return audio.kitRelease.ms; }, set unloadMs(v){ audio.kitRelease.ms = v; },   // 等待時間在 audio.js(視奏、聽力共用)
@@ -164,16 +207,16 @@ export function enter(t){
   if (mock.running() && t !== "exam") mock.abort("leave");   // 模擬考進行中離開檢定頁 = 中止
   audio.holdKit("sight");   // 回來了:不釋放整組鼓
   mode = t === "exam" ? "exam" : "free";
-  if (mode === "free" && /^[0-8]$/.test(String(t))) freeGrade = Number(t);
+  if (mode === "free" && CATS.includes(t)) freeCat = t;
   const had = cur;
   renderMic();   // 開關跟聽力共用:在聽力改過就照新的
   render();
   // 同一題:在別的分頁時延後的譜、寬度變了的,回到畫面再畫(新題目 render 裡已經畫了);整組鼓被釋放過就重新載
-  if ((mode === "free" || mockOn()) && cur && cur === had && !$("quiz").hidden) {
+  if (onPage() && cur && cur === had && !$("quiz").hidden) {
     if (pendingDraw || innerWidth !== renderedWidth) requestAnimationFrame(() => drawCurrent());
     preload();
   }
-  if (mode === "free" && cur && !$("quiz").hidden) requestAnimationFrame(() => { if (active) fitTitle(); });
+  if (onPage() && cur && !$("quiz").hidden) requestAnimationFrame(() => { if (active) fitTitle(); });
 }
 /* 離開(切分頁、切到背景):停止播放、準備的倒數、正式打(不算分);題目保留;模擬考進行中就中止(回來時說明)。放掉整組鼓(聽力也沒拿著的話 60 秒後釋放,小鼓保留) */
 export function leave(){
@@ -197,7 +240,7 @@ export function relang(){
   if (mode === "exam" || !cur || $("quiz").hidden) { if (active || mode === "exam") renderStatic(); }
   $("play").setAttribute("aria-label", playKind === "listen" ? tr("停止", "Stop") : T("playAria"));
   refreshTexts();
-  pads.relang(); renderMic();
+  pads.relang(); renderMic(); renderLevel();
   relangPairs($("legend"));
   renderLog(); renderStats();
   if (mode === "exam") renderMockCard();
@@ -209,7 +252,7 @@ export function examStatus(){
   return tr("只列規格", "Spec only");
 }
 export function onKey(e){
-  if ((mode === "exam" && !mockOn()) || !cur || $("quiz").hidden) return;
+  if (!onPage() || !cur || $("quiz").hidden) return;
   if (pads.key(e)) return;   // J / F(小鼓)、F / J / K(鈸 / 鼓 / 大鼓與腳踩 HH)= 鼓墊
   if (e.code === "Space") {
     e.preventDefault();       // 不要捲動頁面
@@ -217,15 +260,20 @@ export function onKey(e){
   } else if ((e.key === "n" || e.key === "N") && !mockOn() && !$("generate").disabled) newTest();   // 模擬考中不能換題(換題會繞過「不能提早結束」)
 }
 
-/* ══ 畫面:檢定頁 / 自由練習(有題目 / 只有說明)══ */
+/* ══ 畫面:檢定頁(規格 / 練習這一級 / 模擬考)/ 視奏分頁(分類 + 自動難度)══ */
 function render(){
-  const isExam = mode === "exam", run = isExam && mock.running(), only = isExam && (mock.state === "result" || mock.state === "aborted");
+  const isExam = mode === "exam";
+  // 檢定頁的練習只在模擬考沒有進行、沒有結果時;這一級不出題(RSL 6–8)、沒選考試就回到規格
+  if (xp && (!isExam || mock.state !== "idle" || curExam().auto || !practicable(curExam().system, curExam().grade))) { if (isExam) xp = false; }
+  const run = isExam && mock.running(), only = isExam && (mock.state === "result" || mock.state === "aborted"), xpo = xpOn();
   ROOT.classList.toggle("mock-run", run);
-  // 檢定頁不放練習紀錄;模擬考進行中、結果:考試摘要(配分、等第)與規格卡藏起來(練習回饋不跟等第放在同一個畫面)
-  ROOT.querySelectorAll(".pane").forEach(el => { el.hidden = !isExam || run || only; });
+  // 檢定頁不放練習紀錄;模擬考進行中、結果、檢定頁的練習:考試摘要(配分、等第)與規格卡藏起來(練習回饋不跟等第放在同一個畫面)
+  ROOT.querySelectorAll(".pane").forEach(el => { el.hidden = !isExam || run || only || xpo; });
   $("logCard").hidden = $("statsCard").hidden = isExam;
-  if (run) {
-    showPractice(true); $("setup").hidden = true; $("unsupported").hidden = true; $("specCards").hidden = true;
+  renderLevel();
+  if (run || xpo) {
+    showPractice(true); $("setup").hidden = run; $("unsupported").hidden = true; $("specCards").hidden = true;
+    if (xpo && (!cur || cur.free || cur.key !== target().key)) newTest();
     renderMockCard(); refreshTexts(); syncButtons();
     if (pendingDraw && active) requestAnimationFrame(() => drawCurrent());   // 出題時卡片還藏著(寬度 0):現在畫
     return;
@@ -233,47 +281,52 @@ function render(){
   if (isExam) { stopAll(); showPractice(false); $("unsupported").hidden = true; $("specCards").hidden = only; renderExam(); renderMockCard(); return; }
   $("mockCard").hidden = true;
   renderStats();
-  const sys = sysNow(), g = gradeNow();
-  if (!practicable(sys, g)) { stopAll(); showPractice(false); renderUnsupported(sys, g); return; }
+  const t = target();
+  if (!practicable(t.sys, t.g)) { stopAll(); showPractice(false); renderUnsupported(); return; }
   showPractice(true); $("unsupported").hidden = true; $("specCards").hidden = true;
-  if (!cur || cur.key !== keyOf(sys, g)) newTest();
+  // 同一個分類有題目就不重新出題(難度改了從下一題開始)
+  if (!cur || !cur.free || cur.cat !== t.cat) newTest();
   else refreshTexts();
 }
 /* 只有說明卡的畫面重寫文字(換語言) */
 function renderStatic(){
-  if (mode === "exam") { if (!mock.running()) renderExam(); return; }
-  const sys = sysNow(), g = gradeNow();
-  if (!practicable(sys, g)) renderUnsupported(sys, g);
+  if (mode === "exam") { if (!mock.running() && !xpOn()) renderExam(); return; }
+  const t = target();
+  if (!practicable(t.sys, t.g)) renderUnsupported();
 }
 function showPractice(on){ for (const id of ["setup", "quiz", "scoreCard", "along"]) $(id).hidden = !on; }
 
-/* 這一級 / 這個考試沒有視奏練習(或資料還沒到):說明 + 官方規格卡(不出題) */
-function renderUnsupported(sys, g){
+/* 視奏分頁出不了題:出題資料或圖例資料還沒到(第一次要連網路)。不放規格卡、不寫考試名稱 */
+function renderUnsupported(){
   $("unsupported").hidden = false;
-  const d = dataOf(sys), name = () => `${sysName(sys)} ${gl(g, sys)}`;
-  let title, text;
-  if (!d) {
-    title = () => tr("考試資料還沒載好", "Exam data not loaded");
-    text = () => tr("第一次要連網路,之後會存在裝置上。", "Needs internet once; then it's cached.");
-  } else if (kindOf(sys, g) && !drumKey()) {
-    // 有練習的級數,只是圖例資料(data/drumkey.json)還沒到
-    title = () => tr("圖例資料還沒載好", "Drum key not loaded");
-    text = () => tr("第一次要連網路,之後會存在裝置上。下面是官方規格。", "Needs internet once; then it's cached. Official spec below.");
-  } else if (sys === "trinity") {
-    title = () => tr("Rock & Pop 沒有視奏", "No sight-reading in Rock & Pop");
-    text = () => tr("Trinity Rock & Pop 沒有視奏項目;最接近的是 Session skills 的 Playback(有譜)。下面是官方規格。",
-      "Trinity Rock & Pop has no sight-reading test; the closest is Playback in Session skills (with a chart). Official spec below.");
-  } else {
-    title = () => tr("Quick Study Piece:只列規格", "Quick Study Piece: spec only");
-    text = () => tr(`${name()} 考 Quick Study Piece:要伴奏音軌和 lead sheet,拍號、時值、速度大綱沒寫,App 不出題。可以先用 5 級整組鼓視奏的參數練讀譜。`,
-      `${name()} has a Quick Study Piece: it needs a backing track and lead sheet, and the metre, values and tempo aren't stated, so the App sets no tests. You can practise reading with the Grade 5 kit parameters.`);
-  }
+  const t = target(), d = dataOf(t.sys);
+  const title = !d ? () => tr("出題資料還沒載好", "Test data not loaded") : () => tr("圖例資料還沒載好", "Drum key not loaded");
   V.pairStack($("unsupportedTitle"), title);
-  pairText($("unsupportedText"), text);
-  pairText($("unsupportedNote"), () => TS("practiceOnly"));
-  $("specCards").hidden = !d; $("specCards").innerHTML = "";
-  if (d) { if (sys === "rsl") renderRsl(d, g, false); else renderTrinity(d, g, false); }
+  pairText($("unsupportedText"), () => tr("第一次要連網路,之後會存在裝置上。", "Needs internet once; then it's cached."));
+  pairText($("unsupportedNote"), () => "");
+  $("specCards").hidden = true; $("specCards").innerHTML = "";
 }
+/* 設定卡的難度(視奏分頁才有):「難度 3」+ ▲ ▼,旁邊小字「難度階段由 App 安排(練習設定)」 */
+function renderLevel(){
+  const row = $("levelRow"), show = mode === "free";
+  row.hidden = !show;
+  if (!show) return;
+  const cat = freeCat, lv = levels.get(cat), max = levels.max(cat);
+  $("levelVal").textContent = lvName(lv);
+  $("lvDown").disabled = lv <= 1 || phase === "perform";
+  $("lvUp").disabled = lv >= max || phase === "perform";
+  $("lvDown").setAttribute("aria-label", tr("難度降一級", "Level down")); $("lvUp").setAttribute("aria-label", tr("難度升一級", "Level up"));
+  pairText($("levelNote"), () => tr(`${catName(cat)}難度 1–${max} · 難度階段由 App 安排(練習設定)`, `${catName(cat)} levels 1–${max} · set by the App (practice setting)`));
+}
+/* ▲ ▼:馬上換一題這個難度的 */
+function stepLevel(d){
+  if (mode !== "free" || phase === "perform") return;
+  const was = levels.get(freeCat), lv = levels.step(freeCat, d);
+  renderLevel(); renderStats();
+  if (lv !== was) { announce(tr(`${catName(freeCat)}難度 ${lv}`, `${catName(freeCat)} level ${lv}`)); newTest(); }
+}
+$("lvDown").onclick = () => stepLevel(-1);
+$("lvUp").onclick = () => stepLevel(1);
 
 /* ── 檢定頁:考試摘要 + 規格卡(照官方大綱,資料在 data/exam-*.json,每項帶頁碼)── */
 function renderExam(){
@@ -316,18 +369,18 @@ function card(title, src){
 }
 const specIn = (c, rows) => { const box = document.createElement("div"); c.appendChild(box); V.fillSpec(box, rows); return box; };
 const notStated = () => tr("大綱沒寫", "Not stated");
-/* 「去練習」按鈕(帶到視奏分頁的某一級) */
-function goButton(c, label, grade){
+/* 「去練習」按鈕:onClick = 在檢定頁出這一級的題目(startXp)/ 到視奏分頁 */
+function goButton(c, label, onClick){
   const b = document.createElement("button");
   b.className = "xcat s-go"; b.type = "button";
   b.innerHTML = '<span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>';
   pairText(b.querySelector("span"), label);
-  b.onclick = () => ctx.showView("sight", String(grade));
+  b.onclick = onClick;
   const w = document.createElement("div"); w.className = "xcats"; w.appendChild(b); c.appendChild(w);
   return b;
 }
 
-/* withPractice = 檢定頁:有出題的級數加「練習這一級的視奏」(帶到視奏分頁的那一級) */
+/* withPractice = 檢定頁:有出題的級數加「練習這一級的視奏」(在檢定頁直接出題作答) */
 function renderRsl(d, g, withPractice){
   const s = d.sight[g], key = drumKey(), src = V.srcOf("rsl", s.src.p);
   if (s.type !== "qsp") {
@@ -347,7 +400,7 @@ function renderRsl(d, g, withPractice){
     ]);
     V.addPara(c, () => V.L(d.sightNote[s.type]));
     V.addPara(c, () => V.L(d.sightNote.examples));
-    if (withPractice && !curExam().auto && kindOf("rsl", g)) goButton(c, () => tr("練習這一級的視奏(App 出題)", "Practise this grade (App tests)"), g);
+    if (withPractice && !curExam().auto && kindOf("rsl", g)) goButton(c, () => tr("練習這一級的視奏(App 出題)", "Practise this grade (App tests)"), startXp);
     const im = d.improv[g];
     if (im) {
       const c2 = card(() => tr("即興(I&I,二選一)", "Improvisation (I&I)"), V.srcOf("rsl", im.src.p)), s2 = V.srcOf("rsl", im.src.p);
@@ -371,8 +424,8 @@ function renderRsl(d, g, withPractice){
     ]);
     V.addPara(c, () => V.L(d.sightNote.qsp));
     V.addPara(c, () => tr("要伴奏音軌和 lead sheet,拍號、時值、速度大綱也沒寫:App 不出這一項的題目。", "Needs a backing track and lead sheet, and the metre, values and tempo aren't stated: the App sets no tests for it."));
-    // 練讀譜:帶到 RSL 5 級的整組鼓視奏(標明是 5 級的參數,不是 QSP)
-    if ((!withPractice || !curExam().auto) && kindOf("rsl", 5)) goButton(c, () => tr("用 5 級整組鼓參數練讀譜(5 級參數,不是 QSP)", "Practise reading with Grade 5 kit parameters (not a QSP)"), 5);
+    // 練讀譜:到視奏分頁的「律動」(整組鼓讀譜,難度由 App 調整;不是 QSP)
+    if (!curExam().auto && kindOf("rsl", 5)) goButton(c, () => tr("到視奏頁練整組鼓讀譜(律動;不是 QSP)", "Practise kit reading in Sight-reading (Groove; not a QSP)"), () => ctx.showView("sight", "groove"));
   }
 }
 
@@ -402,7 +455,7 @@ function renderTrinity(d, g, withPractice){
     "The App's Playback chart practice: a song chart from this grade's parameters — 30 s to study, play it once with a click, hear it back. The exam has a backing track; the App has a click only. Tempo isn't stated: ♩=80 by default (practice setting)."));
   if (withPractice && kindOf("trinity", g)) {
     if (curExam().auto) V.addPara(c, () => tr("在上面選 Trinity 考試,就可以練 Playback 看譜。", "Choose the Trinity exam above to practise Playback charts."));
-    else goButton(c, () => tr("練習 Playback 看譜(App 出題)", "Practise Playback charts (App tests)"), g);
+    else goButton(c, () => tr("練習 Playback 看譜(App 出題)", "Practise Playback charts (App tests)"), startXp);
   }
 }
 const range = r => (r[0] === r[1] ? String(r[0]) : `${r[0]}–${r[1]}`);
@@ -430,18 +483,18 @@ function makeTest(kind, P, seed, g){
 }
 function newTest(){
   stopAll();
-  const sys = sysNow(), g = gradeNow(), kind = kindOf(sys, g);
+  const tg = target(), { sys, g } = tg, kind = kindOf(sys, g);
   if (!practicable(sys, g)) return;
   const P = paramsOf(sys, g, kind);
   let test;
   try { test = generateUnique(() => makeTest(kind, P, randomSeed(), g), history).score; }
   catch (e) { console.error(e); say(() => tr("出題失敗:", "Could not make a test: ") + e.message); return; }
-  setTest(sys, g, kind, P, test);
+  setTest(tg, kind, P, test);
 }
-/* 指定題目(測試用 __sight;同一個種子同一題) */
-function setTest(sys, g, kind, P, test){
-  SS.pick = { system: sys, grade: g }; save();
-  cur = { key: keyOf(sys, g), sys, grade: g, kind, spec: P, test, xml: null, padCym: "hh" };
+/* 指定題目(tg = target():檢定頁的系統與級數 / 視奏分頁的分類與難度) */
+function setTest(tg, kind, P, test){
+  const { sys, g } = tg;
+  cur = { key: tg.key, free: tg.free, cat: tg.cat || null, lv: tg.lv || null, sys, grade: g, kind, spec: P, test, xml: null, padCym: "hh" };
   if (kind !== "snare") cur.padCym = mainCymbal(eventsAt(bpmNow()));
   phase = "idle"; lastResult = null; perf = null;
   $("alongResult").hidden = true; showChecklist(null);
@@ -504,8 +557,13 @@ function tempoUI(){
   tempo.sync(`♩ / ${tr("分", "min")}`);
   if (!cur) return;
   const pb = cur.kind === "playback";
-  pairText($("bpmReset"), () => (pb ? tr("預設速度", "Default tempo") : T("bpmReset")));
-  if (pb) pairText($("tempoNote"), () => (custom() ? tr(`練習速度(官方沒寫速度;預設 ♩=${PB_BPM})`, `Practice tempo (not in the syllabus; default ♩=${PB_BPM})`)
+  pairText($("bpmReset"), () => (pb || cur.free ? tr("預設速度", "Default tempo") : T("bpmReset")));
+  if (cur.free) {
+    // 視奏分頁:不寫官方速度、頁碼;這個難度的預設速度是練習設定
+    const def = pb ? `♩=${PB_BPM}` : V.bpmText(cur.spec.bpm);
+    pairText($("tempoNote"), () => (overridden() || (pb && custom()) ? tr(`練習速度(這個難度預設 ${def})`, `Practice tempo (level default ${def})`)
+      : tr(`這個難度的預設速度 ${def} · ${TS("srcPractice")}`, `Level default ${def} · ${TS("srcPractice")}`)));
+  } else if (pb) pairText($("tempoNote"), () => (custom() ? tr(`練習速度(官方沒寫速度;預設 ♩=${PB_BPM})`, `Practice tempo (not in the syllabus; default ♩=${PB_BPM})`)
     : tr(`預設 ♩=${PB_BPM} · ${TS("srcPractice")}(官方沒寫速度)`, `Default ♩=${PB_BPM} · ${TS("srcPractice")} (tempo not stated)`)));
   else {
     const off = V.bpmText(cur.spec.bpm), src = V.srcOf("rsl", cur.spec.src.p);
@@ -533,15 +591,22 @@ function refreshTexts(){
   if (!cur) return;
   const c = cur, t = c.test;
   $("title").classList.remove("empty");
-  $("title").textContent = `${sysName(c.sys)} ${gl(c.grade, c.sys)}`;
-  $("scoreSub").textContent = t.src;
+  $("title").textContent = curName(c);
+  $("scoreSub").textContent = c.free ? "" : t.src;
   $("scoreTitle").textContent = tr(...SCORE_TITLE[c.kind]);
-  pairText($("practiceOnly"), () => (c.kind === "playback" ? tr(`依 Trinity Playback ${gl(c.grade, c.sys)}參數的練習 · `, `Practice by Trinity Playback ${gl(c.grade, c.sys)} parameters · `)
+  // 視奏分頁不寫「依 RSL N 級參數」、practiceOnly(那些在檢定頁);題目卡的大標題 = 分類 · 難度
+  $("practiceOnly").hidden = c.free;
+  if (c.free) pairText($("practiceOnly"), () => "");
+  else pairText($("practiceOnly"), () => (c.kind === "playback" ? tr(`依 Trinity Playback ${gl(c.grade, c.sys)}參數的練習 · `, `Practice by Trinity Playback ${gl(c.grade, c.sys)} parameters · `)
     : tr(`依 RSL ${gl(c.grade, c.sys)}參數的練習 · `, `Practice by RSL ${gl(c.grade, c.sys)} parameters · `)) + TS("practiceOnly"));
   // 題目卡上的說明:整組鼓的自由發展;Trinity 這是 Playback 的看譜練習(Rock & Pop 沒有視奏)
   const note = $("modeNote");
-  note.hidden = c.kind === "snare";
-  if (c.kind === "kit") {
+  note.hidden = c.kind === "snare" || (c.free && c.kind === "playback");
+  if (c.kind === "kit" && c.free) {
+    const a = t.develop.from + 1, b = t.develop.from + t.develop.bars;
+    pairText(note, () => tr(`第 ${a}–${b} 小節是自由發展(斜線):照前面的風格自己打,不評分;播放時只有拍點。`,
+      `Bars ${a}–${b} are a development (slashes): carry on in style — not scored; playback is click only.`));
+  } else if (c.kind === "kit") {
     const a = t.develop.from + 1, b = t.develop.from + t.develop.bars;
     pairText(note, () => tr(`第 ${a}–${b} 小節是自由發展(斜線;位置是${TS("srcAssumed")}):照前面的風格自己打,不評分;播放時只有拍點。`,
       `Bars ${a}–${b} are the development (slashes; position ${TS("srcAssumed").toLowerCase()}): carry on in style — not scored; playback is click only.`));
@@ -553,7 +618,7 @@ function refreshTexts(){
   renderPrepareLabel();
   renderAlongLabel();
   const ci = t.tl.countIn.bars, keys = keysText(lanesOf(c));
-  pairText($("alongNote"), () => (c.kind === "playback"
+  pairText($("alongNote"), () => (c.free ? tr(`預備拍 ${ci} 小節`, `${ci}-bar count-in`) : c.kind === "playback"
     ? tr(`預備拍 ${ci} 小節(官方有預備拍;長度${TS("srcAssumed")})`, `${ci}-bar count-in (count-in is official; length ${TS("srcAssumed").toLowerCase()})`)
     : tr(`預備拍 ${ci} 小節(${TS("srcAssumed")}:大綱沒寫)`, `${ci}-bar count-in (${TS("srcAssumed").toLowerCase()}: not stated)`))
     + (showKeys() ? tr(`· 鍵盤 ${keys}`, ` · keys ${keys}`) : ""));
@@ -566,6 +631,10 @@ function refreshTexts(){
 /* 推估 / 練習設定 / 不出的說明(出題器的 NOTES 小字;每一題各自的) */
 function renderConfidence(){
   const c = cur, t = c.test;
+  if (c.free) {
+    pairText($("confidence"), () => tr("難度階段、節奏型、速度與預備拍都是 App 的練習設定。", "Levels, patterns, tempo and count-in are App practice settings."));
+    return;
+  }
   if (c.kind === "snare") {
     const mixed = t.mixed, half = (c.spec.values || []).includes("2");
     pairText($("confidence"), () => tr(
@@ -592,8 +661,9 @@ function renderConfidence(){
 function renderMeta(){
   if (!cur) return;
   const t = cur.test, b = bpmNow(), pb = cur.kind === "playback";
-  const metre = cur.kind === "snare" ? `4/4 · ${TS("srcAssumed")}` : pb ? t.times.join(" ") : t.time;
-  const tags = [metre, tr(`${t.bars} 小節`, `${t.bars} bars`), pb ? `♩=${b} · ${custom() ? tr("練習", "Practice") : TS("srcPractice")}` : overridden() ? `♩=${b} · ${tr("練習", "Practice")}` : `♩=${b}`];
+  const metre = cur.kind === "snare" ? (cur.free ? "4/4" : `4/4 · ${TS("srcAssumed")}`) : pb ? t.times.join(" ") : t.time;
+  const tags = cur.free ? [metre, tr(`${t.bars} 小節`, `${t.bars} bars`), overridden() || (pb && custom()) ? `♩=${b} · ${tr("練習", "Practice")}` : `♩=${b}`]
+    : [metre, tr(`${t.bars} 小節`, `${t.bars} bars`), pb ? `♩=${b} · ${custom() ? tr("練習", "Practice") : TS("srcPractice")}` : overridden() ? `♩=${b} · ${tr("練習", "Practice")}` : `♩=${b}`];
   $("meta").innerHTML = tags.map(x => `<span class="q-tag">${x}</span>`).join("");
   imgLabel($("score"), scoreLabel);   // 速度改了:譜的說明跟著改
   if (active) fitTags();
@@ -601,7 +671,7 @@ function renderMeta(){
 function renderSum(){
   if (!cur) return;
   const pb = cur.kind === "playback";
-  $("sum").textContent = [`${sysName(cur.sys)} ${gl(cur.grade, cur.sys)}`, `♩=${bpmNow()}${overridden() ? " " + tr("練習速度", "practice") : pb ? " " + tr("練習設定", "practice") : ""}`,
+  $("sum").textContent = [curName(cur), `♩=${bpmNow()}${overridden() || (cur.free && pb && custom()) ? " " + tr("練習速度", "practice") : pb && !cur.free ? " " + tr("練習設定", "practice") : ""}`,
     tr("節拍器", "Metronome") + " " + (SS.metroPractice ? tr("開", "on") : tr("關", "off"))].join(" · ");
 }
 function renderPrepareLabel(){
@@ -610,7 +680,7 @@ function renderPrepareLabel(){
   pairText($("prepareLabel"), fn);
   $("prepare").setAttribute("aria-label", fn());   // 窄畫面(≤340)只剩圖示時,螢幕閱讀器還是念得到
 }
-function renderAlongLabel(){ $("playAlong").textContent = phase === "perform" ? tr("停止", "Stop") : T("perform"); renderMic(); }
+function renderAlongLabel(){ $("playAlong").textContent = phase === "perform" ? tr("停止", "Stop") : T("perform"); renderMic(); renderLevel(); }
 /* 麥克風開關(選用):正式打中不能改;說明 = 用法,打開失敗時改成原因 */
 function renderMic(){
   const box = $("alongMic");
@@ -753,14 +823,14 @@ async function drawOnce(c){
   // 圖例:這一題用到的鼓件(每一份鼓組譜旁邊都要有;鼓件或線數變了才重畫)
   const key = drumKey();
   if (key) {
-    const pieces = piecesUsed({ ...c.test.score, key }), lk = c.test.lines + ":" + pieces.join(",");
-    if (lk !== legendKey) { legendKey = lk; drawLegend($("legend"), { pieces, lines: c.test.lines, key }).catch(e => { console.error(e); legendKey = ""; }); }
+    const pieces = piecesUsed({ ...c.test.score, key }), lk = c.test.lines + ":" + pieces.join(",") + (c.free ? ":plain" : "");
+    if (lk !== legendKey) { legendKey = lk; drawLegend($("legend"), { pieces, lines: c.test.lines, key, plain: c.free }).catch(e => { console.error(e); legendKey = ""; }); }
   }
 }
 /* 無障礙:譜的文字說明(N 小節小鼓譜 / 整組鼓譜、拍號、速度、每小節的簡述;a11y.js) */
 function scoreLabel(){
   if (!cur) return "";
-  return describeSpec(cur.test.score, { key: drumKey(), bpm: bpmNow(), title: `${sysName(cur.sys)} ${gl(cur.grade, cur.sys)}` });
+  return describeSpec(cur.test.score, { key: drumKey(), bpm: bpmNow(), title: curName(cur) });
 }
 /* 寬度分級:同一級的手機共用一個排法 */
 function widthClass(){ const w = innerWidth; return w < 500 ? "phone" : w < 900 ? "compact" : w < 1280 ? "medium" : "wide"; }
@@ -839,7 +909,7 @@ window.addEventListener("resize", () => {
   if (!active || !cur || innerWidth === lastW) return;   // 只看寬度(iOS 捲動時網址列收放只改高度)
   lastW = innerWidth;
   clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => { if (active && (mode === "free" || mockOn())) drawCurrent(); }, 200);
+  resizeTimer = setTimeout(() => { if (active && onPage()) drawCurrent(); }, 200);
 });
 /* 準備、正式打、播放時把樂譜卡捲到頂欄下(譜要在畫面上) */
 function bringScoreIntoView(){
@@ -1157,9 +1227,17 @@ function finishPerform(){
   }
   // 麥克風:整體偏移(裝置的輸入、輸出延遲)不設上限,跟 PianoDrill 視奏的 scoreRhythm 一樣
   const r = scoreLanes(expected, taps, { tempoBpm: p.bpm, ...(p.mic ? { offsetLimit: Infinity } : {}) });
-  lastResult = { r, taps: taps.length, devTaps, bpm: p.bpm, practice: !officialBpm(p.bpm), pb: cur.kind === "playback", lanes,
-    src: p.mic ? "mic" : "pad", silent, micFail: p.mic || !micOn() ? null : micFail };
-  const st = SS.stats[cur.key] || (SS.stats[cur.key] = { n: 0, hits: 0, total: 0 });
+  lastResult = { r, taps: taps.length, devTaps, bpm: p.bpm, practice: cur.free ? overridden() || (cur.kind === "playback" && custom()) : !officialBpm(p.bpm), pb: cur.kind === "playback", lanes,
+    src: p.mic ? "mic" : "pad", silent, micFail: p.mic || !micOn() ? null : micFail, free: cur.free, cat: cur.cat };
+  // 視奏分頁:節奏回饋自動升降難度(連續 3 題 ≥ 90 升、連續 2 題 < 50 降;沒有敲擊的不算),寫在結果裡
+  if (cur.free) {
+    const R = lastResult, ch = taps.length && !silent ? levels.auto(cur.cat, r.score) : null;
+    R.lv = levels.get(cur.cat);
+    if (ch) R.lvText = () => levelText({ auto: ch });
+    renderLevel(); renderSum();
+  }
+  const bucket = cur.free ? SS.cats : SS.stats, bkey = cur.free ? cur.cat : cur.key;
+  const st = bucket[bkey] || (bucket[bkey] = { n: 0, hits: 0, total: 0 });
   st.n++;
   if (taps.length) { st.hits += r.hits; st.total += r.total; }   // 沒有敲鼓墊、麥克風沒聽到(例如在真的鼓上打、沒開麥克風):只算題數,不算進命中率
   addSec((performance.now() - p.startedAt) / 1000, 1);
@@ -1167,7 +1245,7 @@ function finishPerform(){
   renderResult();
   showChecklist("self");
   say(() => tr("打完了。看下面的練習回饋與自我檢查;可以按 ▶ 聽正確版本對照。", "Done. See the feedback and self-check below; tap ▶ to hear the correct version."), true);
-  announce(tr("打完了。", "Done. ") + resultSpeech(lastResult));
+  announce(tr("打完了。", "Done. ") + resultSpeech(lastResult) + (lastResult.lvText ? " " + lastResult.lvText() : ""));
   if (mockOn()) { mock.data.result = lastResult; mock.finish(); render(); cardToTop($("mockCard")); }   // 模擬考:正式打完 = 結果
   renderStats();
   if (ctx) ctx.examChanged();
@@ -1207,12 +1285,24 @@ function renderResult(){
     if (ln) add("", () => tr(ln[0], ln[1]));
   }
   if (R.devTaps || (cur && cur.test.develop)) add("", () => tr("自由發展的小節不評分(那裡的敲擊不算多打)。", "Development bars aren't scored (hits there don't count as extra)."));
-  const tempoZh = R.pb ? `速度 ♩=${R.bpm}(練習設定;官方沒寫速度)。` : R.practice ? `這一次用練習速度 ♩=${R.bpm}。` : "";
-  const tempoEn = R.pb ? ` Tempo ♩=${R.bpm} (practice setting; not in the syllabus).` : R.practice ? ` Practice tempo ♩=${R.bpm} this time.` : "";
+  const pbOff = R.pb && !R.free;
+  const tempoZh = pbOff ? `速度 ♩=${R.bpm}(練習設定;官方沒寫速度)。` : R.practice ? `這一次用練習速度 ♩=${R.bpm}。` : "";
+  const tempoEn = pbOff ? ` Tempo ♩=${R.bpm} (practice setting; not in the syllabus).` : R.practice ? ` Practice tempo ♩=${R.bpm} this time.` : "";
   if (byMic) add("disclaimer", () => tr(MIC_TEXT.disclaimer[0] + tempoZh, MIC_TEXT.disclaimer[1] + tempoEn));
   else add("disclaimer", () => tr(`只看敲擊的時間,不看力度與音色${multi ? "(鬼音也算一下:鼓墊沒有力度)" : ""};容許範圍是練習設定。這是練習回饋,不是考試分數,也不能換算成官方分數。${tempoZh}`,
     `Timing only (not dynamics or tone${multi ? "; ghost notes count as hits — the pads have no dynamics" : ""}); the tolerance is a practice setting. This is practice feedback, not an exam mark, and it doesn't convert to one.${tempoEn}`));
+  // 視奏分頁:這一題的難度「太簡單 / 剛好 / 太難」(+1 / 0 / −1;自動升降的那一句也寫在這裡)
+  if (R.free && R.cat) paintVotes(box, R, v => vote(R, v));
   box.hidden = false;
+}
+function vote(R, v){
+  if (R !== lastResult || !R.free) return;
+  const from = R.lv != null ? R.lv : levels.get(R.cat), to = levels.vote(R.cat, R, v), max = levels.max(R.cat), cat = R.cat;
+  R.lvText = () => levelText({ vote: v, from, to, max, hint: CAT_HINT[cat] });
+  const keep = document.activeElement && document.activeElement.closest(".diff-fb") ? v : null;
+  renderResult(); renderLevel(); renderSum(); renderStats();
+  if (keep) { const b = $("alongResult").querySelector(`.diff-fb [data-v="${keep}"]`); if (b) b.focus({ preventScroll: true }); }
+  announce(R.lvText());
 }
 $("playAlong").onclick = () => startPerform();
 
@@ -1283,25 +1373,21 @@ function renderLog(){
   $("logMin").textContent = Math.floor(today(SS.log).sec / 60);
 }
 $("goalBtn").onclick = () => { SS.goal = nextGoal(SS.goal); save(); renderLog(); };
-/* 各級練過題數(這個考試系統;沒選考試時 RSL):長條 = 鼓墊的節奏命中率(練習回饋,檢定頁不放) */
+/* 各分類練過題數 + 目前難度(視奏分頁的題目;長條 = 鼓墊或麥克風的節奏命中率,練習回饋,檢定頁不放) */
 function renderStats(){
-  const sys = sysNow(), rows = [];
-  for (let g = 0; g <= 8; g++) { const st = SS.stats[keyOf(sys, g)]; if (st && st.n) rows.push([g, st]); }
-  $("statsSub").textContent = sys === "rsl" ? "RSL" : "Trinity Playback";
+  $("statsSub").textContent = "";
   const box = $("statsList");
-  box.innerHTML = rows.length ? rows.map(([g, st]) => {
-    const p = st.total ? Math.round(100 * st.hits / st.total) : null;
-    return `<div class="srow"><span>${gl(g, sys)}</span><div class="bar"><i class="${p != null && p < 70 ? "low" : ""}" style="width:${p || 0}%"></i></div><small>${tr(`${st.n} 題`, `${st.n}`)}${p != null ? ` · ${p}%` : ""}</small></div>`;
-  }).join("") : `<p class="stats-empty"></p>`;
-  const empty = box.querySelector(".stats-empty");
-  if (empty) pairText(empty, () => tr("正式打完一題之後,這裡會顯示各級練過幾題(長條 = 鼓墊或麥克風的節奏命中率)。", "Perform a test to see how many you've done per grade (bar = pad / mic hit rate)."));
+  box.innerHTML = CATS.map(c => {
+    const st = SS.cats[c] || { n: 0, hits: 0, total: 0 }, p = st.total ? Math.round(100 * st.hits / st.total) : null;
+    return `<div class="srow"><span>${catName(c)} · ${lvName(levels.get(c))}</span><div class="bar"><i class="${p != null && p < 70 ? "low" : ""}" style="width:${p || 0}%"></i></div><small>${tr(`${st.n} 題`, `${st.n}`)}${p != null ? ` · ${p}%` : ""}</small></div>`;
+  }).join("");
 }
 
 /* ══ 模擬考(S14;js/shared/mock.js):一題,照官方準備時間計時(不能暫停、不能提早結束)→ 時間到自動正式打一次 → 結果 ══ */
 function startMock(){
   const ex = curExam();
   if (ex.auto || mode !== "exam" || !practicable(ex.system, ex.grade)) return;
-  stopAll();
+  stopAll(); xp = false;
   mock.begin({ sys: ex.system, grade: ex.grade, stage: "prep", result: null, stopped: false }, { sys: ex.system, grade: ex.grade });
   newTest();
   if (!cur || cur.key !== keyOf(ex.system, ex.grade)) { mock.close(); render(); return; }
@@ -1315,10 +1401,19 @@ $("mockBtn").onclick = () => {
   if (mock.running()) { mock.close(); stopAll(); render(); return; }   // 停止(不算,回到檢定頁)
   startMock();
 };
+/* 檢定頁的「練習這一級的視奏」:在檢定頁直接出這一級的題目(準備 → 正式打 → 回饋 → 正確版本);考試摘要、規格卡藏起來,模擬考卡當標題列(回到規格 / 開始模擬考) */
+function startXp(){
+  const ex = curExam();
+  if (mode !== "exam" || mock.running() || ex.auto || !practicable(ex.system, ex.grade)) return;
+  if (mock.state !== "idle") mock.close();
+  xp = true; render(); cardToTop($("mockCard"));
+}
 $("mockClose").onclick = () => {
-  const st = mock.state, g = mock.data ? mock.data.grade : curExam().grade;
+  const st = mock.state;
+  if (xpOn()) { xp = false; stopAll(); render(); window.scrollTo({ top: 0 }); return; }   // 檢定頁的練習 → 回到規格
   mock.close();
-  if (st === "result") { ctx.showView("sight", String(g)); return; }   // 結果:到視奏分頁看這一題的譜、聽正確版本
+  // 結果:在檢定頁看這一題的譜、聽正確版本(同一題,檢定頁的練習畫面)
+  if (st === "result" && cur && !cur.free && cur.key === target().key) { xp = true; render(); cardToTop($("mockCard")); return; }
   render(); window.scrollTo({ top: 0 });
 };
 $("mockMetro").onclick = () => $("optMetro").click();
@@ -1333,6 +1428,15 @@ function renderMockCard(){
   const P = pb ? null : specOf(sys, g), sec = pb ? ((dataOf("trinity") && dataOf("trinity").playback.flow.studySec) || 30) : P && P.prepSec;
   const src = pb ? (dataOf("trinity") ? V.srcOf("trinity", dataOf("trinity").playback.flow.src.p) : "") : P ? V.srcOf("rsl", P.src.p) : "";
   const prepName = () => (pb ? tr(`看譜 ${sec} 秒`, `Study ${sec} s`) : tr(`準備 ${sec} 秒`, `Prepare ${sec} s`));
+  if (xpOn()) {
+    $("mockOpts").hidden = true;
+    paintCard($, { title: () => tr("練習這一級的視奏", "Practise this grade"), sub: name,
+      text: () => (pb ? tr(`依這一級 Playback 的參數出題:看譜 ${sec} 秒 → 正式打 → 練習回饋 → 聽正確版本。官方配伴奏音軌,App 只有拍點。`,
+        `A chart from this grade's Playback parameters: ${sec} s to study → perform → feedback → hear it back. The exam has a backing track; the App has a click only.`)
+        : tr(`依這一級視奏的參數出題:準備 ${sec} 秒 → 正式打 → 練習回饋 → 聽正確版本。`, `A test from this grade's parameters: ${sec} s to prepare → perform → feedback → hear it back.`)),
+      btn: { label: () => mockLabel("idle") }, close: { label: () => tr("回到規格", "Back to the spec") }, note: () => TS("practiceOnly") });
+    return;
+  }
   if (ms === "aborted") {
     paintCard($, { title: () => tr("模擬考已中止", "Mock exam stopped"), sub: name, text: () => abortText(mock.reason),
       btn: practicable(ex.system, ex.grade) && !ex.auto ? { label: () => mockLabel("aborted") } : null, close: { label: () => tr("回到規格", "Back to the spec") } });
@@ -1355,7 +1459,8 @@ function renderMockCard(){
     paintCard($, { title: () => tr("模擬考結果", "Mock exam result"), sub: name,
       text: () => (mock.data.result && mock.data.result.src === "mic" ? tr("節奏吻合度只看麥克風聽到的敲擊時間(全部鼓件一條;練習設定的容許範圍)。", "Rhythm match is mic timing only (all drums as one; practice-setting tolerance).")
         : tr("節奏吻合度只看觸控鼓墊的敲擊時間(練習設定的容許範圍)。", "Rhythm match is pad timing only (practice-setting tolerance).")),
-      rows: rows(), btn: practicable(ex.system, ex.grade) && !ex.auto ? { label: () => mockLabel("result") } : null, close: { label: () => tr("看譜、聽正確版本", "See the chart & hear it") } });
+      rows: rows(), btn: practicable(ex.system, ex.grade) && !ex.auto ? { label: () => mockLabel("result") } : null,
+      close: cur && !cur.free && cur.key === keyOf(ex.system, ex.grade) ? { label: () => tr("看譜、聽正確版本", "See the chart & hear it") } : { label: () => tr("回到規格", "Back to the spec") } });
     return;
   }
   if (ms === "run") {
