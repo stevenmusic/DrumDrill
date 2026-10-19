@@ -55,7 +55,14 @@ const TASKS = [
       { sel: "#e-playBtn", say: "聽題目", start: true, wait: 600 }
     ],
     check: async page => page.evaluate(() => (window.__ear.state.kind === "listen" || window.__ear.state.listened > 0 ? null : "沒有開始播:" + JSON.stringify(window.__ear.state.kind))),
-    next: { sel: "#e-feedback", words: ["聽", "預備", "Listen", "Count"] } }
+    next: { sel: "#e-feedback", words: ["聽", "預備", "Listen", "Count"] } },
+  // 今日練習(兩個 App 同一個任務):打開技巧分頁 → 按「開始今天的練習」→ 第一段(暖身)就在練了;卡片與按鈕在第一個畫面
+  { name: "打開技巧分頁、開始今天的練習", store: onboarded({ view: "tech" }),
+    first: [{ sel: "#t-dailyCard", say: "今日練習(進度一行)" }, { sel: "#t-qTitle", say: "這一段的標題" }, { sel: "#t-playBtn", say: "▶ 示範" }],
+    steps: [{ sel: "#t-dailyCard .daily-btn", say: "開始今天的練習", start: true, wait: 1200 }],
+    check: async page => page.evaluate(() => { const t = window.__tech, s = t && t.dseg;
+      return s && s.i === 0 && !document.getElementById("t-dailyStep").hidden && !document.querySelector('#subSeg [aria-pressed="true"]') ? null : "沒有開始第一段:" + JSON.stringify(s && { k: s.k, i: s.i }); }),
+    next: { sel: "#t-dailyStep, #t-dailyCard", words: ["下一段", "Next part"] } }
 ];
 // @app-end
 

@@ -180,7 +180,7 @@ function renderTitle(){
   if (dseg && target && target.daily) {   // 今日練習:標題 = 關卡(或暖身)的名稱,標籤 = 路線第幾關、速度 → 目標
     const nm = dseg.k === "warm" ? warmName(dseg.item) : dseg.level.name;
     $("qTitle").textContent = Array.isArray(nm) ? tr(nm[0], nm[1]) : nm;
-    $("qTags").innerHTML = dcard.segTags({ ...dseg, bpm }).map(t => `<span class="q-tag">${t}</span>`).join("");
+    $("qTags").innerHTML = dcard.segTags({ ...dseg, bpm: target.bpm }).map(t => `<span class="q-tag">${t}</span>`).join("");
     renderIntro(); return;
   }
   const pt = target && target.pattern;
