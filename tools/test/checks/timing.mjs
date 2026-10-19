@@ -112,7 +112,7 @@ export default function check(ok){
     };
     {
       const r = mk(0.1), f = r.lanes.foot, ok0 = mk(0);
-      ok(f.lag && r.lagLanes.join() === "foot" && f.score < 90 && r.score < ok0.score && laneNote(r, LANES[3]) && laneNote(r, LANES[3])[0].includes("大鼓・腳踩"),
+      ok(f.lag && r.lagLanes.join() === "foot" && f.score < 90 && r.score < ok0.score && laneNote(r, LANES[3]) && laneNote(r, LANES[3])[0].includes("大鼓 / 腳踩 Hi-hat"),
         `大鼓單獨晚 100 ms:應該只有大鼓有旗標、那條 < 90 分、總分比沒晚低(${ok0.score}),實際 lag=${r.lagLanes} 大鼓 ${f.score} 分、總分 ${r.score}`);
     }
     for (const late of [0.3, 0.6]) {
@@ -121,7 +121,7 @@ export default function check(ok){
       ok(f.score <= 20 && f.hits <= 1, `大鼓單獨晚 ${late * 1000} ms:大鼓那條不能高分,實際 ${f.score} 分、命中 ${f.hits}/${f.total}`);
       ok(r.score < 90, `大鼓單獨晚 ${late * 1000} ms:總分不能高分(< 90),實際 ${r.score}`);
       ok(f.lag && r.lagLanes.join() === "foot" && Math.abs(f.offsetMs - late * 1000) <= 20, `大鼓單獨晚 ${late * 1000} ms:應該只有大鼓有 lag 旗標、剩的偏移 ≈ ${late * 1000},實際 lag=${f.lag} lagLanes=${r.lagLanes} offset=${f.offsetMs}`);
-      ok(note && note[0].includes("大鼓・腳踩") && note[0].includes("慢約") && /Kick · Foot \d+ ms behind/.test(note[1]), `大鼓單獨晚 ${late * 1000} ms 的提示:${note}`);
+      ok(note && note[0].includes("大鼓 / 腳踩 Hi-hat") && note[0].includes("慢約") && /Kick \/ Foot hi-hat \d+ ms behind/.test(note[1]), `大鼓單獨晚 ${late * 1000} ms 的提示:${note}`);
       ok(r.lanes.cym.hits === 16 && r.lanes.drum.hits === 4 && !r.lanes.cym.lag && !r.lanes.drum.lag, `大鼓單獨晚 ${late * 1000} ms:鈸、鼓應該全部命中、沒有旗標`);
     }
     const small = mk(0.04);

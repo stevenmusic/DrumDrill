@@ -77,7 +77,8 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
     if (list.length < 2) { q = null; $("rdScore").innerHTML = ""; say(() => tr("至少選兩個鼓件。", "Pick at least two drums.")); paintAns(); return; }
     q = drill.pick(list, setting(), Math.random, last); last = q; t0 = performance.now();
     // 譜和作答格子之間這一行不空著:平常寫題目,答了寫對錯
-    say(() => tr("這是哪個鼓件?點下面作答", "Which drum? Tap below"));
+    // 60 秒 / 連對還沒開始:不寫題目(先按「開始」)
+    say(() => (R.mode === "practice" || drill.running ? tr("哪個鼓件?", "Which drum?") : ""));
     paintAns();
     draw();
   }
@@ -116,7 +117,8 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
       box.dataset.sig = sig;
       box.innerHTML = list.map(id => `<button type="button" class="opt rd-ans" data-v="${id}"></button>`).join("");
     }
-    box.style.setProperty("--n", String(Math.min(4, Math.max(2, list.length <= 4 ? list.length : list.length <= 6 ? 3 : 4))));
+    const n = Math.min(4, Math.max(2, list.length <= 4 ? list.length : list.length <= 6 ? 3 : 4));
+    box.style.setProperty("--n", String(n)); box.dataset.n = String(n);   // 4 欄(全部記號)在折疊機上也是 4 欄,字可以換行
     for (const b of box.children) {
       b.textContent = nameOf(b.dataset.v);
       b.classList.toggle("wrong", tapped != null && ok === false && b.dataset.v === tapped);
@@ -134,13 +136,14 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
       .map(([v, zh, en]) => `<button type="button" class="opt" data-v="${v}" aria-pressed="${R.mode === v}">${tr(zh, en)}</button>`).join("");
     for (const [id, zh, en] of [["rdQuickLbl", "鼓件", "Drums"], ["rdPiecesLbl", "自訂", "Custom"], ["rdModeLbl", "模式", "Mode"]]) $(id).textContent = tr(zh, en);
     pairText($("rdQuickHint"), () => tr("每一格都包含前一格的鼓件", "Each one adds to the one before"));
-    pairText($("rdNote"), () => tr("自訂:點一下加入或拿掉(至少兩個)。記號跟視奏的圖例同一套;題目與最常錯的加倍出現都是 App 的練習設定。", "Custom: tap to add or remove (two or more). Same symbols as the drum key; the doubled misses are a practice setting."));
+    pairText($("rdNote"), () => tr("自訂:點一下加入或拿掉(至少兩個)", "Custom: tap to add or remove (two or more)"));
   }
   function setText(){
     const k = key(); if (!k) return "";
     const cur = valid().slice().sort().join(","), hit = PRESETS.find(p => p[3](k).slice().sort().join(",") === cur);
     const n = valid().length;
-    return `${hit ? tr(hit[1], hit[2]) : tr("自訂", "Custom")} · ${tr(`${n} 個鼓件`, `${n} drums`)}`;
+    // 快捷的名字已經亮在下面的按鈕上:標題只寫幾個鼓件(自訂才寫「自訂 ·」)
+    return `${hit ? "" : tr("自訂 · ", "Custom · ")}${tr(`${n} 個鼓件`, `${n} drums`)}`;
   }
   function paintTop(){
     pairText($("rdSet"), setText);
@@ -158,7 +161,7 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
   function paintMiss(){
     const t = drill.top(setting());
     pairText($("rdMiss"), () => (t.length ? tr("最常錯:", "Most missed: ") + t.map(x => tr(`把${nameOf(x.target)}看成${nameOf(x.answer)}(${x.n} 次)`, `${nameOf(x.target)} read as ${nameOf(x.answer)} (${x.n}×)`)).join(tr(";", "; "))
-      + tr("。下一輪這幾個會多出現(練習設定)。", ". These come up more often next round (practice setting).") : ""));
+      + tr("。下一輪這幾個會多出現。", ". These come up more often next round.") : ""));
   }
   function showEnd(res){
     endRes = res; clearTimeout(nextTimer); lock = true;

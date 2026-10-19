@@ -688,7 +688,8 @@ function renderMic(){
   const note = $("alongMicNote");
   if (!micOn()) micFail = null;   // 開關關掉了(包括在另一個模組關的):忘掉上一次打開失敗的原因
   note.classList.toggle("warn", !!micFail);
-  pairText(note, () => tr(...(micFail ? micFailText(micFail) : MIC_TEXT.note)));
+  // 用法一行;打開以後才多一句細節(鼓墊不出聲、只有預備拍)
+  pairText(note, () => (micFail ? tr(...micFailText(micFail)) : tr(...MIC_TEXT.note) + (micOn() ? " " + tr(...MIC_TEXT.onNote) : "")));
 }
 $("alongMic").onchange = () => { if (ctx && ctx.setMicPref) ctx.setMicPref($("alongMic").checked); micFail = null; renderMic(); };
 
@@ -764,6 +765,7 @@ function finishPerform(){
   } else {
     phase = "result";
     doReveal();
+    if (active && !mockRes()) requestAnimationFrame(() => bringIntoView($("alongResult")));   // 結果沒露出來就捲過去
     say(() => tr("打完了。看下面的正確的譜與練習回饋。", "Done. See the correct chart and the feedback below."), false, true);
     announce(tr("打完了。", "Done. ") + resultSpeech(cur.result) + (cur.result.lvText ? " " + cur.result.lvText() : ""));
   }
@@ -994,6 +996,7 @@ function finishPass(){
   if (cur.result.taps) { st.hits += cur.result.all.hits; st.total += cur.result.all.total; addSec(0, 0, cur.result.all.hits, cur.result.all.total); }
   save(); renderLog(); renderStats();
   renderResult(); syncButtons();
+  if (active && !mockRes()) requestAnimationFrame(() => bringIntoView($("alongResult")));
   say(() => tr("第二次完成:下面是每一句的節奏練習回饋。", "Play 2 done: rhythm feedback for each phrase below."), false, true);
   announce(tr("第二次完成。", "Play 2 done. ") + resultSpeech(cur.result) + (cur.result.lvText ? " " + cur.result.lvText() : ""));
   if (mockRes()) { mockRes().r = cur.result; mockRes().stage = "done"; finishMock(); }   // 模擬考:第二次完成 = 結果
@@ -1317,7 +1320,7 @@ function renderResult(){
   if (!R) { box.hidden = true; return; }
   box.innerHTML = "";
   const add = (cls, fn) => { const p = document.createElement("p"); if (cls) p.className = cls; box.appendChild(p); pairText(p, fn); return p; };
-  const line = r => tr(`命中 ${r.hits} / ${r.total} · 漏 ${r.missed} · 多 ${r.extra} · 平均差 ${r.meanErrorMs} 毫秒(容許 ±${r.toleranceMs} 毫秒)`,
+  const line = r => tr(`命中 ${r.hits} / ${r.total} · 漏打 ${r.missed} · 多打 ${r.extra} · 平均差 ${r.meanErrorMs} 毫秒(容許 ±${r.toleranceMs} 毫秒)`,
     `Hit ${r.hits} / ${r.total} · missed ${r.missed} · extra ${r.extra} · average ${r.meanErrorMs} ms off (±${r.toleranceMs} ms allowed)`);
   const keys = cur.lanes.length === 1 ? "J / F" : "F / J / K";
   const orKeys = (zh, en) => (showKeys() ? [`${zh},或用鍵盤 ${keys}。`, `${en}, or use keys ${keys}.`] : [`${zh}。`, `${en}.`]);
@@ -1346,7 +1349,7 @@ function renderResult(){
       for (const row of R.rows) {
         const li = document.createElement("li"); ol.appendChild(li);
         const r = row.r;
-        pairText(li, () => tr(`第 ${row.i + 1} 句(第 ${row.from}–${row.to} 小節):${r.score == null ? "—" : r.score} / 100 · 命中 ${r.hits} / ${r.total} · 漏 ${r.missed} · 多 ${r.extra}`,
+        pairText(li, () => tr(`第 ${row.i + 1} 句(第 ${row.from}–${row.to} 小節):${r.score == null ? "—" : r.score} / 100 · 命中 ${r.hits} / ${r.total} · 漏打 ${r.missed} · 多打 ${r.extra}`,
           `Phrase ${row.i + 1} (bars ${row.from}–${row.to}): ${r.score == null ? "—" : r.score} / 100 · hit ${r.hits} / ${r.total} · missed ${r.missed} · extra ${r.extra}`));
       }
       add("", () => tr("全部:", "All: ") + line(R.all));
@@ -1354,9 +1357,9 @@ function renderResult(){
       const ln = laneNote(R.all, cur.lanes); if (ln) add("", () => tr(ln[0], ln[1]));
     }
   }
+  // 固定說明一行
   if (byMic) add("disclaimer", () => tr(...MIC_TEXT.disclaimer));
-  else add("disclaimer", () => tr("只看敲擊的時間,不看力度與音色;容許範圍是練習設定。這是練習回饋,不是考試分數,也不能換算成官方分數。",
-    "Timing only (not dynamics or tone); the tolerance is a practice setting. This is practice feedback, not an exam mark, and it doesn't convert to one."));
+  else add("disclaimer", () => tr("只評時間 · 練習回饋,不是考試分數", "Timing only · practice feedback, not an exam mark"));
   if (R.free && R.cat) paintVotes(box, R, v => vote(R, v));   // 沒選考試:這一題的難度(下一題照新的難度出)
   box.hidden = false;
 }

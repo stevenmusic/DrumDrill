@@ -40,7 +40,7 @@ const TASKS = [
       { sel: "#s-rdAns .opt", say: "作答一題", wait: 300 }
     ],
     check: async page => page.evaluate(() => { const s = window.__sight.reading.state.setting, t = document.getElementById("s-rdSet").textContent;
-      return s === "hh,kick,snare,tomFloor,tomHi,tomMid" && /\+ Toms · 6/.test(t) ? null : "不是 + Toms:" + s + " / " + t; }),
+      return s === "hh,kick,snare,tomFloor,tomHi,tomMid" && /6 個鼓件|6 drums/.test(t) && document.querySelector('#s-rdQuick [data-v="toms"]').getAttribute("aria-pressed") === "true" ? null : "不是 + Toms:" + s + " / " + t; }),
     next: { sel: "#s-rdMsg, #s-rdSet", words: ["答案", "對了", "Toms", "Right", "It was"] } },
   { name: "考 RSL 2 級的人想練這一級的視奏題", store: onboarded({ exam: { system: "rsl", grade: 2 }, view: "tech" }), steps: [
       { sel: '#tabbar [data-view="exam"]', say: "檢定分頁", wait: 600 },

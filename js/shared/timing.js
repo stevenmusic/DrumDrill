@@ -97,7 +97,7 @@ export const LANES = {
   3: [
     { id: "cym", label: ["鈸", "Cymbal"], key: "f", pieces: ["hh", "hhClosed", "hhOpen", "ride", "rideBell", "crash"] },
     { id: "drum", label: ["鼓", "Drum"], key: "j", pieces: ["snare", "xstick", "tomHi", "tomMid", "tomFloor"] },
-    { id: "foot", label: ["大鼓・腳踩", "Kick · Foot"], key: "k", pieces: ["kick", "hhFoot"] }
+    { id: "foot", label: ["大鼓 / 腳踩 Hi-hat", "Kick / Foot hi-hat"], key: "k", pieces: ["kick", "hhFoot"] }
   ]
 };
 export const SAME_TIME = 0.04;      // 同一條 lane 相差這麼近的擊打算一下(兩手、手腳一起打;跟 PianoDrill expectedOnsets 一樣)

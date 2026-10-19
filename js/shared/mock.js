@@ -90,7 +90,8 @@ export const mockLabel = state => (state === "run" ? tr("停止模擬考", "Stop
 export function paintCard($, { title, sub = "", text, rows = null, btn = null, close = null, note = resultNote }){
   pairText($("mockTitle"), title);
   $("mockSub").textContent = sub;
-  pairText($("mockText"), text || (() => ""));
+  const tx = text || (() => "");
+  pairText($("mockText"), tx); $("mockText").hidden = !tx().trim();   // 沒有說明就不留空行
   const list = $("mockList");
   if (rows && rows.length) { list.hidden = false; renderRows(list, rows); } else { list.hidden = true; list.innerHTML = ""; }
   $("mockBtn").hidden = !btn;
@@ -98,5 +99,6 @@ export function paintCard($, { title, sub = "", text, rows = null, btn = null, c
   $("mockClose").hidden = !close;
   if (close) pairText($("mockCloseLabel"), close.label);
   $("mockBtn").parentElement.classList.toggle("one", !btn || !close);
-  pairText($("mockNote"), note);
+  const nt = note || (() => "");   // note: null = 不寫(practiceOnly 已經在題目卡上)
+  pairText($("mockNote"), nt); $("mockNote").hidden = !nt().trim();
 }

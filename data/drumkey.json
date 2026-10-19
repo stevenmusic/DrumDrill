@@ -19,7 +19,7 @@
     "short": ["單線譜為 App 的選擇", "1-line: App's choice"]
   },
   "pieces": {
-    "kick": { "name": ["大鼓", "Bass drum"], "abbr": "BD", "step": "F", "oct": 4, "head": "normal", "src": "pending-pas-weinberg" },
+    "kick": { "name": ["大鼓", "Kick"], "abbr": "BD", "step": "F", "oct": 4, "head": "normal", "src": "pending-pas-weinberg" },
     "tomFloor": { "name": ["落地鼓", "Floor tom"], "abbr": "FT", "step": "A", "oct": 4, "head": "normal", "src": "pending-pas-weinberg", "note": ["Trinity Playback 表的 LT(Low Tom)也用這個", "Also used for Trinity Playback LT (low tom)"] },
     "snare": { "name": ["小鼓", "Snare"], "abbr": "SD", "step": "C", "oct": 5, "head": "normal", "src": "pending-pas-weinberg" },
     "tomMid": { "name": ["Tom 2", "Tom 2"], "abbr": "MT", "step": "D", "oct": 5, "head": "normal", "src": "pending-pas-weinberg" },

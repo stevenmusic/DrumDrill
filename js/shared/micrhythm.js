@@ -79,13 +79,13 @@ export function dropBleed(hits, sounds, { window = BLEED_WINDOW, tol = BLEED_TOL
 /* 畫面上的字 [中, 英] */
 export const MIC_TEXT = {
   label: ["用麥克風評分節奏(選用)", "Score my rhythm with the mic (optional)"],
-  note: ["在真的鼓(或打擊板)上打,麥克風只聽每一下的時間;勾了以後這一次不用觸控鼓墊(不出聲、不計分),正式打時只有預備拍的拍點。整段錄完才在這台裝置上分析,不存檔、不上傳。",
-    "Play a real kit (or practice pad); the mic only listens for when each stroke lands. While on, the touch pads are off for the take (no sound, not scored) and only the count-in clicks. Analysed on this device after the take — never saved or uploaded."],
+  // 開關下面一行用法;打開以後才多一句細節(onNote)
+  note: ["在真的鼓上打,只聽時間;不存檔、不上傳。", "Play a real kit; timing only. Never saved or uploaded."],
+  onNote: ["這一次觸控鼓墊不出聲、不計分,只有預備拍的拍點。", "This take: pads silent and unscored; count-in clicks only."],
   starting: ["打開麥克風…(第一次會問權限)", "Opening the microphone… (asks for permission the first time)"],
   head: ["練習回饋 · 節奏(麥克風)", "Practice feedback · rhythm (microphone)"],
   silent: ["沒有聽到鼓聲:把裝置放近一點、不要蓋住麥克風,再打一次。", "No drums heard — move the device closer, keep the mic uncovered and try again."],
-  disclaimer: ["僅供練習參考,不是官方評分;只評時間(全部鼓件合併成一條,不分鼓件、不看力度)。容許範圍、偵測靈敏度、扣掉 App 自己聲音的規則都是練習設定。",
-    "For practice only — not an official mark. Timing only (all drums merged; no per-drum or dynamics check). Tolerance, detection sensitivity and removal of the App's own sounds are practice settings."]
+  disclaimer: ["只評時間(麥克風,全部鼓件一條)· 練習回饋,不是考試分數", "Timing only (mic, all drums as one) · practice feedback, not an exam mark"]
 };
 export function micFailText(reason){
   if (reason === "denied") return ["沒有取得麥克風權限,這一次照觸控鼓墊評分。要用麥克風:到瀏覽器 / 系統設定允許麥克風再試。",
