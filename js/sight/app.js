@@ -53,6 +53,7 @@ import { addLog, cleanLog, renderLog as paintLog, today, nextGoal, cleanGoal } f
 import { createMock, abortText, paintCard, resultNote, mockLabel, cardToTop } from "../shared/mock.js";
 import { createMicTake, dropBleed, MIC_LANES, MIC_TEXT, micFailText } from "../shared/micrhythm.js";
 import { createLevels, levelText, paintVotes } from "../shared/level.js";
+import { createReading, cleanRead } from "./reading.js";
 import "./strings.js";
 const T = scoped("sight");
 
@@ -96,6 +97,7 @@ const SS = (() => {
   }
   s.log = cleanLog(s.log);
   s.goal = cleanGoal(s.goal);
+  s.read = cleanRead(s.read);
   return s;
 })();
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(SS)); } catch (e) {} };
@@ -138,7 +140,7 @@ const levels = createLevels({ store: SS, save, max: Object.fromEntries(CATS.map(
 /* 現在要出哪一題:檢定頁照考試級數;視奏分頁照分類與難度 */
 function target(){
   if (mode === "exam") { const ex = curExam(); return { free: false, sys: ex.system, g: ex.grade, key: keyOf(ex.system, ex.grade) }; }
-  const cat = freeCat, lv = levels.get(cat), L = CAT_LEVELS[cat][lv - 1];
+  const cat = CATS.includes(freeCat) ? freeCat : "rhythm", lv = levels.get(cat), L = CAT_LEVELS[cat][lv - 1];
   return { free: true, cat, lv, sys: L.sys, g: L.g, key: `${cat}-${lv}` };
 }
 /* 題目卡、譜的說明、設定卡用的名字:檢定頁「RSL 3 級」;視奏分頁「節奏 · 難度 2」 */
@@ -146,7 +148,10 @@ const lvName = lv => tr(`難度 ${lv}`, `Level ${lv}`);
 const curName = c => (c.free ? `${catName(c.cat)} · ${lvName(c.lv)}` : `${sysName(c.sys)} ${gl(c.grade, c.sys)}`);
 /* 題目在畫面上(視奏分頁、模擬考進行中、檢定頁的練習) */
 const xpOn = () => mode === "exam" && xp && !mock.running();
-const onPage = () => mode === "free" || mockOn() || xpOn();
+const readOn = () => mode === "free" && freeCat === "read";
+const onPage = () => (mode === "free" && !readOn()) || mockOn() || xpOn();
+/* 認譜(視奏分頁的第一格;js/sight/reading.js):一題一個記號,答一題算一題練習 */
+const reading = createReading({ $, store: SS.read, save, drumKey: () => drumKey(), onAnswered: sec => addSec(sec, 1) });
 const dataOf = sys => (ctx && ctx.examData ? ctx.examData(sys) : null);
 const drumKey = () => (ctx && ctx.drumKey ? ctx.drumKey() : null);
 const specOf = (sys, g) => (sys === "rsl" && dataOf("rsl") && dataOf("rsl").sight ? dataOf("rsl").sight[g] : null);
@@ -191,7 +196,7 @@ export async function start(c){
     eventsAt: b => (cur ? eventsAt(b) : []),
     newTest, startPrep, startPerform, toggleListen, setBpm: v => setBpm(v), SS,
     /* 測試用:視奏分頁的分類與難度、檢定頁的「練習這一級的視奏」 */
-    get cat(){ return freeCat; }, level: c => levels.get(c || freeCat), setLevel: (c, n) => { levels.set(c, n); renderLevel(); renderStats(); }, startXp: () => startXp(), get xp(){ return xpOn(); },
+    get cat(){ return freeCat; }, reading, level: c => levels.get(c || freeCat), setLevel: (c, n) => { levels.set(c, n); renderLevel(); renderStats(); }, startXp: () => startXp(), get xp(){ return xpOn(); },
     /* 測試用:舊的「視奏分頁某一級」換成新架構的同一組參數(RSL 0–3 = 節奏、4–5 = 律動、Trinity = 樂譜,難度設成那一組;RSL 6–8 不出題 → 檢定頁的視奏) */
     goto(sys, g){
       const cat = CATS.find(c => CAT_LEVELS[c].some(L => L.sys === sys && L.g === g));
@@ -214,7 +219,7 @@ export function enter(t){
   if (mock.running() && t !== "exam") mock.abort("leave");   // 模擬考進行中離開檢定頁 = 中止
   audio.holdKit("sight");   // 回來了:不釋放整組鼓
   mode = t === "exam" ? "exam" : "free";
-  if (mode === "free" && CATS.includes(t)) freeCat = t;
+  if (mode === "free" && (CATS.includes(t) || t === "read")) freeCat = t;
   const had = cur;
   renderMic();   // 開關跟聽力共用:在聽力改過就照新的
   render();
@@ -228,6 +233,7 @@ export function enter(t){
 /* 離開(切分頁、切到背景):停止播放、準備的倒數、正式打(不算分);題目保留;模擬考進行中就中止(回來時說明)。放掉整組鼓(聽力也沒拿著的話 60 秒後釋放,小鼓保留) */
 export function leave(){
   active = false;
+  reading.leave();
   // 打開麥克風 / 錄完時 iOS 切換音訊工作階段造成的「打斷」(外框 leave + enter):不是使用者離開,模擬考不中止
   if (!mic.shielded) mock.abort("leave");
   stopAll();
@@ -248,6 +254,7 @@ export function relang(){
   $("play").setAttribute("aria-label", playKind === "listen" ? tr("停止", "Stop") : T("playAria"));
   refreshTexts();
   pads.relang(); renderMic(); renderLevel();
+  if (readOn()) reading.relang();
   relangPairs($("legend"));
   renderLog(); renderStats();
   if (mode === "exam") renderMockCard();
@@ -259,6 +266,7 @@ export function examStatus(){
   return tr("只列規格", "Spec only");
 }
 export function onKey(e){
+  if (readOn()) return;
   if (!onPage() || !cur || $("quiz").hidden) return;
   if (pads.key(e)) return;   // J / F(小鼓)、F / J / K(鈸 / 鼓 / 大鼓與腳踩 HH)= 鼓墊
   if (e.code === "Space") {
@@ -277,6 +285,7 @@ function render(){
   // 檢定頁不放練習紀錄;模擬考進行中、結果、檢定頁的練習:考試摘要(配分、等第)與規格卡藏起來(練習回饋不跟等第放在同一個畫面)
   ROOT.querySelectorAll(".pane").forEach(el => { el.hidden = !isExam || run || only || xpo; });
   $("logCard").hidden = $("statsCard").hidden = isExam;
+  if (isExam) { $("rdCard").hidden = $("rdOpts").hidden = true; reading.leave(); }
   renderLevel();
   if (run || xpo) {
     showPractice(true); $("setup").hidden = run; $("unsupported").hidden = true; $("specCards").hidden = true;
@@ -288,6 +297,11 @@ function render(){
   if (isExam) { stopAll(); showPractice(false); $("unsupported").hidden = true; $("specCards").hidden = only; renderExam(); renderMockCard(); return; }
   $("mockCard").hidden = true;
   renderStats();
+  // 認譜:只有認譜的兩張卡;視奏的卡片都收起來
+  const rd = readOn();
+  $("rdCard").hidden = $("rdOpts").hidden = !rd;
+  if (rd) { stopAll(); showPractice(false); $("unsupported").hidden = true; $("specCards").hidden = true; if (drumKey()) reading.enter(); return; }
+  reading.leave();
   const t = target();
   if (!practicable(t.sys, t.g)) { stopAll(); showPractice(false); renderUnsupported(); return; }
   showPractice(true); $("unsupported").hidden = true; $("specCards").hidden = true;
@@ -298,6 +312,7 @@ function render(){
 /* 只有說明卡的畫面重寫文字(換語言) */
 function renderStatic(){
   if (mode === "exam") { if (!mock.running() && !xpOn()) renderExam(); return; }
+  if (readOn()) return;
   const t = target();
   if (!practicable(t.sys, t.g)) renderUnsupported();
 }
@@ -315,7 +330,7 @@ function renderUnsupported(){
 }
 /* 設定卡的難度(視奏分頁才有):「難度 3」+ ▲ ▼,旁邊小字「難度階段由 App 安排(練習設定)」 */
 function renderLevel(){
-  const row = $("levelRow"), show = mode === "free";
+  const row = $("levelRow"), show = mode === "free" && !readOn();
   row.hidden = !show;
   if (!show) return;
   const cat = freeCat, lv = levels.get(cat), max = levels.max(cat);
@@ -327,7 +342,7 @@ function renderLevel(){
 }
 /* ▲ ▼:馬上換一題這個難度的 */
 function stepLevel(d){
-  if (mode !== "free" || phase === "perform") return;
+  if (mode !== "free" || readOn() || phase === "perform") return;
   const was = levels.get(freeCat), lv = levels.step(freeCat, d);
   renderLevel(); renderStats();
   if (lv !== was) { announce(tr(`${catName(freeCat)}難度 ${lv}`, `${catName(freeCat)} level ${lv}`)); newTest(); }

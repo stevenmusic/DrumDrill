@@ -28,8 +28,8 @@ const S = (() => {
   const s = { view: "tech", exam: null, onboarded: false, theme: "dark", ...saved,
     sub: { tech: "roll", exam: "tech", sight: "rhythm", ...(saved.sub || {}) } };
   s.mic = s.mic === true;   // 用麥克風評分節奏(選用;視奏、聽力共用一個開關,預設關;js/shared/micrhythm.js)
-  // 視奏分頁的子項目 = 分類(節奏 / 律動 / 樂譜;難度由 js/sight/app.js 自動調整)。舊版存的是級數 0–8 → 節奏
-  if (!["rhythm", "groove", "chart"].includes(s.sub.sight)) s.sub.sight = "rhythm";
+  // 視奏分頁的子項目 = 認譜 / 節奏 / 律動 / 樂譜(難度由 js/sight/app.js 自動調整)。舊版存的是級數 0–8 → 節奏
+  if (!["read", "rhythm", "groove", "chart"].includes(s.sub.sight)) s.sub.sight = "rhythm";
   /* 聽力分頁的題型:還沒自己選過就跟著考試系統走(Trinity → 回打 Playback;RSL、沒選考試 → 過門 Fill)。
      選過的題型在選的時候那個系統下照選的(RSL 也可以點 Playback 看說明);之後考試系統換了、選的題型不適用新系統,
      就改成新系統的預設題型(RSL → Fill、Trinity → Playback) */
@@ -59,8 +59,8 @@ const gradeShort = (g, sys = examSystem()) => g === 0 ? (sys === "rsl" ? "D" : "
 const SUBS = {
   // 技巧:PAS 40 個基本打法的四大類
   tech: () => [["roll", tr("滾奏", "Rolls")], ["diddle", tr("複點", "Diddles")], ["flam", "Flam"], ["drag", "Drag"]],
-  // 視奏:練讀譜的分類(級數只在檢定頁設;難度由 App 自動調整,js/sight/app.js)
-  sight: () => [["rhythm", tr("節奏", "Rhythm")], ["groove", tr("律動", "Groove")], ["chart", tr("樂譜", "Chart")]],
+  // 視奏:照學習順序 認譜 → 節奏 → 律動 → 樂譜(級數只在檢定頁設;難度由 App 自動調整,js/sight/app.js)
+  sight: () => [["read", tr("認譜", "Symbols")], ["rhythm", tr("節奏", "Rhythm")], ["groove", tr("律動", "Groove")], ["chart", tr("樂譜", "Chart")]],
   // 聽力:子項目 = 題型(RSL 有 Fill、Groove;Trinity 有 Playback;不適用的題型 js/ear/app.js 顯示說明)
   ear: () => [["fill", tr("過門", "Fill")], ["groove", tr("律動", "Groove")], ["playback", tr("回打", "Playback")]],
   exam: () => [["tech", tr("技巧", "Technique")], ["sight", tr("視奏", "Sight-read")], ["ear", tr("聽力", "Aural")]]   // 跟分頁列同一個短名(折疊機 280 一行放得下)

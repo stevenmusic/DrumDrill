@@ -343,3 +343,39 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 .along .along-opt span{min-width:0;overflow-wrap:anywhere}
 #mod-sight .mic-row .along-note,#mod-ear .mic-row .along-note{flex:none}
 #mod-sight .mic-row .along-note.warn,#mod-ear .mic-row .along-note.warn{color:var(--gold-bright)}
+
+/* ══ 認譜(js/sight/reading.js;跟 PianoDrill 的認音同一套樣式):題目卡(設定一行 + 譜 + 作答)、設定卡(一直看得到的按鈕列)══ */
+#s-rdCard{order:3} #s-rdOpts{order:4}
+.rd-head{display:flex;align-items:baseline;gap:6px 12px;flex-wrap:wrap}
+.rd-set{flex:1 1 auto;min-width:0;font-size:var(--fs-sm);color:var(--ivory);font-weight:700;overflow-wrap:anywhere}
+.rd-score{flex:none;font-size:var(--fs-sm);color:var(--gold-bright);font-variant-numeric:tabular-nums}
+.rd-paper{position:relative;margin-top:8px;background:var(--paper);border-radius:var(--radius-sm);min-height:150px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.rd-score-box{width:min(100%, 220px);color:#16130D}
+.rd-score-box svg{display:block}
+.rd-start{position:absolute;inset:auto;min-height:52px;padding:0 26px;font-size:var(--fs-md)}
+.rd-start[hidden]{display:none}
+.rd-msg{min-height:1.6em;margin-top:6px;text-align:center;font-size:var(--fs-md)}
+.rd-msg.ok{color:var(--teal)} .rd-msg.no{color:var(--gold-bright)}
+.rd-miss{margin-top:8px;font-size:var(--fs-xs);color:var(--muted-bright);line-height:1.5;overflow-wrap:anywhere}
+.rd-miss:empty{display:none}
+.rd-row{display:grid;grid-template-columns:4.6em minmax(0,1fr);align-items:center;gap:8px;min-width:0}
+.rd-row + .rd-row{margin-top:10px}
+.rd-row > .lbl{font-size:var(--fs-xs);color:var(--muted-bright)}
+@media (max-width:380px){ .rd-row{grid-template-columns:1fr;gap:4px} }
+.rd-seg{display:grid;gap:6px;min-width:0}
+.rd-seg2{grid-template-columns:repeat(2,minmax(0,1fr))} .rd-seg3{grid-template-columns:repeat(3,minmax(0,1fr))} .rd-seg4{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:440px){ .rd-seg4{grid-template-columns:repeat(2,minmax(0,1fr))} }
+.rd-seg .opt{min-width:0;min-height:44px;height:auto;padding:4px 6px;justify-content:center;text-align:center;white-space:normal;line-height:1.25}
+.rd-note{margin-top:10px}
+.rd-note{font-size:var(--fs-xs);color:var(--muted-bright);line-height:1.5;overflow-wrap:anywhere}
+#s-rdScore .kit-mark{fill:#16130D}
+.rd-ans-grid{display:grid;grid-template-columns:repeat(var(--n, 3),minmax(0,1fr));gap:6px;margin-top:6px}
+@media (max-width:340px){ .rd-ans-grid{grid-template-columns:repeat(min(var(--n, 3), 3),minmax(0,1fr))} }
+.rd-ans-grid .opt{min-width:0;min-height:52px;height:auto;padding:4px 6px;justify-content:center;text-align:center;white-space:normal;line-height:1.25;font-size:var(--fs-md)}
+.rd-ans-grid .opt.right{border-color:var(--teal);color:var(--teal);background:rgba(63,191,174,.12)}
+.rd-ans-grid .opt.wrong{border-color:var(--gold-bright);color:var(--gold-bright);background:rgba(200,85,61,.18)}
+.rd-ans-grid.idle{opacity:.45;pointer-events:none}
+.rd-pieces{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (min-width:700px){ .rd-pieces{grid-template-columns:repeat(4,minmax(0,1fr))} }
+/* 視奏分頁:難度在題目卡上(一直看得到,不放在收起來的設定卡) */
+#mod-sight .quiz .lvl-row{grid-column:1 / -1;margin:8px 0 0}
