@@ -37,8 +37,9 @@ const STR = {
   licenses: ["授權與出處", "Licenses"],
   privacy: ["隱私權政策", "Privacy"],
   support: ["支援", "Support"],
-  footer: ["鼓聲:Naked Drums(Wilkinson Audio,CC BY 4.0),經 ScrollScore 整理,播放時加上殘響與壓縮 · 鼓譜:OpenSheetMusicDisplay(BSD-3-Clause)。基本打法照 Percussive Arts Society《International Drum Rudiments》(© 1984 PAS)整理,鼓譜由 App 依官方寫法重新繪製,僅供練習。Trinity、RSL Rockschool、PAS 為各自的商標,本 App 與其無關。",
-    "Drums: Naked Drums (Wilkinson Audio, CC BY 4.0), organised by ScrollScore, with reverb and compression added · Notation: OpenSheetMusicDisplay (BSD-3-Clause). Rudiments follow the Percussive Arts Society International Drum Rudiments (© 1984 PAS), re-engraved by the app for practice. Trinity, RSL Rockschool and PAS are trademarks of their owners; this app is not affiliated with them."],
+  // 頁尾只寫一行簡短出處(完整的授權、修改說明、商標在 licenses.html)
+  footer: ["鼓聲 Naked Drums(CC BY 4.0)· 鼓譜 OpenSheetMusicDisplay(BSD-3-Clause)· 基本打法 © PAS",
+    "Drums: Naked Drums (CC BY 4.0) · Notation: OpenSheetMusicDisplay (BSD-3-Clause) · Rudiments © PAS"],
   obTitle: ["你在準備爵士鼓檢定嗎?", "Taking a drum exam?"],
   obSub: ["選好考試和級數,會打開「檢定」分頁:技巧、視奏、聽力都照這一級。之後隨時可以在「檢定」分頁更改。",
     "Pick a board and grade: Exams opens set to that grade for technique, sight-reading and aural. Change any time in Exams."],

@@ -214,7 +214,8 @@ function render(){
   ROOT.classList.toggle("mock-run", run);
   // 檢定頁不放練習紀錄;模擬考進行中、結果:考試摘要(配分、等第)與規格卡藏起來(練習回饋不跟等第放在同一個畫面)
   ROOT.querySelectorAll(".pane").forEach(el => { el.hidden = !isExam || run || only; });
-  $("logCard").hidden = $("statsCard").hidden = isExam;
+  $("logCard").hidden = isExam;
+  if (isExam) $("statsCard").hidden = true;
   if (run) {
     showPractice(true); $("setup").hidden = true; $("unsupported").hidden = true; $("specCards").hidden = true;
     renderMockCard(); refreshTexts(); syncButtons();
@@ -1193,7 +1194,11 @@ function syncButtons(){
   $("playBtn").disabled = !has || busy && !playKind || !!mr;   // 模擬考:不能重聽、不能聽整份譜
   $("nextBtn").hidden = !!mr && !rsl;
   $("nextBtn").disabled = !has || !!mr && mr.stage !== "done";   // 模擬考:這一題做完才能下一題
-  $("revealBtn").hidden = !rsl || !!mr; $("studyBtn").hidden = !has || rsl; $("countdown").hidden = !has || rsl;
+  // 「下一題」是次要動作(像視奏的「新題目」);模擬考裡這一題做完,「下一題 / 看結果」才是主要動作
+  $("nextBtn").classList.toggle("primary", !!mr); $("nextBtn").classList.toggle("ghost", !mr);
+  // 「看答案」聽過一次題目才出現,答完(選了譜、揭曉了)就藏起來
+  $("revealBtn").hidden = !rsl || !!mr || !cur.listened || cur.revealed || cur.chosen != null;
+  $("studyBtn").hidden = !has || rsl; $("countdown").hidden = !has || rsl;
   $("revealBtn").disabled = !has || cur.revealed;
   $("studyBtn").disabled = !has || playKind === "pass" || !!mr;   // 模擬考:看譜時間不能提早結束
   lockTempo();
@@ -1261,9 +1266,9 @@ function renderMeta(){
   if (active) fitTags();
 }
 function renderSum(){
-  const sys = sysNow(), g = gradeNow(sys);
-  const parts = [freeLevel() ? `${tr(...TYPE_LABEL[type])} · ${lvName(g + 1)}` : `${sysName(sys)} ${gl(g, sys)}`];
-  if (cur && cur.sys === sys) parts.push(cur.sys === "rsl" ? `♩=${bpmNow()}` : `♩=${bpmNow()} ${tr("練習速度", "practice")}`);
+  // 收起來的一行只寫題目卡(標題、標籤)沒有的:題型、難度、考試名稱、「練習」都已經在題目卡上
+  const sys = sysNow(), parts = [];
+  parts.push(cur && cur.sys === sys ? `♩=${bpmNow()}` : T("tempo"));
   if (sys === "trinity" && SS.hideChart) parts.push(T("optHide"));
   $("sum").textContent = parts.join(" · ");
 }
@@ -1409,12 +1414,13 @@ function renderStats(){
     if (f) { add(tr("過門 · 選譜", "Fill · pick"), f.ok, f.picks, f.picks); add(tr("過門 · 回打", "Fill · rhythm"), f.hits, f.total, f.n); }
     if (gr) add(tr("律動 · 回打", "Groove · rhythm"), gr.hits, gr.total, gr.n);
   } else { const p = st("playback"); if (p) add(tr("回打 · 第二次", "Playback · play 2"), p.hits, p.total, p.n); }
-  $("statsSub").textContent = `${sysName(sys)} ${gl(g, sys)}`;
+  // 沒有資料:整張藏起來(檢定頁本來就不放)
+  $("statsCard").hidden = mode === "exam" || !rows.length;
+  // 沒選考試:不寫考試名稱、級名(跟視奏分頁一樣),寫這個題型的難度
+  $("statsSub").textContent = freeLevel() ? lvName(g + 1) : `${sysName(sys)} ${gl(g, sys)}`;
   const box = $("statsList");
-  box.innerHTML = rows.length ? rows.map(r => `<div class="srow"><span></span><div class="bar"><i class="${r.p != null && r.p < 70 ? "low" : ""}" style="width:${r.p || 0}%"></i></div><small>${r.p == null ? "—" : r.p + "%"} · ${r.cnt}</small></div>`).join("") : `<p class="stats-empty"></p>`;
+  box.innerHTML = rows.map(r => `<div class="srow"><span></span><div class="bar"><i class="${r.p != null && r.p < 70 ? "low" : ""}" style="width:${r.p || 0}%"></i></div><small>${r.p == null ? "—" : r.p + "%"} · ${r.cnt}</small></div>`).join("");
   [...box.querySelectorAll(".srow > span")].forEach((el, i) => { el.textContent = rows[i].name; });
-  const empty = box.querySelector(".stats-empty");
-  if (empty) pairText(empty, () => tr("做完幾題之後,這裡會顯示這一級各題型的正確率(選譜答對率、回打命中率)。", "After a few tests, accuracy per test type shows here (picks right, pad hit rate)."));
 }
 
 /* ══ 模擬考(S14;js/shared/mock.js)══ */

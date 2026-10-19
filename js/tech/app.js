@@ -132,9 +132,8 @@ function renderPicker(){
   $("picker").querySelector(".rows").innerHTML = rows.map(([k, lbl, opts]) =>
     `<div class="prow"><span class="lbl">${lbl}</span><div class="opts" data-k="${k}" role="group" aria-label="${lbl}">` +
     opts.map(([v, t]) => `<button class="opt${k === "no" ? " rud" : ""}" data-v="${v}" aria-pressed="${String(v) === String(val[k])}">${t}</button>`).join("") + `</div></div>`).join("");
-  // 練習型(目標模式):摘要寫練習型的名稱(跟題目一樣),不寫 PAS 原譜的名稱
-  const pt = target && target.pattern;
-  $("picker").querySelector(".sum").textContent = [pt ? patternName(pt) : `${cur.no}. ${name(cur)}`, cur.second ? (S.lead === "L" ? tr("左手先", "Left lead") : tr("右手先", "Right lead")) : "", "×" + S.reps].filter(Boolean).join(" · ");
+  // 收起來的一行只寫題目卡(標題、標籤)沒有的:這張卡是選打法的 + 反覆次數(打法名稱、左右手先已經在題目卡上)
+  $("picker").querySelector(".sum").textContent = [tr("換打法", "Change"), T("lblReps") + " ×" + S.reps].join(" · ");
 }
 $("picker").querySelector(".rows").onclick = e => {
   const b = e.target.closest(".opt"); if (!b) return;
@@ -183,6 +182,7 @@ function renderTitle(){
 /* ══ 已經會了 / 待加強(只是標記,不算一次練習)══ */
 function syncMastery(){
   const m = cur && S.mastery[cur.no];
+  ROOT.querySelector(".mastery").hidden = mockOn();   // 模擬考進行中不標熟練度(只管打)
   ROOT.querySelectorAll(".mbtn").forEach(b => { b.disabled = !cur; b.setAttribute("aria-pressed", String(b.dataset.m === m)); });
 }
 ROOT.querySelectorAll(".mbtn").forEach(b => b.onclick = () => {
@@ -836,7 +836,7 @@ const stepName = st => () => (st.it ? itemName(st.it) : L(st.gr.name));
 const stepDetail = (st, i) => () => {
   const b = st.gr.bpm ? `♩=${st.gr.bpm}` : "";
   const mk = mock.state === "result" && mock.data.marks ? mock.data.marks[i] : "";
-  const mark = (mk === "good" ? tr(" · 已經會了", " · got it") : mk === "weak" ? tr(" · 待加強", " · needs work") : "")
+  const mark = (mk === "good" ? tr(" · 會了", " · got it") : mk === "weak" ? tr(" · 待加強", " · practise") : "")
     + (mock.state === "result" && st.book ? tr(` · 這一組另有 ${st.book} 項只在檢定書(這次沒練)`, ` · ${st.book} more in the grade book (not practised)`) : "");
   if (st.status === "skip") return tr("這一組請用檢定書練(App 沒有譜)", "Use the grade book for this group (no part in the App)");
   if (st.status === "done") return tr(`跟拍點打完 · ${b}`, `Played through with the click · ${b}`) + mark;
@@ -869,7 +869,7 @@ function renderMockCard(d, g){
     paintCard($, { title: () => tr("模擬考結果", "Mock exam result"), sub: name("rsl", mock.data.grade),
       text: () => [tr(`跟拍點打完 ${c("done")} 組`, `${c("done")} played through`), c("stopped") ? tr(`中途停止 ${c("stopped")} 組`, `${c("stopped")} stopped`) : "",
         c("none") ? tr(`沒有打 ${c("none")} 組`, `${c("none")} not played`) : "", c("skip") ? tr(`用檢定書練 ${c("skip")} 組`, `${c("skip")} from the grade book`) : ""].filter(Boolean).join(tr(" · ", " · ")) +
-        tr("。熟練度是你自己標的。", ". Got it / needs work are your own marks."),
+        tr("。「會了 / 待加強」是你在技巧分頁自己標的。", ". Got it / Practise are your own marks (Technique tab)."),
       rows, btn: ex.system === "rsl" && !ex.auto && d ? { label: () => mockLabel("result") } : null, close: { label: () => tr("回到本級要求", "Back to the list") } });
     return;
   }
@@ -907,7 +907,7 @@ function renderMockStep(){
   const one = !!S.mockOneBar && oneBarOK(m.grade);
   const ptn = () => (st.it && st.it.kind === "pattern" ? tr("App 依大綱時值排的練習型 · 不是官方譜。", "App drill in the syllabus values · not the official part. ") : "");
   pairText($("mockMsg"), () => ptn() + (!st.it ? tr("這一組請用檢定書練(譜只在官方檢定書);按「下一組」繼續。", "Use the grade book for this group (the part is only in the book); tap Next group.")
-    : st.status === "done" ? tr("完成。可以標熟練度,再按「下一組」。", "Done. Mark it if you like, then tap Next group.")
+    : st.status === "done" ? tr("完成。按「下一組」。", "Done. Tap Next group.")
     : st.status === "stopped" ? tr("中途停止。可以再按 ▶ 打一次,或按「下一組」。", "Stopped. Tap ▶ to play it again, or Next group.")
     : one ? tr("按 ▶:一小節拍點之後自己保持速度打。", "Tap ▶: one bar of click, then keep the tempo yourself.")
     : tr("按 ▶:預備拍一小節,之後跟著拍點打。", "Tap ▶: a 1-bar count-in, then play with the click.")));

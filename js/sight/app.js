@@ -288,7 +288,8 @@ function render(){
   ROOT.classList.toggle("mock-run", run);
   // 檢定頁不放練習紀錄;模擬考進行中、結果、檢定頁的練習:考試摘要(配分、等第)與規格卡藏起來(練習回饋不跟等第放在同一個畫面)
   ROOT.querySelectorAll(".pane").forEach(el => { el.hidden = !isExam || run || only || xpo; });
-  $("logCard").hidden = $("statsCard").hidden = isExam;
+  $("logCard").hidden = isExam;
+  if (isExam) $("statsCard").hidden = true;
   if (isExam) { $("rdCard").hidden = $("rdOpts").hidden = true; reading.leave(); }
   renderLevel();
   if (run || xpo) {
@@ -696,9 +697,8 @@ function renderMeta(){
 }
 function renderSum(){
   if (!cur) return;
-  const pb = cur.kind === "playback";
-  $("sum").textContent = [curName(cur), `♩=${bpmNow()}${overridden() || (cur.free && pb && custom()) ? " " + tr("練習速度", "practice") : pb && !cur.free ? " " + tr("練習設定", "practice") : ""}`,
-    tr("節拍器", "Metronome") + " " + (SS.metroPractice ? tr("開", "on") : tr("關", "off"))].join(" · ");
+  // 收起來的一行只寫題目卡(標題、標籤)沒有的:分類、難度、「練習速度」都已經在題目卡上
+  $("sum").textContent = [`♩=${bpmNow()}`, tr("節拍器", "Metronome") + " " + (SS.metroPractice ? tr("開", "on") : tr("關", "off"))].join(" · ");
 }
 function renderPrepareLabel(){
   const sec = prepSec(), pb = cur && cur.kind === "playback";
@@ -1419,6 +1419,8 @@ function renderLog(){
 $("goalBtn").onclick = () => { SS.goal = nextGoal(SS.goal); save(); renderLog(); };
 /* 各分類練過題數 + 目前難度(視奏分頁的題目;長條 = 鼓墊或麥克風的節奏命中率,練習回饋,檢定頁不放) */
 function renderStats(){
+  // 沒有資料(還沒練過任何一題)、認譜、檢定頁:整張藏起來(不放一張全是 0 的卡)
+  $("statsCard").hidden = mode === "exam" || readOn() || !CATS.some(c => SS.cats[c] && SS.cats[c].n);
   $("statsSub").textContent = "";
   const box = $("statsList");
   box.innerHTML = CATS.map(c => {

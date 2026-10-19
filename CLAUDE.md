@@ -10,7 +10,9 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
 ## 架構(照 PianoDrill)
 - 底部四個分頁:**技巧 / 視奏 / 聽力 / 檢定**。頂欄下面的子項目分段鈕:技巧 = 滾奏/複點/Flam/Drag(PAS 四大類)、視奏 = 照學習順序「認譜 / 節奏 / 律動 / 樂譜」(級數只在檢定頁設)、檢定 = 技巧/視奏/聽力
 - 檢定:考試系統 **Trinity Rock & Pop Drums**(初級 Initial、1–8 級)與 **RSL Rockschool Drums**(入門 Debut、1–8 級),在外框設一次(`js/main.js`)。
-    檢定頁的考試卡(`#examSetup`)不收起來:系統兩顆大鈕(`#systemSeg`)+ 級數一排按鈕(`#gradeSeg`,第一格 D / I,aria-label 寫完整級名),點一下就換;第一次的問題同樣是按鈕列(`#obGradeSeg`),不用下拉選單
+    檢定頁的考試卡(`#examSetup`)不收起來:系統兩顆大鈕(`#systemSeg`)+ 級數一排按鈕(`#gradeSeg`,第一格 D / I,aria-label 寫完整級名),點一下就換;第一次的問題同樣是按鈕列(`#obGradeSeg`),不用下拉選單。
+    已選考試時不另外寫「RSL · 3 級」那行(系統鈕、級數鈕亮著就是);**沒選考試時**系統鈕、級數鈕都不亮(先點系統只亮那一顆,點了級數才算選好),
+    內容只寫「先選考試系統和級數」,不進任何模組、不顯示子項目(不拿 Trinity 1 級之類的預設內容充數;main.js 共用部分,兩個 App 一樣)
   - Trinity 只採用 Rock & Pop 大綱;不用 Drum Kit & Percussion 系列的要求(記譜圖例用到 DK p.107 是例外,要標出處)
   - 檢定頁不顯示練習紀錄(模擬考的進行中 / 結果 / 中止說明例外:那個畫面藏起配分、等第與規格卡,只有各項練習回饋,不算總分)
 - 第一次打開問「你在準備爵士鼓檢定嗎?」:選了 → 打開檢定分頁;不考 → 技巧分頁自由練習
@@ -100,7 +102,7 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
 - **練習紀錄**(`js/shared/practicelog.js`;三個模組同一個格式,PianoDrill 的樣式):三格數字 + 每週目標(`.goal`,最近 7 天的分鐘數;點一下換 15/30/60/90/120/180,預設 60,存各自 localStorage 的 `goal`)+ 最近 7 天
   - 技巧:連續天數 / 今天次數 / 今天分鐘;視奏:連續天數 / 今天題數 / 今天分鐘 + 各分類練過題數與目前難度(`#s-statsCard`);聽力:連續天數 / 今天題數 / 今天正確率(`e-logAcc` = 回打命中的音 + 選對的譜 ÷ 全部)+ 各題型正確率(`#e-statsCard`)
   - 秒數只算真的播放、準備、作答的時間(技巧:預備拍之後的播放;視奏:準備、正式打、聽正確版本;聽力:聽題目、看譜、回打);保留 400 天
-  - 紀錄卡、統計卡是練習回饋:檢定頁不放;檢定頁三格進度(`examStatus`)只寫進度(已會 n/m、已練 n 題),不寫命中率
+  - 紀錄卡、統計卡是練習回饋:檢定頁不放(`app.css` 的 `body.view-exam`,兩個 App 一樣);統計卡沒有資料時整張藏起來(認譜不顯示 `#s-statsCard`);檢定頁三格進度(`examStatus`)只寫進度(已會 n/m、已練 n 題),不寫命中率
 - **用麥克風評分節奏**(S15,選用;`js/shared/mic.js` 跟 PianoDrill 逐位元組相同(sync.json same)、`js/shared/micrhythm.js` 是 DrumDrill 自己的):
   視奏「正式打」、聽力「回打 / Trinity 第二次」有「用麥克風評分節奏(選用)」(`s-alongMic`、`e-alongMic`,照 PianoDrill `s-alongMic`),預設關,開關存 `drumdrill.v1` 的 `mic`(視奏、聽力共用,經 ctx 的 `micPref` / `setMicPref`)
   - 錄在播放用的同一個 AudioContext(`createRecorder({ context: audio.ensureAudio })`);getUserMedia 關 echoCancellation / noiseSuppression / autoGainControl;
@@ -127,6 +129,8 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
   - `app.css`(兩邊同一份):`:focus-visible` 焦點框;字級代幣是 rem(根字級 17px,iOS 用 `-apple-system-body` 跟著系統文字大小;內文最多 2 倍、控制項最多 1.3 倍);
     新的字級用 `var(--fs-…)`,不要寫死 px 也不要用 rem 當長度;控制項高度用 `min-height`、放不下換行不截字;分頁列、鼓墊的字級固定(不放大,跟 iOS 的分頁列一樣)。`layout.mjs` 有「字級 200%」的狀態
   - 文字對比 ≥ 4.5:1(大字 3:1;深淺兩種主題,`a11y.mjs` 量實際背景);改顏色代幣要兩邊同步並看截圖
+- **精簡**(2026-10 使用者要求;兩個 App 一樣):同一件事一個畫面只說一次;收起來的設定列(`#t-picker`、`#s-setup`、`#e-setup`)只寫題目卡標題 / 標籤沒有的(例如「♩=80 · 節拍器 開」);
+  頁尾兩行:一行簡短出處 +「授權與出處 · 隱私權政策 · 支援」(完整內容在 `licenses.html`);聽力「看答案」聽過一次題目才出現、答完藏起來,「下一題」是次要按鈕(模擬考裡才是主要)
 - 中英雙語(預設英文,切過就記住):外框字串 `js/shared/i18n.js`、技巧 `js/tech/strings.js`(前綴 `tech.`)、視奏 `js/sight/strings.js`(前綴 `sight.`)、聽力 `js/ear/strings.js`(前綴 `ear.`);程式產生的文字用 `tr("中", "EN")`
 - 用詞:「檢定」「考試」,不用「考級」(只有 App Store 關鍵字可以放)
 - localStorage:`drumdrill.v1`(外框;`mic` = 麥克風評分開關)、`drumdrill.tech.v1`(技巧:熟練度、速度、`log`、`goal`、`mockOneBar`、`mockRun`)、`drumdrill.sight.v1`(視奏:節拍器 / 拍點開關、`bpmOverride` 練習速度(`rsl-3`、`trinity-4`、`rhythm-2`)、
@@ -147,6 +151,7 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
     練習設定(App 自訂的);大綱沒寫的數字是 null,不自己補。**沒核對到的不放**(資料是 null / 大綱查不到的,畫面寫「大綱沒寫」,不拿別的考試或別的級數充數)。檢定相關畫面加 `practiceOnly`(「僅供練習;實際要求以官方大綱為準」)
   - RSL 技巧項目分三種(`kind`):`pas` = PAS 原譜;`pattern` = PAS 的左右手、重音、裝飾音 + 大綱時值(`rudiments.js` 的 `pattern()`,
     標「App 依大綱時值排的練習型 · 不是官方譜」,不自己加重音;`tools/test/checks/pattern.mjs` 檢查,另有手寫錨點);`book` = 譜只在官方檢定書,只列名稱
+  - 熟練度按鈕 = 圖示 + 小字「會了 / 待加強」(Got it / Practise;兩個 App 一樣);DrumDrill 模擬考進行中藏起來(只管打)
   - 熟練度(已經會了 / 待加強)以 PAS 編號計:同一個編號的練習型共用(`techPasNos`),不另外記
   - 組別的 `bpmSrc: "backing"` = 官方寫「跟伴奏音軌」(有寫,只是沒有數字):顯示「跟伴奏音軌」,**不是推估**
 - **不要用合成鼓聲**:一律用 `js/shared/audio.js`(ScrollScore 的 Naked Drums 取樣,CC-BY 4.0),力度分層與音量曲線照原廠 SFZ(照 ScrollScore 的鼓引擎)

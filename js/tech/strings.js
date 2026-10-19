@@ -5,6 +5,7 @@ addStrings("tech", {
   lblRud: ["打法", "Rudiment"], lblLead: ["起手", "Lead"], lblReps: ["反覆", "Repeats"],
   play: ["播放示範", "Play"], stop: ["停止", "Stop"],
   good: ["已經會了", "Got it"], weak: ["待加強", "Needs work"],
+  mGood: ["會了", "Got it"], mWeak: ["待加強", "Practise"],   // 熟練度按鈕上的小字(圖示旁)
   scoreTitle: ["鼓譜與左右手", "Score & sticking"],
   metroTitle: ["速度", "Tempo"],
   bpmDown: ["慢 1(按住連續減少)", "Slower (hold)"], bpmUp: ["快 1(按住連續增加)", "Faster (hold)"], tempo: ["速度", "Tempo"],
