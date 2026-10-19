@@ -702,7 +702,7 @@ function renderPrepareLabel(){
   pairText($("prepareLabel"), fn);
   $("prepare").setAttribute("aria-label", fn());   // 窄畫面(≤340)只剩圖示時,螢幕閱讀器還是念得到
 }
-function renderAlongLabel(){ $("playAlong").textContent = phase === "perform" ? tr("停止", "Stop") : T("perform"); renderMic(); renderLevel(); }
+function renderAlongLabel(){ $("playAlong").textContent = $("performTop").textContent = phase === "perform" ? tr("停止", "Stop") : T("perform"); renderMic(); renderLevel(); }
 /* 麥克風開關(選用):正式打中不能改;說明 = 用法,打開失敗時改成原因 */
 function renderMic(){
   const box = $("alongMic");
@@ -1009,6 +1009,7 @@ function syncButtons(){
   $("playAlong").disabled = !ok || (busy && phase !== "perform") || (mk && phase === "prep");
   $("prepare").disabled = !ok || mk;
   $("generate").hidden = mk;
+  $("performTop").disabled = $("playAlong").disabled;
 }
 const within = (p, ms) => Promise.race([p, new Promise(r => setTimeout(r, ms))]);
 /* 叫醒音訊、等取樣;回傳 false = 不能播(取樣沒載到、等的時候離開了 / 換題了) */
@@ -1266,7 +1267,7 @@ function finishPerform(){
   renderAlongLabel(); renderPrepareLabel(); syncButtons();
   renderResult();
   showChecklist("self");
-  say(() => tr("打完了。看下面的練習回饋與自我檢查;可以按 ▶ 聽正確版本對照。", "Done. See the feedback and self-check below; tap ▶ to hear the correct version."), true);
+  say(() => tr("打完了。看下面的練習回饋;按 ▶ 聽正確版本,或按「新題目」再一題。", "Done. See the feedback below; tap ▶ to hear it, or New test for another."), true);
   announce(tr("打完了。", "Done. ") + resultSpeech(lastResult) + (lastResult.lvText ? " " + lastResult.lvText() : ""));
   if (mockOn()) { mock.data.result = lastResult; mock.finish(); render(); cardToTop($("mockCard")); }   // 模擬考:正式打完 = 結果
   renderStats();
@@ -1313,6 +1314,8 @@ function renderResult(){
   if (byMic) add("disclaimer", () => tr(MIC_TEXT.disclaimer[0] + tempoZh, MIC_TEXT.disclaimer[1] + tempoEn));
   else add("disclaimer", () => tr(`只看敲擊的時間,不看力度與音色${multi ? "(鬼音也算一下:鼓墊沒有力度)" : ""};容許範圍是練習設定。這是練習回饋,不是考試分數,也不能換算成官方分數。${tempoZh}`,
     `Timing only (not dynamics or tone${multi ? "; ghost notes count as hits — the pads have no dynamics" : ""}); the tolerance is a practice setting. This is practice feedback, not an exam mark, and it doesn't convert to one.${tempoEn}`));
+  // 下一步(結果不要停在死畫面):聽正確版本 / 再一題
+  add("r-next", () => (mockOn() ? "" : tr("下一步:按 ▶ 聽正確版本,或按「新題目」再一題。", "Next: tap ▶ to hear it, or New test for another.")));
   // 視奏分頁:這一題的難度「太簡單 / 剛好 / 太難」(+1 / 0 / −1;自動升降的那一句也寫在這裡)
   if (R.free && R.cat) paintVotes(box, R, v => vote(R, v));
   box.hidden = false;
@@ -1327,6 +1330,7 @@ function vote(R, v){
   announce(R.lvText());
 }
 $("playAlong").onclick = () => startPerform();
+$("performTop").onclick = () => startPerform();
 
 /* ── 觸控鼓墊(小鼓視奏 1 個,鍵盤 J / F;整組鼓 3 個 = 鈸 / 鼓 / 大鼓與腳踩 HH,鍵盤 F / J / K):正式打時記時間,其他時候試打(出聲、不計分)── */
 let pads = null;
@@ -1428,10 +1432,16 @@ function startXp(){
   const ex = curExam();
   if (mode !== "exam" || mock.running() || ex.auto || !practicable(ex.system, ex.grade)) return;
   if (mock.state !== "idle") mock.close();
-  xp = true; render(); cardToTop($("mockCard"));
+  xp = true; render();
+  // 兩欄(≥1100):題目卡在右欄最上面 → 捲回頂端;一欄:模擬考卡(回到規格)跟題目卡一起放得下就捲到模擬考卡,放不下(手機橫式)捲到題目卡
+  if (innerWidth >= 1100) { window.scrollTo({ top: 0 }); return; }
+  const m = $("mockCard").getBoundingClientRect(), q = $("quiz").getBoundingClientRect(), head = document.querySelector("header");
+  const room = innerHeight - (head ? head.getBoundingClientRect().height : 0) - 70;
+  cardToTop(q.bottom - m.top <= room && q.top >= m.top ? $("mockCard") : $("quiz"));
 }
 $("mockClose").onclick = () => {
   const st = mock.state;
+  if (st === "idle" && !xpOn()) { startXp(); return; }   // 模擬考卡的「練習這一級」
   if (xpOn()) { xp = false; stopAll(); render(); window.scrollTo({ top: 0 }); return; }   // 檢定頁的練習 → 回到規格
   mock.close();
   // 結果:在檢定頁看這一題的譜、聽正確版本(同一題,檢定頁的練習畫面)
@@ -1503,5 +1513,7 @@ function renderMockCard(){
         `Rock & Pop has no sight reading; this mocks the Playback chart: ${sec} s to study (${src}, no pausing), then you perform it once, click only.`)
       : tr(`照考試形式:App 出一題,準備 ${sec} 秒(${src},不能暫停,可以開節拍器、在鼓墊上試打),時間到自動正式打一次。`,
         `Like the exam: the App sets a test, ${sec} s to prepare (${src}, no pausing; metronome and pad try-outs allowed), then you perform it once.`)),
-    btn: ok ? { label: () => mockLabel("idle") } : null });
+    btn: ok ? { label: () => mockLabel("idle") } : null,
+    // 檢定頁一打開就看得到「練習這一級」(不用往下捲到規格卡):在這一頁直接出這一級的題目
+    close: ok && !ex.auto ? { label: () => (pb ? tr("練習 Playback 看譜", "Practise charts") : tr("練習這一級", "Practise this grade")) } : null });
 }

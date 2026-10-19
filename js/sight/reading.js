@@ -2,7 +2,7 @@
    一題一個記號:五線鼓組譜上畫一個鼓件(js/shared/kitnotation.js 的 legendXML + legend.js 的 setupKit / decorate,跟圖例同一套寫法),
    點下面的鼓件格子作答。答對馬上下一題;答錯:標出正確的格子、寫鼓件名稱、播那個鼓聲(Naked Drums 取樣,audio.playKit)。
    設定全部是一直看得到的按鈕(不用下拉、不收起來),點一下就換題:
-     快捷鈕(基本:小鼓 / 大鼓 / 手打 HH;只有筒鼓;加筒鼓;全套)、自訂(drumkey.json 每個鼓件一顆,開 HH、閉 HH、Cross stick、Ride 碗這種同鼓不同記號也各一顆)、
+     快捷鈕(基本:小鼓 / 大鼓 / 手打 HH;筒鼓(只有三個筒鼓);加筒鼓;全套)、自訂(drumkey.json 每個鼓件一顆,開 HH、閉 HH、Cross stick、Ride 碗這種同鼓不同記號也各一顆)、
      模式(練習 / 60 秒 / 連對)
    挑戰、最高分、最常錯的 3 個(下一輪出現機率加倍)在 js/shared/drill.js;設定與紀錄存在 drumdrill.sight.v1 的 read(消毒)。
    都是 App 的練習設定;不寫級數、考試名稱、頁碼 */
@@ -14,10 +14,10 @@ import { setupKit, decorate } from "../shared/legend.js";
 
 const BASIC = ["snare", "kick", "hh"], TOMS = ["tomHi", "tomMid", "tomFloor"];
 const PRESETS = [
-  ["basic", "基本", "Basics", () => BASIC],
-  ["toms", "只有筒鼓", "Toms only", () => TOMS],
-  ["plus", "加筒鼓", "+ Toms", () => [...BASIC, ...TOMS]],
-  ["all", "全套", "Full kit", key => Object.keys(key.pieces)]
+  ["basic", "基本", "Basic", () => BASIC],
+  ["toms", "筒鼓", "Toms", () => TOMS],
+  ["plus", "加筒鼓", "+Toms", () => [...BASIC, ...TOMS]],
+  ["all", "全套", "All", key => Object.keys(key.pieces)]
 ];
 const MODES = ["practice", "time", "streak"];
 
@@ -159,7 +159,12 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
     R.pieces = on ? R.pieces.filter(x => x !== v) : [...R.pieces, v];
     changed();
   });
-  segClick("rdMode", v => { R.mode = v; changed(); });
+  // 換成挑戰模式:把題目卡捲到畫面上(「開始挑戰」的大按鈕在譜上)
+  segClick("rdMode", v => { R.mode = v; changed(); if (v !== "practice") toTop($("rdCard")); });
+  function toTop(card){
+    const r = card.getBoundingClientRect(), head = document.querySelector("header"), top = head ? head.getBoundingClientRect().bottom : 0;
+    if (r.top < top || r.bottom > innerHeight - 60) window.scrollTo({ top: Math.max(0, scrollY + r.top - top - 8) });
+  }
   segClick("rdAns", v => answer(v));
   $("rdStart").onclick = () => { endRes = null; session = { ok: 0, n: 0 }; drill.start(R.mode, setting(), () => paintTop()); paintTop(); next(); };
 
