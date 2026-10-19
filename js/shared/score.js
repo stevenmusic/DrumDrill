@@ -18,6 +18,8 @@
      onPending()  因為看不到而延後時
      fitLand()    手機橫式依高度放大;回傳 true 表示已經重畫
      setup(osmd)  第一次建立 OSMD 時(EngravingRules 之類)
+     beforeRender(osmd, n)  每次 render 之前(n = 每行幾小節;例如換行時行距多留給譜下面的字)
+     perLine()    換行排法(今日練習的路線譜):回傳每行幾小節(0 / 沒有 = 一整行左右捲);換行時譜照紙張寬度排、播放軸照每一行上下移動
      label()      無障礙:譜的文字說明(用 tr();a11y.js 的 imgLabel 換語言自動重算)。$("osmd") 加 role="img" + aria-label;clear() 拿掉
    回傳的物件(實際 API;沒有 setActive,看不看得到一律問 opts.isActive()):
      landZoom             手機橫式的縮放(fitLandZoom 設定;null = 用 zoom())
@@ -44,13 +46,16 @@ export function createScore(opts){
   const msg = opts.msg || (fn => { $("paperMsg").textContent = fn ? fn() : ""; });
   const errorText = opts.errorText || (e => tr("樂譜繪製失敗:", "Could not draw the score: ") + e.message);
   const onDrawn = opts.onDrawn || (() => {}), onPending = opts.onPending || (() => {}), fitLand = opts.fitLand || (() => false);
-  let osmd = null, noteXs = [], seq = 0, lastZoom = null, stageW = 0, pending = false, lastXml = null;
+  const perLine = opts.perLine || (() => 0);
+  let osmd = null, noteXs = [], seq = 0, lastZoom = null, stageW = 0, pending = false, lastXml = null, sysTops = [], sysExt = [];
   const api = {
     landZoom: null,
     get osmd(){ return osmd; },
     get noteXs(){ return noteXs; },
     get pending(){ return pending; },
     zoom: () => api.landZoom || zoom(),
+    get wrapped(){ return perLine() > 0; },
+    systems: () => { try { return osmd.GraphicSheet.MusicPages.flatMap(p => p.MusicSystems); } catch (e) { return []; } },
     load, render, fitWidth, measure, xAtBeat, movePlayline, placeExtent, onResize, refit, home, clear
   };
   /* 載入一份 MusicXML 並畫出來(看不到時先記著,回到畫面再畫);回傳 true = 畫好了 */
@@ -85,9 +90,16 @@ export function createScore(opts){
     onDrawn(xml);
     return true;
   }
-  function render(){ osmd.render(); afterRender($("osmd").querySelector("svg")); }
+  function render(){
+    const n = perLine();
+    osmd.EngravingRules.RenderSingleHorizontalStaffline = !n; osmd.EngravingRules.RenderXMeasuresPerLineAkaSystem = n || 0;
+    $("stage").classList.toggle("wrap", !!n);
+    if (opts.beforeRender) opts.beforeRender(osmd, n);
+    osmd.render(); afterRender($("osmd").querySelector("svg"));
+  }
   /* 短的譜放大到大約填滿紙張(最多 1.6 倍);太長的照原本大小,左右捲動、播放軸跟著走 */
   function fitWidth(){
+    if (perLine()) return;   // 換行排法:OSMD 已經照紙張寬度排
     const svg = $("osmd").querySelector("svg"); if (!svg) return;
     const w = svg.getBoundingClientRect().width, avail = $("stage").clientWidth - 16;
     if (!w || !avail) return;
@@ -106,6 +118,9 @@ export function createScore(opts){
   /* 走一遍 OSMD 游標,記下每一步的拍點(四分音符)與 x(符頭正中央,裝飾音不算);最後補「這一輪結束」的位置 */
   function measure(len = lenBeats()){
     noteXs = [];
+    // 換行排法:每一行(系統)的上緣(#osmd 裡的像素;OSMD 單位 × 10 × 縮放)
+    sysTops = perLine() ? api.systems().map(sy => (sy.PositionAndShape.AbsolutePosition.y + sy.PositionAndShape.BorderTop) * 10 * osmd.zoom) : [];
+    const sysOf = top => sysTops.reduce((b, t, i) => (top + 2 >= t ? i : b), 0);
     const c = osmd.cursor;
     c.show(); c.reset();
     let guard = 0;
@@ -118,7 +133,7 @@ export function createScore(opts){
       } catch (e) {}
       const x = xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : parseFloat(el.style.left) + (el.offsetWidth || 0) / 2;
       const beat = c.Iterator.currentTimeStamp.RealValue * 4;
-      if (!noteXs.length || beat > noteXs[noteXs.length - 1].beat + 1e-6) noteXs.push({ beat, x });
+      if (!noteXs.length || beat > noteXs[noteXs.length - 1].beat + 1e-6) noteXs.push({ beat, x, sys: sysTops.length ? sysOf(parseFloat(el.style.top) || 0) : 0 });
       c.next();
     }
     c.reset(); c.hide();
@@ -126,7 +141,8 @@ export function createScore(opts){
     const svg = $("osmd").querySelector("svg");
     if (svg && noteXs.length && len != null) {
       const lastX = noteXs[noteXs.length - 1].x, sr = svg.getBoundingClientRect();
-      noteXs.push({ beat: len, x: Math.max(lastX + 10, sr.right - ox - 14) });
+      const last = noteXs[noteXs.length - 1];
+      noteXs.push({ beat: len, x: perLine() ? last.x + 10 : Math.max(lastX + 10, sr.right - ox - 14), sys: last.sys });
     }
     $("scroll").scrollLeft = 0;
     placeExtent();
@@ -141,16 +157,33 @@ export function createScore(opts){
     svg.querySelectorAll(".vf-stavenote, .staffline").forEach(g => { const r = g.getBoundingClientRect(); if (r.height) { top = Math.min(top, r.top); bot = Math.max(bot, r.bottom); } });
     if (!isFinite(top)) { pl.hidden = true; return; }
     const pad = 10;
+    sysExt = [];
+    if (sysTops.length > 1) {
+      // 換行排法:每一行自己的上下範圍(譜線、音符照 y 分到那一行)
+      const oy = $("osmd").getBoundingClientRect().top, idx = y => sysTops.reduce((b, t, i) => (y - oy + 4 >= t ? i : b), 0);
+      const ext = sysTops.map(() => [Infinity, -Infinity]);
+      svg.querySelectorAll(".vf-stavenote, .staffline").forEach(g => { const r = g.getBoundingClientRect(); if (!r.height) return; const e = ext[idx(r.top + r.height / 2)]; e[0] = Math.min(e[0], r.top); e[1] = Math.max(e[1], r.bottom); });
+      sysExt = ext.map(([a, b]) => (isFinite(a) ? { top: Math.max(0, a - sr.top - pad), h: b - a + 2 * pad } : null));
+    }
     pl.style.top = Math.max(0, top - sr.top - pad) + "px";
     pl.style.bottom = Math.max(0, sr.bottom - bot - pad) + "px";
+    pl.style.height = "";
     pl.hidden = false;
+  }
+  /* 換行排法:播放軸移到這一拍那一行 */
+  function playlineRow(beat){
+    if (!sysExt.length) return;
+    let i = 0; for (let k = 0; k < noteXs.length && noteXs[k].beat <= beat + 1e-6; k++) i = noteXs[k].sys || 0;
+    const e = sysExt[i] || sysExt[0]; if (!e) return;
+    const pl = $("playline");
+    pl.style.top = e.top + "px"; pl.style.bottom = "auto"; pl.style.height = e.h + "px";
   }
   function xAtBeat(beat){
     if (!noteXs.length) return 0;
     if (beat <= noteXs[0].beat) return noteXs[0].x;
     for (let i = 0; i + 1 < noteXs.length; i++) {
       const a = noteXs[i], b = noteXs[i + 1];
-      if (beat < b.beat) return a.x + (b.x - a.x) * (beat - a.beat) / (b.beat - a.beat);
+      if (beat < b.beat) return a.sys !== b.sys ? a.x : a.x + (b.x - a.x) * (beat - a.beat) / (b.beat - a.beat);   // 換行:停在這一行最後一個音
     }
     return noteXs[noteXs.length - 1].x;
   }
@@ -158,6 +191,8 @@ export function createScore(opts){
   function movePlayline(beat, follow){
     const scroll = $("scroll"), o = $("osmd"), pl = $("playline");
     const x = o.offsetLeft + xAtBeat(beat);
+    playlineRow(beat);
+    if (follow && perLine()) { if (o.style.transform) o.style.transform = ""; pl.style.transform = `translate3d(${x - 1}px,0,0)`; return; }
     if (follow) {
       if (scroll.scrollLeft) scroll.scrollLeft = 0;
       const max = Math.max(0, o.offsetLeft + o.offsetWidth - scroll.clientWidth);

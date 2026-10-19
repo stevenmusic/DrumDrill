@@ -101,7 +101,7 @@ const subOf = r => catOf(r.cat).sub.find(s => r.no >= s.from && r.no <= s.to);
 /* 換語言時重寫的文字:選擇器、題目、標籤、速度單位、按鈕、紀錄卡;在檢定頁時重畫檢定說明 */
 function relabel(){
   syncTarget();
-  modeHome(); dcard.relang(dseg); modeIn();
+  dcard.relang(dseg);
   rv.relang();
   if (tab === "exam") renderExam();
   else if (cur || routeOn()) {
@@ -134,19 +134,27 @@ function switchTab(t){
   $("mockCard").hidden = true;
   S.cat = t; store.save();
   const list = RUDIMENTS.filter(r => r.cat === t);
+  // 滾奏第一次進來 = 初學的「單擊 四分音符」練習型(不是 #1 原譜的三十二分音符;原譜在選單裡照舊)
+  if (t === "roll" && (S.pick.roll == null || BEGIN[S.pick.roll])) { freePat = BEGIN[S.pick.roll || "s4"]; setRudiment(1); return; }
+  freePat = null;
   const no = S.pick[t] && list.some(r => r.no === S.pick[t]) ? S.pick[t] : list[0].no;
   setRudiment(no);
 }
+/* 初學的練習型(自由練習的滾奏分頁最前面兩格;rudiments.js 的 pattern(),PAS #1 的 RL 交替 + 四分 / 八分音符;熟練度、速度記在 #1) */
+const BEGIN = { s4: { pas: 1, sticking: "single", value: "4" }, s8: { pas: 1, sticking: "single", value: "8" } };
+let freePat = null;
+const curPattern = () => (target && target.pattern) || (!target ? freePat : null);
 
 /* ══ 選擇器:這一類的打法(號碼 + 名稱)、起手、反覆次數 ══ */
 function renderPicker(){
   const list = RUDIMENTS.filter(r => r.cat === tab);
   const rows = [
-    ["no", T("lblRud"), list.map(r => [r.no, `<b>${r.no}</b><span>${name(r)}</span>`])],
+    ["no", T("lblRud"), (tab === "roll" ? [["s4", `<b>♩</b><span>${tr("單擊 四分音符", "Singles, quarters")}</span>`], ["s8", `<b>♪</b><span>${tr("單擊 八分音符", "Singles, eighths")}</span>`]] : [])
+      .concat(list.map(r => [r.no, `<b>${r.no}</b><span>${name(r)}</span>`]))],
     cur.second && ["lead", T("lblLead"), [["R", tr("右手先", "Right")], ["L", tr("左手先", "Left")]]],
     ["reps", T("lblReps"), [1, 2, 4, 8].map(n => [n, "×" + n])]
   ].filter(Boolean);
-  const val = { no: cur.no, lead: S.lead, reps: S.reps };
+  const val = { no: freePat ? Object.keys(BEGIN).find(k => BEGIN[k] === freePat) : cur.no, lead: S.lead, reps: S.reps };
   $("picker").querySelector(".rows").innerHTML = rows.map(([k, lbl, opts]) =>
     `<div class="prow"><span class="lbl">${lbl}</span><div class="opts${k === "no" ? "" : " even"}" data-k="${k}" role="group" aria-label="${lbl}">` +
     opts.map(([v, t]) => `<button class="opt${k === "no" ? " rud" : ""}" data-v="${v}" aria-pressed="${String(v) === String(val[k])}">${t}</button>`).join("") + `</div></div>`).join("");
@@ -156,7 +164,8 @@ function renderPicker(){
 $("picker").querySelector(".rows").onclick = e => {
   const b = e.target.closest(".opt"); if (!b) return;
   const k = b.closest(".opts").dataset.k, v = b.dataset.v;
-  if (k === "no") { S.pick[tab] = Number(v); store.save(); setRudiment(Number(v)); return; }
+  if (k === "no" && BEGIN[v]) { S.pick[tab] = v; store.save(); freePat = BEGIN[v]; setRudiment(1); return; }
+  if (k === "no") { S.pick[tab] = Number(v); store.save(); freePat = null; setRudiment(Number(v)); return; }
   if (k === "lead") S.lead = v;
   if (k === "reps") S.reps = Number(v);
   store.save();
@@ -169,7 +178,7 @@ function setRudiment(no){
   if (target && target.no !== no) { target = null; syncTarget(); }   // 換到別的打法:離開檢定目標
   cur = byNo(no);
   // 練習型:PAS 的左右手、重音、裝飾音 + 大綱的時值(不是官方譜);否則照 PAS 原譜
-  groups = target && target.pattern ? pattern({ ...target.pattern, lead: S.lead }) : withLead(cur, S.lead);
+  groups = curPattern() ? pattern({ ...curPattern(), lead: S.lead }) : withLead(cur, S.lead);
   renderPicker();
   renderTitle();
   showBest();
@@ -193,7 +202,7 @@ function renderTitle(){
     paintTags();   // 標籤的速度 = 現在實際的速度(自己改了速度也跟著變)
     renderIntro(); return;
   }
-  const pt = target && target.pattern;
+  const pt = curPattern();
   $("qTitle").textContent = pt ? patternName(pt) : `${cur.no}. ${name(cur)}`;
   // 中英文標籤數量一樣(版面才會一樣):中文 = 英文名,英文 = PAS 編號;左手先/右手先另加一個;練習型再加「App 練習型」(完整說明在目標橫幅)與「推估」(時值是推估的)。
   // 類別不放(上面分段鈕已經看得到,放了標籤列會擠不下)。英文名太長時縮成「…」;示範最快的速度放在速度卡
@@ -201,7 +210,7 @@ function renderTitle(){
   const tags = [cur.en === cur.zh ? null : getLang() === "en" ? "PAS No. " + cur.no : cur.en,
     cur.second ? (S.lead === "L" ? tr("左手先", "Left lead") : tr("右手先", "Right lead")) : null,
     pt ? tr("App 練習型", "App drill") : null,
-    pt && target.assumed ? TS("srcAssumed") : null].filter(Boolean);   // 時值是推估的(4 級 C 組 Flam tap 的四分音符)
+    pt && target && target.assumed ? TS("srcAssumed") : null].filter(Boolean);   // 時值是推估的(4 級 C 組 Flam tap 的四分音符)
   const fold = cur.en !== cur.zh;   // 第一個標籤(英文名)太長時縮成「…」
   $("qTags").innerHTML = tags.map((t, i) => `<span class="q-tag${i || !fold ? "" : " fold"}" title="${t}">${t}</span>`).join("");
   renderIntro();
@@ -594,7 +603,7 @@ const MIN_BPM = 30, MAX_BPM = 240;
 const tempo = createTempo({ $, min: MIN_BPM, max: MAX_BPM, get: () => bpm, set: v => setBpm(v, true) });
 function syncTempoUI(){
   tempo.sync(tr("拍 / 分鐘", "beats / min"));
-  $("examTempo").textContent = routeOn() ? tr("今日練習會自動調整", "Set by today's practice") : tr("建議:慢 → 快 → 慢", "Slow → fast → slow");   // PAS 的 open – close – open
+  $("examTempo").textContent = dseg ? tr("今日練習會自動調整", "Set by today's practice") : tr("建議:慢 → 快 → 慢", "Slow → fast → slow");   // PAS 的 open – close – open
   if (routeOn()) { tempo.setBeats(4); return; }
   const beats = Math.max(1, Math.round(accentEvery(cycleLength(groups || [[{ dur: 4 * DIV }]])) / DIV));
   tempo.setBeats(Math.min(8, beats));
@@ -638,13 +647,13 @@ const within = (p, ms) => Promise.race([p, new Promise(r => setTimeout(r, ms))])
 const COUNT_IN = 4;
 /* 拍點的重拍:每一輪的開頭。練習型的一輪常常只有 1、2 拍(例如單擊八分音符 = 1 拍),每一下都是重拍就沒有意義
    → 練習型一輪不到 4 拍(而且 4 拍是整數輪)時,重拍改成每 4 拍一次(取「4 拍」與「一輪」比較大的);PAS 原譜照舊每一輪 */
-function accentEvery(cyc){ return target && target.pattern && cyc < 4 * DIV && (4 * DIV) % cyc === 0 ? 4 * DIV : cyc; }
+function accentEvery(cyc){ return curPattern() && cyc < 4 * DIV && (4 * DIV) % cyc === 0 ? 4 * DIV : cyc; }
 const VEL = { accent: 0.95, tap: 0.6, roll: 0.55, buzz: 0.5, grace: 0.3 };
 let play = null, starting = 0;
 function schedulePlay(p, from){
   const { t0, beatSec, reps, cyc } = p;
   const gap = Math.min(0.032, beatSec / 10);   // 裝飾音在主音前面多久(慢速時 32ms,快速時跟著縮短)
-  if (!(p.mock || p.solo || S.clickOnly)) for (let rep = 0; rep < reps; rep++) for (const s of p.list) {
+  if (!(p.mock || p.solo || clickOnlyOn())) for (let rep = 0; rep < reps; rep++) for (const s of p.list) {
     const on = t0 + (rep * cyc + s.at) / DIV * beatSec;
     if (s.kind === "grace") {
       const at = on - gap * s.grace;
@@ -717,7 +726,7 @@ async function startInner(){
   if (!loaded) { $("playLabel").textContent = playText(); return "failed"; }
   const mk = mockPlay(), dp = dailyPlay(), beatSec = 60 / bpm, cyc = cycleLength(groups), reps = mk ? mk.reps : dp ? dp.reps : S.reps;
   // 雙擊的第二下標記出來(播放時輕一點);RSL 雙擊練習型(RRLL)照 #6 雙擊開放滾奏的播法:每一對的第二下輕一點
-  const dbl = !!(target && target.pattern && target.pattern.sticking === "double");
+  const dbl = !!(curPattern() && curPattern().sticking === "double");
   const list = strokes(groups).map((s, i, a) => {
     if (dbl && s.kind === "tap") return { ...s, kind: "roll", second: i % 2 === 1 };
     return s.kind === "roll" && !s.first && a[i - 1] && a[i - 1].kind === "roll" && a[i - 1].hand === s.hand && !a[i - 1].second ? { ...s, second: true } : s;
@@ -741,12 +750,12 @@ async function startInner(){
       const sec = play.endBeat * play.beatSec, wasMock = play.mock;
       lastEnd = { n: lastEnd.n + 1, scheduled: audio.scheduledCount(), at: audio.audioNow() };   // 測試用:自然播完時還排著的節點數(播完的會自己移除)與當時的時間
       if (wasMock) { const id = play.mockId; stopPlayback(true); logPractice(sec); mockRunDone(id); return; }   // 模擬考:這一項跟拍點打完(不循環、不記示範最快)
-      loopNext = !!(S.loop && cur);   // 循環的下一輪不再播報「開始 / 播完」
-      stopPlayback(true, !!(S.loop && cur));   // 循環的下一輪:手機橫式不捲回去
+      loopNext = !!(loopOn() && cur);   // 循環的下一輪不再播報「開始 / 播完」
+      stopPlayback(true, !!(loopOn() && cur));   // 循環的下一輪:手機橫式不捲回去
       logPractice(sec);
       // 示範最快只記自由練習(目標模式是官方速度的練習,不算)
-      if (!target && !S.clickOnly && (!S.best[cur.no] || bpm > S.best[cur.no])) { S.best[cur.no] = bpm; store.save(); showBest(); }
-      if (S.loop && cur) { if (S.ramp && !dseg) setBpm(bpm + 4, true); startPlayback(); }   // 今日練習的速度照速度階梯(不每輪加快)
+      if (!target && !clickOnlyOn() && (!S.best[cur.no] || bpm > S.best[cur.no])) { S.best[cur.no] = bpm; store.save(); showBest(); }
+      if (loopOn() && cur) { if (S.ramp && !dseg) setBpm(bpm + 4, true); startPlayback(); }   // 今日練習的速度照速度階梯(不每輪加快)
       return;
     }
     play.raf = requestAnimationFrame(tick);
@@ -793,6 +802,9 @@ function syncPlayOpts(){
   $("optRamp").hidden = !S.loop;   // 沒開循環播放時「每輪加快 4」沒有作用:藏起來(不放一顆不能按的鈕)
   $("optClick").setAttribute("aria-pressed", String(!!S.clickOnly));
 }
+/* 今日練習的段落不用循環 / 只聽拍點(速度卡的選項藏起來,播放照段落的設定) */
+function loopOn(){ return !!S.loop && !dseg; }
+function clickOnlyOn(){ return !!S.clickOnly && !dseg; }
 for (const [id, k] of [["optLoop", "loop"], ["optRamp", "ramp"], ["optClick", "clickOnly"]]) $(id).onclick = () => { S[k] = !S[k]; store.save(); syncPlayOpts(); };
 syncPlayOpts();
 
@@ -1027,17 +1039,21 @@ function replanWarm(){
 }
 const daily = createDaily({ routes: ROUTES, load: () => S.daily, save: d => { S.daily = d; store.save(); }, extras: { warm: warmItem } });
 const dcard = createDailyCard({ $, daily, announce,
-  labels: { ok: ["穩了", "Steady"], again: ["再練", "Not yet"],
-    hint: ["按 ▶ 聽示範,拍點會陪你打;在鼓上(或打擊墊)打穩了就按「穩了」。", "Tap ▶ for the demo with the click, play along on your kit or pad, then tap Steady."],
-    solo: ["這次 ▶ 只有拍點:自己在鼓上打,穩了就按「穩了」。", "This time ▶ is click only: play it yourself, then tap Steady."] },
+  // 段落按鈕「穩了 / 還要練」(不跟熟練度的「會了 / 再練」撞名);狀態一句短話(fold-280 不超過兩行)
+  labels: { ok: ["穩了", "Steady"], again: ["還要練", "Not yet"],
+    hint: ["▶ 聽示範,在鼓上跟著打;穩了按 ✓", "▶ for the demo; play along on your kit, then ✓"],
+    solo: ["▶ 只有拍點:在鼓上自己打,穩了按 ✓", "▶ is click only: play it, then ✓"] },
+  mark: s => (s && s.level && s.level.time === "12/8" ? "♩.=" : "♩="),   // 12/8 的速度是附點四分
   warmName: warmName, log: () => S.log,
   onStart: () => { dShow(daily.begin()); window.scrollTo({ top: 0 }); },
   onNext: () => dNext(), onMore: () => { const s = daily.addExtra(); if (s) dShow(s); },
   onOk: () => dTry({ self: "ok" }), onAgain: () => dTry({ self: "again" }),
-  onBack: () => { stopPlayback(); if (daily.back()) dShow(daily.seg()); } });
+  onBack: () => { stopPlayback(); if (daily.back()) dShow(daily.seg()); },
+  // 路線段的按鈕列:「沒有鼓?用手機鼓墊」接在「回上一關」後面、「打一遍」放在最右邊(主要按鈕;藏不藏照鼓墊模式,route.js syncPadUI)
+  acts: { left: () => (routeOn() ? [$("rModeBtn")] : []), right: () => (routeOn() ? [$("rPerform")] : []) } });
 /* 鼓墊模式的下一步(還沒打過 / 打完):照路線的狀態一句 */
-const PAD_HINT = { hint: ["按 ▶ 聽示範,再按「打一遍」用鼓墊跟著打。", "Tap ▶ for the demo, then Play it on the pads."],
-  solo: ["這次只有拍點:按「打一遍」用鼓墊打。", "Click only this time: tap Play it and use the pads."] };
+const PAD_HINT = { hint: ["▶ 聽示範,再按「打一遍」用鼓墊打", "▶ for the demo, then Play it on the pads"],
+  solo: ["只有拍點:按「打一遍」用鼓墊打", "Click only: tap Play it, use the pads"] };
 /* 路線段(律動 / 過門 / 複習)的畫面與播放 */
 const routeOn = () => !!(dseg && dseg.k !== "warm" && target && target.route);
 const rlFor = level => { const r = level.route ? level.route.id : null, v = S.rl && r ? S.rl[r] : undefined; return typeof v === "boolean" ? v : level.rl !== false; };
@@ -1081,22 +1097,12 @@ function setPadMode(on){
   if (on) requestAnimationFrame(() => revealRoute(true));
 }
 let stepDone = false, stepText = null;
-/* 段落面板(dailycard.js 畫的)的按鈕列:「沒有鼓?用手機鼓墊」接在「回上一關」後面、「打一遍」放在最右邊(主要按鈕);
-   面板每次重畫前先把這兩顆搬回 #t-rMode(重畫會清掉面板的內容),畫完再搬進去 */
-function modeHome(){ const m = $("rMode"); if (m) { m.append($("rModeBtn")); m.append($("rPerform")); } }
-function modeIn(){
-  const acts = $("dailyStep").querySelector(".daily-acts");
-  if (!acts || !routeOn()) return;
-  acts.insertBefore($("rModeBtn"), acts.querySelector(".daily-sp"));
-  acts.append($("rPerform"));
-}
-function paintStep(s, o){ modeHome(); dcard.renderStep(s, o); modeIn(); }
-const stepStatus = () => stepText || (routeOn() && rv.pad ? () => { const s = dseg; return (s.welcome ? TS("daily.welcome").replace("{b}", s.bpm) + tr("", " ") : "") + tr(...(s.click && s.click !== "every" ? PAD_HINT.solo : PAD_HINT.hint)) +
-    (s.k === "route" && !s.tries ? tr("", " ") + TS("daily.need").replace("{b}", s.target).replace("{n}", s.need) : ""); } : null);
+/* 段落面板(dailycard.js 畫的;路線段的兩顆按鈕經 createDailyCard 的 acts 放進按鈕列) */
+function paintStep(s, o){ dcard.renderStep(s, o); }
+const stepStatus = () => stepText || (routeOn() && rv.pad ? () => { const s = dseg; return (s.welcome ? TS("daily.welcome").replace("{b}", s.bpm).replace("♩=", s.level && s.level.time === "12/8" ? "♩.=" : "♩=") + tr("", " ") : "") + tr(...(s.click && s.click !== "every" ? PAD_HINT.solo : PAD_HINT.hint)); } : null);
 /* 路線段的標籤:[律動 第 3 關] [♩=68 → 90](現在的實際速度;12/8 寫 ♩.) */
 function routeTags(){
-  const tags = dcard.segTags({ ...dseg, bpm });
-  return dseg.level && dseg.level.time === "12/8" ? tags.map(t => t.replace("♩=", "♩.=")) : tags;
+  return dcard.segTags({ ...dseg, bpm });   // 12/8 的 ♩.= 由 dailycard 的 mark 處理
 }
 function paintTags(){ if (dseg && target && target.daily) $("qTags").innerHTML = (dseg.k === "warm" ? dcard.segTags({ ...dseg, bpm }) : routeTags()).map(t => `<span class="q-tag">${t}</span>`).join(""); }
 /* 路線段:藏起打法的鼓譜卡、選擇器的選項;顯示鼓組譜卡(鼓墊卡看模式) */
@@ -1119,6 +1125,7 @@ function dShow(s, status = null){
   stopPlayback();
   if (!s) { dExit(); return; }
   dseg = s; dcard.showing = true; stepDone = false; stepText = status;
+  ROOT.classList.add("daily-on");   // 段落進行中:練習紀錄卡、速度卡的選項藏起來(app.css)
   if (ctx && ctx.setSubActive) ctx.setSubActive(false, "tech");
   $("picker").hidden = true;
   if (s.k === "warm") {
@@ -1144,6 +1151,7 @@ function dExit(){
   stopPlayback();
   const wasRoute = routeOn();
   dseg = null; dcard.showing = false;
+  ROOT.classList.remove("daily-on");
   if (target && target.daily) target = null;
   routeMode(false);
   if (ctx && ctx.setSubActive) ctx.setSubActive(true, "tech");

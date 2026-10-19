@@ -486,6 +486,8 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 #t-rScroll{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;display:flex}
 #t-rScroll::-webkit-scrollbar{display:none}
 #t-rOsmd{flex:none;width:auto;margin:0 auto;padding:0;position:relative;will-change:transform;color:#16130D}
+/* 今日練習的路線譜放不下一行時換行(一小節一行;score.js 的 perLine):照紙張寬度排,不左右捲 */
+#t-rStage.wrap #t-rOsmd{flex:1 1 auto;width:100%;min-width:0}
 #t-rOsmd .dd-stick{fill:#16130D}
 #t-rPlayline{
   position:absolute;width:2px;left:0;top:0;bottom:0;

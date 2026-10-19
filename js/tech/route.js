@@ -1,7 +1,7 @@
 /* 今日練習的路線段(律動 / 過門 / 複習):鼓組譜 + 圖例 + 左右手、▶ 示範(整組鼓 + 拍點,一直循環到停止)、手機鼓墊「打一遍」與評分。
    DrumDrill 自己的(技巧模組用;元素 id 用模組的 $,前綴 t-):
      #t-rScoreCard(#t-rStage / #t-rScroll / #t-rOsmd / #t-rPlayline / #t-rPaperMsg、#t-rLegend、#t-rlBtn「標示左右手」)
-     #t-rPadCard(#t-rPads 三個鼓墊、#t-rPadNote、#t-rResult、#t-rKitBtn 改回在鼓上打)、題目卡裡的 #t-rMode(「沒有鼓?用手機鼓墊」/ #t-rPerform 打一遍)
+     #t-rPadCard(#t-rPads 三個鼓墊、#t-rPadNote、#t-rResult、#t-rKitBtn 改回在鼓上打)、段落面板按鈕列的 #t-rModeBtn(「沒有鼓?用手機鼓墊」)/ #t-rPerform(打一遍)(dailycard.js 的 acts 放進去)
    - 譜:routespec.js 的 toSpec → kitnotation scoreXML → score.js(一整行 + 播放軸);legend.js 的 setupKit / decorate / drawLegend(plain:自由練習不寫出處)
    - 左右手:手打的每個音下面 R / L(routespec 的 hand;和弦上下疊);腳不標。關卡的 rl 預設,題目卡的開關每條路線記住
    - 示範:player.js + kitevents;拍點照拍點模式(daily.js 的 clickPlays;每 4 拍一小節,12/8 = 附點四分一拍);拍點模式不是每拍 = 只有拍點(自己打)
@@ -31,18 +31,44 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
   let pad = false, active = true, kitJob = null, loadingP = null;
 
   /* ── 譜 ── */
-  /* 縮放:平常照畫面寬度;整份(2 或 4 小節)放不下紙張寬度時縮到放得下(最小 0.5,再小就左右捲) */
-  let fitZ = null, fitW = 0;
-  const zoom = () => Math.min(window.innerWidth < 600 ? 0.9 : window.innerWidth < 1100 ? 1 : 1.15, fitZ || Infinity);
+  /* 縮放:平常照畫面寬度;整份(2 或 4 小節)一行放不下紙張寬度時縮到放得下(不小於 ONE_MIN);
+     再小就換行(像視奏的考卷):4 小節先試每行 2 小節(不小於 ONE_MIN),最後一小節一行(不小於 WRAP_MIN1)— 不左右捲 */
+  const ONE_MIN = 0.55, WRAP_MIN1 = 0.45;   // 0.55 = 視奏考卷排法的下限(口袋總譜大小)
+  let fitZ = null, fitW = 0, wrapN = 0;
+  const baseZ = () => (window.innerWidth < 600 ? 0.9 : window.innerWidth < 1100 ? 1 : 1.15);
+  const zoom = () => Math.min(baseZ(), fitZ || Infinity);
   function fitOnce(){
     const svg = $r("osmd").querySelector("svg"), avail = $r("stage").clientWidth - 16;
     if (!svg || !avail || !score.osmd) return;
     fitW = $r("stage").clientWidth;
+    if (wrapN) return;
     const w = svg.getBoundingClientRect().width;
-    if (w > avail + 1) { fitZ = Math.max(0.45, score.osmd.zoom * avail * 0.97 / w); score.refit(); }
+    if (w <= avail + 1) return;
+    const z1 = score.osmd.zoom * avail * 0.97 / w;
+    if (z1 >= ONE_MIN) { fitZ = z1; score.refit(); return; }
+    // 一行放不下:換行
+    const bars = score.osmd.GraphicSheet.MeasureList.length, o = score.osmd;
+    const fits = (n, z) => {
+      wrapN = n; o.zoom = z; score.render();
+      const sys = score.systems(), rem = bars % n;
+      return sys.length === Math.ceil(bars / n) && sys.every((sy, i) => (sy.GraphicalMeasures || []).length === (i === sys.length - 1 && rem ? rem : n));
+    };
+    let pick = null;
+    for (const n of bars > 2 && bars % 2 === 0 ? [2, 1] : [1]) {
+      const floor = n === 1 ? WRAP_MIN1 : ONE_MIN;
+      if (!fits(n, floor)) continue;
+      let lo = floor, hi = baseZ();
+      if (fits(n, hi)) lo = hi;
+      else for (let k = 0; k < 6; k++) { const mid = (lo + hi) / 2; if (fits(n, mid)) lo = mid; else hi = mid; }
+      pick = { n, z: Math.floor(lo * 100) / 100 }; break;
+    }
+    if (!pick) pick = { n: 1, z: WRAP_MIN1 };
+    wrapN = pick.n; fitZ = pick.z; score.refit();
   }
   const score = createScore({
-    $: $r, zoom,
+    $: $r, zoom, perLine: () => wrapN,
+    // 換行時:R / L 寫在譜下面,行與行之間多留兩排字的空間
+    beforeRender: (osmd, n) => { const R = osmd.EngravingRules; if (R._sysGap == null) R._sysGap = R.MinSkyBottomDistBetweenSystems; R.MinSkyBottomDistBetweenSystems = R._sysGap + (n && rlOn() ? 6 : 0); },
     setup: osmd => setupKit(osmd, 5, cur ? cur.xml : ""),
     afterRender: svg => { if (cur && score.osmd && svg) { decorate(score.osmd, cur.xml, svg); drawHands(svg); } },
     lenBeats: () => (cur ? cur.r.lenBeats : null),
@@ -56,15 +82,19 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
     svg.querySelectorAll(".rt-hand").forEach(e => e.remove());
     if (!rlOn() || !score.osmd) return;
     const hs = handsOf(cur.r.spec, cur.key), gns = graphicalNotes(score.osmd).filter(g => g.voice === 1);
-    let bottom = -Infinity, sp = 10;
-    svg.querySelectorAll(".vf-stavenote, .vf-beam, .vf-stem").forEach(g => { const b = g.getBBox(); if (b.height) bottom = Math.max(bottom, b.y + b.height); });
-    if (!isFinite(bottom)) return;
+    // 換行排法:每一行(系統)各自的最低點;一整行時只有一行
+    const tops = wrapN ? score.systems().map(sy => (sy.PositionAndShape.AbsolutePosition.y + sy.PositionAndShape.BorderTop) * 10) : [-Infinity];
+    const sysOf = y => tops.reduce((b, t, i) => (y + 2 >= t ? i : b), 0);
+    const bottoms = tops.map(() => -Infinity);
+    let sp = 10;
+    svg.querySelectorAll(".vf-stavenote, .vf-beam, .vf-stem").forEach(g => { const b = g.getBBox(); if (b.height) { const i = sysOf(b.y + b.height / 2); bottoms[i] = Math.max(bottoms[i], b.y + b.height); } });
+    if (!bottoms.some(isFinite)) return;
     const h0 = svg.querySelector(".vf-notehead"); if (h0) sp = h0.getBBox().height || sp;
     const fs = sp * 1.45, cols = new Map();
     for (const h of hs) {
       const g = gns.find(x => x.mi === h.mi && x.t === h.t && x.k === h.k), hb = g && headBox(g.gn);
       if (!hb) continue;
-      const key = h.mi + ":" + h.t, col = cols.get(key) || { x: hb.head.x + hb.head.width / 2, hands: [] };
+      const key = h.mi + ":" + h.t, col = cols.get(key) || { x: hb.head.x + hb.head.width / 2, bottom: bottoms[sysOf(hb.head.y + hb.head.height / 2)], hands: [] };
       col.hands.push([h.k, h.hand]); cols.set(key, col);
     }
     const frag = document.createDocumentFragment();
@@ -72,7 +102,7 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
       const list = [...new Set(col.hands.sort((a, b) => b[0] - a[0]).map(x => x[1]))];   // 高的(鈸)在上
       list.forEach((hand, i) => {
         const el = document.createElementNS(NS, "text");
-        el.setAttribute("x", col.x); el.setAttribute("y", bottom + fs * (1.1 + i * 1.05)); el.setAttribute("text-anchor", "middle");
+        el.setAttribute("x", col.x); el.setAttribute("y", (isFinite(col.bottom) ? col.bottom : Math.max(...bottoms.filter(isFinite))) + fs * (1.1 + i * 1.05)); el.setAttribute("text-anchor", "middle");
         el.setAttribute("font-family", "Arial, Helvetica, sans-serif"); el.setAttribute("font-weight", "700"); el.setAttribute("font-size", fs);
         el.setAttribute("class", "rt-hand dd-stick"); el.textContent = hand;
         frag.appendChild(el);
@@ -103,12 +133,12 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
     $("rResult").hidden = true; $("rResult").innerHTML = "";
     syncRlBtn(); syncPadUI();
     if (score.osmd) setupKit(score.osmd, 5, xml);
-    fitZ = null;
+    fitZ = null; wrapN = 0;
     score.load(osmdXML(xml)).then(done => { if (done && cur && cur.xml === xml) fitOnce(); });
     drawLegend($("rLegend"), { pieces: r.pieces, lines: 5, key, plain: true }).catch(e => console.error(e));
     preload();
   }
-  function hide(){ stop(); cur = null; $("rScoreCard").hidden = true; $("rPadCard").hidden = true; $("rMode").hidden = true; }
+  function hide(){ stop(); cur = null; $("rScoreCard").hidden = true; $("rPadCard").hidden = true; }
 
   /* ── 整組鼓 ── */
   const padPiece = () => ({ cym: cur && cur.r.pieces.includes("ride") && !cur.r.pieces.includes("hh") ? "ride" : "hh", drum: "snare", foot: "kick" });
@@ -236,7 +266,6 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
   function syncPadUI(){
     const on = !!cur && pad;
     $("rPadCard").hidden = !on;
-    $("rMode").hidden = true;   // 只是暫放的地方:兩顆按鈕搬進段落面板的按鈕列(app.js modeIn)
     $("rModeBtn").hidden = on;
     $("rPerform").hidden = !on;
     pairText($("rModeBtn"), () => tr("沒有鼓?用手機鼓墊", "No kit? Use the phone pads"));
@@ -252,7 +281,7 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
 
   return {
     show, hide, stop, retempo, preload,
-    get cur(){ return cur; }, get mode(){ return mode; }, get loading(){ return loadingP; }, score, pads,
+    get cur(){ return cur; }, get mode(){ return mode; }, get fit(){ return { wrapN, zoom: score.osmd ? score.osmd.zoom : null }; }, get loading(){ return loadingP; }, score, pads,
     get pad(){ return pad; }, set pad(v){ pad = !!v; syncPadUI(); },
     set active(v){ active = !!v; if (!active) stop(); },
     toggleDemo(opts){ if (mode === "demo") { stop(); return; } if (!mode) start("demo", opts); },
@@ -262,7 +291,7 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
     onResize(){
       if (!cur || $("rScoreCard").hidden) return;
       const pend = score.pending;
-      if (Math.abs($r("stage").clientWidth - fitW) > 24) { fitZ = null; score.onResize(); if (score.osmd) { score.refit(); fitOnce(); } return; }
+      if (Math.abs($r("stage").clientWidth - fitW) > 24) { fitZ = null; wrapN = 0; score.onResize(); if (score.osmd) { score.refit(); fitOnce(); } return; }
       score.onResize();
       if (pend && !score.pending) requestAnimationFrame(fitOnce);
     },
