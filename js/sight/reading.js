@@ -6,6 +6,7 @@
      存的是鼓件清單(不是快捷的名字),舊版的「基本 / 加筒鼓 / 全套」讀進來剛好等於 1 / 2 / 4,「只有筒鼓」變成自訂三個 Toms;
      自訂(drumkey.json 每個鼓件一顆,開 Hi-hat、關 Hi-hat、Cross stick、Ride bell 這種同鼓不同記號也各一顆)、
      模式(練習 / 60 秒 / 連對)
+   題目(鼓件 / 時值):「時值」= 看一個音符或休止符,問「這是幾拍?」作答 ½ / 1 / 2 / 3 / 4(js/shared/values.js;快捷:四分和八分 → 加二分、全音符 → 加休止符 → 加附點)。
    挑戰、最高分、最常錯的 3 個(下一輪出現機率加倍)在 js/shared/drill.js;設定與紀錄存在 drumdrill.sight.v1 的 read(消毒)。
    都是 App 的練習設定;不寫級數、考試名稱、頁碼 */
 import { tr, pairText } from "../shared/i18n.js";
@@ -14,6 +15,7 @@ import { createDrill } from "../shared/drill.js";
 import { legendXML, osmdXML } from "../shared/kitnotation.js";
 import { setupKit, decorate } from "../shared/legend.js";
 import { frameStaff } from "../shared/staffframe.js";
+import { VALUES, VALUE_SETS, BEATS, beatLabel, valueName, beatText, setOf, valueXML } from "../shared/values.js";
 
 const BASIC = ["snare", "kick", "hh"], TOMS = ["tomHi", "tomMid", "tomFloor"];
 const CYMBALS = ["ride", "crash"];
@@ -29,7 +31,8 @@ export function cleanRead(o){
   const r = o && typeof o === "object" && !Array.isArray(o) ? o : {};
   return { pieces: Array.isArray(r.pieces) ? r.pieces.filter(x => typeof x === "string").slice(0, 20) : [...BASIC],
     mode: MODES.includes(r.mode) ? r.mode : "practice", best: r.best, miss: r.miss,
-    seen: r.seen === true,   // 答過一題:題目那行不再寫第一次的說明
+    kind: r.kind === "value" ? "value" : "piece", vset: VALUE_SETS.some(s => s[0] === r.vset) ? r.vset : VALUE_SETS[0][0],   // 題目:鼓件 / 時值
+    seen: r.seen === true, seenVal: r.seenVal === true,   // 答過一題(鼓件 / 時值各自):題目那行不再寫第一次的說明
     okN: Number.isInteger(r.okN) && r.okN > 0 ? Math.min(r.okN, 99) : 0 };   // 答對幾題(滿 3 題「不知道就先猜」那行不再出現)
 }
 
@@ -39,7 +42,10 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
   let osmd = null, q = null, last = null, active = false, lock = false, nextTimer = 0, session = { ok: 0, n: 0 }, endRes = null, t0 = 0, wrongName = null, msgFn = null;
   const key = () => drumKey();
   const valid = () => { const k = key(); return k ? R.pieces.filter(p => k.pieces[p]) : []; };
-  const setting = () => valid().slice().sort().join(",");
+  const valOn = () => R.kind === "value";
+  const setting = () => (valOn() ? "val:" + R.vset : valid().slice().sort().join(","));
+  const valList = () => setOf(R.vset)[2];
+  const targetOf = t => (valOn() ? VALUES[t].beat : t);   // 正確的作答鈕
   const nameOf = id => { const p = key() && key().pieces[id]; return p ? tr(p.name[0], p.name[1]) : id; };
   const order = () => Object.keys(key() ? key().pieces : {});
   // 自訂那一排照學習順序:小鼓、大鼓、Hi-hat → Tom 1、Tom 2、落地鼓 → Ride、Crash → 其他記號(照 drumkey.json 的順序)
@@ -55,6 +61,14 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
       drawPartNames: false, drawMeasureNumbers: false, drawingParameters: "compacttight", renderSingleHorizontalStaffline: true });
     const my = ++drawSeq;
     try {
+      if (valOn()) {   // 時值:一個音符或休止符(五線鼓譜的小鼓位置)
+        const vx = valueXML(q, "perc");
+        setupKit(osmd, 5, vx);
+        await osmd.load(vx);
+        if (my !== drawSeq) return;
+        osmd.zoom = 1; osmd.render(); fit();
+        return;
+      }
       const xml = legendXML(q, { key: key(), lines: 5 });
       setupKit(osmd, 5, xml);
       await osmd.load(osmdXML(xml));
@@ -80,9 +94,13 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
 
   function next(){
     clearTimeout(nextTimer); lock = false;
-    const list = valid();
+    const list = valOn() ? valList() : valid();
     if (list.length < 2) { q = null; $("rdScore").innerHTML = ""; say(() => tr("至少選兩個鼓件。", "Pick at least two drums.")); paintAns(); return; }
     q = drill.pick(list, setting(), Math.random, last); last = q; t0 = performance.now();
+    if (valOn()) {
+      say(() => (R.mode === "practice" || drill.running ? (R.seenVal ? tr("這是幾拍?", "How many beats?") : tr("看音符或休止符,點出是幾拍(四分音符 = 1 拍)", "How many beats? (quarter note = 1)")) : ""));
+      paintAns(); draw(); return;
+    }
     // 譜和作答格子之間這一行不空著:平常寫題目,答了寫對錯
     // 60 秒 / 連對還沒開始:不寫題目(先按「開始」)
     // 第一次(還沒答過):寫這一格在練什麼、怎麼作答
@@ -93,14 +111,16 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
   function answer(id){
     if (!q || lock || !active) return;
     if (R.mode !== "practice" && !drill.running) return;
-    const ok = id === q;
+    const ok = id === targetOf(q);
     session.n++; if (ok) session.ok++;
-    if (!R.seen || (ok && R.okN < 3)) { R.seen = true; if (ok) R.okN++; save(); }
+    if (valOn()) { if (!R.seenVal) { R.seenVal = true; save(); } }
+    else if (!R.seen || (ok && R.okN < 3)) { R.seen = true; if (ok) R.okN++; save(); }
     onAnswered((performance.now() - t0) / 1000);
     lock = true;
     wrongName = ok ? null : q;
     paintAns(id, ok);
     if (ok) say(() => tr("對了", "Right"), "ok");
+    else if (valOn()) { const t = q; say(() => tr(`答案是 ${beatText(VALUES[t].beat)}(${valueName(t)})`, `It's ${beatText(VALUES[t].beat)} (${valueName(t)})`), "no"); }
     else { const t = q; say(() => tr(`答案是${nameOf(t)}`, `It was ${nameOf(t)}`), "no"); play(t); }
     const res = drill.answer(setting(), q, id, ok);
     paintTop(); paintMiss();
@@ -121,20 +141,22 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
   /* ── 作答:這一輪的鼓件格子(照圖例的順序)── */
   function paintAns(tapped = null, ok = null){
     // 作答格子上面一行:答對 3 題以前寫「不知道就先猜」
-    $("rdGuess").hidden = R.okN >= 3 || !q;
+    $("rdGuess").hidden = R.okN >= 3 || !q || valOn();
     if (!$("rdGuess").hidden) pairText($("rdGuess"), () => tr("不知道就先猜,答錯會告訴你答案和聲音", "Just guess — a miss shows the answer and its sound"));
-    const box = $("rdAns"), list = valid().sort((a, b) => order().indexOf(a) - order().indexOf(b));
+    const box = $("rdAns"), list = valOn() ? BEATS.slice() : valid().sort((a, b) => order().indexOf(a) - order().indexOf(b));
     const sig = list.join(",");
     if (box.dataset.sig !== sig) {
       box.dataset.sig = sig;
       box.innerHTML = list.map(id => `<button type="button" class="opt rd-ans" data-v="${id}"></button>`).join("");
     }
-    const n = Math.min(4, Math.max(2, list.length <= 4 ? list.length : list.length <= 6 ? 3 : 4));
-    box.style.setProperty("--n", String(n)); box.dataset.n = String(n);   // 4 欄(全部記號)在折疊機上也是 4 欄,字可以換行
+    const n = valOn() ? 5 : Math.min(4, Math.max(2, list.length <= 4 ? list.length : list.length <= 6 ? 3 : 4));
+    box.style.setProperty("--n", String(n)); box.dataset.n = String(n);   // 4 欄(全部記號)在折疊機上也是 4 欄,字可以換行;時值 5 顆一排
+    box.classList.toggle("rd-beats", valOn());
     for (const b of box.children) {
-      b.textContent = nameOf(b.dataset.v);
+      b.textContent = valOn() ? beatLabel(b.dataset.v) : nameOf(b.dataset.v);
+      if (valOn()) b.setAttribute("aria-label", beatText(b.dataset.v)); else b.removeAttribute("aria-label");
       b.classList.toggle("wrong", tapped != null && ok === false && b.dataset.v === tapped);
-      b.classList.toggle("right", tapped != null && b.dataset.v === q);
+      b.classList.toggle("right", tapped != null && !!q && b.dataset.v === targetOf(q));
     }
   }
 
@@ -146,11 +168,18 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
     $("rdPieces").innerHTML = learnOrder().map(id => `<button type="button" class="opt" data-v="${id}" aria-pressed="${R.pieces.includes(id)}">${nameOf(id)}</button>`).join("");
     $("rdMode").innerHTML = [["practice", "練習", "Practice"], ["time", "60 秒", "60 s"], ["streak", "連續答對", "Streak"]]
       .map(([v, zh, en]) => `<button type="button" class="opt" data-v="${v}" aria-pressed="${R.mode === v}">${tr(zh, en)}</button>`).join("");
-    for (const [id, zh, en] of [["rdQuickLbl", "鼓件", "Drums"], ["rdPiecesLbl", "自訂", "Custom"], ["rdModeLbl", "模式", "Mode"]]) $(id).textContent = tr(zh, en);
+    // 題目:鼓件 / 時值(時值時藏起鼓件、自訂兩列,換成時值快捷)
+    $("rdKind").innerHTML = [["piece", "鼓件", "Drums"], ["value", "時值", "Note values"]].map(([v, zh, en]) => `<button type="button" class="opt" data-v="${v}" aria-pressed="${R.kind === v}">${tr(zh, en)}</button>`).join("");
+    $("rdVals").innerHTML = VALUE_SETS.map(([v, nm]) => `<button type="button" class="opt" data-v="${v}" aria-pressed="${R.vset === v}">${tr(nm[0], nm[1])}</button>`).join("");
+    $("rdQuick").closest(".rd-row").hidden = $("rdPieces").closest(".rd-row").hidden = $("rdNote").hidden = valOn();
+    $("rdValsRow").hidden = !valOn();
+    for (const [id, zh, en] of [["rdQuickLbl", "鼓件", "Drums"], ["rdPiecesLbl", "自訂", "Custom"], ["rdModeLbl", "模式", "Mode"], ["rdKindLbl", "題目", "Quiz"], ["rdValsLbl", "時值", "Values"]]) $(id).textContent = tr(zh, en);
     pairText($("rdQuickHint"), () => tr("每一格都包含前一格的鼓件", "Each one adds to the one before"));
+    pairText($("rdValsHint"), () => tr("每一格都包含前一格", "Each one adds to the one before"));
     pairText($("rdNote"), () => tr("自訂:點一下加入或拿掉(至少兩個)", "Custom: tap to add or remove (two or more)"));
   }
   function setText(){
+    if (valOn()) return tr("時值 · ", "Values · ") + tr(...setOf(R.vset)[1]);
     const k = key(); if (!k) return "";
     const cur = valid().slice().sort().join(","), hit = PRESETS.find(p => p[3](k).slice().sort().join(",") === cur);
     const n = valid().length;
@@ -172,14 +201,15 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
   }
   function paintMiss(){
     const t = drill.top(setting());
-    pairText($("rdMiss"), () => (t.length ? tr("最常錯:", "Most missed: ") + t.map(x => tr(`把${nameOf(x.target)}看成${nameOf(x.answer)}(${x.n} 次)`, `${nameOf(x.target)} read as ${nameOf(x.answer)} (${x.n}×)`)).join(tr(";", "; "))
+    const tn = id => (valOn() ? valueName(id) : nameOf(id)), an = id => (valOn() ? tr(" ", "") + beatText(id) : nameOf(id));
+    pairText($("rdMiss"), () => (t.length ? tr("最常錯:", "Most missed: ") + t.map(x => tr(`把${tn(x.target)}看成${an(x.answer)}(${x.n} 次)`, `${tn(x.target)} read as ${an(x.answer)} (${x.n}×)`)).join(tr(";", "; "))
       + tr("。下一輪這幾個會多出現。", ". These come up more often next round.") : ""));
   }
   function showEnd(res){
     endRes = res; clearTimeout(nextTimer); lock = true;
     if (res.reason === "stop" || res.reason === "restart") { paintTop(); return; }
     const wn = res.reason === "wrong" ? wrongName : null;
-    say(() => (wn ? tr(`答案是${nameOf(wn)}。`, `It was ${nameOf(wn)}. `) : "") + (res.kind === "time" ? tr(`時間到:答對 ${res.score} 題`, `Time's up: ${res.score} right`) : tr(`連續答對 ${res.score} 題`, `Streak: ${res.score}`))
+    say(() => (wn ? (valOn() ? tr(`答案是 ${beatText(VALUES[wn].beat)}(${valueName(wn)})。`, `It's ${beatText(VALUES[wn].beat)} (${valueName(wn)}). `) : tr(`答案是${nameOf(wn)}。`, `It was ${nameOf(wn)}. `)) : "") + (res.kind === "time" ? tr(`時間到:答對 ${res.score} 題`, `Time's up: ${res.score} right`) : tr(`連續答對 ${res.score} 題`, `Streak: ${res.score}`))
       + (res.newBest ? tr(" · 新紀錄!", " · New best!") : tr(` · 最高 ${res.best}`, ` · best ${res.best}`)), res.newBest ? "ok" : "");
     paintTop(); paintMiss();
   }
@@ -189,6 +219,8 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
     save(); paintOpts(); paintTop(); paintMiss(); next();
   }
   const segClick = (id, fn) => $(id).addEventListener("click", e => { const b = e.target.closest("button[data-v]"); if (b) fn(b.dataset.v); });
+  segClick("rdKind", v => { if (v === R.kind) return; R.kind = v === "value" ? "value" : "piece"; q = null; last = null; changed(); });
+  segClick("rdVals", v => { R.vset = v; changed(); });
   segClick("rdQuick", v => { const p = PRESETS.find(x => x[0] === v); if (p && key()) { R.pieces = p[3](key()).slice(); changed(); } });
   segClick("rdPieces", v => {
     const on = R.pieces.includes(v);
@@ -206,7 +238,7 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
   $("rdStart").onclick = () => { endRes = null; session = { ok: 0, n: 0 }; drill.start(R.mode, setting(), () => paintTop()); paintTop(); next(); };
 
   return {
-    enter(){ active = true; paintOpts(); paintTop(); paintMiss(); if (!q || !valid().includes(q)) next(); else { paintAns(); draw(); } },
+    enter(){ active = true; paintOpts(); paintTop(); paintMiss(); if (!q || !(valOn() ? valList() : valid()).includes(q)) next(); else { paintAns(); draw(); } },
     leave(){ active = false; clearTimeout(nextTimer); if (drill.running) drill.stop(); },
     relang(){ paintOpts(); paintTop(); paintMiss(); paintAns(); if (msgFn) say(msgFn); },
     get state(){ return { q, mode: R.mode, running: drill.running, score: drill.score, session: { ...session }, setting: setting() }; },

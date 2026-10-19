@@ -517,3 +517,8 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 @media (min-width:1100px){ #t-rStage{max-width:820px;margin-left:auto;margin-right:auto} }
 /* 段落按鈕列:文字縮短以後折疊機也排得進一行(放不下才自然換行) */
 @media (max-width:360px){ #t-dailyStep .daily-acts .daily-sp + .btn{margin-left:auto} }   /* 換行時按鈕靠右 */
+/* 認譜的時值模式:作答 ½ 1 2 3 4 一排(數字大) */
+.rd-ans-grid.rd-beats{grid-template-columns:repeat(5,minmax(0,1fr))}
+.rd-ans-grid.rd-beats .opt{font-family:"Noto Serif TC",serif;font-size:var(--fs-xl);font-weight:700;min-height:52px}
+.rd-row[hidden]{display:none}
+.rd-seg.rd-vals .opt{white-space:nowrap;padding:4px 2px}
