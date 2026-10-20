@@ -1224,6 +1224,7 @@ let loadFn = null;
 function loading(p){
   loadFn = p == null ? null : () => tr(`載入鼓聲 ${Math.round(p * 100)}%`, `Loading drums ${Math.round(p * 100)}%`);
   $("loadingMsg").textContent = loadFn ? loadFn() : "";
+  $("infoRow").hidden = !loadFn;   // 標題下那一列只放載入進度(標籤在標題同一行):沒在載入就收掉
 }
 const within = (p, ms) => Promise.race([p, new Promise(r => setTimeout(r, ms))]);
 /* 叫醒音訊、等取樣;回傳 false = 不能播(取樣沒載到、等的時候離開了 / 換題了) */
@@ -1305,11 +1306,11 @@ function refreshTexts(){
   const c = cur, name = freeLevel() && mode !== "exam" ? tr(...TYPE_LABEL[c.type]) : `${sysName(c.sys)} ${gl(c.grade, c.sys)}`;   // 沒選考試:標題 = 題型(難度在題目卡自己的一列)
   $("qTitle").classList.remove("empty");
   $("qTitle").textContent = name;
-  // 沒選考試(聽力分頁):不寫「照 RSL N 級大綱出的練習題」、practiceOnly、頁碼(跟視奏分頁一樣);譜卡標題「回打譜」
+  // 沒選考試(聽力分頁):不寫「照 RSL N 級大綱出的練習題」、practiceOnly、頁碼(跟視奏分頁一樣);譜卡標題「鼓譜」
   const plain = plainMode();
   $("practiceOnly").hidden = plain;
   pairText($("practiceOnly"), () => (plain ? "" : tr(`照 ${sysName(c.sys)} ${gl(c.grade, c.sys)}大綱出的練習題 · `, `Practice set from the ${sysName(c.sys)} ${gl(c.grade, c.sys)} syllabus · `) + TS("practiceOnly")));
-  $("scoreTitle").textContent = plain ? tr("鼓譜", "Chart") : c.sys === "rsl" ? tr("正確的譜", "The answer") : tr("Song chart(歌曲譜;App 出題)", "Song chart (App test)");
+  $("scoreTitle").textContent = tr("鼓譜", "Drum part");   // 譜卡標題一律「鼓譜」(畫面設計 2026-10)
   $("scoreSub").textContent = plain ? "" : c.sys === "rsl" ? V.srcOf("rsl", c.q.src && c.q.src.p) : V.srcOf("trinity", (c.q.src || []).join(", "));
   pairText($("stepQ"), () => (phase === "choose" ? tr("哪一個是剛才的過門?", "Which one did you hear?") : ""));
   pairText($("alongNote"), () => alongNote());
@@ -1411,7 +1412,7 @@ function renderResult(){
   const orKeys = (zh, en) => (showKeys() ? [`${zh},或用鍵盤 ${keys}。`, `${en}, or use keys ${keys}.`] : [`${zh}。`, `${en}.`]);
   const byMic = R.src === "mic";
   if (R.kind === "rsl") {
-    add("r-head", () => (byMic ? tr(...MIC_TEXT.head) : tr("練習回饋 · 節奏(觸控鼓墊)", "Practice feedback · rhythm (touch pads)")));
+    if (byMic) add("r-head", () => tr(...MIC_TEXT.head));   // 不加「練習回饋 · …」小標(畫面設計 2026-10)
     if (R.micFail) add("", () => tr(...micFailText(R.micFail)));
     const r = R.r;
     if (byMic && (R.silent || !R.taps)) add("", () => tr(...MIC_TEXT.silent));
@@ -1428,7 +1429,7 @@ function renderResult(){
       const ln = cur.lanes.length > 1 ? laneNote(r, cur.lanes) : null; if (ln) add("", () => tr(ln[0], ln[1]));
     }
   } else {
-    add("r-head", () => (byMic ? tr("練習回饋 · 第二次(麥克風,每一句的節奏)", "Practice feedback · play 2 (mic, rhythm per phrase)") : tr("練習回饋 · 第二次(每一句的節奏)", "Practice feedback · play 2 (rhythm per phrase)")));
+    if (byMic) add("r-head", () => tr("第二次(麥克風,每一句的節奏)", "Play 2 (mic, rhythm per phrase)"));
     if (R.micFail) add("", () => tr(...micFailText(R.micFail)));
     if (byMic && (R.silent || !R.taps)) add("", () => tr(...MIC_TEXT.silent));
     else if (!R.taps) add("", () => tr(...orKeys("沒有收到鼓墊的敲擊。輪到你打的時候點鼓墊", "No pad hits came in. Tap the pads on your turn")));
@@ -1447,7 +1448,7 @@ function renderResult(){
   }
   // 固定說明一行
   if (byMic) add("disclaimer", () => tr(...MIC_TEXT.disclaimer));
-  else add("disclaimer", () => tr("只評時間 · 練習回饋,不是考試分數", "Timing only · practice feedback, not an exam mark"));
+  else if (!R.free) add("disclaimer", () => tr("只評時間 · 練習回饋,不是考試分數", "Timing only · practice feedback, not an exam mark"));   // 自由練習不寫
   if (R.free && R.cat) paintVotes(box, R, v => vote(R, v));   // 沒選考試:這一題的難度(下一題照新的難度出)
   box.hidden = false;
 }

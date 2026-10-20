@@ -5,7 +5,7 @@
      回傳要寫在畫面上的變化({ from, to, why: "up" | "down" }),沒變是 null
    - 存在模組自己的 store:store.level = { 分類: n }(調過才有)、store.streak = { 分類: { hi, lo } };讀進來先消毒(createLevels 做)
    難度階段是 App 的練習設定:畫面上不寫考試名稱、級數名、頁碼 */
-import { tr, pairText } from "./i18n.js";
+import { tr, pairText, onLang } from "./i18n.js";
 
 export const AUTO_UP = { n: 3, score: 90 }, AUTO_DOWN = { n: 2, score: 50 };
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -93,14 +93,15 @@ export function levelText({ auto = null, vote = null, from, to, max, hint = null
 /* 在 box 最後加上「這一題的難度」一排三顆鈕 + 一句話。onVote(v) 由模組處理(levels.vote、重畫設定卡、播報);
    R.lvText = 目前要顯示的那一句(函式,換語言重寫) */
 let qSeq = 0;
+const VOTE_Q = () => tr("這題對你來說?(會調整下一題難度)", "How was it? (sets the next level)");
+onLang(() => document.querySelectorAll(".diff-fb[aria-label]").forEach(r => r.setAttribute("aria-label", VOTE_Q())));
 export function paintVotes(box, R, onVote){
   const msg = document.createElement("p"); msg.className = "diff-msg"; box.appendChild(msg);
   if (R.lvText) pairText(msg, R.lvText); else msg.hidden = true;
-  // 三顆鈕上面一行:問什麼、按了會怎樣(群組名稱用同一句)
-  const q = document.createElement("p"); q.className = "diff-q"; q.id = "diffQ" + (++qSeq); box.appendChild(q);
-  pairText(q, () => tr("這題對你來說?(會調整下一題難度)", "How was it? (sets the next level)"));
+  // 三顆鈕上面不加問句(畫面設計 2026-10:按鈕的字就說清楚了);群組名稱(無障礙)照舊說明按了會怎樣
   const row = document.createElement("div"); row.className = "diff-fb"; row.setAttribute("role", "group");
-  row.setAttribute("aria-labelledby", q.id);
+  row.id = "diffQ" + (++qSeq);
+  row.setAttribute("aria-label", VOTE_Q());
   for (const [v, t] of VOTES) {
     const b = document.createElement("button");
     b.type = "button"; b.className = "chip"; b.dataset.v = v; b.setAttribute("aria-pressed", String(R.vote === v));

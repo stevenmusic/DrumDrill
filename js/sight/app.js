@@ -644,7 +644,7 @@ $("optClick").onclick = () => { SS.clickPerform = !SS.clickPerform; save(); sync
 syncOpts();
 
 /* ── 文字(換語言時全部重寫;不停播放)── */
-const SCORE_TITLE = { snare: ["小鼓譜", "Snare part"], kit: ["鼓組譜", "Kit part"], playback: ["Playback 譜", "Playback chart"] };
+const SCORE_TITLE = ["鼓譜", "Drum part"];
 const KIND_LABEL = { assumed: () => TS("srcAssumed"), practice: () => TS("srcPractice"), omit: () => tr("不出", "Not set") };
 function refreshTexts(){
   if (!cur) return;
@@ -652,7 +652,7 @@ function refreshTexts(){
   $("title").classList.remove("empty");
   $("title").textContent = c.free ? catName(c.cat) : curName(c);   // 視奏分頁:大標題只寫分類,難度在難度列
   $("scoreSub").textContent = c.free ? "" : t.src;
-  $("scoreTitle").textContent = tr(...(c.free && c.kind === "playback" ? SCORE_TITLE.kit : SCORE_TITLE[c.kind]));   // 視奏分頁的「樂譜」:鼓組譜(不寫 Playback)
+  $("scoreTitle").textContent = tr(...SCORE_TITLE);   // 譜卡標題一律「鼓譜」(畫面設計 2026-10:不重複子項目、題目的名字)
   // 視奏分頁不寫「照 RSL N 級大綱出的練習題」、practiceOnly(那些在檢定頁);題目卡的大標題 = 分類 · 難度
   $("practiceOnly").hidden = c.free;
   if (c.free) pairText($("practiceOnly"), () => "");
@@ -1325,7 +1325,7 @@ function finishPerform(){
   if (freeQ()) { played = true; if (!SS.intro[cur.cat]) { SS.intro[cur.cat] = true; save(); } }
   renderAlongLabel(); renderPrepareLabel(); syncButtons();
   renderResult();
-  showChecklist("self");
+  showChecklist(cur.free ? null : "self");   // 自我檢查只在檢定頁(練習、模擬考);視奏分頁不放
   if (!mockOn() && active) requestAnimationFrame(() => showResultBox());
   say(() => (freeQ() ? tr("按 ▶ 對照正確版本,或下一題。", "Press ▶ to compare, or Next.") : tr("打完了。看下面的練習回饋;按 ▶ 聽正確版本,或按「下一題」。", "Done. See the feedback below; tap ▶ to hear it, or Next.")), true);
   announce(tr("打完了。", "Done. ") + resultSpeech(lastResult) + (lastResult.lvText ? " " + lastResult.lvText() : ""));
@@ -1355,14 +1355,15 @@ function renderResult(){
   const r = R.r, multi = R.lanes.length > 1, byMic = R.src === "mic";
   box.innerHTML = "";
   const add = (cls, fn) => { const p = document.createElement("p"); if (cls) p.className = cls; box.appendChild(p); pairText(p, fn); return p; };
-  add("r-head", () => (byMic ? tr(...MIC_TEXT.head) : tr("練習回饋 · 節奏(觸控鼓墊)", "Practice feedback · rhythm (touch pads)")));
+  // 結果(畫面設計 2026-10):準度 + 「打中 n / m · 漏打 · 多打」一行 + 難度回饋三顆鈕;不加「練習回饋 · …」小標(麥克風才寫一行來源)
+  if (byMic) add("r-head", () => tr(...MIC_TEXT.head));
   if (R.micFail) add("", () => tr(...micFailText(R.micFail)));
   if (byMic && (R.silent || !R.taps)) {
     add("", () => tr(...MIC_TEXT.silent));
   } else if (!R.taps) {
-    add("", () => (showKeys() ? tr(`沒有收到鼓墊的敲擊。正式打時點鼓墊,或用鍵盤 ${keysText(R.lanes)}。`,
-      `No pad hits came in. Tap the pads while you perform, or use keys ${keysText(R.lanes)}.`)
-      : tr("沒有收到鼓墊的敲擊。正式打時點鼓墊。", "No pad hits came in. Tap the pads while you perform.")));
+    add("", () => (showKeys() ? tr(`沒有收到鼓墊的敲擊。打的時候點鼓墊,或用鍵盤 ${keysText(R.lanes)}。`,
+      `No pad hits came in. Tap the pads while you play, or use keys ${keysText(R.lanes)}.`)
+      : tr("沒有收到鼓墊的敲擊。打的時候點鼓墊。", "No pad hits came in. Tap the pads while you play.")));
   } else {
     // 沒有分數(整體偏移太大):不放「—/100」,下面那句說明這次不算分數
     if (r.score != null) {
@@ -1382,9 +1383,9 @@ function renderResult(){
   const pbOff = R.pb && !R.free;
   const tempoZh = pbOff ? `速度 ♩=${R.bpm}(練習設定;官方沒寫速度)。` : R.practice ? `這一次用練習速度 ♩=${R.bpm}。` : "";
   const tempoEn = pbOff ? ` Tempo ♩=${R.bpm} (practice setting; not in the syllabus).` : R.practice ? ` Practice tempo ♩=${R.bpm} this time.` : "";
-  // 固定說明一行(下一步寫在題目卡的狀態,不在這裡重複)
-  if (byMic) add("disclaimer", () => tr(MIC_TEXT.disclaimer[0], MIC_TEXT.disclaimer[1]) + (tempoZh ? tr(" · " + tempoZh, " ·" + tempoEn) : ""));
-  else add("disclaimer", () => tr("只評時間 · 練習回饋,不是考試分數", "Timing only · practice feedback, not an exam mark") + (tempoZh ? tr(" · " + tempoZh, " ·" + tempoEn) : ""));
+  // 固定說明一行(檢定頁才寫;自由練習不寫「不是考試分數」、不寫練習速度;下一步寫在題目卡的狀態,不在這裡重複)
+  if (byMic) add("disclaimer", () => tr(MIC_TEXT.disclaimer[0], MIC_TEXT.disclaimer[1]) + (tempoZh && !R.free ? tr(" · " + tempoZh, " ·" + tempoEn) : ""));
+  else if (!R.free) add("disclaimer", () => tr("只評時間 · 練習回饋,不是考試分數", "Timing only · practice feedback, not an exam mark") + (tempoZh ? tr(" · " + tempoZh, " ·" + tempoEn) : ""));
   // 視奏分頁:這一題的難度「太簡單 / 剛好 / 太難」(+1 / 0 / −1;自動升降的那一句也寫在這裡)
   if (R.free && R.cat) paintVotes(box, R, v => vote(R, v));
   box.hidden = false;

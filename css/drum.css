@@ -205,7 +205,7 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 .pads{display:grid;grid-template-columns:repeat(3, minmax(80px, 1fr));gap:10px;max-width:720px;margin:0 auto;touch-action:none;
   -webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .pads[data-n="1"]{grid-template-columns:minmax(80px, 320px);justify-content:center}
-.pads .tap-pad{width:auto;min-width:80px;height:clamp(96px, 22vh, 150px);padding:6px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+.pads .tap-pad{width:auto;min-width:80px;height:96px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
   font-size:var(--fs-xl);line-height:1.2;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
 .pads .pad-name{max-width:100%;white-space:normal;word-break:keep-all;overflow-wrap:normal;text-align:center}   /* 「腳踩」不在中間斷(只在空白處換行) */
 /* 動態字級:鼓墊的字(本來就 19px)不跟著放大(跟分頁列一樣;三個鼓墊一排,放大了「Kick · HH」放不下) */
@@ -295,9 +295,9 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
   body.view-exam #e-paneExam{grid-column:2 !important;grid-row:1}
   /* 題目卡:標題 | 標籤 | ▶ 一行(照視奏) */
   #mod-ear .quiz{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:4px 12px}
-  #mod-ear .q-head,#mod-ear .q-row{display:contents}
+  #mod-ear .q-head,#mod-ear .q-ht,#mod-ear .q-row{display:contents}
   #mod-ear #e-qTitle,#mod-ear #e-qTitle:not(.empty){grid-column:1;grid-row:1;font-size:24px;height:auto}
-  #mod-ear .q-row .q-tags{grid-column:2;grid-row:1;min-height:0}
+  #mod-ear .q-ht .q-tags{grid-column:2;grid-row:1;min-height:0;max-width:none}
   #mod-ear .q-row .loading{grid-column:2;grid-row:2;justify-self:end}
   #e-playBtn{grid-column:3;grid-row:1;width:44px;height:44px}
   #e-feedback{grid-column:1 / -1;font-size:var(--fs-sm);min-height:0}
@@ -331,7 +331,7 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 #t-mockFoot{margin-top:8px}
 /* 手機橫式的技巧題目卡是 grid(app.css:名稱 / 標籤 / 熟練度 / ▶ 一行):模擬考的說明與下一組那一列佔滿整行,
    不然長的英文說明會把第一欄撐寬、標籤那一欄變成 0(英文版標籤消失) */
-@media (max-height:420px), (orientation:landscape) and (max-height:500px){ #t-mockMsg,#t-mockFoot{grid-column:1 / -1} }
+@media (max-height:420px), (orientation:landscape) and (max-height:500px){ #t-mockMsg,#t-mockFoot,#t-rMode{grid-column:1 / -1} }
 .mock-step{font-size:var(--fs-xs);color:var(--muted-bright);font-variant-numeric:tabular-nums;min-width:0}
 /* 練習紀錄:每週目標(照 PianoDrill 聽音的 .goal;目標是分鐘)、各級 / 各題型的統計 */
 .goal .chip{white-space:nowrap}
@@ -478,9 +478,6 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 .src-notes > .score-note{margin-top:2px}
 .src-notes.plain > summary{display:none}
 .src-notes.plain > .score-note{margin-top:0}
-/* 難度回饋三顆鈕上面一行「這題對你來說?(會調整下一題難度)」(js/shared/level.js 的 paintVotes) */
-.diff-q{margin-top:10px;font-size:var(--fs-xs);line-height:1.5;color:var(--muted-bright)}
-.diff-q + .diff-fb{margin-top:4px}
 
 /* ══ 今日練習的路線段(js/tech/route.js):鼓組譜卡 #t-rScoreCard、手機鼓墊卡 #t-rPadCard、題目卡裡的 #t-rMode ══ */
 #t-rScoreCard,#t-rPadCard{order:3}

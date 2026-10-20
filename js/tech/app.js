@@ -245,8 +245,11 @@ function renderIntro(){
 function syncMastery(){
   const m = cur && S.mastery[cur.no];
   ROOT.querySelector(".mastery").hidden = mockOn() || !!dseg;   // 模擬考進行中不標熟練度(只管打);今日練習每一段(含暖身)都不標(段落用「穩了 / 還要練」)
+  syncLastRow();
   ROOT.querySelectorAll(".mbtn").forEach(b => { b.disabled = !cur; b.setAttribute("aria-pressed", String(b.dataset.m === m)); });
 }
+/* 題目卡最後一行(左 = 熟練度,右 = 下一項):裡面沒有看得到的東西就整列收掉 */
+function syncLastRow(){ const row = ROOT.querySelector(".q-last"); row.hidden = ![...row.children].some(c => !c.hidden); }
 ROOT.querySelectorAll(".mbtn").forEach(b => b.onclick = () => {
   if (!cur) return;
   const m = b.dataset.m;
