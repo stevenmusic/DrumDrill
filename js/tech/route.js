@@ -294,12 +294,14 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
     audio.playKit(padPiece()[lane] || "snare", Math.max(time, audio.audioNow()), 0.72);
     if (run && mode === "perform") run.taps.push({ lane, time: time - run.t0 });
   });
+  let done = false;   // 這一段過關 / 複習完(面板的主要按鈕是「下一段 ›」)
   function syncPadUI(){
     const on = !!cur && pad;
     $("rPadCard").hidden = !on;
     $("rModeBtn").hidden = on;
     $("rPerform").hidden = !on;
-    pairText($("rModeBtn"), () => tr("沒有鼓?用手機打", "No kit? Use the phone"));   // 短:折疊機上跟「還要練 / 穩了」排在同一行
+    $("rPerform").classList.toggle("primary", !done);   // 同一時間只有一顆主要:過關 / 複習完出現「下一段 ›」時「打一遍」改成次要(還可以再打一次)
+    pairText($("rModeBtn"), () => tr("沒有鼓?用手機打", "Use the phone"));   // 短:折疊機上跟「還要練 / 穩了」排在同一行
     pairText($("rKitBtn"), () => tr("改回在鼓上打", "Back to the kit"));
     pairText($("rPadNote"), () => tr("先聽 1 小節拍點再打", "One bar of count-in first") + (showKeys() ? tr(" · 鍵盤 F / J / K", " · keys F / J / K") : ""));
     syncPerform();
@@ -314,6 +316,7 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
     show, hide, stop, retempo, preload,
     get cur(){ return cur; }, get mode(){ return mode; }, get fit(){ return { wrapN, zoom: score.osmd ? score.osmd.zoom : null }; }, get loading(){ return loadingP; }, score, pads,
     get pad(){ return pad; }, set pad(v){ pad = !!v; syncPadUI(); },
+    get done(){ return done; }, set done(v){ done = !!v; syncPadUI(); },
     set active(v){ active = !!v; if (!active) stop(); },
     toggleDemo(opts){ if (mode === "demo") { stop(); return; } if (!mode) start("demo", opts); },
     togglePerform(opts){ if (mode === "perform") { stop(); return; } if (mode) stop(); start("perform", opts); },

@@ -1096,7 +1096,10 @@ const dcard = createDailyCard({ $, daily, announce,
   onOk: () => dTry({ self: "ok" }), onAgain: () => dTry({ self: "again" }),
   onBack: () => { stopPlayback(); if (daily.back()) dShow(daily.seg()); },
   // 路線段的按鈕列:「沒有鼓?用手機鼓墊」接在「回上一關」後面、「打一遍」放在最右邊(主要按鈕;藏不藏照鼓墊模式,route.js syncPadUI)
-  acts: { left: () => (routeOn() ? [$("rModeBtn")] : []), right: () => (routeOn() ? [$("rPerform")] : []) } });
+  acts: {
+    // 同一時間只有一顆主要:過關 / 複習完(主要 =「下一段 ›」)時「打一遍」改成次要、放到左邊(還能再打一次)
+    left: (s, o) => { if (!routeOn()) return []; rv.done = !!(o && o.passedDone); return rv.done ? [$("rModeBtn"), $("rPerform")] : [$("rModeBtn")]; },
+    right: () => (routeOn() && !rv.done ? [$("rPerform")] : []) } });
 /* 鼓墊模式的下一步(還沒打過 / 打完):照路線的狀態一句 */
 const PAD_HINT = { hint: ["▶ 聽示範,再按「打一遍」用鼓墊打", "▶ for the demo, then Play it on the pads"],
   solo: ["只有拍點:按「打一遍」用鼓墊打", "Click only: tap Play it, use the pads"] };
@@ -1237,7 +1240,6 @@ function dTry({ self = null, score: sc = null, res = null, at = null } = {}){
   stepDone = r.passed || s.k === "review"; stepText = txt;
   syncReady();
   paintStep(dseg, { status: txt, passedDone: stepDone });
-  $("rPerform").hidden = !rv.pad || stepDone;
   dcard.render();
 }
 /* 過關、穩了:一個短的取樣音(Naked Drums xstick,跟拍點同一個取樣;不用合成音) */

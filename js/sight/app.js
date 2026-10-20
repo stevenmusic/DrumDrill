@@ -1518,8 +1518,8 @@ function renderItem(){
   pairText($("xHint"), () => (!dataOf(ex.system) ? tr("考試資料還沒載好。", "Exam data isn't loaded yet.")
     : qsp ? tr("6–8 級是 Quick Study Piece(要伴奏音軌和 lead sheet),App 不出題", "Grades 6–8 have a Quick Study Piece (backing track, lead sheet): no App tests")
     : !ok ? tr("圖例資料還沒載好。", "The drum key isn't loaded yet.")
-    : ex.system === "trinity" ? tr(`出一份譜 → 看譜 ${sec} 秒 → 跟拍點打一遍`, `${sec} s to study → play it with a click`)
-    : tr(`出一題 → 準備 ${sec} 秒 → 打一遍`, `${sec} s to prepare → play it`)));
+    : ex.system === "trinity" ? tr(`出題 → 看譜 ${sec} 秒 → 跟拍點打`, `New chart → Study ${sec} s → Play with a click`)
+    : tr(`出題 → 準備 ${sec} 秒 → 正式打`, `New test → Prepare ${sec} s → Perform`)));
   const go = ok ? tr("練習一題", "Get a test") : qsp && kindOf("rsl", 5) ? tr("練整組鼓讀譜", "Practise kit reading") : "";
   $("xGo").hidden = !go; $("xGo").textContent = go;
 }
