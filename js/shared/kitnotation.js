@@ -11,7 +11,7 @@
      measures: [{ voices: [手, 腳], slash: false, time: "6/8", hideEmpty: false }]
                            voices[0] = 手(voice 1、符桿朝上)、voices[1] = 腳(voice 2、符桿朝下;只能有 kick、hhFoot);
                            不滿一小節的部分自動補休止;整份譜都沒有腳的話就不畫 voice 2(手的一個聲部)。
-                           slash = 自由發展的小節:每拍一個斜線符頭(不畫符桿),內容不看;time = 從這一小節起換拍號;
+                           slash = 自由發揮的小節:每拍一個斜線符頭(不畫符桿),內容不看;time = 從這一小節起換拍號;
                            hideEmpty = 這一小節空的聲部(voices[i] 是 [] 或沒寫)不印整小節休止符(<note print-object="no">,時值照算、OSMD 不畫;
                            例如還沒有全休止符的級數,腳整小節沒有打)
      dyn: [{ m, beat, mark, end }]
@@ -310,7 +310,7 @@ function tupletXML(e){
   return (e.tupStart ? `<tuplet type="start" bracket="${bracket}" show-number="actual"/>` : "") + (e.tupStop ? `<tuplet type="stop"/>` : "");
 }
 
-/* 自由發展的小節:每一組(拍)一個斜線符頭,不畫符桿 */
+/* 自由發揮的小節:每一組(拍)一個斜線符頭,不畫符桿 */
 function slashXML(meter, lines){
   const pitch = lines === 1 ? ["E", 4] : ["B", 4];
   return meter.groups.map(g => {

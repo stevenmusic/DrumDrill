@@ -1,4 +1,4 @@
-// 鼓組記譜的樣張(notation-preview.html?kit=…、notation.mjs、checks/kitxml.mjs 共用):每個鼓件 × 每種修飾、拍號、連音、力度、自由發展小節、單線譜
+// 鼓組記譜的樣張(notation-preview.html?kit=…、notation.mjs、checks/kitxml.mjs 共用):每個鼓件 × 每種修飾、拍號、連音、力度、自由發揮小節、單線譜
 // 這些只是記號的樣張(看 OSMD 畫不畫得出來),不是題目
 import key from "../../data/drumkey.json" with { type: "json" };
 const N = (piece, o = {}) => ({ piece, ...o });
@@ -83,7 +83,7 @@ const OTHER = [
   // 滾奏:斜線 1–3 條、多次反彈(z)
   { id: "rolls", group: "dyn", spec: { time: "4/4", measures: [{ voices: [[ev("4", N("snare"), { roll: 1 }), ev("4", N("snare"), { roll: 2 }), ev("4", N("snare"), { roll: 3 }), ev("4", N("snare"), { buzz: true })]] },
     { voices: [[ev("2", N("snare"), { roll: 3, tie: true }), ev("4", N("snare")), ev("8", N("tomFloor"), { buzz: true }), ev("8", N("snare", { accent: true }))]] }] } },
-  // 自由發展的小節(斜線)
+  // 自由發揮的小節(斜線)
   { id: "slash", group: "slash", spec: { time: "4/4", measures: [rock(), rock(), { slash: true }, { slash: true }] } },
   { id: "slash-68", group: "slash", spec: { time: "6/8", measures: [{ voices: [rep(6, () => ev("8", N("hh"))), [ev("4.", N("kick")), ev("4.", N("kick"))]] }, { slash: true }] } },
   // 單線譜(RSL 小鼓視奏):小節線、拍號、重音、力度、休止、連結線

@@ -5,14 +5,14 @@
 //    時值 ♩ ♩. ♪ ♪. ♬、休止符 𝄽 𝄾、4/4、8 小節、♩ 範圍;附點八分只出現在「8. 16」「16 8.」(同一拍);鼓件只有整組鼓的 8 個(推估);
 //    不寫力度、重音、開閉 HH、鬼音、裝飾音、滾奏、連結線
 // 2. 每小節每個聲部的時值:自己的表重算 = 4 拍;MusicXML 用 kitxml.mjs 的 auditXML 再算一次;MusicXML 收到的時值 / 休止符也在白名單
-// 3. 自由發展:剛好 2 小節、在最後(slash);MusicXML 斜線符頭 = 2 × 4 個;寫出來的小節手、腳都有音
-// 4. 播放事件 = MusicXML 的音(xmlevents.mjs 只看 MusicXML 算拍位與鼓件);自由發展的小節不出聲
+// 3. 自由發揮:剛好 2 小節、在最後(slash);MusicXML 斜線符頭 = 2 × 4 個;寫出來的小節手、腳都有音
+// 4. 播放事件 = MusicXML 的音(xmlevents.mjs 只看 MusicXML 算拍位與鼓件);自由發揮的小節不出聲
 // 5. 同一個種子同一題;速度是整數、在官方範圍;白名單每個時值、休止符、鼓件在 1000 題裡至少出現一次
 // 6. toEvents 共用:Trinity Playback(playbackgen.js)每級 200 題 + 每一句單獨的譜,事件 = MusicXML(連音、連結線、換拍號、Flam / Drag 裝飾音);
-//    力度音量表 = player.js 的 DYN_VEL;漸強漸弱、sfz、重音、幽靈音的音量方向對;
+//    力度音量表 = player.js 的 DYN_VEL;漸強漸弱、sfz、重音、鬼音的音量方向對;
 //    沒寫力度 = 鼓件預設音量(PIECE_VEL,練習設定;這裡手抄 docs/GENERATORS.md §4 的表核對):drumkey 13 個鼓件都有、鈸比鼓小聲、Crash 最大聲;
 //    RSL 整組鼓視奏與 Trinity Initial(沒有力度記號)每個音 = 表上的音量;給了 opts.dyn 就全部用那一級
-// 7. 竄改:白名單外的時值 / 休止符 / 鼓件、附點八分跨拍、自由發展不在最後、事件錯位、自由發展出聲、速度超出範圍 → 一定抓到
+// 7. 竄改:白名單外的時值 / 休止符 / 鼓件、附點八分跨拍、自由發揮不在最後、事件錯位、自由發揮出聲、速度超出範圍 → 一定抓到
 import fs from "node:fs";
 import { genRslKit, NOTES } from "../../../js/shared/kitgen.js";
 import { toEvents, hitsOnly, graceBeats, DYN_VEL, PIECE_VEL, GRACE_MUL, EVENT_NOTES } from "../../../js/shared/kitevents.js";
@@ -38,7 +38,7 @@ export const PIECE_VEL_DOC = {
   hh: 0.55, hhClosed: 0.55, hhOpen: 0.6, hhFoot: 0.5, ride: 0.6, rideBell: 0.65, crash: 0.85,
   snare: 0.75, xstick: 0.7, kick: 0.75, tomHi: 0.75, tomMid: 0.75, tomFloor: 0.75
 };
-/* 沒有力度記號的譜:每個音(不含裝飾音)= 鼓件預設音量(重音 +0.2、幽靈音 ×0.4) */
+/* 沒有力度記號的譜:每個音(不含裝飾音)= 鼓件預設音量(重音 +0.2、鬼音 ×0.4) */
 export function pieceVelErrs(events){
   const bad = hitsOnly(events).filter(e => {
     let v = PIECE_VEL_DOC[e.piece]; if (v == null) return true;
@@ -60,9 +60,9 @@ export function checkKit(g, q, used = { value: new Set(), rest: new Set(), piece
   if (ms.length !== W.bars || q.bars !== W.bars) E(`小節數 ${ms.length}(應該 ${W.bars})`);
   if (q.spec.dyn && q.spec.dyn.length) E("不寫力度記號(大綱沒列)");
   if (!(Number.isInteger(q.bpm) && q.bpm >= W.bpm[0] && q.bpm <= W.bpm[1])) E(`速度 ${q.bpm} 不在 ${W.bpm.join("–")}`);
-  // 自由發展:剛好 2 小節、在最後
+  // 自由發揮:剛好 2 小節、在最後
   const slashAt = ms.map((m, i) => (m.slash ? i : -1)).filter(i => i >= 0);
-  if (slashAt.join() !== [W.bars - 2, W.bars - 1].join()) E(`自由發展的小節在 ${slashAt.map(i => i + 1).join("、") || "沒有"}(應該是最後 2 小節)`);
+  if (slashAt.join() !== [W.bars - 2, W.bars - 1].join()) E(`自由發揮的小節在 ${slashAt.map(i => i + 1).join("、") || "沒有"}(應該是最後 2 小節)`);
   if (!q.develop || q.develop.from !== W.bars - W.dev || q.develop.bars !== W.dev) E("develop 欄位不對");
   ms.forEach((m, mi) => {
     if (m.time) E(`第 ${mi + 1} 小節換拍號`);
@@ -106,13 +106,13 @@ export function checkKit(g, q, used = { value: new Set(), rest: new Set(), piece
   const X = xmlCodes(xml);
   for (const c of X.values) if (!W.values.includes(c)) E(`MusicXML 時值 ${c} 不在白名單`);
   for (const c of X.rests) if (!W.rests.includes(c)) E(`MusicXML 休止符 ${c} 不在白名單`);
-  // 播放事件 = MusicXML 的音;自由發展不出聲
+  // 播放事件 = MusicXML 的音;自由發揮不出聲
   const XE = xmlEvents(xml, key, 5);
   if (XE.slash.length !== W.dev * 4) E(`MusicXML 斜線符頭 ${XE.slash.length} 個(應該 ${W.dev * 4})`);
   const hits = hitsOnly(q.events);
   if (evKey(hits) !== evKey(XE.hits)) E("播放事件 ≠ MusicXML:" + evDiff(hits, XE.hits).join("、"));
   const devStart = (W.bars - W.dev) * 4;
-  if (q.events.some(e => e.beat >= devStart - 1e-9)) E("自由發展的小節有出聲的事件");
+  if (q.events.some(e => e.beat >= devStart - 1e-9)) E("自由發揮的小節有出聲的事件");
   if (q.events.some(e => !(e.vel > 0 && e.vel <= 1))) E("事件音量不在 0–1");
   errs.push(...pieceVelErrs(q.events));
   if (!q.notes.includes("pieceVel")) E("要說明鼓件預設音量(pieceVel,練習設定)");
@@ -168,9 +168,9 @@ export default function check(ok){
     tamper(q => { hand(q).splice(0, hand(q).length, { value: "r16" }, { value: "16", notes: [{ piece: "snare" }] }, { value: "8", notes: [{ piece: "snare" }] }, { value: "4", notes: [{ piece: "snare" }] }, { value: "r4" }, { value: "4", notes: [{ piece: "snare" }] }); }, /休止符 r16 不在/, "十六分休止符要抓到");
     tamper(q => { hand(q)[0].notes = [{ piece: "rideBell" }]; }, /rideBell 不在整組鼓/, "Ride 碗要抓到");
     tamper(q => { hand(q).splice(0, hand(q).length, ...["8", "8.", "16", "8", "4", "4"].map(v => ({ value: v, notes: [{ piece: "snare" }] }))); }, /附點八分要跟十六分/, "附點八分跨拍要抓到");
-    tamper(q => { const m = q.spec.measures; [m[5], m[6]] = [m[6], m[5]]; }, /自由發展的小節在/, "自由發展不在最後要抓到");
+    tamper(q => { const m = q.spec.measures; [m[5], m[6]] = [m[6], m[5]]; }, /自由發揮的小節在/, "自由發揮不在最後要抓到");
     tamper(q => { q.events[3].beat += 0.25; }, /播放事件 ≠ MusicXML/, "事件錯位要抓到");
-    tamper(q => { q.events.push({ beat: 26, piece: "snare", vel: 0.7 }); }, /自由發展的小節有出聲|播放事件 ≠/, "自由發展出聲要抓到");
+    tamper(q => { q.events.push({ beat: 26, piece: "snare", vel: 0.7 }); }, /自由發揮的小節有出聲|播放事件 ≠/, "自由發揮出聲要抓到");
     tamper(q => { q.bpm = 95; }, /速度 95 不在/, "4 級 ♩=95 要抓到");
     tamper(q => { q.events.forEach(e => { e.vel = 0.7; }); }, /不是鼓件預設音量/, "沒寫力度卻全部 mf(0.7)要抓到");
     tamper(q => { hand(q)[0].notes[0].accent = true; }, /不寫 accent/, "重音要抓到");
@@ -211,7 +211,7 @@ export default function check(ok){
       dyn: [{ m: 0, beat: 0, mark: "p" }, { m: 0, beat: 0, mark: "cresc" }, { m: 1, beat: 0, mark: "f" }, { m: 1, beat: 3, mark: "sfz" }, { m: 2, beat: 0, mark: "dim" }] };
     const v = toEvents(spec).map(e => e.vel);
     ok(v[0] === DYN_VEL.p && v[1] > v[0] && v[2] > v[1] && v[3] > v[2] && v[3] < DYN_VEL.f, `漸強:p → f 要一路變大(${v.slice(0, 5).join(" ")})`);
-    ok(v[4] === DYN_VEL.f && v[5] > DYN_VEL.f && v[6] < DYN_VEL.f && v[7] === 1, `重音 > f、幽靈音 < f、sfz = 1(${v.slice(4, 8).join(" ")})`);
+    ok(v[4] === DYN_VEL.f && v[5] > DYN_VEL.f && v[6] < DYN_VEL.f && v[7] === 1, `重音 > f、鬼音 < f、sfz = 1(${v.slice(4, 8).join(" ")})`);
     ok(v[8] === DYN_VEL.f && v[11] < v[8] && v[11] > DYN_VEL.mf, `漸弱沒有接力度:f 往 mf 變小(${v.slice(8).join(" ")})`);
     const tie = toEvents({ lines: 5, time: "4/4", measures: [{ voices: [[sn("2"), { ...sn("4"), tie: true }]] }, { voices: [[sn("4"), sn("4"), sn("2")]] }] });
     ok(tie.length === 4 && !tie.some(e => e.beat === 4), "跨小節的連結線:接續的音不出聲");
@@ -233,7 +233,7 @@ export default function check(ok){
       { voices: [all.slice(8).concat(["snare"]).slice(0, 4).map(id => ({ value: "4", notes: [{ piece: id }] }))] },
       { voices: [[sn("4", { accent: true }), sn("4", { ghost: true }), { value: "4", notes: [{ piece: "hh", open: true }] }, sn("4", { flam: true })]] }] };
     const ev = toEvents(pvs, { bpm: 90 });
-    ok(!pieceVelErrs(ev).length && ev.filter(e => e.grace).every(e => e.vel === Math.round(P.snare * GRACE_MUL * 1000) / 1000), "沒寫力度:每個鼓件用預設音量(含重音、幽靈音、開 HH、Flam 裝飾音)" + pieceVelErrs(ev).join(""));
+    ok(!pieceVelErrs(ev).length && ev.filter(e => e.grace).every(e => e.vel === Math.round(P.snare * GRACE_MUL * 1000) / 1000), "沒寫力度:每個鼓件用預設音量(含重音、鬼音、開 HH、Flam 裝飾音)" + pieceVelErrs(ev).join(""));
     const half = toEvents({ ...pvs, dyn: [{ m: 2, beat: 0, mark: "f" }] }, { bpm: 90 });
     ok(half.filter(e => e.m < 2).every(e => e.vel === P[e.piece]) && half.filter(e => e.m === 2 && !e.grace).every(e => e.vel === DYN_VEL.f), "力度記號以前用鼓件預設音量、以後全部照力度記號");
     ok(toEvents(pvs, { bpm: 90, dyn: "mf" }).filter(e => e.m < 3).every(e => e.vel === DYN_VEL.mf), "給了 opts.dyn = 沒寫力度的地方全部用那一級");

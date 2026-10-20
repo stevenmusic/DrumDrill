@@ -143,7 +143,7 @@
         "drag": ["Drag", "Drag"],
         "ruff": ["Ruff", "Ruff"],
         "independence": ["進階手腳獨立", "Extended independence"],
-        "ghost": ["幽靈音", "Ghost notes"],
+        "ghost": ["鬼音", "Ghost notes"],
         "anyTerms": ["任何常見術語與記號", "Any common terms/signs"],
         "meterChange": ["會換拍號", "Changes of metre"]
       }
@@ -183,7 +183,7 @@
       "1": { "lengthSec": [60, 150], "bpm": [60, 160], "techniques": ["同初級,加重音、斜線記譜(照風格自己打)/ cont. sim.(照前面繼續)", "As Initial, plus accents, slash notation (play in style) / cont. sim. (carry on)"], "practice": [], "src": { "p": "56" } },
       "2": { "lengthSec": [90, 180], "bpm": [50, 160], "techniques": ["開/關 Hi-hat、含裝飾音 rudiment 的過門、很簡單的 swing;鼓刷(不刷圈)、hot rods", "Open/closed hi-hat, fills with grace-note rudiments, very simple swing; brushes (no sweeps), hot rods"], "practice": [{ "cat": "flam" }, { "cat": "drag" }], "src": { "p": "56" } },
       "3": { "lengthSec": [90, 210], "bpm": null, "bpmText": ["全範圍,曲中可以變速", "Full range; may change in the song"], "techniques": ["簡單的滾奏、Hi-hat 上雙手交替的 16-beat;軟槌", "Simple rolls, 16-beat on hi-hat with alternating hands; soft mallets"], "practice": [{ "cat": "roll" }], "src": { "p": "57" } },
-      "4": { "lengthSec": [150, 240], "techniques": ["幽靈音、鼓刷 scrub/swish、3 對 2", "Ghost notes, brush scrub/swish, 3 against 2"], "practice": [], "src": { "p": "57" } },
+      "4": { "lengthSec": [150, 240], "techniques": ["鬼音、鼓刷 scrub/swish、3 對 2", "Ghost notes, brush scrub/swish, 3 against 2"], "practice": [], "src": { "p": "57" } },
       "5": { "lengthSec": [150, 240], "techniques": ["快速 Hi-hat 可能要用 Moeller/多重動作;圍繞樂句/合奏重音的獨奏;完整的鼓刷 swing", "Fast hi-hat may need Moeller/multiple motions; solos around phrases and hits; full brush swing"], "practice": [], "src": { "p": "58" } },
       "6": { "lengthSec": [180, 270], "techniques": ["更快的反彈大鼓、choked Hi-hat;可選雙踏", "Faster rebound bass drum, choked hi-hat; optional double pedal"], "practice": [], "src": { "p": "58" } },
       "7": { "lengthSec": [180, 270], "techniques": ["雙踏、Toms 上更快的雙擊滾奏、更多左手帶領", "Double bass pedal; quicker tom double-stroke rolls; leading more with the left hand"], "practice": [{ "pas": 6 }], "src": { "p": "59" } },

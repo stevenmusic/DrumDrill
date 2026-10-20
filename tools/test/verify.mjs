@@ -81,7 +81,7 @@ try { gensight(ok); } catch (e) { ok(false, "視奏出題器檢查出錯:" + e.s
 // 6f. Trinity Playback 譜產生器(js/shared/playbackgen.js):每級 1000 個種子,只用累積白名單、時值、長度、聲部數、換拍號(checks/gen-playback.mjs)
 try { genplayback(ok); } catch (e) { ok(false, "Playback 產生器檢查出錯:" + e.stack); }
 // 6g. RSL 4–5 級整組鼓視奏出題器(js/shared/kitgen.js)+ 共用播放事件 toEvents(js/shared/kitevents.js;也拿 Trinity Playback 的題目核對):
-//     每級 1000 個種子,白名單(手抄大綱表)、時值、自由發展在最後 2 小節、事件 = MusicXML、竄改一定抓到(checks/gen-kit.mjs)
+//     每級 1000 個種子,白名單(手抄大綱表)、時值、自由發揮在最後 2 小節、事件 = MusicXML、竄改一定抓到(checks/gen-kit.mjs)
 try { genkit(ok); } catch (e) { ok(false, "RSL 整組鼓視奏出題器檢查出錯:" + e.stack); }
 // 6h. RSL 聽力出題器(js/ear/gen.js):Fill(♩=70、小鼓單線、白名單、干擾選項只改一拍且聽起來不同)、Groove(鼓件照級數、速度範圍、播兩遍、不出風格題)(checks/gen-ear.mjs)
 try { genear(ok); } catch (e) { ok(false, "RSL 聽力出題器檢查出錯:" + e.stack); }

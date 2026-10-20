@@ -5,7 +5,7 @@
    pat = 一小節(兩小節一樣)或 [小節, 小節, …];一小節 = { 鼓件那一行: "x--- x--- x--- x---" }
    - 一行 = 4 個「拍」用空白隔開;一拍的字數決定格子:4 字 = 十六分、2 字 = 八分、3 字 = 三連音(4/4)或八分(12/8 的一拍 = 附點四分)
    - 同一拍、同一個聲部(手 / 腳)的行字數要一樣;整拍都是 "-" 的不算(字數隨便)
-   - 字:x 打、X 重音、o 開 Hi-hat(只有 hh)、g 幽靈音(只有 sd)、- 沒有
+   - 字:x 打、X 重音、o 開 Hi-hat(只有 hh)、g 鬼音(只有 sd)、- 沒有
    - 行:hh(Hi-hat)ride cr(Crash)sd(小鼓)xs(Cross stick)t1 t2 ft(Tom 1、Tom 2、落地鼓)= 手;bd(大鼓)hf(腳踩 Hi-hat)= 腳
    - "@名稱" = 每天不一樣的那一行(GENS;同一個種子同一題):bd: "@kick8"、sd: "@snare8"、fill: "@fill2"(第 3–4 拍的過門,寫進 sd / t1 / t2 / ft)
    ── 左右手(R / L,練習設定:常見的教法)──
@@ -134,7 +134,7 @@ function voiceOf(bar, lines, { compound, where, hands, key }){
       if (c === "-") continue;
       if (!NOTE[c]) throw new Error(`${where}:不認得的字「${c}」(${k})`);
       if (c === "o" && k !== "hh") throw new Error(`${where}:o(開 Hi-hat)只能寫在 hh`);
-      if (c === "g" && k !== "sd") throw new Error(`${where}:g(幽靈音)只能寫在 sd`);
+      if (c === "g" && k !== "sd") throw new Error(`${where}:g(鬼音)只能寫在 sd`);
       mask |= 1 << i;
     }
     const code = CELLS[grid][mask], cym = hands && cells.some(([k]) => CYM.has(lines[k]));

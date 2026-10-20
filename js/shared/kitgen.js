@@ -2,11 +2,11 @@
    tools/test/checks/gen-kit.mjs 每級 1000 個種子檢查)。聽力的 Groove(js/ear/gen.js)也用這裡的「一拍 = 十六分格子」寫法(maskVoice)。
 
    官方參數照 data/exam-rsl.json 的 sight[4]、sight[5](RSL p.48、53;docs/sources/rsl-drums.md §4.1):
-     8 小節(含 2 小節自由發展)、4/4;時值 ♩、♩.、♪、♪.、♬;休止符 𝄽、𝄾;整組鼓;♩=80–90(4 級)、80–120(5 級)
+     8 小節(含 2 小節自由發揮)、4/4;時值 ♩、♩.、♪、♪.、♬;休止符 𝄽、𝄾;整組鼓;♩=80–90(4 級)、80–120(5 級)
    genRslKit(spec, seed, grade) → {
-     grade, seed, time:"4/4", bars, bpm, bpmRange, develop:{ from, bars }(自由發展的小節,0 起算), cyms:[前段, 後段],
-     spec:{ lines:5, time, measures }(kitnotation.js 的 scoreXML 直接用;自由發展的小節 = { slash:true }),
-     measures(= spec.measures), events:[{ beat, piece, vel, m }](kitevents.js 的 toEvents;自由發展的小節不出聲,播放器只打拍點),
+     grade, seed, time:"4/4", bars, bpm, bpmRange, develop:{ from, bars }(自由發揮的小節,0 起算), cyms:[前段, 後段],
+     spec:{ lines:5, time, measures }(kitnotation.js 的 scoreXML 直接用;自由發揮的小節 = { slash:true }),
+     measures(= spec.measures), events:[{ beat, piece, vel, m }](kitevents.js 的 toEvents;自由發揮的小節不出聲,播放器只打拍點),
      lenBeats, notes:[說明 key](NOTES:中英文 + kind = assumed 推估 / practice 練習設定), src
    }
    spec = exam-rsl.json 的 sight[g](type 要是 "kit");同一個 spec + seed 一定出同一題(mulberry32,跟 playbackgen.js 同一個寫法)。
@@ -15,9 +15,9 @@
    (所以只會有 4 4. 8 8. 16 與 r4 r8;附點八分只出現在「8. 16」「16 8.」,一定配十六分 = App 的出題限制,不是官方規定(NOTES.design);沒有二分、全休止符、十六分休止符)。
    推估(畫面要標):
    - 鼓件:大綱只寫「整組鼓」→ App 用 HH、小鼓、大鼓、高 / 中 / 落地鼓、Ride、Crash(KIT_SIGHT_PIECES;NOTES.kitPieces)
-   - 2 小節自由發展放在最後兩小節(斜線;NOTES.developEnd;資料檔 develop.pos assumed)
+   - 2 小節自由發揮放在最後兩小節(斜線;NOTES.developEnd;資料檔 develop.pos assumed)
    練習設定(App 的出題設計;docs/GENERATORS.md §2):
-   - 一題 = 前段 4 小節(律動 + 第 4 小節末過門)+ 後段 2 小節(Crash 開頭,第 6 小節末過門接自由發展)+ 2 小節自由發展
+   - 一題 = 前段 4 小節(律動 + 第 4 小節末過門)+ 後段 2 小節(Crash 開頭,第 6 小節末過門接自由發揮)+ 2 小節自由發揮
    - 手:鈸(HH 或 Ride,一段固定)的節奏型 + 小鼓反拍(第 2、4 拍)、偶爾多一下小鼓;大鼓:兩拍一組的節奏格;過門:小鼓 → 筒鼓往下走,有時候加大鼓
    - 不寫力度、重音、開閉 HH、鬼音、Flam / Drag(大綱只列時值;NOTES.noMarks)
    - 速度在官方範圍內隨機取整數(NOTES.tempoRandom) */
@@ -27,12 +27,12 @@ export const SIGHT_KIT_GRADES = [4, 5];
 export const KIT_SIGHT_PIECES = ["hh", "ride", "crash", "snare", "tomHi", "tomMid", "tomFloor", "kick"];
 export const NOTES = {
   kitPieces: { kind: "assumed", text: ["大綱只寫「整組鼓」:App 用 Hi-hat、小鼓、大鼓、三個 Toms、Ride、Crash", "Syllabus says 'full kit': the App uses HH, snare, kick, 3 toms, ride, crash"] },
-  developEnd: { kind: "assumed", text: ["2 小節自由發展的位置大綱沒寫,App 放在最後兩小節(斜線)", "Position of the 2-bar development not stated; the App uses the last 2 bars (slashes)"] },
+  developEnd: { kind: "assumed", text: ["2 小節自由發揮的位置大綱沒寫,App 放在最後兩小節(斜線)", "Position of the 2-bar development not stated; the App uses the last 2 bars (slashes)"] },
   design: { kind: "practice", text: ["節奏型、過門與組合方式是 App 的出題設計,不是官方題目;附點八分只配十六分是出題限制,不是官方規定", "Grooves, fills and how they combine are the App's design, not official tests; pairing ♪. only with ♬ is the App's limit, not an official rule"] },
   pieceVel: EVENT_NOTES.pieceVel,
   noMarks: { kind: "practice", text: ["大綱只列時值:App 不寫力度、重音、開關 Hi-hat", "The syllabus lists note values only: no dynamics, accents or open hi-hat"] },
   tempoRandom: { kind: "practice", text: ["速度在官方範圍內隨機", "Tempo picked at random within the official range"] },
-  developClick: { kind: "practice", text: ["自由發展的小節播放時只有拍點", "Development bars play the click only"] }
+  developClick: { kind: "practice", text: ["自由發揮的小節播放時只有拍點", "Development bars play the click only"] }
 };
 
 /* ── 亂數(mulberry32;同 playbackgen.js)── */

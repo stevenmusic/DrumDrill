@@ -56,7 +56,7 @@ const NM = {
   pieces: { snare: ["小鼓", "snare"], kick: ["大鼓", "kick"], tomHi: ["Tom 1", "tom 1"], tomMid: ["Tom 2", "tom 2"], tomFloor: ["落地鼓", "floor tom"], hh: ["Hi-hat", "hi-hat"], hhOpen: ["開 Hi-hat", "open hi-hat"],
     hhFoot: ["腳踩 Hi-hat", "foot hi-hat"], ride: ["Ride", "ride"], rideBell: ["Ride bell", "ride bell"], crash: ["Crash", "crash"], xstick: ["Cross stick", "cross stick"], kit: ["整組鼓", "full kit"] },
   extra: { ties: ["連結線", "ties"], footHH: ["腳踩 Hi-hat", "foot hi-hat"], offbeatBD: ["& 上的大鼓", "kick on the &"], hhOpenClose: ["開 / 關 Hi-hat", "open / closed hi-hat"], rimclick: ["Cross stick", "cross stick"],
-    roll: ["滾奏", "rolls"], flam: ["Flam", "flams"], drag: ["Drag", "drags"], ruff: ["Ruff", "ruffs"], ghost: ["幽靈音", "ghost notes"], meterChange: ["換拍號", "metre changes"], independence: ["手腳獨立", "independence"],
+    roll: ["滾奏", "rolls"], flam: ["Flam", "flams"], drag: ["Drag", "drags"], ruff: ["Ruff", "ruffs"], ghost: ["鬼音", "ghost notes"], meterChange: ["換拍號", "metre changes"], independence: ["手腳獨立", "independence"],
     fullKit: ["整組鼓", "full kit"], anyTerms: ["各種術語", "any terms"] }
 };
 const names = (k, list) => (list || []).map(x => (k === "time" ? [x, x] : NM[k][x] || null)).filter(Boolean);

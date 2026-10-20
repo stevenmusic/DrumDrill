@@ -10,7 +10,7 @@
 //  6. 共用播放器的其他行為:gaps 不出聲、預設拍點(只有預備拍、第一下重)、onTick(聽到的拍子,扣輸出延遲)、
 //     onTick 裡 stop() / play() 不出錯也不會兩條 rAF、看不到時 play() 不丟例外、切到背景叫 onStop、
 //     計時器被擋住時漏的音算進 dropped + onLate、bpm 不合法丟 RangeError、超出 lenBeats 的事件不播、自然播完後 stop(true) 收掉尾音
-//  7. 視奏的整組鼓播放(細項見第 7 段):Trinity x/8 用八分音符當一拍、RSL 自由發展只有拍點、換語言不停、停止後排程歸零
+//  7. 視奏的整組鼓播放(細項見第 7 段):Trinity x/8 用八分音符當一拍、RSL 自由發揮只有拍點、換語言不停、停止後排程歸零
 //  8. 聽力(js/ear/app.js):RSL Fill 聽題目中換語言不停播、文字換掉;切到技巧分頁 = 停止(題目保留);
 //     Trinity Playback(4 級種子 42)♩=240 第一次:App 播的句子有鼓聲(每個事件都出聲,句首的 Flam / Drag 裝飾音沒有被靜音),
 //     學生打的空檔只有拍點(+ 下一句句首的裝飾音;每個拍點的時間只有一個聲音節點);
@@ -443,7 +443,7 @@ const click = () => page.click("#t-playBtn");
 
 // 7. 視奏的整組鼓播放(js/sight/app.js + meter.js):聽正確版本照時間軸排程(player 的 sent = 真的排進 audio 的數目)
 //  7a. Trinity 4 級(換到有 x/8 的題目:播放器用八分音符當一拍)♩=240 播完:sent = 事件(含裝飾音)+ 拍點(meter.js 的 clickAt;拍點開),failed、dropped = 0
-//  7b. RSL 4 級拍點關掉:sent = 事件 + 預備拍 + 自由發展兩小節的拍點(自由發展沒有鼓聲、只有拍點)
+//  7b. RSL 4 級拍點關掉:sent = 事件 + 預備拍 + 自由發揮兩小節的拍點(自由發揮沒有鼓聲、只有拍點)
 //  7c. 播放中換語言不停;按 ▶ 停止後 300 ms 排程中的節點 = 0
 {
   const n0 = bad;
@@ -481,9 +481,9 @@ const click = () => page.click("#t-playBtn");
   await sightGo("rsl", 4);
   await page.evaluate(() => { window.__sight.SS.clickPerform = false; window.__sight.setBpm(240); });
   const eb = await expected(false), sb = await listenToEnd();
-  if (eb.devEv !== 0) fail(`RSL 4 級自由發展的小節有 ${eb.devEv} 個鼓聲事件`);
-  if (eb.devClicks !== 8) fail(`RSL 4 級自由發展的拍點 ${eb.devClicks} 個(應該 2 小節 × 4)`);
-  if (sb.sent !== eb.ev + eb.clicks || sb.failed || sb.dropped) fail(`RSL 4 級(拍點關)播完:sent ${sb.sent}(應該 事件 ${eb.ev} + 預備拍與自由發展的拍點 ${eb.clicks})、failed ${sb.failed}、dropped ${sb.dropped}`);
+  if (eb.devEv !== 0) fail(`RSL 4 級自由發揮的小節有 ${eb.devEv} 個鼓聲事件`);
+  if (eb.devClicks !== 8) fail(`RSL 4 級自由發揮的拍點 ${eb.devClicks} 個(應該 2 小節 × 4)`);
+  if (sb.sent !== eb.ev + eb.clicks || sb.failed || sb.dropped) fail(`RSL 4 級(拍點關)播完:sent ${sb.sent}(應該 事件 ${eb.ev} + 預備拍與自由發揮的拍點 ${eb.clicks})、failed ${sb.failed}、dropped ${sb.dropped}`);
   // 7c
   await page.evaluate(() => { window.__sight.SS.clickPerform = true; window.__sight.setBpm(80); document.getElementById("s-play").click(); });
   await waitFor(() => window.__sight.state.kind === "listen", null, 20000); await page.waitForTimeout(1500);
@@ -495,7 +495,7 @@ const click = () => page.click("#t-playBtn");
   if (left || (await page.evaluate(() => window.__sight.state.play))) fail(`視奏按停止 300 ms 後還有 ${left} 個排程中的節點`);
   await page.click("#langToggle"); await page.waitForTimeout(300);
   await page.evaluate(() => { window.__sight.SS.clickPerform = true; });
-  if (bad === n0) ok(`視奏整組鼓播放:Trinity 4 級(${ea.times.join(" ")},八分音符一拍)送出 ${sa.sent} = 事件 ${ea.ev} + 拍點 ${ea.clicks};RSL 4 級拍點關 ${sb.sent} = 事件 ${eb.ev} + 預備拍與自由發展拍點 ${eb.clicks}(自由發展沒有鼓聲);換語言不停、停止後排程歸零`);
+  if (bad === n0) ok(`視奏整組鼓播放:Trinity 4 級(${ea.times.join(" ")},八分音符一拍)送出 ${sa.sent} = 事件 ${ea.ev} + 拍點 ${ea.clicks};RSL 4 級拍點關 ${sb.sent} = 事件 ${eb.ev} + 預備拍與自由發揮拍點 ${eb.clicks}(自由發揮沒有鼓聲);換語言不停、停止後排程歸零`);
 }
 
 // 8. 聽力

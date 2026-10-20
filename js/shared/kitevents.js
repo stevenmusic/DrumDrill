@@ -6,13 +6,13 @@
    toEvents(spec, { bpm = 80, dyn }) → [{ beat, piece, vel, m, grace?, accent?, ghost? }](照 beat 排好)
    - beat = 從第一小節開頭算幾個四分音符(拍號換了照新的小節長度);時值照 kitnotation 的 valueInfo(連音、附點都算)
    - piece = drumkey.json 的鼓件 id(audio.playKit 的 KIT_VOICE 換成取樣):手打 HH 寫了 open → hhOpen、closed → hhClosed(開閉 HH 的聲音)
-   - 自由發展的小節(slash)不出聲(播放器照 click 打拍點);休止符、連結線接續的音(同一個鼓件)不出聲
+   - 自由發揮的小節(slash)不出聲(播放器照 click 打拍點);休止符、連結線接續的音(同一個鼓件)不出聲
    - vel(0–1)= 那裡的力度(練習設定,大綱沒有規定;跟 player.js 的 DYN_VEL 同一張表,gen-kit.mjs 核對):
        pp .25 / p .4 / mp .55 / mf .7 / f .85 / ff 1.0
        沒寫力度(那個位置前面沒有力度記號、也沒給 opts.dyn)= 鼓件預設音量 PIECE_VEL(練習設定:鈸比鼓小聲、Crash 最大聲,律動才有層次;
        RSL 視奏 / 聽力與 Trinity Initial 都沒有力度記號,都用這張表);給了 opts.dyn = 沒寫力度的地方全部用那一級(舊的寫法)
        漸強 / 漸弱(cresc / dim):從開始的力度直線變到結束位置(或之後)的下一個力度記號;後面沒有力度記號就變一級
-       sfz = 那一下 1.0;重音 +0.2(最多 1.0);幽靈音 ×0.4
+       sfz = 那一下 1.0;重音 +0.2(最多 1.0);鬼音 ×0.4
    - Flam / Drag 的裝飾音:跟技巧模組的示範播放(js/tech/app.js schedulePlay)一樣提前,裝飾音在主音前 min(32 ms, 1/10 拍)
      (Drag 兩下:2 倍、1 倍);拍子 = 秒 × bpm / 60,所以要給 bpm(改速度後要重算)。音量 = 那裡的力度 × 0.5(技巧 0.3 / 0.6),
      事件帶 grace:true;評分(timing.js expectedByLane)要先用 hitsOnly(events) 拿掉裝飾音。
@@ -33,7 +33,7 @@ export const PIECE_VEL = {
 export const pieceVel = piece => (PIECE_VEL[piece] != null ? PIECE_VEL[piece] : DYN_VEL.mf);
 /* 說明 key(UI 用 tr(zh, en);kind 同 playbackgen.js 的 NOTES) */
 export const EVENT_NOTES = {
-  velocity: { kind: "practice", text: ["播放音量:pp 到 ff、重音、幽靈音的音量對照是 App 自訂的", "Playback volume for pp–ff, accents and ghost notes is the App's setting"] },
+  velocity: { kind: "practice", text: ["播放音量:pp 到 ff、重音、鬼音的音量對照是 App 自訂的", "Playback volume for pp–ff, accents and ghost notes is the App's setting"] },
   pieceVel: { kind: "practice", text: ["沒寫力度時各鼓件的音量(鈸比鼓小聲)是 App 自訂的", "Default volume per drum when no dynamic is written is the App's setting"] }
 };
 

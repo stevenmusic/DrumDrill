@@ -50,7 +50,7 @@ export function createPads(el, lanes, onHit){
     for (const l of lanes) {
       const b = btns.get(l.id), name = tr(l.label[0], l.label[1]);
       // 名稱兩種語言保留比較高的高度(窄畫面「大鼓 / 腳踩 Hi-hat」換成兩行:中英版面一樣)
-      pairText(b.querySelector(".pad-name"), () => tr(l.label[0], l.label[1]));
+      pairText(b.querySelector(".pad-name"), () => tr(l.label[0], l.label[1]).replace(/-/g, "\u2011"));   // Hi-hat 不在「-」斷開(不斷行連字號;「腳踩」由 CSS keep-all 保住)
       b.querySelector(".pad-key").textContent = [].concat(l.key || [])[0] ? [].concat(l.key)[0].toUpperCase() : "";
       // 無障礙:名稱 + 鍵盤按鍵(VoiceOver 念得到;aria-keyshortcuts 給輔助工具)
       const keys = [].concat(l.key || []).map(k => k.toUpperCase());

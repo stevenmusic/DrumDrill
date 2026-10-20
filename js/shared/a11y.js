@@ -4,7 +4,7 @@
    - announce(text):寫進全頁唯一的 aria-live="polite" 區(index.html 的 #srLive)。只播報「狀態改變」:
      播放 / 停止、準備或看譜倒數開始 / 結束、正式打開始 / 結束、結果出來;不要每秒播報倒數、不要播報預備拍的每一下
    - describeSpec(spec, opts):鼓組譜(kitnotation.js 的 spec)的文字說明:「N 小節小鼓譜 / 整組鼓譜、拍號、速度」+ 每小節的簡述
-     (單線小鼓譜:每個音的時值;整組鼓:幾個音、用到哪些鼓件;斜線 = 自由發展)
+     (單線小鼓譜:每個音的時值;整組鼓:幾個音、用到哪些鼓件;斜線 = 自由發揮)
    - pieceNames(ids, key):鼓件名稱清單(圖例用)
    純文字的部分(describeSpec、valueName)不碰 DOM,Node 可以直接跑 */
 import { tr, onLang } from "./i18n.js";
@@ -101,7 +101,7 @@ export function describeSpec(spec, opts = {}){
   else if (opts.bpm) head.push(`♩=${opts.bpm}`);
   const bars = spec.measures.map((m, i) => {
     const label = tr(`第 ${i + 1} 小節`, `bar ${i + 1}`);
-    if (m.slash) return label + tr(":自由發展(斜線)", ": free development (slashes)");
+    if (m.slash) return label + tr(":自由發揮(斜線)", ": free development (slashes)");
     const voices = (m.voices || []).filter(Boolean);
     if (snare && opts.detail !== false) {
       const words = (voices[0] || []).map(noteWord);

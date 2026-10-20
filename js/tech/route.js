@@ -24,7 +24,7 @@ import { toSpec, eventsOf, handsOf, displaySpec } from "./routespec.js";
 const NS = "http://www.w3.org/2000/svg";
 const DEMO_SEC = 150;   // 示範一直循環:最多這麼久自己停(練習設定)
 
-export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, onResult, onPlayState, onLoad, rlFor, setRl }){
+export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, onResult, onPlayState, onLoad, rlFor, setRl, onHeard = () => {} }){
   const $r = id => $("r" + id[0].toUpperCase() + id.slice(1));
   let cur = null;      // { seg, level, r(toSpec 的結果), xml, key }
   let mode = null;     // "demo" | "perform" | null
@@ -192,6 +192,9 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
   const player = createPlayer({
     onTick: u => {
       if (!run) return;
+      run.u = u;
+      // 用現在的速度播過 2 小節(預備拍之後;中途改速度重算):「穩了」才能按(今日練習,dailycard 的 ready)
+      if (!run.heard && u - run.mark >= run.heardU) { run.heard = true; onHeard(); }
       const q = u * run.unit, pulse = u / run.pulseU;
       tempo.showBeat(pulse < 0 ? pulse : pulse % 4, 4);
       if (score.osmd) score.movePlayline(q < 0 ? 0 : q % cur.disp.len, true);
@@ -231,7 +234,7 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
       lenU = cycles * cycleU;
       if (!solo) events = repeatEvents(eventsOf(r, qbpm, cur.level), r.lenBeats, Math.round(lenU / patU)).map(e => ({ ...e, beat: e.beat / unit }));
     } else lenU = cycleU;
-    const R = { unit, pulseU, qbpm, cycleU, lenU, ciU: 4 * pulseU, patU, taps: [], startedAt: performance.now(), kind };
+    const R = { unit, pulseU, qbpm, cycleU, lenU, ciU: 4 * pulseU, patU, taps: [], startedAt: performance.now(), kind, u: -4 * pulseU, mark: 0, heardU: 2 * barU, heard: false };
     const tail = kind === "perform" ? pulseU : 0;
     const t0 = player.play({ events, lenBeats: lenU + tail, bpm: qbpm / unit, countInBeats: R.ciU, click: clickFn(R, click) });
     if (!(t0 > 0)) { onPlayState(null); return false; }
@@ -251,7 +254,7 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
     if (!R) return;
     const sec = Math.max(0, (performance.now() - R.startedAt) / 1000 - R.ciU * R.unit * 60 / R.qbpm);
     if (sec >= 0.5) addSec(sec);
-    if (m === "perform" && judge) judgeRun(R);
+    if (m === "perform" && judge) { onHeard(); judgeRun(R); }   // 鼓墊打完一遍也算播過
     else if (m === "demo") announce(judge ? tr("播完了", "Finished") : tr("停止了", "Stopped"));
   }
   function stop(){ if (mode) { player.stop(true); finish(false); } }
@@ -259,6 +262,7 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
     if (!run || run.kind !== "demo" || !cur) return;   // 打一遍中不改(評分照開始的速度)
     const qbpm = bpm * cur.r.pulse;
     run.qbpm = qbpm; player.retempo(qbpm / run.unit);
+    run.mark = Math.max(0, run.u); run.heard = false;   // 換了速度:要用新的速度再播 2 小節
   }
   function judgeRun(R){
     const r = cur.r, sec = 60 / R.qbpm;
@@ -296,7 +300,7 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
     $("rModeBtn").hidden = on;
     $("rPerform").hidden = !on;
     pairText($("rModeBtn"), () => tr("沒有鼓?手機鼓墊", "No kit? Phone pads"));   // 短:折疊機上跟「還要練 / 穩了」排在同一行
-    pairText($("rKitBtn"), () => tr("在鼓上打?改回自己按「穩了」", "On a kit? Back to tapping Steady"));
+    pairText($("rKitBtn"), () => tr("在鼓上打?改回按「穩了」", "On a kit? Back to Steady"));
     pairText($("rPadNote"), () => tr("先響 1 小節拍點再開始打", "One bar of count-in first") + (showKeys() ? tr(" · 鍵盤 F / J / K", " · keys F / J / K") : ""));
     syncPerform();
   }

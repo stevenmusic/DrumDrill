@@ -319,7 +319,7 @@ for (const width of [1000, 280]) {
 
 /* 7. 視奏分頁實際畫出來的整組鼓譜(S9:RSL 4、5;S10/S11:Trinity Playback Initial–8),1000 與 320 寬,每級 2 題:
    沒有繪製錯誤;小節數 = 題目;譜在紙張裡;每行幾小節照考卷規則(5 / 4 / 3 / 2,放不下才交給 OSMD)、縮放不小於 0.45(每行 3 小節以上不小於 0.55);
-   圖例格子 = 這一題用到的鼓件(五線);自由發展的斜線符頭(RSL)= 2 小節 × 4 拍 */
+   圖例格子 = 這一題用到的鼓件(五線);自由發揮的斜線符頭(RSL)= 2 小節 × 4 拍 */
 for (const width of [1000, 320]) {
   const n0 = bad;
   const { page, errors, close } = await open({ viewport: { width, height: 900 }, mobile: width < 600 });
@@ -349,7 +349,7 @@ for (const width of [1000, 320]) {
         if (want.join() !== got.join()) issues.push(`圖例 ${got.join(",")},用到的鼓件 ${want.join(",")}`);
         if (S.test.develop) {
           const slash = (S.xml.match(/<notehead>slash<\/notehead>/g) || []).length;
-          if (slash !== S.test.develop.bars * 4) issues.push(`自由發展斜線 ${slash} 個`);
+          if (slash !== S.test.develop.bars * 4) issues.push(`自由發揮斜線 ${slash} 個`);
         }
         return { issues, layout: L };
       });
@@ -359,7 +359,7 @@ for (const width of [1000, 320]) {
     if (width === 1000 || g === 8 || g === 4) await page.locator("#s-scoreCard").screenshot({ path: OUT + `sight-${sys}${g}-${width}.png` });
   }
   for (const e of errors) fail(`視奏整組鼓 ${width} 寬 console:` + e);
-  if (bad === n0) ok(`視奏 ${width} 寬:RSL 4、5 與 Trinity Initial–8 共 ${tests} 題整組鼓譜都畫得出來、小節數對、在紙張裡、每行小節數與縮放照考卷規則、圖例 = 用到的鼓件、自由發展 8 個斜線`);
+  if (bad === n0) ok(`視奏 ${width} 寬:RSL 4、5 與 Trinity Initial–8 共 ${tests} 題整組鼓譜都畫得出來、小節數對、在紙張裡、每行小節數與縮放照考卷規則、圖例 = 用到的鼓件、自由發揮 8 個斜線`);
   await close();
 }
 

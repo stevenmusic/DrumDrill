@@ -1,6 +1,6 @@
 // MusicXML → 擊打事件(獨立於 js/shared/kitevents.js 的 toEvents,檢查「播放的拍位 = 譜上的音」用;gen-kit.mjs、gen-ear.mjs 共用)
 // 只看 MusicXML:<time> 算小節長度、<duration> / <backup> 算位置、<chord/> 同一個位置、<grace> 裝飾音另外數、
-// <tie type="stop"/> = 連結線接續(不出聲)、<notehead>slash</notehead> = 自由發展(不出聲)、休止符不出聲;
+// <tie type="stop"/> = 連結線接續(不出聲)、<notehead>slash</notehead> = 自由發揮(不出聲)、休止符不出聲;
 // 鼓件 = 符頭位置 + 形狀照 drumkey.json(手打 HH 看 <open/>、<stopped/>;單線譜一律小鼓)
 const D = 2520;
 export function xmlEvents(xml, key, lines = 5){

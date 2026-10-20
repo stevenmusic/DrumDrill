@@ -12,7 +12,7 @@
 
    只用累積白名單 [Trinity RP p.62–63 → data/exam-trinity.json playback.grades]:
    拍號、音符時值、休止符、力度 / 重音 / 漸強漸弱、鼓件、同時幾個聲部、連結線、腳踩 HH、反拍大鼓、開閉 HH、rim-click(drumkey 的 xstick)、
-   Flam、Drag、幽靈音、換拍號。白名單以外一律不出;7 級「任何常見術語與記號」不另外加東西(只用前面各級列過的)。
+   Flam、Drag、鬼音、換拍號。白名單以外一律不出;7 級「任何常見術語與記號」不另外加東西(只用前面各級列過的)。
    不出:滾奏、Ruff(大綱沒寫寫法與種類;NOTES.noRollRuff)、Ride bell(大綱沒列;NOTES.fullKit)、
          docs/NOTATION.md「做不到」的記號(分組拍號分子、% 反覆、choke、半開 HH、rim-shot)。速度不在這裡(官方沒寫)。
 
@@ -42,13 +42,13 @@ export const codeDur = c => Math.round(QV[String(c).replace(/^r/, "")] * DIV);
 /* 說明 key(UI 用 tr(zh, en) 顯示;kind = assumed 推估 / practice 練習設定 / omit 不出的項目) */
 export const NOTES = {
   totalExcludesRepeat: { kind: "assumed", text: ["總長度不含你接著打的小節:譜上每一句寫一次", "Total bars exclude the repeats: each phrase is written once"] },
-  noTempo: { kind: "omit", text: ["速度:官方沒寫,出題器不定速度", "Tempo: not in the syllabus; not set by the generator"] },
+  noTempo: { kind: "omit", text: ["速度:官方沒寫", "Tempo: not in the syllabus"] },
   design: { kind: "practice", text: ["拍型與組合方式是 App 的出題設計,不是官方題目", "Patterns and their combination are the App's design, not official tests"] },
   voices: { kind: "assumed", text: ["聲部數 = 同時打的肢體數;「部分 / 大多」是 App 的解讀", "Parts = limbs struck together; 'some / mostly' is the App's reading"] },
   lowTom: { kind: "assumed", text: ["官方的 LT(Low Tom)用落地鼓的位置與聲音", "Official LT (low tom) uses the floor tom"] },
   noRollRuff: { kind: "omit", text: ["滾奏、Ruff 不出:大綱沒寫寫法與種類", "Rolls and ruffs are not generated: the syllabus does not say which or how"] },
   fullKit: { kind: "assumed", text: ["全套鼓:App 用小鼓、大鼓、三個 Toms、Hi-hat、Ride、Crash、rim-click;不用 Ride bell(大綱沒列)", "Full kit: snare, kick, 3 toms, hi-hat, ride, crash, rim-click; no ride bell (not listed)"] },
-  compound: { kind: "assumed", text: ["複拍子依附點四分分組;5/8 = 3+2、7/8 = 2+2+3(常見寫法,待核對)", "Compound time grouped in dotted crotchets; 5/8 = 3+2, 7/8 = 2+2+3 (common use, pending check)"] },
+  compound: { kind: "assumed", text: ["複拍子依附點四分分組;5/8 = 3+2、7/8 = 2+2+3(常見寫法,大綱沒寫)", "Compound time grouped in dotted crotchets; 5/8 = 3+2, 7/8 = 2+2+3 (common use; not in the syllabus)"] },
   independence: { kind: "practice", text: ["進階手腳獨立:App 用比較多樣的大鼓節奏表示", "Extended independence: the App uses more varied kick rhythms"] },
   anyTerms: { kind: "practice", text: ["「任何常見術語與記號」只用前面各級列過的", "'Any common terms and signs': only those listed in earlier grades"] },
   meterChange: { kind: "assumed", text: ["換拍號只在句子之間", "Metre changes only between phrases"] },
@@ -274,7 +274,7 @@ function grooveGroups(C, R, meter, b, S, o, hand, feet, upto){
     const halfOff = meter.type === 2 && gi % 2 === 1;   // x/2 拍與拍之間的四分音符:大鼓少一點
     let ost = kind === "dq" ? S.ostDQ : S.ostQ;
     if (!ost || ost.len !== meter.groups[gi] || !cellOK(C, ost, meter)) ost = mk(kind === "dq" ? (C.values.has("4.") ? "4." : "4 8") : "4");
-    // 幽靈音:鈸八分音符的組改成十六分,單數的十六分是小鼓幽靈音
+    // 鬼音:鈸八分音符的組改成十六分,單數的十六分是小鼓鬼音
     let ghostCell = null;
     if (S.ghost && (ost.s === "8 8" || ost.s === "8 8 8") && C.values.has("16") && R() < 0.55) ghostCell = mk(kind === "dq" ? "16 16 16 16 16 16" : "16 16 16 16");
     const cell = ghostCell || ost;
@@ -323,7 +323,7 @@ function fillGroups(C, R, meter, from, to, hand, feet){
     const { cell, span } = wpick(R, pool, x => freshW(C, x.cell) * (0.6 + 0.3 * Math.min(x.cell.notes, 6)));
     const pos = meter.starts[gi], split = cell.notes >= 4 && R() < 0.35, p1 = walk(gf), p2 = walk(gf + 1);
     const evs = cellEvents(cell, pos, (k) => [{ piece: split && k >= cell.notes / 2 ? p2 : p1 }], "fill");
-    // 重音、Flam / Drag(八分音符以上)、幽靈音(十六分音符的小鼓;更短的音加括號會擠在一起)
+    // 重音、Flam / Drag(八分音符以上)、鬼音(十六分音符的小鼓;更短的音加括號會擠在一起)
     evs.filter(e => !e.rest).forEach((e, k) => {
       const n = e.notes[0], d = codeDur(e.code);
       if (C.accent && (k === 0 ? R() < 0.45 : R() < 0.08)) n.accent = true;

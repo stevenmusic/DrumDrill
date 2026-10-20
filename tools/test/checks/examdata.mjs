@@ -157,7 +157,7 @@ export default function check(ok){
     ok(e.groove.styleOptions === null, `RSL ${g} 級聽力風格清單官方沒寫,要是 null`);
     ok(e.groove.repeat.assumed === true, `RSL ${g} 級 Groove「repeated」要標 assumed`);
     if (g <= 3) ok(s.time.v === "4/4" && s.time.assumed === true && s.develop === null, `RSL ${g} 級視奏拍號要標 assumed`);
-    else if (g <= 5) ok(s.time.assumed === false && s.develop.bars === 2 && s.develop.pos.assumed === true, `RSL ${g} 級視奏 4/4 是官方、自由發展位置要標 assumed`);
+    else if (g <= 5) ok(s.time.assumed === false && s.develop.bars === 2 && s.develop.pos.assumed === true, `RSL ${g} 級視奏 4/4 是官方、自由發揮位置要標 assumed`);
     else ok(s.type === "qsp" && s.time === null && s.values === null && s.bpm === null, `RSL ${g} 級 QSP 的拍號、時值、速度要是 null`);
     if (g >= 6) ok(e.fill.values === null && same(e.fill.valueRange, ["4", "16t6"]), `RSL ${g} 級 Fill 時值官方只寫範圍,values 要是 null`);
   }

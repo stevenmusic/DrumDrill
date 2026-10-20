@@ -38,6 +38,8 @@
 #e-scroll{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;display:flex}
 #e-scroll::-webkit-scrollbar{display:none}
 #e-osmd{flex:none;width:auto;margin:0 auto;padding:0;position:relative;will-change:transform;color:#16130D}
+/* 接著打(Trinity)的譜換行排法(score.js 的 perLine):照紙張寬度排,不左右捲 */
+#e-stage.wrap #e-osmd{flex:1 1 auto;width:100%;min-width:0}
 #e-playline{
   position:absolute;width:2px;left:0;top:0;bottom:0;
   background:linear-gradient(to bottom,transparent,#B8860B 12%,#B8860B 88%,transparent);
@@ -205,7 +207,7 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 .pads[data-n="1"]{grid-template-columns:minmax(80px, 320px);justify-content:center}
 .pads .tap-pad{width:auto;min-width:80px;height:clamp(96px, 22vh, 150px);padding:6px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
   font-size:var(--fs-xl);line-height:1.2;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
-.pads .pad-name{max-width:100%;white-space:normal;overflow-wrap:anywhere;text-align:center}
+.pads .pad-name{max-width:100%;white-space:normal;word-break:keep-all;overflow-wrap:normal;text-align:center}   /* 「腳踩」不在中間斷(只在空白處換行) */
 /* 動態字級:鼓墊的字(本來就 19px)不跟著放大(跟分頁列一樣;三個鼓墊一排,放大了「Kick · HH」放不下) */
 .pads{--fs-2xs:11px;--fs-md:14px;--fs-lg:16px;--fs-xl:19px}
 .pads .pad-key{font-family:inherit;font-size:var(--fs-2xs);font-weight:500;letter-spacing:.06em;color:var(--muted-bright);border:1px solid var(--line);border-radius:4px;padding:1px 6px}
@@ -269,9 +271,10 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 #mod-ear .along .pads{width:100%}
 #mod-ear .along.you .tap-pad{box-shadow:0 0 0 2px var(--gold-bright)}
 #mod-ear .along-row{display:flex;align-items:center;gap:8px 14px;flex-wrap:wrap}
-#mod-ear .along-row .btn{height:44px;padding:0 16px;flex:none;width:220px}
+/* 主要動作在題目卡右下(打一遍 / 第一次 / 第二次;照視奏的 s-performTop):左邊小的「下一題」 */
+#mod-ear .q-foot{flex-wrap:wrap}
+#mod-ear .q-foot .e-perform{flex:0 1 auto;min-width:48%;margin-left:auto;min-height:48px;height:auto;padding:0 22px;font-size:var(--fs-md);white-space:normal}
 #mod-ear .along-note{flex:1 1 180px;min-width:0;color:var(--muted);font-size:var(--fs-xs);line-height:1.5;overflow-wrap:anywhere}
-@media (max-width:600px){ #mod-ear .along-row .btn{width:100%} }
 #mod-ear .along-result{border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 14px;line-height:1.5;background:var(--surface-inset)}
 #mod-ear .along-result .r-head{font-size:var(--fs-xs);letter-spacing:.08em;color:var(--gold)}
 #mod-ear .along-result .big{font-family:"Noto Serif TC",serif;font-size:30px;font-weight:700;color:var(--gold-bright);line-height:1.25}
@@ -316,7 +319,7 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 .mock-card .spec-note:empty{display:none}
 .mock-card .mock-res{margin-top:10px}
 .mock-opts{display:grid;grid-template-columns:minmax(0, 1fr);margin-top:10px}
-.mock-opts .chip{justify-content:center;min-width:0;white-space:normal;height:auto;min-height:34px;padding:4px 10px;line-height:1.3}
+.mock-opts .chip{justify-content:center;min-width:0;white-space:normal;height:auto;min-height:44px;padding:4px 10px;line-height:1.3}
 .mock-res .mr-text{display:flex;flex-direction:column;gap:2px;flex:1 1 auto;min-width:0}
 .mock-res .mr-name{overflow-wrap:anywhere}
 .mock-res .mr-detail{font-size:var(--fs-xs);color:var(--muted-bright);overflow-wrap:anywhere}
@@ -393,7 +396,7 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 /* 自訂 13 顆:標籤放上面、按鈕用整個卡片寬;窄畫面 3 欄、寬的 4–5 欄,每顆一行(不換行)、高 ≥ 40 */
 .rd-row:has(> .rd-pieces){grid-template-columns:minmax(0,1fr);gap:4px}
 .rd-pieces{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
-.rd-seg.rd-pieces .opt{min-height:40px;padding:2px 3px;white-space:nowrap;font-size:var(--fs-sm)}
+.rd-seg.rd-pieces .opt{min-height:44px;padding:2px 3px;white-space:nowrap;font-size:var(--fs-sm)}
 @media (min-width:560px) and (max-width:1099px){ .rd-pieces{grid-template-columns:repeat(4,minmax(0,1fr))} }
 @media (min-width:760px) and (max-width:1099px){ .rd-pieces{grid-template-columns:repeat(5,minmax(0,1fr))} }
 @media (max-width:380px){ .rd-seg.rd-pieces .opt{font-size:var(--fs-xs);letter-spacing:-.01em} }
@@ -464,7 +467,7 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 /* 視奏精簡(2026-10):模擬考卡標題列右邊的「節拍器」小開關;速度卡「回到預設」藏起來時兩顆平分;結果不要卡中卡(上面一條線分開);
    譜下面的出處、推估、練習設定:檢定頁收成一行「出處與推估(n 項)」(點開才看),視奏分頁一直攤開(只有一句) */
 #s-mockCard .card-title #s-mockOpts{display:inline-flex;margin:0 0 0 auto;flex:none}
-#s-mockCard .card-title #s-mockOpts .chip{min-height:32px;height:auto;padding:2px 12px;white-space:nowrap}
+#s-mockCard .card-title #s-mockOpts .chip{min-height:44px;height:auto;padding:2px 12px;white-space:nowrap}
 #s-setup .play-opts{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
 #mod-sight .along-result,#mod-ear .along-result{border:0;border-top:1px solid var(--line);border-radius:0;padding:12px 0 0;background:none}
 .src-notes{margin-top:8px}
@@ -482,7 +485,7 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 /* ══ 今日練習的路線段(js/tech/route.js):鼓組譜卡 #t-rScoreCard、手機鼓墊卡 #t-rPadCard、題目卡裡的 #t-rMode ══ */
 #t-rScoreCard,#t-rPadCard{order:3}
 #t-rScoreCard .score-head{justify-content:space-between}
-#t-rlBtn{min-height:32px}
+#t-rlBtn{min-height:44px}
 .paper:has(#t-rOsmd:empty){min-height:96px}
 #t-rScroll{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;display:flex}
 #t-rScroll::-webkit-scrollbar{display:none}

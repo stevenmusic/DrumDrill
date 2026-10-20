@@ -39,7 +39,7 @@ export default function check(ok){
       ids.add(where);
       if (!(Array.isArray(L.name) && L.name[0] && L.name[1] && L.name[1].length <= 34)) bad.push(where + " 名字(中英、英文 ≤ 34 字)");
       if (/[((](四分|八分|十六分|三連音)/.test(L.name[0]) || /\((quarters?|eighths?|16ths?|triplets?)/i.test(L.name[1])) bad.push(where + " 名稱不放時值括號(時值在標籤):" + L.name[0]);
-      if (!(L.start < L.target && L.start >= 40 && L.target <= 200)) bad.push(where + ` 速度 ${L.start} → ${L.target}`);
+      if (!((L.g === "0" ? L.start === L.target : L.start < L.target) && L.start >= 40 && L.target <= 200)) bad.push(where + ` 速度 ${L.start} → ${L.target}`);
       if (!(Array.isArray(L.check) && L.check.length >= 2 && L.check.length <= 3 && L.check.every(c => c[0] && c[1]))) bad.push(where + " 重點 2–3 項");
       const seeds = hasGen(L) ? 1000 : 1;
       for (let s = 1; s <= seeds; s++) {
@@ -105,6 +105,8 @@ export default function check(ok){
   const G = ROUTES[0].levels, g0 = G[0], r0 = toSpec(g0, 1, { key });
   ok(g0.g === "0" && g0.id === "G01" && r0.spec.measures.every(m => m.voices[0].every(e => (e.notes || []).every(x => x.hand === "R"))) && finest(r0.spec) === 4,
     "第 0 組:跟拍點數拍(右手、四分音符)");
+  ok(G.filter(l => l.g === "0").every(l => l.start === l.target && l.need === 2 && l.review === false) && G.filter(l => l.g !== "0").every(l => l.review !== false),
+    "第 0 組:起始 = 目標速度、連續 2 次穩就過、不放進複習盒(只有第 0 組)");
   const iDR = G.findIndex(l => l.id === "DR"), iD1 = G.findIndex(l => l.id === "D1");
   ok(iDR >= 0 && iD1 === iDR + 1 && !JSON.stringify(G[iDR].pat).includes("hf") && JSON.stringify(G[iD1].pat).includes("hf"), "D 組:先「Ride 上的 8 Beat」、再加左腳");
   ok(ROUTES[1].unlock && ROUTES[1].unlock.route === "groove" && ROUTES[1].unlock.passed === "B2", "過門在律動 B2 過了才開放");

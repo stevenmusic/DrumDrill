@@ -131,6 +131,7 @@ function switchTab(t){
   $("dailyCard").hidden = isExam; if (!isExam) dcard.render();
   $("mockFoot").hidden = $("mockMsg").hidden = true;
   syncTarget();
+  renderIntro();   // 檢定頁不放這一類的白話說明(先在別的子項目看過,也要拿掉)
   if (isExam) { renderExam(); return; }
   $("mockCard").hidden = true;
   S.cat = t; store.save();
@@ -220,7 +221,7 @@ function renderTitle(){
   // 英文原名跟中文名一樣(Flam、Drag…):標題已經寫了,第一個標籤兩種語言都不放(標籤數量一樣)
   const tags = [cur.en === cur.zh ? null : getLang() === "en" ? "PAS No. " + cur.no : cur.en,
     cur.second ? (S.lead === "L" ? tr("左手先", "Left lead") : tr("右手先", "Right lead")) : null,
-    pt ? tr("App 練習型", "App drill") : null,
+    pt && target ? tr("App 練習型", "App drill") : null,   // 自由練習不放(出處標記;檢定頁照舊)
     pt && target && target.assumed ? TS("srcAssumed") : null].filter(Boolean);   // 時值是推估的(4 級 C 組 Flam tap 的四分音符)
   const fold = cur.en !== cur.zh;   // 第一個標籤(英文名)太長時縮成「…」
   $("qTags").innerHTML = tags.map((t, i) => `<span class="q-tag${i || !fold ? "" : " fold"}" title="${t}">${t}</span>`).join("");
@@ -624,7 +625,7 @@ function setBpm(v, fromUser){
   if (fromUser && cur && !target) { S.bpm[cur.no] = bpm; store.save(); }   // 檢定目標模式:只改這一次的速度,× 離開就回到自己的
   syncTempoUI(); retempo();
   if (routeOn()) rv.retempo(bpm);
-  if (dseg) paintTags();
+  if (dseg) { paintTags(); syncReady(); }
 }
 
 /* ══ 音訊 ══ */
@@ -639,14 +640,14 @@ function preloadSamples(){
   preloadJob = (async () => {
     try {
       setRing(null);
-      setMsg("loadingMsg", () => tr("載入小鼓取樣…", "Loading snare samples…"));
-      await audio.loadDrums(["snare"], p => { setRing(p * 0.95); setMsg("loadingMsg", () => tr("載入小鼓取樣… ", "Loading snare samples… ") + Math.round(p * 100) + "%"); });
+      setMsg("loadingMsg", () => tr("載入鼓聲…", "Loading drums…"));
+      await audio.loadDrums(["snare"], p => { setRing(p * 0.95); setMsg("loadingMsg", () => tr("載入鼓聲… ", "Loading drums… ") + Math.round(p * 100) + "%"); });
       await audio.loadClick().catch(() => {});
       setRing(1); setMsg("loadingMsg", null);
       return true;
     } catch (e) {
       preloadJob = null;
-      setMsg("loadingMsg", () => tr("小鼓取樣載入失敗,再按一次播放重試(需要網路,之後會存在裝置上)", "Could not load the snare — tap play to retry (needs internet once; then cached)"));
+      setMsg("loadingMsg", () => tr("小鼓聲音載入失敗,再按一次播放重試(需要網路,之後會存在裝置上)", "Could not load the snare — tap play to retry (needs internet once; then cached)"));
       return false;
     }
   })();
@@ -868,6 +869,7 @@ function startMock(){
   mockSaved = { bpm };
   mock.begin({ sys: "rsl", grade: ex.grade, steps, i: 0 }, { sys: "rsl", grade: ex.grade });
   goMockStep(0);
+  renderIntro();   // 模擬考不放白話說明
   cardToTop($("mockCard"));
 }
 function goMockStep(i){
@@ -1052,7 +1054,7 @@ function replanWarm(){
 const daily = createDaily({ routes: ROUTES, load: () => S.daily, save: d => { S.daily = d; store.save(); }, extras: { warm: warmItem } });
 const dcard = createDailyCard({ $, daily, announce,
   // 段落按鈕「穩了 / 還要練」(不跟熟練度的「會了 / 再練」撞名);狀態一句短話(fold-280 不超過兩行)
-  labels: { ok: ["穩了", "Steady"], again: ["還要練", "Not yet"],
+  labels: { ok: ["穩了", "Steady"], again: ["還要練", "Not yet"], verb: ["打", "play"], good: ["很穩!", "Steady!"],
     hint: ["▶ 聽示範,在鼓上跟著打;穩了按 ✓", "▶ Demo; play along, then ✓"],
     solo: ["▶ 只有拍點:在鼓上自己打,穩了按 ✓", "Click only: play it, then ✓"] },
   mark: s => (s && s.level && s.level.time === "12/8" ? "♩.=" : "♩="),   // 12/8 的速度是附點四分
@@ -1089,7 +1091,12 @@ rv = createRouteView({ $, tempo, drumKey: () => (ctx && ctx.drumKey ? ctx.drumKe
     setMsg("loadingMsg", failed ? () => tr("鼓聲載入失敗,再按一次重試(需要網路,之後會存在裝置上)", "Could not load the drums — try again (needs internet once; then cached)")
       : p == null ? null : () => tr(`載入鼓聲 ${Math.round(p * 100)}%`, `Loading drums ${Math.round(p * 100)}%`));
   },
-  rlFor, setRl: (level, v) => { S.rl = { ...(S.rl || {}), [level.route.id]: !!v }; store.save(); } });
+  rlFor, setRl: (level, v) => { S.rl = { ...(S.rl || {}), [level.route.id]: !!v }; store.save(); },
+  onHeard: () => { heardAt = heardKey(); syncReady(); } });
+/* 「穩了」要先用現在的速度播過一輪(預備拍之後 2 小節,或鼓墊打完一遍)才能按:同一段、同一關、同一個速度 */
+let heardAt = null;
+const heardKey = () => (dseg ? `${dseg.i}/${dseg.lv || ""}/${bpm}` : null);
+function syncReady(){ dcard.ready(!!dseg && heardAt === heardKey()); }
 rv.pad = !!S.padMode;
 /* 按 ▶ / 打一遍:鼓譜(鼓墊模式連鼓墊)沒露出來就捲過去 */
 function revealRoute(pads){
@@ -1166,6 +1173,7 @@ function dShow(s, status = null){
     $("playBtn").disabled = false;
   }
   syncTarget();
+  syncReady();
   dcard.render(); paintStep(s, { status: stepStatus() });
   announce(tr("今日練習:", "Today: ") + $("qTitle").textContent);
 }
@@ -1184,6 +1192,7 @@ function dExit(){
 /* 一次嘗試:自評(穩了 / 再練)或鼓墊的分數 */
 function dTry({ self = null, score: sc = null, res = null, at = null } = {}){
   if (!dseg || dseg.k === "warm") return;
+  if (self === "ok" && !dcard.isReady) return;   // 還沒播過:不算嘗試
   if (self) stopPlayback();
   const s = dseg, r = daily.attempt(res ? { bpm: at || bpm, score: sc } : { bpm, self });
   if (!r) return;
@@ -1196,6 +1205,7 @@ function dTry({ self = null, score: sc = null, res = null, at = null } = {}){
   if (s.k === "route") { bpm = r.nextBpm; target.bpm = bpm; syncTempoUI(); }
   renderTitle(); if (active) fitTitle();
   stepDone = r.passed || s.k === "review"; stepText = txt;
+  syncReady();
   paintStep(dseg, { status: txt, passedDone: stepDone });
   $("rPerform").hidden = !rv.pad || stepDone;
   dcard.render();

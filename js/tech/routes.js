@@ -1,6 +1,7 @@
 /* 今日練習的路線與關卡(DrumDrill;引擎 js/shared/daily.js、卡片 js/shared/dailycard.js、譜的寫法 js/tech/routespec.js)。
    全部都是 App 編排的練習(練習設定,不是考試要求):律動 30 關(第 0 組 1 + A 4 + B 8 + C 5 + D 6 + E 3 + F 3)+ 過門 19 關(過門在律動過了 B2「8 Beat 基本節奏」才開放)。
-   - 第 0 組(初學基礎,系統化 2026-10):「跟拍點數拍」只用右手四分音符跟拍點(oneHand: "R" = 左右手全部標 R);快速通道照舊可以快速跳過
+   - 第 0 組(初學基礎,系統化 2026-10):「跟拍點數拍」只用右手四分音符跟拍點(oneHand: "R" = 左右手全部標 R);快速通道照舊可以快速跳過;
+     練的是數拍、不是速度:start = target、need: 2、review: false(不放進複習盒)
    - 時值由慢到快(使用者要求,給完全初學的人):每條路線第 1 關一定是四分音符 → 八分 → 後面才十六分 / 三連音
    - start / target(♩;12/8 是 ♩.)、up(每穩一次加快;沒寫 = 8)、check(重點 2–3 項:鼓墊量不到的手腳、音量,自己檢查)
    - pat = 譜(寫法見 routespec.js);「@kick8」之類 = 每天不一樣(種子 = 日期 + 關卡,同一天同一題)
@@ -17,7 +18,7 @@ const c = (zh, en) => [zh, en];
 
 const GROOVE = [
   // ── 0 初學基礎 ──
-  { id: "G01", g: "0", name: c("跟拍點數拍", "Count with the click"), start: 56, target: 80, oneHand: "R", pat: { sd: Q },
+  { id: "G01", g: "0", name: c("跟拍點數拍", "Count with the click"), start: 56, target: 56, need: 2, review: false, oneHand: "R", pat: { sd: Q },
     check: [c("只用右手,邊打邊數 1 2 3 4", "Right hand only; count 1 2 3 4 out loud"), c("跟拍點同時下去", "Land with the click")] },
   // ── A 四分音符(手腳對齊)──
   { id: "A1", g: "A", name: c("右手和大鼓一起", "Hand and kick together"), start: 56, target: 80, pat: { hh: Q, bd: Q },

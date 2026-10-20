@@ -2,7 +2,7 @@
    用 PianoDrill 的 scoreRhythm(js/shared/onsets.js,兩個 App 同一份,不能改)估整體偏移;每條 lane(鼓墊)再用同樣的配對與計分公式評,合併成總結。
    - 時間一律是「從第一拍(預備拍之後)算起的秒數」:預期 = 拍子 × 60 / bpm;敲擊 = 鼓墊的音訊時間 − player.beatToTime(0)
    - 固定的延遲(裝置延遲、習慣晚一點)不算節奏錯:先用全部的敲擊估計整體偏移,扣掉再評,另外顯示
-     「整體慢約 X 毫秒(已先扣掉)」(跟 PianoDrill 視奏一樣,≥ 80 毫秒才提)
+     「整體稍晚一點(已自動校正,不影響準度)」(≥ 80 毫秒才提;不寫毫秒)
    - 扣掉整體偏移後,每條 lane 不再各自估偏移(不然大鼓整條晚 300 毫秒也會被扣掉、照樣 100 分):照扣完的時間做最近配對,
      計分公式跟 scoreRhythm 一樣。lane 自己剩下的偏移(scoreRhythm 的估法,laneResidualMs)只拿來顯示:
      跟各 lane 剩的偏移的中位數差超過容許範圍一半 → lag 旗標 + laneNote 提示(啟發式,細節在 scoreLanes 上面);
@@ -257,8 +257,8 @@ export function offsetNote(r){
     ? [`整體晚了約 ${sec} 秒,這次不算分數;跟著預備拍再打一次(藍牙耳機會晚一點)`, `About ${sec} s late overall — no score this time; follow the count-in (Bluetooth adds delay)`]
     : [`整體早了約 ${sec} 秒,這次不算分數;跟著預備拍再打一次`, `About ${sec} s early overall — no score this time; follow the count-in`];
   if (ms < LAG_NOTE_MS) return null;
-  return r.offsetMs > 0 ? [`整體慢約 ${ms} 毫秒(已先扣掉)`, `About ${ms} ms late overall (removed first)`]
-    : [`整體快約 ${ms} 毫秒(已先扣掉)`, `About ${ms} ms early overall (removed first)`];
+  return r.offsetMs > 0 ? ["整體稍晚一點(已自動校正,不影響準度)", "A little late overall (auto-corrected; accuracy unaffected)"]
+    : ["整體稍早一點(已自動校正,不影響準度)", "A little early overall (auto-corrected; accuracy unaffected)"];
 }
 /* lane 單獨偏移的提示 [中, 英](一條一句;沒有 lag 旗標的 lane 時 null;能比的 lane 全部都亮 = 分不出是哪一條,也是 null)。
    lanes = 鼓墊設定(LANES[3] 等,拿名稱) */
