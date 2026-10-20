@@ -160,9 +160,26 @@ for (const L of GROOVE) {
   if ((has("sd") || has("xs")) && (has("ride") || has("hh")) && !L.check.some(x => /右手/.test(x[0])))
     L.handsLine = has("ride") ? c("右手 Ride、左手小鼓", "RH ride, LH snare") : c("右手 Hi-hat、左手小鼓", "RH hi-hat, LH snare");
 }
+/* 為什麼練這個(每一組一句;老師的口吻、具體說練了有什麼用,≤ 24 個中文字;dailycard 在這一組第一關第一次出現時寫在段落面板;checks/routes.mjs 檢查) */
+const WHY_GROOVE = {
+  "0": c("先跟穩拍點,之後加什麼都不會亂", "Lock onto the click first, and whatever you add stays steady"),
+  A: c("四分音符先打穩,手和腳才對得齊", "Steady quarter notes first, so hands and feet line up"),
+  B: c("大部分流行歌都是 8 Beat,學會就能跟著歌打", "Most pop songs use the 8-beat; learn it and play along"),
+  C: c("手的打法一換,同一個 8 Beat 就能配慢歌", "Change what the hands play, and the 8-beat fits slow songs"),
+  D: c("右手移到 Ride、加上左腳,四肢才算真的分工", "Move to the ride, add the left foot: all four limbs at work"),
+  E: c("十六分音符練起來,快歌和放克的節奏才打得來", "16th notes let you handle faster pop songs and funk"),
+  F: c("三連音的感覺練起來,12/8 抒情歌和 Shuffle 都會打", "Get the triplet feel for 12/8 ballads and shuffles")
+};
+const WHY_FILL = {
+  FA: c("過門是告訴大家要換段了,先練打完準時回到 1", "A fill says a new section is coming; first, land back on 1"),
+  FB: c("十六分的過門最常用,練到換鼓也不掉拍", "16th fills are the most common; move drums and keep the time"),
+  FC: c("整小節的過門常用在副歌前,從頭到尾速度不能變", "Full-bar fills often lead into a chorus; hold the tempo through"),
+  FT: c("8 Beat 的歌也常用三連音過門,練到回 1 不搶拍", "Triplet fills show up in 8-beat songs too; don't rush back to 1"),
+  FD: c("歌是四小節一句,數著小節,過門才不會早或晚", "Songs move in 4-bar phrases; count bars so the fill lands right")
+};
 export const ROUTES = [
-  { id: "groove", name: ["律動", "Grooves"], levels: GROOVE },
-  { id: "fill", name: ["過門", "Fills"], unlock: { route: "groove", passed: "B2" }, levels: FILLS }
+  { id: "groove", name: ["律動", "Grooves"], why: WHY_GROOVE, levels: GROOVE },
+  { id: "fill", name: ["過門", "Fills"], unlock: { route: "groove", passed: "B2" }, why: WHY_FILL, levels: FILLS }
 ];
 
 /* 暖身(現有的基本打法畫面;不過關、只記時間):照律動的進度一層一層加進來,只從最新的兩層挑(照日子輪流;標「再練」的優先)。

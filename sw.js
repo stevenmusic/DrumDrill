@@ -12,7 +12,7 @@
 const APP = "drumdrill";
 // @app-end
 /*@precache-begin*/
-const CACHE = APP + "-app-c30a531a";
+const CACHE = APP + "-app-d6ba8079";
 const PRECACHE = [
   "./",
   "manifest.webmanifest",
@@ -24,7 +24,7 @@ const PRECACHE = [
   "licenses.html",
   "privacy.html",
   "support.html",
-  "css/app.css?v=4f2976f2e1",
+  "css/app.css?v=a43c3ffe1b",
   "css/drum.css?v=7ae2629e32",
   "vendor/opensheetmusicdisplay.min.js?v=4bfeb3d01c",
   "js/ear/app.js?v=a617356b17",
@@ -33,8 +33,8 @@ const PRECACHE = [
   "js/main.js?v=bf2909d4c3",
   "js/shared/a11y.js?v=4ece20f2e5",
   "js/shared/audio.js?v=453f7237f3",
-  "js/shared/daily.js?v=4c1f596d2e",
-  "js/shared/dailycard.js?v=971bc92166",
+  "js/shared/daily.js?v=90d712e055",
+  "js/shared/dailycard.js?v=ca043acf6b",
   "js/shared/drill.js?v=9f698a5f44",
   "js/shared/examdata.js?v=48f1b46bf2",
   "js/shared/examview.js?v=3f2d59a5c9",
@@ -69,7 +69,7 @@ const PRECACHE = [
   "js/tech/app.js?v=7d4a98b914",
   "js/tech/notation.js?v=5bee65ac3d",
   "js/tech/route.js?v=f5279508d8",
-  "js/tech/routes.js?v=8a6a226ea6",
+  "js/tech/routes.js?v=d6b3b49c08",
   "js/tech/routespec.js?v=cbc8011afc",
   "js/tech/rudiments.js?v=cc1a2635ff",
   "js/tech/store.js?v=46a31a5e45",

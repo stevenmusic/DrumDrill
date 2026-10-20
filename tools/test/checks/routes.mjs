@@ -110,6 +110,14 @@ export default function check(ok){
   const iDR = G.findIndex(l => l.id === "DR"), iD1 = G.findIndex(l => l.id === "D1");
   ok(iDR >= 0 && iD1 === iDR + 1 && !JSON.stringify(G[iDR].pat).includes("hf") && JSON.stringify(G[iD1].pat).includes("hf"), "D 組:先「Ride 上的 8 Beat」、再加左腳");
   ok(ROUTES[1].unlock && ROUTES[1].unlock.route === "groove" && ROUTES[1].unlock.passed === "B2", "過門在律動 B2 過了才開放");
+  // 為什麼練這個(每一組一句):每組都有、中英都有、中文 ≤ 24 字(英數算半個)、英文 ≤ 64 字、沒有多出來的組
+  const zhLen = z => [...z].reduce((a, ch) => a + (ch.charCodeAt(0) > 0x2e7f ? 1 : 0.5), 0), whyBad = [];
+  for (const R of ROUTES) {
+    const gs = [...new Set(R.levels.map(l => l.g))];
+    for (const g of gs) { const w = R.why && R.why[g]; if (!(Array.isArray(w) && w[0] && w[1] && zhLen(w[0]) <= 24 && w[1].length <= 64)) whyBad.push(`${R.id}/${g}`); }
+    for (const g of Object.keys(R.why || {})) if (!gs.includes(g)) whyBad.push(`${R.id}/${g} 沒有這一組`);
+  }
+  ok(!whyBad.length, "為什麼練這個:每一組一句(中文 ≤ 24 字、英文 ≤ 64 字)" + (whyBad.length ? ":" + whyBad.join("、") : ""));
   // 數拍用語一律「3&」(不寫「3 拍後半」「反拍」)
   const words = ROUTES.flatMap(R => R.levels.flatMap(L => [L.name[0], ...L.check.map(c => c[0])]));
   ok(!words.some(w => /拍後半|反拍/.test(w)), "數拍用語一律「3&」:" + words.filter(w => /拍後半|反拍/.test(w)).join("、"));
