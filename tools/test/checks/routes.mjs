@@ -130,6 +130,12 @@ export default function check(ok){
     return false;
   });
   ok(!wbad.length && !WARM[0].after && WARM[0].value === "4", "暖身清單:打法都存在、練習型做得出來、第一個是四分音符的練習型" + (wbad.length ? " " + JSON.stringify(wbad) : ""));
+  // 今日練習不看考試級數:暖身只從 WARM 照律動進度挑(after 照路線順序,不會比已經過的關難);app.js 的 warmItem 不讀考試
+  const gord = ROUTES[0].levels.map(l => l.id), wpos = WARM.map(w => (w.after ? gord.indexOf(w.after) : -1));
+  ok(wpos.every((x, i) => !i || x >= wpos[i - 1]), "暖身照律動的順序加進來(after 不倒退)");
+  const appSrc = fs.readFileSync(new URL("../../../js/tech/app.js", import.meta.url), "utf8");
+  const wsrc = (appSrc.match(/\nfunction warmItem\([\s\S]*?\n}\n/) || [""])[0];
+  ok(wsrc && !/exam|practiceItems|dataOf/i.test(wsrc), "今日練習的暖身不看考試(warmItem 不讀考試;選了任何考試都一樣)");
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

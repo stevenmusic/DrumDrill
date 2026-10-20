@@ -50,10 +50,9 @@ export function setExam(ex){
   if (moved) { if (!mock.abort("exam") && mock.state === "result") mock.close(); }
   if (moved && target && !target.daily) leaveTarget();
   if (!same && active && tab === "exam") renderExam();
-  if (moved) replanWarm();   // 今日練習:還沒開始的暖身換成這一級的項目
 }
 /* 外框的 appCtx(考試資料)晚到:只重畫用得到資料的地方 */
-export function onCtx(){ if (tab === "exam") renderExam(); if (ctx) ctx.examChanged(); replanWarm(); }
+export function onCtx(){ if (tab === "exam") renderExam(); if (ctx) ctx.examChanged(); }
 /* 進來:同一類、已經有題目就照原樣(回到前景、從別的分頁回來不會重新出題);換了類別或檢定頁才重畫 */
 export function enter(t){
   active = true;
@@ -1048,18 +1047,9 @@ function renderMockTitle(){
    以真的鼓 / 打擊墊為主:▶ 示範(整組鼓 + 拍點,一直循環)→ 自己按「穩了 / 再練」;「沒有鼓?用手機鼓墊」→ 鼓墊卡(#t-rPadCard)+ 題目卡的「打一遍」,打中 ≥ 85 = 穩。
    拍點模式不是每拍的那一次(複習的變化),▶ 只有拍點(自己打)。段落用 target(daily = 段落種類;route = 路線段):不寫進 S.bpm、不顯示目標橫幅;
    進行中子項目分段鈕都不亮(ctx.setSubActive);點子項目或到檢定頁 = 暫停 */
-/* 暖身:有選 RSL 考試 → 本級的 PAS / 練習型(沒標「會了」的優先;畫面不寫考試名稱;Trinity Rock & Pop 沒有技巧項目 → 一般暖身);
-   沒選 → WARM 照律動的進度一層一層加進來,從最新的兩層照日子輪流(標「再練」的優先);一開始是單擊四分音符的練習型 */
+/* 暖身(今日練習不看考試級數;檢定頁才照級數):WARM 照律動的進度一層一層加進來,從最新的兩層照日子輪流(標「再練」的優先);
+   一開始是單擊四分音符的練習型 */
 function warmItem(d, today){
-  const ex = exam && !exam.auto ? exam : null;
-  if (ex && ex.system === "rsl" && dataOf("rsl")) {
-    const all = practiceItems(); let pool = all.filter(x => S.mastery[pasNoOf(x)] !== "good"); if (!pool.length) pool = all;
-    if (pool.length) {
-      const it = pool[Math.floor(Math.abs(hashDay(today)) % pool.length)];
-      return it.kind === "pattern" ? { pas: it.pas, sticking: it.sticking, value: it.value, bpm: it.bpm || 60, exam: true }
-        : { pas: it.no, bpm: it.bpm || 60, exam: true };
-    }
-  }
   const passed = id => { const e = d && d.lv && d.lv["groove/" + id]; return !!(e && e.passed); };
   const open = WARM.filter(w => !w.after || passed(w.after));
   const tiers = [...new Set(open.map(w => w.after || ""))].slice(-2);
@@ -1075,10 +1065,10 @@ function warmName(it){
   return it.value ? patternName({ pas: it.pas, sticking: it.sticking, value: it.value }) : [`${r.no}. ${r.zh}`, `${r.no}. ${r.en}`];
 }
 const hashDay = k => Number(k.replace(/-/g, "")) || 0;
-/* 今天的暖身還沒開始時重排(考試資料晚到、換了考試):隔天也一樣,打開 App 時資料還沒到,到了就換成本級項目 */
+/* 舊版用考試項目排的暖身(item.exam):今天的暖身還沒開始就照路線進度重排(今日練習不看考試級數) */
 function replanWarm(){
   const t = daily.today(), i = t.plan.findIndex(p => p.k === "warm");
-  if (i < 0 || t.done[i] || t.sec[i] > 0 || (dseg && dseg.k === "warm")) return;
+  if (i < 0 || !(t.plan[i].item && t.plan[i].item.exam) || t.done[i] || t.sec[i] > 0 || (dseg && dseg.k === "warm")) return;
   const it = warmItem(daily.data, t.date);
   if (JSON.stringify(it) === JSON.stringify(t.plan[i].item)) return;
   t.plan[i].item = it; S.daily = daily.data; store.save();
