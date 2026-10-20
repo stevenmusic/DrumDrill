@@ -133,7 +133,7 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
     x/4 每個四分、x/2 每個二分、複拍子每個附點四分、5/8 = 3+2、7/8 = 2+2+3;有 x/8 的譜播放器用八分音符當一拍;換拍號照小節算(`checks/sight-meter.mjs`)
   - 整組鼓取樣:`audio.loadKit(這一題用到的鼓件)`,載入時 ▶ 外圈畫進度、▶ 與正式打先不能按(載完才能開始;promise 有 catch,失敗再按重試;載入訊息只在還沒開始時寫,載完還原先前的訊息);整組鼓的釋放見下面「整組鼓所有權」
   - 譜面像考卷(下面「版面」);小鼓視奏每小節一樣寬(FixedMeasureWidth),整組鼓 / Playback 照內容排寬度(換拍號、7/4 與 3/8 混在一起);一小節比 4/4 長、兩小節一行放不下時交給 OSMD 換行(縮放 0.55)
-  - 檢定頁:本項列「視奏 [已練 n 題] … 模擬考」+ 題目卡空狀態(`#s-xEmpty`)「出一題 → 準備 90 秒 → 打一遍」(Trinity「出一份譜 → 看譜 30 秒 → 跟拍點打一遍」)+ 右下「練習一題」;RSL 6–8 標籤「只列規格」、右下「練整組鼓讀譜」(到視奏分頁鼓組譜);考試摘要、規格卡、即興卡收在「考試內容」;Trinity 視奏卡寫明 Rock & Pop 沒有視奏(App 的流程在空狀態那一句,規格卡不再寫);
+  - 檢定頁:本項列「[已練 n 題]」(視奏沒有模擬考)+ 題目卡空狀態(`#s-xEmpty`)「出一題 → 準備 90 秒 → 打一遍」(Trinity「出一份譜 → 看譜 30 秒 → 跟拍點打一遍」)+ 右下「練習一題」;RSL 6–8 標籤「只列規格」、右下「練整組鼓讀譜」(到視奏分頁鼓組譜);考試摘要、規格卡、即興卡收在「考試內容」;Trinity 視奏卡寫明 Rock & Pop 沒有視奏(App 的流程在空狀態那一句,規格卡不再寫);
     規格卡每一列的頁碼跟卡片標題一樣就不寫(只標不同的),RSL 跟表重複的大綱附註不放;「準備時開節拍器」在設定卡;
     檢定頁出題(xp):practiceOnly 只在題目卡一次;倒數按了才出現;
     譜下面的出處 / 推估 / 練習設定 / 不出收成 `<details>` 一行「出處與推估(n 項)」(視奏分頁整塊藏起來:自由練習不放出處標記);模擬考進行中模擬考卡不重複題目卡的那句;
@@ -165,10 +165,10 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
     第一次 / 第二次進行中速度鈕不能按;速度每一級各自記(`bpmBy`)
   - 譜卡從檢定頁、說明卡回來要還原(`showPractice`:Trinity 一直有、RSL 揭曉後有),enter 的 rAF 重畫
   - 整組鼓 `audio.loadKit`(進度在題目卡);測試掛鉤 `window.__ear`(`state`、`finishNow`、`expected`…)
-- **模擬考**(S14,`js/shared/mock.js`;照 PianoDrill 的 `t-mockBtn` / `e-mockBtn` 與 `.mock-res`):每個模組的檢定頁一張模擬考卡(`#t-mockCard`、`#s-mockCard`、`#e-mockCard`),不做跨模組的整場模擬
+- **模擬考**(S14,`js/shared/mock.js`;照 PianoDrill 的 `t-mockBtn` / `e-mockBtn` 與 `.mock-res`):技巧、聽力的檢定頁一張模擬考卡(`#t-mockCard`、`#e-mockCard`;視奏沒有),不做跨模組的整場模擬
   - 技巧(RSL):每一組抽一項(只抽 `pas`、`pattern`;`book` 組顯示「這一組請用檢定書練」並跳過),依組的順序一項一項;官方速度 + 拍點(預備拍 1 小節),
     Debut–3 可選「拍點只響第一小節」(`tech[g].click === "optional"`,p.30 等),4–8 一定跟拍點;只播拍點、不播示範;每項 4 小節(練習設定);Trinity 沒有技巧模擬考(在 Song 3 評;不放模擬考卡,本級要求底下一行字)
-  - 視奏:出一題 → 官方準備時間計時,不能暫停、不能提早結束(RSL 90 秒 / Trinity Playback 看譜 30 秒)→ 時間到自動正式打一次;RSL 用這一題的官方速度,Trinity 用自己的練習速度(練習設定);RSL 6–8 沒有模擬考
+  - 視奏沒有模擬考(2026-10 使用者:跟練習流程重複 —— 檢定頁的練習就是「準備 90 秒 / 看譜 30 秒 → 正式打 → 結果 + 自我檢查」;本項列不放「模擬考」、舊的 `mockRun` 標記讀進來直接清掉)
   - 聽力:RSL = Fill → Groove 各一題(自動聽兩次、不能重聽、不能看答案;練習後回打;Fill 再選譜);Trinity = Playback(看譜 30 秒 → 第一次 → 第二次,自動接下去)
   - 進行中、結果、中止的說明:考試摘要(配分、等第)與規格卡 / 本級要求藏起來;結果只有各項的練習回饋(準度、選譜對錯、完成與否),
     **不算總分、不出現 Pass / Merit / Distinction、不換算官方分數**;practiceOnly
@@ -177,7 +177,7 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
   - 按「停止模擬考」= `close()`(不算、回到檢定頁);開始、結果、中止時把模擬考卡捲到頂欄下(`cardToTop`;手機橫式、折疊機才看得到);模擬考中不能換題(視奏的 N 鍵也不行)
   - 準備 / 看譜的倒數照 `performance.now()` 的終點算(主執行緒卡住也不會變慢)
   - 技巧:練習型標「App 依大綱時值排的練習型 · 不是官方譜」(`t-mockMsg`;題目卡標籤只放官方速度與「推估」,組別在下面那一列)、「拍點只響第一小節」鈕不寫頁碼(說明裡有);沒在考的時候:本項列「技巧 [會了 n/m] … 模擬考」(下面一顆小 chip「拍點只響第一小節」)+ 題目卡空狀態(`#t-xEmpty`)「點下面一項練,或隨機抽一項」+ 右下「隨機抽一項」(Trinity:「技巧 [在 Song 3 評]」一句、沒有按鈕);本級要求清單底下不放按鈕列,「下一項」在出了題目的題目卡最後一行右邊(`#t-nextItem`);進行中的說明「每一組抽一項,照官方速度」;▶ 的名稱「開始(只有拍點)」;進行中的說明寫官方速度的頁碼;混合組(pattern + book)結果註明檢定書的項目這次沒練;沒選考試時不顯示模擬考卡(跟視奏、聽力一樣)
-  - 進行中、結果也算進練習紀錄(真的打了);測試掛鉤:`__tech.startMock / mockNext / mockFinishRun`、`__sight.startMock / mockSkipPrep`、`__ear.startMock / mockNext / mockSkipStudy`
+  - 進行中、結果也算進練習紀錄(真的打了);測試掛鉤:`__tech.startMock / mockNext / mockFinishRun`、`__sight.skipPrep`(練習流程的準備時間馬上到)、`__ear.startMock / mockNext / mockSkipStudy`
 - **任務腳本** `tools/test/tasks.mjs`(兩個 App 同一份,@app 區段放各自的任務;sync.json markers):模擬真人從打開 App 完成任務,記錄點幾下才開始練、要不要捲動、
   有沒有點到收起來的卡、有沒有下拉選單、點擊區域 ≥ 28、最後的畫面有沒有寫下一步。改版面一定要跑(這一個可以跑,不用跑整套 layout / bilingual)
 - **練習紀錄**(`js/shared/practicelog.js`;三個模組同一個格式,PianoDrill 的樣式):三格數字 + 每週目標(`.goal`,最近 7 天的分鐘數;點一下換 15/30/60/90/120/180,預設 60,存各自 localStorage 的 `goal`)+ 最近 7 天
@@ -340,7 +340,7 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
     `node human.mjs 150 3`(模擬真人操作)、`node playback.mjs`(播放排程與停止)、`node pad.mjs`(觸控鼓墊)、
     `node notation.mjs`(OSMD 實際畫譜:40 個打法、鼓組樣張、視奏小鼓譜與整組鼓譜)、`node a11y.mjs [尺寸]`(無障礙:譜的說明、名稱、重複 id、aria-live、群組與分頁、焦點、對話框、播報、對比)、`node kitaudio.mjs`(整組鼓取樣;視奏、聽力離開 60 秒釋放、互相切換不釋放、載入訊息不蓋結果);
     `node mic-check.mjs`(麥克風:Chromium 假麥克風 + Naked Drums 取樣混成的 wav;node 側偵測誤差中位數 ≤ 5 ms、漏偵 ≤ 2%;準時 / 偏晚 / 打開時被打斷 / 亂打 / 沒聲音 / 拒絕權限、整組鼓、聽力 Fill、Trinity 第二次;`ONLY=node|sight|ear`);
-    layout / bilingual / clip / human 都有模擬考的狀態(`mockTour`:技巧 RSL 3、視奏 RSL 3 / 4 與 Trinity 4、聽力 RSL 4 與 Trinity 4 × 進行中 / 結果 / 中止;human 的「模擬考中途中止」);
+    layout / bilingual / clip / human 都有模擬考的狀態(`mockTour`:技巧 RSL 3、聽力 RSL 4 與 Trinity 4 × 進行中 / 結果 / 中止;human 的「模擬考中途中止」);
     layout / bilingual / clip / human 都有視奏、聽力的狀態(視奏:RSL 0、3、4、5、6,Trinity 0、4、8 × 準備 / 作答 / 結果 / 正確版本;Trinity 一首很長,測試用 `__sight.finishNow()` 提早出結果;
     聽力:human 的「照節奏回打」要「準」);playback.mjs 有視奏、聽力(換語言不停播、Trinity 空檔只有拍點)
   - 重構前後畫面要一樣:動手前 `node shots.mjs --save`,改完 `node shots.mjs --compare`(19 種尺寸 × 技巧四類 + #40×8 + 檢定頁 × 中英,逐像素比對)
