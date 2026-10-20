@@ -1190,7 +1190,8 @@ const onStageResize = () => {
   land.onResize();
   if (!$("scoreCard").hidden) {
     const pend = score.pending;
-    if (wrapOn() && score.osmd && !pend && Math.abs($("stage").clientWidth - fitW) > 24) { fitZ = null; fitWrap(); }
+    // 換行排法:寬度變了就重新排(fitWrap 自己算縮放;先不清掉 fitZ,量不到寬度時照舊的排法,不會退回沒縮放的大小)
+    if (wrapOn() && score.osmd && !pend && $("stage").clientWidth && Math.abs($("stage").clientWidth - fitW) > 24) fitWrap();
     else { score.onResize(); if (wrapOn() && pend && !score.pending) requestAnimationFrame(fitWrap); }
   }
   if (!$("answers").hidden && cur.optsDrawn < cur.opts.length) drawOptions();
