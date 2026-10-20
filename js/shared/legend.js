@@ -268,10 +268,12 @@ export async function drawLegend(el, { pieces, lines = 5, key = drumKeyCached(),
     pairText(src, () => official.map(([zh, en]) => tr(zh, en)).join("\n"));
     jobs.push([note, legendXML(id, { key, lines })]);
   }
-  const foot = document.createElement("p"); foot.className = "kl-foot"; el.appendChild(foot);
-  pairText(foot, () => (plain ? tr("記法以譜上的圖例為準", "Follow the key printed with the music")
-    : anyApp ? tr("沒標頁碼的是 App 的寫法;記法以考試用書上的圖例為準", "No page = the App's notation; follow the exam book's key")
-    : tr("記法以考試用書上的圖例為準", "Follow the exam book's key")));
+  // 自由練習(plain)沒有考卷可以對照:圖例下面不寫那一行
+  if (!plain) {
+    const foot = document.createElement("p"); foot.className = "kl-foot"; el.appendChild(foot);
+    pairText(foot, () => (anyApp ? tr("沒標頁碼的是 App 的寫法;記法以考試用書上的圖例為準", "No page = the App's notation; follow the exam book's key")
+      : tr("記法以考試用書上的圖例為準", "Follow the exam book's key")));
+  }
   // 一格一個 OSMD(放在格子裡、寬度固定);畫完補畫 o 等記號
   const svgs = [];
   for (const [box, xml] of jobs) {

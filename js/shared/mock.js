@@ -50,12 +50,13 @@ export function createMock({ store, save, onAbort }){
 
 /* 中止的說明(為什麼中止;這一次不算) */
 export const abortText = reason => ({
-  leave: tr("中途切換了分頁或切到背景,模擬考已中止(這一次不算)。", "You left the page mid-way, so the mock exam was stopped (not counted)."),
-  reload: tr("上次的模擬考沒有做完(重新整理或關掉了 App),已中止(不算)。", "The last mock exam didn't finish (reloaded or closed), so it was stopped (not counted)."),
-  rotate: tr("螢幕旋轉了,模擬考已中止(這一次不算)。", "The screen rotated, so the mock exam was stopped (not counted)."),
-  exam: tr("考試或級數換了,模擬考已中止(這一次不算)。", "The exam or grade changed, so the mock exam was stopped (not counted)."),
-  load: tr("鼓聲載入失敗(第一次要連網路),模擬考已中止(這一次不算);按「再考一次」重試。", "The drum sounds didn't load (needs internet once), so the mock exam was stopped (not counted). Tap Again to retry.")
-}[reason] || tr("模擬考已中止(這一次不算)。", "The mock exam was stopped (not counted)."));
+  // 標題已經寫「模擬考已中止」:內文只寫為什麼、這次不算
+  leave: tr("中途離開了這一頁,這次不算。", "You left the page mid-way; this one doesn't count."),
+  reload: tr("上次沒有考完(重新整理或關掉了 App),這次不算。", "Last time didn't finish (reloaded or closed); it doesn't count."),
+  rotate: tr("螢幕旋轉了,這次不算。", "The screen rotated; this one doesn't count."),
+  exam: tr("考試或級數換了,這次不算。", "The exam or grade changed; this one doesn't count."),
+  load: tr("鼓聲載入失敗(第一次要連網路),這次不算;按「再考一次」重試。", "The drum sounds didn't load (needs internet once); tap Again to retry.")
+}[reason] || tr("這次不算。", "This one doesn't count."));
 
 /* 結果 / 進度的清單(.mock-res):rows = [{ id:"A", name:() => 文字, detail:() => 文字, mark:"ok" | "no" | "skip" | "cur" | "todo" }]
    名稱、說明用 pairText(中英高度一樣);右邊的記號:✓ 完成、✗ 沒有完成、– 跳過(用檢定書練)、▸ 進行中 */
@@ -80,8 +81,8 @@ export function cardToTop(card){
   const header = document.querySelector("header"), top = header ? header.getBoundingClientRect().bottom : 0;
   window.scrollTo({ top: Math.max(0, scrollY + card.getBoundingClientRect().top - top - 8) });
 }
-/* 模擬考卡的固定說明:practiceOnly + 不算總分 */
-export const resultNote = () => tr("只有各項的練習回饋:不算總分、不換算成官方分數。", "Feedback per item only: no total, and it doesn't convert to an exam mark.") + " " + T("practiceOnly");
+/* 模擬考卡的固定說明:不算總分 + practiceOnly(po = false:題目卡上已經有 practiceOnly,一個畫面只寫一次) */
+export const resultNote = (po = true) => tr("只有各項的練習回饋:不算總分、不換算成官方分數。", "Feedback per item only: no total, and it doesn't convert to an exam mark.") + (po ? " " + T("practiceOnly") : "");
 /* 開始 / 停止按鈕的文字 */
 export const mockLabel = state => (state === "item" ? tr("模擬考", "Mock exam") : state === "run" ? tr("停止模擬考", "Stop mock") : state === "idle" ? tr("開始模擬考", "Start mock") : tr("再考一次", "Again"));
 

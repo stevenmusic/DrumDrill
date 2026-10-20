@@ -90,7 +90,7 @@
   },
   "techNote": {
     "src": { "p": "22–23, 35, 53" },
-    "text": ["Rock & Pop 沒有獨立的技巧項目:技巧在 Song 3(技巧重點曲)裡評,Technical control(技巧控制)滿分 12(Song 1、2 是 8);每首標了哪兩個技巧重點在曲本裡", "Rock & Pop has no separate technical work: technique is marked in Song 3 (Technical control 12, Songs 1–2: 8); its two technical focuses are in the song book"]
+    "text": ["Rock & Pop 沒有獨立的技巧項目:技巧在 Song 3(技巧重點曲)裡評;每首的兩個技巧重點寫在曲本裡", "Rock & Pop has no separate technical work: it is marked in Song 3; each song's two technical focuses are in the song book"]
   },
   "sightNote": {
     "src": { "p": "60" },
@@ -102,7 +102,7 @@
   },
   "digitalNote": {
     "src": { "p": "28, 31–32" },
-    "text": ["數位考試沒有 Session skills,改成整體表現 20 分(演出與專注 10、音樂感知 10)", "Digital exams have no Session skills; Overall performance 20 (delivery 10, awareness 10) instead"]
+    "text": ["沒有 Session skills,改成整體表現 20 分(演出與專注 10、音樂感知 10)", "No Session skills; Overall performance 20 (delivery 10, awareness 10) instead"]
   },
   "playback": {
     "flow": {
@@ -115,7 +115,7 @@
       "cumulative": true,
       "bpm": null,
       "style": null,
-      "text": ["拿到沒看過的 song chart,看譜 30 秒(可以試打);播音軌,每一句聽完馬上打回來;開頭有 count-in,一直有伴奏;播兩次(練習、評分);照抄奏法與力度,不要變化", "Unseen chart, 30 s to study (may try out); listen and repeat each phrase; count-in and backing throughout; 2 plays (practice, assessed); copy articulation and dynamics, no variation"]
+      "text": ["拿到沒看過的歌曲譜,看譜 30 秒(可以試打)。播音軌,每一句聽完馬上打回來;開頭有預備拍,一直有伴奏。播兩次(練習、評分),照抄奏法與力度,不要變化", "Unseen chart, 30 s to study (may try out). Listen and repeat each phrase; count-in and backing throughout. 2 plays (practice, assessed); copy articulation and dynamics exactly"]
     },
     "legend": ["每一級只列「新增」的要求;表上斜線的格子沿用前一級(官方:要求是累積的)", "Each grade lists only new requirements; blank cells carry over (requirements are cumulative)"],
     "grades": {
@@ -134,7 +134,7 @@
       "extra": {
         "ties": ["連結線", "Ties"],
         "footHH": ["腳踩 Hi-hat", "Foot hi-hat"],
-        "offbeatBD": ["反拍大鼓", "Off-beat bass drum"],
+        "offbeatBD": ["反拍大鼓", "Off-beat kick"],
         "fullKit": ["全套鼓", "Full kit"],
         "hhOpenClose": ["開/關 Hi-hat", "Open/closed hi-hat"],
         "rimclick": ["Rim-click", "Rim-click"],
@@ -160,9 +160,9 @@
       "loops": 4,
       "backing": true,
       "bpm": null,
-      "text": ["在沒聽過的伴奏上用指定風格即興;拿 chord chart,先聽一小段,30 秒看譜試打;伴奏播四遍後淡出;播兩次(練習、評分)。需要伴奏音軌,App 只列規格", "Improvise in a given style over an unheard backing; chord chart, a short preview, 30 s to study; the loop plays 4 times and fades; 2 plays. Needs a backing track, so the App lists the spec only"]
+      "text": ["在沒聽過的伴奏上用指定風格即興;拿和弦譜,先聽一小段,30 秒看譜試打;伴奏播四遍後淡出;播兩次(練習、評分)。需要伴奏音軌,App 只列規格", "Improvise in a given style over an unheard backing; chord chart, a short preview, 30 s to study; the loop plays 4 times and fades; 2 plays. Needs a backing track, so the App lists the spec only"]
     },
-    "legend": ["每一級只列「新增」的要求;總小節數推論是循環的長度", "Each grade lists only new requirements; total bars are taken as the loop length (inferred)"],
+    "legend": ["每一級只列「新增」的要求", "Each grade lists only new requirements"],
     "barsAs": { "v": "loop", "assumed": true, "note": ["官方只寫 Total bars;當作一次循環的長度(伴奏播四遍)是 App 的解讀", "Official: total bars; reading it as one loop (played 4 times) is the App's assumption"] },
     "grades": {
       "0": { "bars": 4, "time": ["4/4"], "chordsPerBar": 1, "solo": null, "styles": [["簡單搖滾", "Simple rock"], ["流行", "Pop"]], "src": { "p": "64" } },
@@ -177,7 +177,7 @@
     }
   },
   "ownChoice": {
-    "legend": ["自選曲參數表:官方說只是一般參考(general guide),技巧是累積的", "Own-choice song parameters: a general guide only; techniques are cumulative"],
+    "legend": ["只是參考;前面級數的技巧也要會", "A guide only; earlier grades' techniques count too"],
     "grades": {
       "0": { "lengthSec": [45, 120], "bpm": [60, 130], "techniques": ["Cross stick、響弦開/關、短的記譜獨奏或過門、trashy/tight Hi-hat;五件式鼓、鼓棒", "Cross stick, snares on/off, short notated solos/fills, trashy/tight hi-hat; 5-piece kit, sticks"], "practice": [], "src": { "p": "55" } },
       "1": { "lengthSec": [60, 150], "bpm": [60, 160], "techniques": ["同初級,加重音、斜線記譜(照風格自己打)/ cont. sim.(照前面繼續)", "As Initial, plus accents, slash notation (play in style) / cont. sim. (carry on)"], "practice": [], "src": { "p": "56" } },

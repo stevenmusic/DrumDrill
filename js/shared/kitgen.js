@@ -26,7 +26,7 @@ import { toEvents, specBeats, EVENT_NOTES } from "./kitevents.js";
 export const SIGHT_KIT_GRADES = [4, 5];
 export const KIT_SIGHT_PIECES = ["hh", "ride", "crash", "snare", "tomHi", "tomMid", "tomFloor", "kick"];
 export const NOTES = {
-  kitPieces: { kind: "assumed", text: ["大綱只寫「整組鼓」:App 用 Hi-hat、小鼓、大鼓、三個 Toms、Ride、Crash", "Syllabus says 'full kit': the App uses HH, snare, kick, 3 toms, ride, crash"] },
+  kitPieces: { kind: "assumed", text: ["大綱只寫「整組鼓」:App 用 Hi-hat、小鼓、大鼓、三個 Toms、Ride、Crash", "Syllabus says 'full kit': the App uses hi-hat, snare, kick, 3 toms, ride, crash"] },
   developEnd: { kind: "assumed", text: ["2 小節自由發揮的位置大綱沒寫,App 放在最後兩小節(斜線)", "Position of the 2-bar development not stated; the App uses the last 2 bars (slashes)"] },
   design: { kind: "practice", text: ["節奏型、過門與組合方式是 App 的出題設計,不是官方題目;附點八分只配十六分是出題限制,不是官方規定", "Grooves, fills and how they combine are the App's design, not official tests; pairing ♪. only with ♬ is the App's limit, not an official rule"] },
   pieceVel: EVENT_NOTES.pieceVel,

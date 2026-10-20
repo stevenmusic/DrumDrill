@@ -34,7 +34,7 @@ export const NOTES = {
   grooveTime: { kind: "assumed", text: ["律動的拍號大綱沒寫,App 用 4/4", "Groove metre not stated; the App uses 4/4"] },
   grooveRepeat: { kind: "assumed", text: ["「two bar groove that is repeated」:App 兩小節播兩遍", "'Two bar groove that is repeated': the App plays the 2 bars twice"] },
   grooveDesign: { kind: "practice", text: ["大綱只列鼓件:節奏型與每一級的難度遞增是 App 的出題設計", "Only the kit pieces are listed: patterns and how they get harder are the App's design"] },
-  kitPieces: { kind: "assumed", text: ["大綱只寫「整組鼓」:App 用 Hi-hat(開閉、腳踩)、小鼓、cross stick、大鼓、Ride(含 Ride bell)、Crash、三個 Toms", "'Full kit': hi-hat (open/closed, foot), snare, cross stick, kick, ride (and bell), crash, 3 toms"] },
+  kitPieces: { kind: "assumed", text: ["大綱只寫「整組鼓」:App 用 Hi-hat(開閉、腳踩)、小鼓、Cross stick、大鼓、Ride(含 Ride bell)、Crash、三個 Toms", "'Full kit': hi-hat (open/closed, foot), snare, cross stick, kick, ride (and bell), crash, 3 toms"] },
   tempoRandom: { kind: "practice", text: ["速度在官方範圍內隨機", "Tempo picked at random within the official range"] },
   noStyle: { kind: "omit", text: ["風格選項大綱沒寫,App 不出這一題", "Style options are not listed, so the App skips that question"] },
   pieceVel: EVENT_NOTES.pieceVel

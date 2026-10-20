@@ -86,34 +86,18 @@ const appActions = ({ page, tap, tapAny }) => [
   [1, "檢定頁 練習這一級的視奏 / 回到規格", async () => tapAny("#s-specCards .s-go, #s-mockClose")],
   [1, "聽力 不看譜", async () => tap("#e-optHide")],
   // S14 模擬考
-  [3, "模擬考 開始/停止", async () => tapAny("#t-mockBtn, #s-mockBtn, #e-mockBtn")],
+  [3, "模擬考 開始/停止", async () => tapAny("#t-mockBtn, #e-mockBtn")],
   [3, "模擬考 下一步", async () => page.evaluate(() => {
-    const T = window.__tech, S = window.__sight, E = window.__ear;
+    const T = window.__tech, E = window.__ear;   // 視奏沒有模擬考(跟練習流程重複)
     if (T.state.mock === "run") { if (T.state.play) T.mockFinishRun(); else T.mockNext(); return true; }
-    if (S.mock.state === "run") { if (S.state.phase === "perform") S.finishNow(); else S.mockSkipPrep(); return true; }
     if (E.mock.state === "run") { if (E.state.kind) E.finishNow(); else if (E.state.phase === "study") E.mockSkipStudy(); else if (E.state.phase === "choose") E.choose(0); else if (!document.getElementById("e-performBtn").disabled) document.getElementById("e-performBtn").click(); else E.mockNext(); return true; }
     return false;
   })],
-  // 視奏模擬考準備中按 N:不能換題(換題會繞過「不能提早結束」),倒數仍在跑
-  [2, "模擬考準備中按 n", async () => {
-    const [sys, g] = pickOne([["rsl", 0], ["rsl", 3], ["rsl", 4], ["trinity", 4]]);
-    await page.evaluate(([s, g]) => { window.__shell.setExam(s, g); window.__shell.showView("exam", "sight"); }, [sys, g]); await page.waitForTimeout(300);
-    await page.evaluate(() => window.__sight.startMock());
-    const ok = await page.waitForFunction(() => window.__sight.mock.state === "run" && window.__sight.state.phase === "prep" && window.__sight.state.timer, null, { timeout: 15000 }).then(() => true, () => false);
-    if (!ok) return false;
-    const a = await page.evaluate(() => { window.__humanTest = window.__sight.test; return window.__sight.state.left; });
-    await page.keyboard.press("n"); await page.waitForTimeout(150); await page.keyboard.press("N"); await page.waitForTimeout(1300);
-    const b = await page.evaluate(() => ({ same: window.__sight.test === window.__humanTest, st: window.__sight.mock.state, phase: window.__sight.state.phase, timer: window.__sight.state.timer, left: window.__sight.state.left }));
-    if (!b.same) fail(`視奏模擬考準備中按 n 換了題(${sys} ${g})`);
-    if (b.st !== "run" || b.phase !== "prep" || !b.timer || !(b.left < a)) fail(`視奏模擬考準備中按 n 之後倒數沒有在跑(${sys} ${g}):${a} → ${JSON.stringify(b)}`);
-    await page.evaluate(() => { delete window.__humanTest; if (window.__sight.mock.state === "run") document.getElementById("s-mockBtn").click(); });
-    return true;
-  }],
   [3, "模擬考中途中止", async () => {
-    const mod = pickOne(["tech", "sight", "ear"]);
-    const sys = mod === "tech" ? "rsl" : pickOne(["rsl", "trinity"]), g = pickOne(mod === "sight" && sys === "rsl" ? [0, 3, 4, 5] : [0, 2, 4, 6, 8]);
+    const mod = pickOne(["tech", "ear"]);   // 視奏沒有模擬考
+    const sys = mod === "tech" ? "rsl" : pickOne(["rsl", "trinity"]), g = pickOne([0, 2, 4, 6, 8]);
     await page.evaluate(([m, s, g]) => { window.__shell.setExam(s, g); window.__shell.showView("exam", m); }, [mod, sys, g]); await page.waitForTimeout(300);
-    const api = { tech: "__tech", sight: "__sight", ear: "__ear" }[mod];
+    const api = { tech: "__tech", ear: "__ear" }[mod];
     await page.evaluate(a => window[a].startMock(), api);
     const running = () => page.evaluate(([m, a]) => (m === "tech" ? window.__tech.state.mock : window[a].mock.state) === "run", [mod, api]);
     if (!(await running())) return false;

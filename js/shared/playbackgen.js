@@ -52,7 +52,7 @@ export const NOTES = {
   independence: { kind: "practice", text: ["進階手腳獨立:App 用比較多樣的大鼓節奏表示", "Extended independence: the App uses more varied kick rhythms"] },
   anyTerms: { kind: "practice", text: ["「任何常見術語與記號」只用前面各級列過的", "'Any common terms and signs': only those listed in earlier grades"] },
   meterChange: { kind: "assumed", text: ["換拍號只在句子之間", "Metre changes only between phrases"] },
-  rimClick: { kind: "assumed", text: ["rim-click 用 drumkey 的 cross stick(xstick)符號與聲音", "Rim-click uses the drum key's cross-stick (xstick) symbol and sound"] },
+  rimClick: { kind: "assumed", text: ["Rim-click 用 Cross stick 的記號和聲音", "Rim-click uses the cross-stick mark and sound"] },
   singleLine: { kind: "assumed", text: ["Initial「只有單線」解讀成一次只打一個(手腳輪流,不同時)", "Initial 'single line' read as one stroke at a time (hands and feet alternate)"] },
   cutTime: { kind: "assumed", text: ["2/2 半小節一拍:律動的小鼓反拍在第 3 個四分音符", "2/2 has two beats a bar: the groove backbeat is on the 3rd crotchet"] }
 };

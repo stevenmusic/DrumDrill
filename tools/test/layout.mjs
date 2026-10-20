@@ -99,7 +99,7 @@ for (const [name, w, h, mobile] of VPS) {
   const sub = v => page.click(`#subSeg button[data-v="${v}"]`).then(() => page.waitForTimeout(500));
   const expand = async sel => { if (await page.isVisible(sel + " .setup-summary")) await page.click(sel + " .setup-summary"); };
   // @app-begin:各 App 的畫面狀態
-  // S14 模擬考(檢定頁):技巧 RSL 3(開始前 / 進行中 / 播放中 / 結果 / 中止的說明)、視奏 RSL 3、RSL 4、Trinity 4(準備中 / 作答中 / 結果)、
+  // S14 模擬考(檢定頁):技巧 RSL 3(開始前 / 進行中 / 播放中 / 結果 / 中止的說明)、視奏 RSL 3、RSL 4、Trinity 4 照練習流程(準備中 / 作答中 / 結果;視奏沒有模擬考)、
   //   聽力 RSL 4(聽題目 / 練習 / 選譜 / 結果)、Trinity 4(看譜 / 結果);check(狀態名稱) = 這支測試自己的檢查
   async function mockTour(page, check){
     const ev = (f, a) => page.evaluate(f, a);
@@ -118,18 +118,23 @@ for (const [name, w, h, mobile] of VPS) {
     await ev(() => window.__shell.showView("exam", "tech")); await page.waitForTimeout(400);
     await check("模擬考 技巧 中止");
     await ev(() => document.getElementById("t-mockClose").click()); await page.waitForTimeout(200);
+    // 視奏沒有模擬考(2026-10:跟練習流程重複):檢定頁照練習流程走一遍(出題 → 準備 / 看譜 → 正式打 → 結果)
     for (const [sys, g] of [["rsl", 3], ["rsl", 4], ["trinity", 4]]) {
-      const at = `模擬考 視奏 ${sys} ${g}`;
+      const at = `檢定 視奏 ${sys} ${g}`;
       await ev(([s, g]) => { window.__shell.setExam(s, g); window.__shell.showView("exam", "sight"); }, [sys, g]); await page.waitForTimeout(400);
-      if (sys === "rsl" && g === 3) await check("模擬考 視奏 開始前");
-      await ev(() => document.getElementById("s-mockBtn").click());
-      await wait(() => window.__sight.state.drawn > 0 && !window.__sight.state.pending && window.__sight.state.loading == null && window.__sight.mock.state === "run"); await page.waitForTimeout(500);
+      if (sys === "rsl" && g === 3) await check("檢定 視奏 開始前");
+      await ev(() => window.__sight.startXp());
+      await wait(() => window.__sight.state.drawn > 0 && !window.__sight.state.pending && window.__sight.state.loading == null); await page.waitForTimeout(500);
+      await ev(() => document.getElementById("s-prepare").click());
+      await wait(() => window.__sight.state.phase === "prep"); await page.waitForTimeout(400);
       await check(`${at} 準備中`);
-      await ev(() => window.__sight.mockSkipPrep());
+      await ev(() => window.__sight.skipPrep());
+      await wait(() => window.__sight.state.phase !== "prep"); await page.waitForTimeout(300);
+      await ev(() => document.getElementById("s-performTop").click());
       await wait(() => window.__sight.state.phase === "perform"); await page.waitForTimeout(600);
       await check(`${at} 作答中`);
       await ev(() => window.__sight.finishNow());
-      await wait(() => window.__sight.mock.state === "result"); await page.waitForTimeout(400);
+      await wait(() => window.__sight.state.phase === "result"); await page.waitForTimeout(400);
       await check(`${at} 結果`);
     }
     for (const sys of ["rsl", "trinity"]) {
@@ -311,7 +316,7 @@ for (const [name, w, h, mobile] of VPS) {
     await eGo("trinity", 4, "playback"); await back("trinity", "playback", "trinity 4 回來");
     await eGo("rsl", 3, "fill"); await eDo("reveal"); await page.waitForTimeout(800); await back("rsl", "fill", "rsl 3 fill 揭曉後回來");
   }
-  const MOCK_SHOTS = { "模擬考 技巧 進行中": "mock-tech", "模擬考 視奏 rsl 3 準備中": "mock-sight-prep", "模擬考 視奏 rsl 3 結果": "mock-sight-result", "模擬考 聽力 rsl 結果": "mock-ear-result", "模擬考 技巧 中止": "mock-aborted" };
+  const MOCK_SHOTS = { "模擬考 技巧 進行中": "mock-tech", "檢定 視奏 rsl 3 準備中": "xp-sight-prep", "檢定 視奏 rsl 3 結果": "xp-sight-result", "模擬考 聽力 rsl 結果": "mock-ear-result", "模擬考 技巧 中止": "mock-aborted" };
   await mockTour(page, async st => { await audit(page, name, st); if (MOCK_SHOTS[st]) await shot(MOCK_SHOTS[st]); });
   await page.evaluate(() => window.__shell.setExam("trinity", 8));
   // 英文(字比較長)

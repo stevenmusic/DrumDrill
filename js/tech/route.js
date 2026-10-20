@@ -285,7 +285,7 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
     pairText(el.querySelector(".r-line"), () => (n ? tr(`打中 ${res.hits}/${res.total} · 漏打 ${res.missed} · 多打 ${res.extra}`, `Hit ${res.hits}/${res.total} · missed ${res.missed} · extra ${res.extra}`)
       : tr("沒有打到鼓墊", "No pad taps")));
     el.querySelectorAll(".r-note").forEach((p, i) => pairText(p, () => tr(notes[i][0], notes[i][1])));
-    pairText(el.querySelector(".disclaimer"), () => tr("只評時間 · 練習回饋,不是考試分數", "Timing only · practice feedback, not an exam mark"));
+    pairText(el.querySelector(".disclaimer"), () => tr("只評時間,不是考試分數", "Timing only, not an exam mark"));
   }
 
   /* ── 鼓墊 ── */
@@ -299,9 +299,9 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
     $("rPadCard").hidden = !on;
     $("rModeBtn").hidden = on;
     $("rPerform").hidden = !on;
-    pairText($("rModeBtn"), () => tr("沒有鼓?手機鼓墊", "No kit? Phone pads"));   // 短:折疊機上跟「還要練 / 穩了」排在同一行
-    pairText($("rKitBtn"), () => tr("在鼓上打?改回按「穩了」", "On a kit? Back to Steady"));
-    pairText($("rPadNote"), () => tr("先響 1 小節拍點再開始打", "One bar of count-in first") + (showKeys() ? tr(" · 鍵盤 F / J / K", " · keys F / J / K") : ""));
+    pairText($("rModeBtn"), () => tr("沒有鼓?用手機打", "No kit? Use the phone"));   // 短:折疊機上跟「還要練 / 穩了」排在同一行
+    pairText($("rKitBtn"), () => tr("改回在鼓上打", "Back to the kit"));
+    pairText($("rPadNote"), () => tr("先聽 1 小節拍點再打", "One bar of count-in first") + (showKeys() ? tr(" · 鍵盤 F / J / K", " · keys F / J / K") : ""));
     syncPerform();
   }
   function syncPerform(){
