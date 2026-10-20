@@ -57,6 +57,11 @@ export function onCtx(){ if (tab === "exam") renderExam(); if (ctx) ctx.examChan
 /* 進來:同一類、已經有題目就照原樣(回到前景、從別的分頁回來不會重新出題);換了類別或檢定頁才重畫 */
 export function enter(t){
   active = true;
+  // 「今日」(子項目第一格;畫面設計 2026-10):只有今日練習卡 + 練習紀錄,開始後照舊(子項目列換成今日練習那一行,題目卡、譜卡、速度卡)。
+  // 模組裡的類別照舊是最後一次自由練習的那一類(暖身段用同一套題目卡);其他子項目 = 自由練習,不顯示今日練習卡(app.css 的 .today-view)
+  const today = t === "today";
+  ROOT.classList.toggle("today-view", today);
+  if (today) t = CATEGORIES.some(c => c.id === S.cat) ? S.cat : "roll";
   audio.holdKit("tech"); rv.active = true;   // 今日練習的路線段用整組鼓(跟視奏、聽力共用一份;離開 60 秒沒人拿才釋放)
   // 今日練習的段落:點了子項目(外框把分段鈕亮回來)或到檢定頁 = 暫停,回到一般的打法畫面(卡片寫「繼續今天的練習」)
   if (dseg && (t === "exam" || (ctx && ctx.subActive && ctx.subActive("tech")))) { dExit(); if (t !== "exam") { switchTab(t); requestAnimationFrame(onStageResize); return; } }

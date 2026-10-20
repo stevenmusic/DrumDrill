@@ -26,7 +26,7 @@ const S = (() => {
   saved = saved || {};
   if (saved.exam && !["trinity", "rsl"].includes(saved.exam.system)) saved.exam = null;
   const s = { view: "tech", exam: null, onboarded: false, theme: "dark", ...saved,
-    sub: { tech: "roll", exam: "tech", sight: "rhythm", ...(saved.sub || {}) } };
+    sub: { tech: "today", exam: "tech", sight: "rhythm", ...(saved.sub || {}) } };
   s.mic = s.mic === true;   // 用麥克風評分節奏(選用;視奏、聽力共用一個開關,預設關;js/shared/micrhythm.js)
   // 視奏分頁的子項目 = 認譜 / 節奏 / 律動 / 樂譜(難度由 js/sight/app.js 自動調整)。舊版存的是級數 0–8 → 節奏
   if (!["read", "rhythm", "groove", "chart"].includes(s.sub.sight)) s.sub.sight = "rhythm";
@@ -58,7 +58,7 @@ const gradeShort = (g, sys = examSystem()) => g === 0 ? (sys === "rsl" ? "D" : "
 /* 子項目分段鈕;檢定分頁三項的名稱 */
 const SUBS = {
   // 技巧:PAS 40 個基本打法的四大類
-  tech: () => [["roll", tr("滾奏", "Rolls")], ["diddle", tr("複點", "Diddles")], ["flam", "Flam"], ["drag", "Drag"]],
+  tech: () => [["today", tr("今日", "Today"), tr("今日練習", "Today's practice")], ["roll", tr("滾奏", "Rolls")], ["diddle", tr("複點", "Diddles")], ["flam", "Flam"], ["drag", "Drag"]],   // 第一格「今日」= 今日練習(畫面設計 2026-10)
   // 視奏:照學習順序 認譜 → 節奏 → 律動 → 樂譜(級數只在檢定頁設;難度由 App 自動調整,js/sight/app.js)
   sight: () => [["read", tr("認譜", "Symbols")], ["rhythm", tr("小鼓譜", "Snare")], ["groove", tr("鼓組譜", "Kit")], ["chart", tr("樂譜", "Chart")]],   // 「律動」只留給今日練習與聽力
   // 聽力:子項目 = 題型(RSL 有 Fill、Groove;Trinity 有 Playback;不適用的題型 js/ear/app.js 顯示說明)
@@ -149,7 +149,8 @@ function renderSubnav(){
   $("subnav").hidden = !opts.length;
   document.body.classList.toggle("no-subnav", !opts.length);
   const keep = keepFocus($("subSeg"), "data-v");
-  $("subSeg").innerHTML = opts.map(([v, t]) => `<button data-v="${v}" aria-pressed="${!subOff.has(S.view) && S.sub[S.view] === v}">${t}</button>`).join("");
+  // 第三個欄位 = 無障礙名稱(按鈕上的字是短名時,例如「今日」→ 今日練習)
+  $("subSeg").innerHTML = opts.map(([v, t, a]) => `<button data-v="${v}" aria-pressed="${!subOff.has(S.view) && S.sub[S.view] === v}"${a ? ` aria-label="${a}"` : ""}>${t}</button>`).join("");
   $("subSeg").setAttribute("aria-label", SUB_LABEL()[S.view] || "");
   keep();
   const bar = opts.length && subOff.has(S.view) ? subBars[S.view] : null;
