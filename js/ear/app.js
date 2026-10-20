@@ -256,31 +256,33 @@ function renderUnsupported(sys, g){
     text = () => tr("第一次要連網路,之後會存在裝置上。", "Needs internet once; then it's cached.");
   } else if (!typeOK(sys, type) && sys === "rsl") {
     title = () => tr("RSL 沒有「接著打」(Playback)", "No Echo (Playback) in RSL");
-    text = () => tr("Playback(聽一句、馬上打回來)是 Trinity Rock & Pop 的 Session skills。RSL 的聽力是 Fill 與 Groove,在「過門」「律動」練。要練 Playback,到檢定分頁把考試換成 Trinity。下面是 RSL 的官方規格。",
-      "Playback (listen and repeat each phrase) is a Trinity Rock & Pop session skill. RSL ear tests are Fill and Groove — see those tabs. To practise Playback, switch the exam to Trinity. RSL's official spec below.");
+    text = () => tr("Playback(聽一句、馬上打回來)是 Trinity Rock & Pop 的 Session skills。RSL 的聽力是 Fill 與 Groove,在「過門」「律動」練。要練 Playback,到檢定分頁把考試換成 Trinity。",
+      "Playback (listen and repeat each phrase) is a Trinity Rock & Pop session skill. RSL ear tests are Fill and Groove — see those tabs. To practise Playback, switch the exam to Trinity.");
   } else if (!typeOK(sys, type)) {
     title = () => tr("Rock & Pop 沒有聽力項目", "No ear tests in Rock & Pop");
-    text = () => tr("Fill、Groove 是 RSL 的聽力題。Trinity Rock & Pop 最接近的是 Session skills 的 Playback,在「接著打」練。要練 Fill / Groove,到檢定分頁把考試換成 RSL。下面是 Trinity 的官方規格。",
-      "Fill and Groove are RSL ear tests. The nearest in Trinity Rock & Pop is Playback (session skills) — see the Playback tab. To practise Fill / Groove, switch the exam to RSL. Trinity's official spec below.");
+    text = () => tr("Fill、Groove 是 RSL 的聽力題。Trinity Rock & Pop 最接近的是 Session skills 的 Playback,在「接著打」練。要練 Fill / Groove,到檢定分頁把考試換成 RSL。",
+      "Fill and Groove are RSL ear tests. The nearest in Trinity Rock & Pop is Playback (session skills) — see the Playback tab. To practise Fill / Groove, switch the exam to RSL.");
   } else {
     title = () => tr("圖例資料還沒載好", "Drum key not loaded");
-    text = () => tr("第一次要連網路,之後會存在裝置上。下面是官方規格。", "Needs internet once; then it's cached. Official spec below.");
+    text = () => tr("第一次要連網路,之後會存在裝置上。", "Needs internet once; then it's cached.");
   }
   V.pairStack($("unsupportedTitle"), title);
   pairText($("unsupportedText"), text);
   pairText($("unsupportedNote"), () => TS("practiceOnly"));
-  $("specCards").hidden = !d; $("specCards").innerHTML = "";
-  if (d) { if (sys === "rsl") renderRsl(d, g, false); else renderTrinity(d, g, false); }
+  // 官方規格在檢定頁的「考試內容」(畫面設計 2026-10:規格卡收在那裡);這裡只有說明
+  $("specCards").hidden = true;
 }
 
 /* ── 檢定頁:考試摘要 + 規格卡(照官方大綱,資料在 data/exam-*.json,每項帶頁碼)── */
 function renderExam(){
   const ex = curExam(), sys = ex.system, g = ex.grade, d = dataOf(sys);
-  $("sumSub").textContent = `${sysName(sys)} · ${gl(g, sys)}`;
+  // 考試內容(一張收起來的卡):配分 → 規格卡 → 推估說明 → practiceOnly(系統、級數在考試卡上,這裡不再寫)
   pairText($("sumNote"), () => TS("practiceOnly"));
+  pairText($("sumAssumed"), () => TS("examAssumed"));
   $("specCards").innerHTML = "";
+  renderXList(sys, g);
   if (!d) {
-    V.fillSpec($("sumSpec"), []); $("examSummary").textContent = TS("sumTitle");
+    V.fillSpec($("sumSpec"), []); $("examSummary").textContent = "";
     V.addPara(card(() => tr("考試規格", "Exam spec")), () => tr("考試資料還沒載好(第一次要連網路,之後會存在裝置上)。", "Exam data isn't loaded yet (needs internet once; then it's cached)."));
     return;
   }
@@ -289,16 +291,16 @@ function renderExam(){
     const it = d.marks.gradeExam.items.find(i => i.id === "ear");
     rows.push({ k: () => tr("本項配分", "This section"), v: () => tr(`聽力 ${it.max} 分:`, `Ear tests, ${it.max} marks: `) + V.bandsText(it.bands), src: V.srcOf(sys, d.marks.gradeExam.src.p) });
     rows.push({ k: () => tr("評分", "Marked on"), v: () => V.L(d.marks.criteria.ear[0]), src: V.srcOf(sys, d.marks.criteria.src.p) });
-    $("examSummary").textContent = tr(`考試摘要 · 聽力 ${it.max} 分`, `Exam summary · Ear tests ${it.max} marks`);
+    $("examSummary").textContent = tr(`聽力 ${it.max} 分`, `Ear tests, ${it.max} marks`);
   } else {
     const b = d.sessionBands;
     rows.push({ k: () => tr("本項配分", "This section"), v: () => tr(`沒有聽力項目;Session skills(Playback 或 Improvising 擇一)${b.max} 分:`, `No aural test; Session skills (Playback or Improvising), ${b.max} marks: `) + V.bandsText(b.bands), src: V.srcOf(sys, b.src.p) });
     rows.push({ k: () => tr("數位考試", "Digital exam"), v: () => V.L(d.digitalNote.text), src: V.srcOf(sys, d.digitalNote.src.p) });
-    $("examSummary").textContent = tr(`考試摘要 · Session skills(臨場技能)${b.max} 分`, `Exam summary · Session skills ${b.max} marks`);
+    $("examSummary").textContent = tr(`Session skills ${b.max} 分`, `Session skills, ${b.max} marks`);
   }
   rows.push(...V.summaryRows(sys, d, g), V.dataRow(d));
   V.fillSpec($("sumSpec"), rows);
-  if (sys === "rsl") renderRsl(d, g, true); else renderTrinity(d, g, true);
+  if (sys === "rsl") renderRsl(d, g, false); else renderTrinity(d, g, false);   // 規格卡在「考試內容」裡;練習的入口在本級聽力清單
 }
 function card(title, src){
   const c = document.createElement("section");
@@ -1557,7 +1559,27 @@ $("mockBtn").onclick = () => {
   if (mock.running()) { mock.close(); stopAll(); render(); return; }   // 停止(不算,回到檢定頁)
   startMock();
 };
-$("mockClose").onclick = () => { mock.close(); render(); window.scrollTo({ top: 0 }); };
+$("mockClose").onclick = () => {
+  if (mock.state === "idle") { const L = xTypes(); if (L.length) goType(L[Math.floor(Math.random() * L.length)]); return; }   // 本項卡的主要動作:隨機抽一題
+  mock.close(); render(); window.scrollTo({ top: 0 });
+};
+/* 本級聽力清單(檢定頁;畫面設計 2026-10 版型 B):這一級 App 能練的題型,點一項 = 到聽力分頁練這一級的那一種 */
+const xTypes = () => { const ex = curExam(); return ex.auto ? [] : (ex.system === "rsl" ? ["fill", "groove"] : ["playback"]).filter(t => practicable(ex.system, ex.grade, t)); };
+const X_NAME = { fill: ["過門(Fill Playback & Recognition)", "Fill Playback & Recognition"], groove: ["律動(Groove Recall)", "Groove Recall"], playback: ["接著打(Playback)", "Playback"] };
+function goType(sub){ const ex = curExam(); if (ex.auto) levels.set(sub, ex.grade + 1); ctx.showView("ear", sub); }
+function renderXList(sys, g){
+  const box = $("xItems"); box.innerHTML = "";
+  const L = xTypes();
+  $("xList").hidden = !L.length || $("paneExam").hidden;
+  for (const t of L) {
+    const b = document.createElement("button");
+    b.className = "xcat e-go"; b.type = "button"; b.dataset.sub = t;
+    b.innerHTML = '<span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>';
+    pairText(b.querySelector("span"), () => tr(...X_NAME[t]));
+    b.onclick = () => goType(t);
+    box.appendChild(b);
+  }
+}
 const TYPE_NAME = { fill: "Fill Playback & Recognition", groove: "Groove Recall", playback: "Playback" };
 /* 一題的練習回饋(準度、選譜對錯、完成與否;不算總分) */
 function mockDetail(r){
@@ -1595,7 +1617,7 @@ function renderMockCard(){
   });
   if (ms === "aborted") {
     paintCard($, { title: () => tr("模擬考已中止", "Mock exam stopped"), sub: name, text: () => abortText(mock.reason),
-      btn: ok ? { label: () => mockLabel("aborted") } : null, close: { label: () => tr("回到規格", "Back to the spec") } });
+      btn: ok ? { label: () => mockLabel("aborted") } : null, close: { label: () => tr("返回", "Back") } });
     if (active) mock.seen();
     return;
   }
@@ -1603,7 +1625,7 @@ function renderMockCard(){
     paintCard($, { title: () => tr("模擬考結果", "Mock exam result"), sub: name,
       text: () => (mock.data.res.some(x => x.r && x.r.src === "mic") ? tr("準度只看敲擊的時間(觸控鼓墊或麥克風;麥克風全部鼓件一條;練習設定的容許範圍)。", "Accuracy is timing only (pads or mic; the mic merges all drums; practice-setting tolerance).")
         : tr("準度只看觸控鼓墊的敲擊時間(練習設定的容許範圍)。", "Accuracy is pad timing only (practice-setting tolerance).")),
-      rows: rows(), btn: ok ? { label: () => mockLabel("result") } : null, close: { label: () => tr("回到規格", "Back to the spec") } });
+      rows: rows(), btn: ok ? { label: () => mockLabel("result") } : null, close: { label: () => tr("返回", "Back") } });
     return;
   }
   if (ms === "run") {
@@ -1615,12 +1637,9 @@ function renderMockCard(){
       rows: rows(), btn: { label: () => mockLabel("run") } });
     return;
   }
-  const d = dataOf(ex.system);
-  paintCard($, { title: () => tr("模擬考", "Mock exam"), sub: `${sysName(ex.system)} ${gl(ex.grade, ex.system)}`,
-    text: () => (!d ? tr("考試資料還沒載好。", "Exam data isn't loaded yet.") : !ok ? tr("圖例資料還沒載好。", "The drum key isn't loaded yet.")
-      : ex.system === "rsl" ? tr(`照考試順序:Fill Playback & Recognition → Groove Recall,各一題。每題配拍點聽兩次(${V.srcOf("rsl", d.ear[ex.grade].src.p)}),練習後打一遍;Fill 再從印出來的譜選一個。`,
-        `In exam order: Fill Playback & Recognition, then Groove Recall, one each. Each plays twice with a click (${V.srcOf("rsl", d.ear[ex.grade].src.p)}); practise, play it back; for Fill, pick the printed chart.`)
-      : tr(`Rock & Pop 沒有聽力項目;這是 Session skills Playback 的模擬:看譜 ${studySec()} 秒、播兩次(第一次練習、第二次計分;${studySrc()})。`,
-        `Rock & Pop has no aural test; this mocks Session skills Playback: ${studySec()} s to study, two plays (practice, then assessed; ${studySrc()}).`)),
-    btn: ok ? { label: () => mockLabel("idle") } : null });
+  // idle(檢定頁)= 本項卡(畫面設計 2026-10 版型 B):大標題「聽力」+ 標籤 = 已練 n 題;一句;左 模擬考、右 隨機抽一題(規格在最下面的「考試內容」)
+  const d = dataOf(ex.system), L = xTypes();
+  paintCard($, { item: true, title: () => tr("聽力", "Aural"), sub: examStatus(),
+    text: () => (!d ? tr("考試資料還沒載好。", "Exam data isn't loaded yet.") : !L.length ? tr("圖例資料還沒載好。", "The drum key isn't loaded yet.") : tr("選下面一項練,或隨機抽一題", "Pick a test below, or tap Random")),
+    btn: ok ? { label: () => mockLabel("item") } : null, close: L.length ? { label: () => tr("隨機抽一題", "Random") } : null, note: null });
 }

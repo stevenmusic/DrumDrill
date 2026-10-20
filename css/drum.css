@@ -124,7 +124,6 @@ body.land-play #e-stage{flex:1;display:flex;flex-direction:column;justify-conten
 @media (max-width:600px){ .spec-cards{gap:10px} }
 @media (orientation:landscape) and (max-height:500px){
   .spec-cards{gap:8px}
-  body.view-exam #s-paneExam{grid-column:2 !important;grid-row:1}
 }
 .spec{display:grid;grid-template-columns:minmax(5.4em, 32%) minmax(0, 1fr);gap:6px 10px;font-size:var(--fs-sm);line-height:1.5}
 .spec-k{color:var(--muted-bright);overflow-wrap:anywhere}
@@ -292,7 +291,6 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 @media (prefers-reduced-motion:reduce){ #mod-ear .prep-float.low{animation:none} }
 #mod-ear .prep-float[hidden]{display:none}
 @media (orientation:landscape) and (max-height:500px){
-  body.view-exam #e-paneExam{grid-column:2 !important;grid-row:1}
   /* 題目卡:標題 | 標籤 | ▶ 一行(照視奏) */
   #mod-ear .quiz{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:4px 12px}
   #mod-ear .q-head,#mod-ear .q-ht,#mod-ear .q-row{display:contents}
@@ -421,11 +419,8 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
   .rd-card .rd-ans-grid{grid-column:2;grid-row:4;margin-top:0}
   .rd-ans-grid .opt{min-height:44px;font-size:var(--fs-sm);padding:2px 4px}
 }
-/* 手機橫式的檢定頁:視奏的模擬考卡(開始模擬考 / 練習這一級)放在考試卡右邊(第一個畫面就看得到),考試摘要排到下面 */
-@media (orientation:landscape) and (max-height:500px){
-  body.view-exam #mod-sight:has(#s-mockCard:not([hidden])) #s-paneExam{grid-column:1 / -1 !important;grid-row:auto}
-  body.view-exam #s-mockCard:not([hidden]){grid-column:2;grid-row:1;align-self:start}
-}
+/* 手機橫式的檢定頁:本項卡(模擬考卡 .item-card)放在考試卡右邊(app.css;第一個畫面就看得到) */
+@media (orientation:landscape) and (max-height:500px){ body.view-exam .item-card{align-self:start} }
 /* 手機橫式:認音 / 認譜的題目卡(左)與設定卡(右)並排,作答與設定同一個畫面 */
 @media (orientation:landscape) and (max-height:500px) and (max-width:1099px){
   #mod-sight:has(#s-rdCard:not([hidden])){display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:8px;align-items:start}
@@ -522,3 +517,15 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 .rd-ans-grid.rd-beats .opt{font-family:"Noto Serif TC",serif;font-size:var(--fs-xl);font-weight:700;min-height:52px}
 .rd-row[hidden]{display:none}
 .rd-seg.rd-vals .opt{white-space:nowrap;padding:4px 2px}
+
+/* ══ 畫面設計 2026-10 版型 B(檢定頁):本項卡(模擬考卡 .item-card)→ 清單 → 「考試內容」(收起來的一行,最下面)══ */
+body.view-exam .exam-info:is(#t-paneExam,#s-paneExam,#e-paneExam){order:20}
+body.view-exam #t-mockCard.item-card{order:1}
+#e-xList{order:3}
+.exam-info .spec-cards{margin-top:10px}
+.exam-info .spec-card{border:0;border-top:1px solid var(--line);border-radius:0;background:none;box-shadow:none;padding:10px 0 0}
+.exam-info > .spec-note,.exam-info > .practice-only{margin-top:10px}
+.mock-card.item-card .x-actions{margin-top:10px}
+/* 技巧題目卡最後一行右邊:從檢定頁清單來練時的「下一項」 */
+#t-nextItem{margin-left:auto;min-height:44px;height:auto}
+@media (orientation:landscape) and (max-height:500px){ #t-nextItem{grid-column:1 / -1;justify-self:end} }

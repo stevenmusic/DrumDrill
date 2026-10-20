@@ -249,7 +249,11 @@ function syncMastery(){
   ROOT.querySelectorAll(".mbtn").forEach(b => { b.disabled = !cur; b.setAttribute("aria-pressed", String(b.dataset.m === m)); });
 }
 /* 題目卡最後一行(左 = 熟練度,右 = 下一項):裡面沒有看得到的東西就整列收掉 */
-function syncLastRow(){ const row = ROOT.querySelector(".q-last"); row.hidden = ![...row.children].some(c => !c.hidden); }
+function syncLastRow(){
+  // 下一項:從檢定頁的清單來練(目標模式)時,換到清單的下一項(畫面設計 2026-10:清單底下不放按鈕列)
+  $("nextItem").hidden = !(target && !target.daily && tab !== "exam" && !mockOn() && practiceItems().length > 1);
+  const row = ROOT.querySelector(".q-last"); row.hidden = ![...row.children].some(c => !c.hidden);
+}
 ROOT.querySelectorAll(".mbtn").forEach(b => b.onclick = () => {
   if (!cur) return;
   const m = b.dataset.m;
@@ -300,20 +304,21 @@ function renderExam(){
 
 /* ── 考試摘要(手機收成一行):這一項的配分與等第、整場門檻、考試時間、本 App 不提供的、資料版本;最後一行固定是 practiceOnly ── */
 function renderSummary(sys, g, d){
-  $("sumSub").textContent = `${sys === "rsl" ? "RSL" : "Trinity"} · ${ctx.gradeLabel(g, sys)}`;
+  // 考試內容(一張收起來的卡):這一項的配分 → 規格 → 推估說明 → practiceOnly(系統、級數在考試卡上,這裡不再寫)
   pairText($("sumNote"), () => TS("practiceOnly"));
-  if (!d) { fillSpec($("sumSpec"), []); $("examSummary").textContent = TS("sumTitle"); return; }
+  pairText($("sumAssumed"), () => TS("examAssumed"));
+  if (!d) { fillSpec($("sumSpec"), []); $("examSummary").textContent = ""; return; }
   const rows = [];
   if (sys === "rsl") {
     const it = d.marks.gradeExam.items.find(i => i.id === "tech");
     rows.push({ k: () => tr("本項配分", "This section"), v: () => tr(`技巧 ${it.max} 分:`, `Technique, ${it.max} marks: `) + bandsText(it.bands), src: srcOf(sys, d.marks.gradeExam.src.p) });
-    $("examSummary").textContent = tr(`考試摘要 · 技巧 ${it.max} 分`, `Exam summary · Technique ${it.max} marks`);
+    $("examSummary").textContent = tr(`技巧 ${it.max} 分`, `Technique, ${it.max} marks`);
   } else {
     const sp = d.marks.songParts.parts.find(p => p.id === "technical"), b = d.songBands.song3;
     rows.push({ k: () => tr("本項配分", "This section"), v: () => tr(`在 Song 3 評:Technical control(技巧控制)${sp.song3} 分(Song 3 滿分 ${b.max};Song 1、2 的 Technical control 是 ${sp.song12})`,
       `Marked in Song 3: Technical control ${sp.song3} (Song 3 out of ${b.max}; Songs 1–2: ${sp.song12})`), src: srcOf(sys, d.marks.songParts.src.p) });
     rows.push({ k: () => tr("Song 3 等第", "Song 3 bands"), v: () => bandsText(b.bands), src: srcOf(sys, d.songBands.src.p) });
-    $("examSummary").textContent = tr("考試摘要", "Exam summary");   // 「在 Song 3 評」只寫在進度格與本級要求
+    $("examSummary").textContent = "";   // 「在 Song 3 評」寫在本項卡的標籤與本級要求
   }
   rows.push(...summaryRows(sys, d, g));
   if (sys === "trinity") rows.push({ k: () => tr("數位考試", "Digital exam"), v: () => L(d.digitalNote.text), src: srcOf(sys, d.digitalNote.src.p) });
@@ -330,9 +335,7 @@ const itemName = it => (it.kind === "pas" ? `${it.no}. ${name(byNo(it.no))}` : i
 function renderRsl(d, g){
   const t = d.tech[g], items = techItems(g, d), nos = techPasNos(g, d);
   const good = nos.filter(no => S.mastery[no] === "good").length;
-  $("listSub").textContent = tr(`會了 ${good}/${nos.length}`, `Got it ${good}/${nos.length}`);
-  $("progress").hidden = false;
-  $("progressBar").style.width = (nos.length ? 100 * good / nos.length : 0) + "%";
+  $("listSub").textContent = "";   // 「會了 n/m」寫在本項卡的標籤(不重複;進度條也不放)
   // 開頭只說一次:名稱後面寫時值的是練習型(拍點、抽考方式寫在模擬考卡,不重複);頁碼接在後面
   const hasPattern = items.some(x => x.kind === "pattern");
   if (hasPattern) $("listRule").dataset.src = srcOf("rsl", t.src.p);
@@ -401,11 +404,7 @@ function renderRsl(d, g){
     if (gnote()) { const p = el("p", "xnote"); G.appendChild(p); pairText(p, gnote); }
   }
   // 抽一項 / 下一項:App 能直接練的項目(PAS 原譜 + 依大綱時值的練習型;book 不算)
-  const pool = practiceItems();
-  $("drawBtn").hidden = $("nextBtn").hidden = false; $("listActions").hidden = false;
-  $("drawBtn").disabled = $("nextBtn").disabled = !pool.length;
-  // 沒有可以抽的項目(這一級的項目 App 都還不能直接練):按鈕停用,並說一句為什麼
-  para($("listEmpty"), () => (pool.length ? "" : tr("這一級還沒有 App 能直接練的項目,所以不能抽一項。", "Nothing in this grade can be practised in the App yet, so there is nothing to draw.")));
+  // 抽一項在本項卡(模擬考卡)上、下一項在出了題目的題目卡上:清單底下不放按鈕列(listActions 一直藏著)
 }
 /* 從清單去練:跳到技巧分頁的那個打法、速度設成官方 ♩(目標模式)。
    順序有依賴:先設 target、S.pick[類別],再 ctx.showView("tech", 類別) → 外框呼叫 enter(類別) → (從檢定頁過來 tab 是 "exam",一定)switchTab(類別)
@@ -456,7 +455,7 @@ $("qGroups").onclick = e => {
 
 /* ── Trinity:說明 + 自選曲參數表的 Techniques(官方說只是一般參考)+ 類別按鈕 ── */
 function renderTrinity(d, g){
-  $("listSub").textContent = tr("在 Song 3 評", "Assessed in Song 3");
+  $("listSub").textContent = "";   // 「在 Song 3 評」寫在本項卡的標籤
   $("listRule").dataset.src = srcOf("trinity", d.techNote.src.p);
   para($("listRule"), () => L(d.techNote.text));
   const oc = d.ownChoice.grades[g], box = $("qGroups"), G = el("div", "xgroup"), head = el("div", "xhead");
@@ -483,6 +482,7 @@ function renderTrinity(d, g){
 function syncTarget(){
   const show = !!target && !target.daily && tab !== "exam";
   $("target").hidden = !show;
+  syncLastRow();
   showBest();   // 目標模式不顯示「示範最快」(進出目標都要更新)
   if (!show) return;
   const t = target, sysName = t.system === "rsl" ? "RSL" : "Trinity", gl = () => ctx.gradeLabel(t.grade, t.system);   // 級名要在 fn 裡算(兩種語言各算一次)
@@ -501,6 +501,7 @@ function leaveTarget(){
   else { stopPlayback(); bpm = S.bpm[cur.no] || 60; syncTempoUI(); }
 }
 $("targetClose").onclick = leaveTarget;
+$("nextItem").onclick = () => $("nextBtn").click();
 $("targetList").onclick = () => ctx.showView("exam", "tech");
 
 /* ══ 鼓譜:一整行 + 播放軸(js/shared/score.js,照 PianoDrill / ScrollScore)══
@@ -926,7 +927,10 @@ $("mockBtn").onclick = () => {
   if (mock.running()) { stopPlayback(); mock.close(); mockRestore(); renderExam(); return; }   // 停止(不算,回到檢定頁)
   startMock();
 };
-$("mockClose").onclick = () => { mock.close(); renderExam(); window.scrollTo({ top: 0 }); };
+$("mockClose").onclick = () => {
+  if (mock.state === "idle") { $("drawBtn").click(); return; }   // 本項卡的主要動作:隨機抽一項
+  mock.close(); renderExam(); window.scrollTo({ top: 0 });
+};
 $("mockOneBar").onclick = () => { S.mockOneBar = !S.mockOneBar; store.save(); renderMockCard(dataOf("rsl"), mockGrade()); if (mock.running()) renderMockStep(); };
 
 const stepName = st => () => (st.it ? itemName(st.it) : L(st.gr.name));
@@ -945,7 +949,7 @@ const stepMark = (st, i) => (st.status === "done" ? "ok" : st.status === "skip" 
 /* 模擬考卡:檢定頁的說明 + 開始 / 進行中的進度 / 結果 / 中止的說明 */
 function renderMockCard(d, g){
   const ex = curExam(), card = $("mockCard"), ms = mock.state;
-  card.hidden = ms === "idle" && (!!ex.auto || ex.system !== "rsl");   // 沒選考試:跟視奏、聽力一樣不顯示模擬考卡;Trinity 沒有技巧模擬考(本級要求底下一行字)
+  card.hidden = ms === "idle" && !!ex.auto;   // 沒選考試:跟視奏、聽力一樣不顯示(檢定頁不會出現)
   if (card.hidden) return;
   const name = (sys, gg) => `${sys === "rsl" ? "RSL" : "Trinity"} ${ctx.gradeLabel(gg, sys)}`;
   const g0 = mock.who(ex).grade;   // 中止的說明(含重新整理後):那一場的級數
@@ -978,13 +982,17 @@ function renderMockCard(d, g){
       rows, btn: { label: () => mockLabel("run") }, note: () => tr(`每一項 ${MOCK_BEATS / 4} 小節(${TS("srcPractice")})。`, `${MOCK_BEATS / 4} bars each (${TS("srcPractice").toLowerCase()}).`) + " " + resultNote() });
     return;
   }
-  // idle(檢定頁):RSL 說明 + 開始(Trinity 沒有技巧模擬考:卡片藏起來,本級要求底下一行字)
-  const t = d && d.tech && d.tech[g];
-  paintCard($, { title: () => tr("模擬考", "Mock exam"), sub: name("rsl", g),
-    // 說明只寫一句(「拍點只響第一小節」的開關在標題列、只有檢定書譜的組在結果裡註明)
-    text: () => (!t ? tr("考試資料還沒載好。", "Exam data isn't loaded yet.") : tr(`每一組抽一項,照官方速度(${srcOf("rsl", t.src.p)})。`, `One item per group at the official tempo (${srcOf("rsl", t.src.p)}).`)),
-    btn: t && !ex.auto ? { label: () => mockLabel("idle"), disabled: !techItems(g, d).some(x => x.kind === "pas" || x.kind === "pattern") } : null,
-    note: () => resultNote() });
+  // idle(檢定頁)= 本項卡(畫面設計 2026-10 版型 B):大標題「技巧」+ 標籤 = 會了 n/m;一句;左 模擬考、右 隨機抽一項。
+  // Trinity 沒有技巧模擬考(在 Song 3 評):只有標題、標籤與一句,下面的清單是類別
+  if (ex.system !== "rsl") {
+    paintCard($, { item: true, title: () => tr("技巧", "Technique"), sub: examStatus(), text: () => (d ? tr("Rock & Pop 沒有獨立的技巧項目;點下面一類練", "No separate technique items in Rock & Pop; pick a family below") : tr("考試資料還沒載好。", "Exam data isn't loaded yet.")), note: null });
+    return;
+  }
+  const t = d && d.tech && d.tech[g], pool = t ? practiceItems() : [];
+  paintCard($, { item: true, title: () => tr("技巧", "Technique"), sub: t ? examStatus() : "",
+    text: () => (!t ? tr("考試資料還沒載好。", "Exam data isn't loaded yet.") : pool.length ? tr("點下面一項練,或隨機抽一項", "Pick an item below, or tap Random") : tr("這一級還沒有 App 能直接練的項目", "Nothing in this grade can be practised in the App yet")),
+    btn: t && !ex.auto ? { label: () => mockLabel("item"), disabled: !pool.length } : null,
+    close: t && pool.length ? { label: () => tr("隨機抽一項", "Random") } : null, note: null });
 }
 /* 模擬考進行中的題目卡:這一組的項目(或「用檢定書練」)、第幾組、下一組 */
 function renderMockStep(){

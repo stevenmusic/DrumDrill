@@ -18,8 +18,8 @@
 <title>DrumDrill 爵士鼓檢定特訓</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/app.css?v=8ec33b20bf">
-<link rel="stylesheet" href="css/drum.css?v=29b3ed07dd">
+<link rel="stylesheet" href="css/app.css?v=09afe61e45">
+<link rel="stylesheet" href="css/drum.css?v=1d12a55c0b">
 </head>
 <body>
 <header>
@@ -63,15 +63,13 @@
           <button class="setup-summary" aria-expanded="false"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span class="sum"></span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
           <div class="setup-body"><div class="rows"></div></div>
         </section>
-        <!-- 檢定頁:考試摘要(手機收成一行;照 PianoDrill 的 t-paneExam) -->
-        <section class="card setup pane" data-pane="exam" id="t-paneExam" hidden>
-          <button class="setup-summary" aria-expanded="false"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6l1 2h3v15H5V6h3z"/><path d="M9 11h6M9 15h4"/></svg><span class="sum" id="t-examSummary"></span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
-          <div class="setup-body">
-            <div class="card-title"><b data-i18n="sumTitle">考試摘要</b><span class="sub" id="t-sumSub"></span></div>
-            <div id="t-sumSpec"></div>
-            <p class="practice-only" id="t-sumNote"></p>
-          </div>
-        </section>
+        <!-- 考試內容(畫面設計 2026-10 版型 B):一張收起來的 details(一行);考試摘要(配分)、規格、推估說明、出處都在這裡,practiceOnly 在最下面一次 -->
+        <details class="card pane exam-info" data-pane="exam" id="t-paneExam" hidden>
+          <summary class="card-title"><b data-i18n="examInfo">考試內容</b><span class="sub" id="t-examSummary"></span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary>
+          <div id="t-sumSpec"></div>
+          <p class="spec-note" id="t-sumAssumed"></p>
+          <p class="practice-only" id="t-sumNote"></p>
+        </details>
         <section class="card" id="t-logCard">
           <div class="card-title"><b data-i18n="tech.logTitle">練習紀錄</b></div>
           <div class="log-stats">
@@ -148,7 +146,7 @@
               <span class="btn-label" id="t-mockNextLabel"></span>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
           </div>
-          <!-- 最後一行:左 = 熟練度「會了 / 再練」(次要;今日練習、模擬考藏起來) -->
+          <!-- 最後一行:左 = 熟練度「會了 / 再練」(次要;今日練習、模擬考藏起來),右 = 從檢定頁清單來的「下一項」 -->
           <div class="q-row q-last">
             <div class="mastery">
               <button class="mbtn" data-m="good" aria-pressed="false" disabled data-i18n-attr="title:tech.good">
@@ -156,6 +154,8 @@
               <button class="mbtn" data-m="weak" aria-pressed="false" disabled data-i18n-attr="title:tech.weak">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18.4A2 2 0 0 0 3.5 21h17a2 2 0 0 0 1.7-2.6L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg><span class="mlbl" data-i18n="tech.mWeak">再練</span></button>
             </div>
+            <button class="btn" id="t-nextItem" type="button" hidden><span class="btn-label" data-i18n="tech.next">下一項</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
           </div>
           <!-- 今日練習的段落面板(狀態 / 變化 / 重點 / 回上一關 · 再練 · 穩了;js/shared/dailycard.js) -->
           <div class="daily-step" id="t-dailyStep" hidden></div>
@@ -246,15 +246,14 @@
           </div>
           <div class="along-result" id="s-alongResult" hidden></div>
         </section>
-        <!-- 檢定頁:考試摘要(手機收成一行) -->
-        <section class="card setup pane" data-pane="exam" id="s-paneExam" hidden>
-          <button class="setup-summary" aria-expanded="false"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6l1 2h3v15H5V6h3z"/><path d="M9 11h6M9 15h4"/></svg><span class="sum" id="s-examSummary"></span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
-          <div class="setup-body">
-            <div class="card-title"><b data-i18n="sumTitle">考試摘要</b><span class="sub" id="s-sumSub"></span></div>
-            <div id="s-sumSpec"></div>
-            <p class="practice-only" id="s-sumNote"></p>
-          </div>
-        </section>
+        <!-- 考試內容(畫面設計 2026-10 版型 B):一張收起來的 details(一行);考試摘要(配分)、規格、推估說明、出處都在這裡,practiceOnly 在最下面一次 -->
+        <details class="card pane exam-info" data-pane="exam" id="s-paneExam" hidden>
+          <summary class="card-title"><b data-i18n="examInfo">考試內容</b><span class="sub" id="s-examSummary"></span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary>
+          <div id="s-sumSpec"></div>
+          <div class="spec-cards" id="s-specCards" hidden></div>
+          <p class="spec-note" id="s-sumAssumed"></p>
+          <p class="practice-only" id="s-sumNote"></p>
+        </details>
         <section class="card" id="s-logCard">
           <div class="card-title"><b data-i18n="sight.logTitle">練習紀錄</b></div>
           <div class="log-stats">
@@ -351,8 +350,6 @@
           <details class="src-notes" id="s-confBox"><summary id="s-confSum"></summary><p class="score-note" id="s-confidence"></p></details>
           <div id="s-legend"></div>
         </section>
-        <!-- 規格卡(檢定頁;自由練習時沒有練習的級數也放這裡) -->
-        <div class="spec-cards" id="s-specCards" hidden></div>
     </div>
   </div>
   <!-- 聽力(S12 + S13;照 PianoDrill 聽音的卡片):子項目 = 題型「過門 Fill / 律動 Groove / 回打 Playback」;
@@ -378,15 +375,19 @@
             </div>
           </div>
         </section>
-        <!-- 檢定頁:考試摘要(手機收成一行) -->
-        <section class="card setup pane" data-pane="exam" id="e-paneExam" hidden>
-          <button class="setup-summary" aria-expanded="false"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6l1 2h3v15H5V6h3z"/><path d="M9 11h6M9 15h4"/></svg><span class="sum" id="e-examSummary"></span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
-          <div class="setup-body">
-            <div class="card-title"><b data-i18n="sumTitle">考試摘要</b><span class="sub" id="e-sumSub"></span></div>
-            <div id="e-sumSpec"></div>
-            <p class="practice-only" id="e-sumNote"></p>
-          </div>
+        <!-- 本級聽力(檢定頁):點一項 = 到聽力分頁練這一級的那一種 -->
+        <section class="card pane" data-pane="exam" id="e-xList" hidden>
+          <div class="card-title"><b data-i18n="ear.xList">本級聽力</b></div>
+          <div class="xcats" id="e-xItems"></div>
         </section>
+        <!-- 考試內容(畫面設計 2026-10 版型 B):一張收起來的 details(一行);考試摘要(配分)、規格、推估說明、出處都在這裡,practiceOnly 在最下面一次 -->
+        <details class="card pane exam-info" data-pane="exam" id="e-paneExam" hidden>
+          <summary class="card-title"><b data-i18n="examInfo">考試內容</b><span class="sub" id="e-examSummary"></span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary>
+          <div id="e-sumSpec"></div>
+          <div class="spec-cards" id="e-specCards" hidden></div>
+          <p class="spec-note" id="e-sumAssumed"></p>
+          <p class="practice-only" id="e-sumNote"></p>
+        </details>
         <section class="card" id="e-logCard">
           <div class="card-title"><b data-i18n="ear.logTitle">練習紀錄</b></div>
           <div class="log-stats">
@@ -482,8 +483,6 @@
           <details class="src-notes" id="e-notesBox"><summary id="e-notesSum"></summary><p class="score-note" id="e-notes"></p></details>
         </section>
         <div class="prep-float" id="e-studyFloat" hidden><span id="e-studyFloatValue">30</span><span class="unit" data-i18n="ear.countdownUnit">秒</span></div>
-        <!-- 規格卡(檢定頁;不適用的題型也放這裡) -->
-        <div class="spec-cards" id="e-specCards" hidden></div>
     </div>
   </div>
 
@@ -525,9 +524,9 @@
   </div>
 </div>
 
-<script type="importmap">{"imports":{"./js/ear/app.js":"./js/ear/app.js?v=6446e55552","./js/ear/gen.js":"./js/ear/gen.js?v=353441acde","./js/ear/strings.js":"./js/ear/strings.js?v=4744c41d13","./js/main.js":"./js/main.js?v=d630b9e62c","./js/shared/a11y.js":"./js/shared/a11y.js?v=4ece20f2e5","./js/shared/audio.js":"./js/shared/audio.js?v=453f7237f3","./js/shared/daily.js":"./js/shared/daily.js?v=90d712e055","./js/shared/dailycard.js":"./js/shared/dailycard.js?v=ca043acf6b","./js/shared/drill.js":"./js/shared/drill.js?v=9f698a5f44","./js/shared/examdata.js":"./js/shared/examdata.js?v=48f1b46bf2","./js/shared/examview.js":"./js/shared/examview.js?v=3f2d59a5c9","./js/shared/i18n.js":"./js/shared/i18n.js?v=9758946cd1","./js/shared/kitevents.js":"./js/shared/kitevents.js?v=23a7a44853","./js/shared/kitgen.js":"./js/shared/kitgen.js?v=8298af9d7b","./js/shared/kitnotation.js":"./js/shared/kitnotation.js?v=abfe448d01","./js/shared/landscape.js":"./js/shared/landscape.js?v=31839615ad","./js/shared/legend.js":"./js/shared/legend.js?v=45383e9692","./js/shared/level.js":"./js/shared/level.js?v=4b5ae773cf","./js/shared/mic.js":"./js/shared/mic.js?v=5450b68a2d","./js/shared/micrhythm.js":"./js/shared/micrhythm.js?v=2f8f692d8e","./js/shared/mock.js":"./js/shared/mock.js?v=1bbd583003","./js/shared/onsets.js":"./js/shared/onsets.js?v=d8df0b9ef2","./js/shared/pad.js":"./js/shared/pad.js?v=519b87f153","./js/shared/playbackgen.js":"./js/shared/playbackgen.js?v=9a672a9ea2","./js/shared/player.js":"./js/shared/player.js?v=3b242c7289","./js/shared/practicelog.js":"./js/shared/practicelog.js?v=acd9cd53aa","./js/shared/score.js":"./js/shared/score.js?v=6c396e99eb","./js/shared/staffframe.js":"./js/shared/staffframe.js?v=7d869b31d1","./js/shared/tempo.js":"./js/shared/tempo.js?v=1e38af7d3f","./js/shared/timing.js":"./js/shared/timing.js?v=9ab84e3e3f","./js/shared/values.js":"./js/shared/values.js?v=e240ea1b65","./js/sight/app.js":"./js/sight/app.js?v=d2bfe0b863","./js/sight/fingerprint.js":"./js/sight/fingerprint.js?v=3460b8fafa","./js/sight/gen.js":"./js/sight/gen.js?v=6633bf6b2e","./js/sight/meter.js":"./js/sight/meter.js?v=94d1b94ae1","./js/sight/random.js":"./js/sight/random.js?v=3b9b511386","./js/sight/reading.js":"./js/sight/reading.js?v=a0436f327b","./js/sight/stage.js":"./js/sight/stage.js?v=9ca7fb07ed","./js/sight/strings.js":"./js/sight/strings.js?v=ca56df1a31","./js/tech/app.js":"./js/tech/app.js?v=b4235c1fda","./js/tech/notation.js":"./js/tech/notation.js?v=5bee65ac3d","./js/tech/route.js":"./js/tech/route.js?v=f5279508d8","./js/tech/routes.js":"./js/tech/routes.js?v=3d068fd0ea","./js/tech/routespec.js":"./js/tech/routespec.js?v=cbc8011afc","./js/tech/rudiments.js":"./js/tech/rudiments.js?v=cc1a2635ff","./js/tech/store.js":"./js/tech/store.js?v=46a31a5e45","./js/tech/strings.js":"./js/tech/strings.js?v=9301f59c35"}}</script>
+<script type="importmap">{"imports":{"./js/ear/app.js":"./js/ear/app.js?v=4c0d0c5626","./js/ear/gen.js":"./js/ear/gen.js?v=353441acde","./js/ear/strings.js":"./js/ear/strings.js?v=26e468e125","./js/main.js":"./js/main.js?v=c81f353352","./js/shared/a11y.js":"./js/shared/a11y.js?v=4ece20f2e5","./js/shared/audio.js":"./js/shared/audio.js?v=453f7237f3","./js/shared/daily.js":"./js/shared/daily.js?v=90d712e055","./js/shared/dailycard.js":"./js/shared/dailycard.js?v=ca043acf6b","./js/shared/drill.js":"./js/shared/drill.js?v=9f698a5f44","./js/shared/examdata.js":"./js/shared/examdata.js?v=48f1b46bf2","./js/shared/examview.js":"./js/shared/examview.js?v=3f2d59a5c9","./js/shared/i18n.js":"./js/shared/i18n.js?v=8e0a478460","./js/shared/kitevents.js":"./js/shared/kitevents.js?v=23a7a44853","./js/shared/kitgen.js":"./js/shared/kitgen.js?v=8298af9d7b","./js/shared/kitnotation.js":"./js/shared/kitnotation.js?v=abfe448d01","./js/shared/landscape.js":"./js/shared/landscape.js?v=31839615ad","./js/shared/legend.js":"./js/shared/legend.js?v=45383e9692","./js/shared/level.js":"./js/shared/level.js?v=4b5ae773cf","./js/shared/mic.js":"./js/shared/mic.js?v=5450b68a2d","./js/shared/micrhythm.js":"./js/shared/micrhythm.js?v=2f8f692d8e","./js/shared/mock.js":"./js/shared/mock.js?v=c98269423f","./js/shared/onsets.js":"./js/shared/onsets.js?v=d8df0b9ef2","./js/shared/pad.js":"./js/shared/pad.js?v=519b87f153","./js/shared/playbackgen.js":"./js/shared/playbackgen.js?v=9a672a9ea2","./js/shared/player.js":"./js/shared/player.js?v=3b242c7289","./js/shared/practicelog.js":"./js/shared/practicelog.js?v=acd9cd53aa","./js/shared/score.js":"./js/shared/score.js?v=6c396e99eb","./js/shared/staffframe.js":"./js/shared/staffframe.js?v=7d869b31d1","./js/shared/tempo.js":"./js/shared/tempo.js?v=1e38af7d3f","./js/shared/timing.js":"./js/shared/timing.js?v=9ab84e3e3f","./js/shared/values.js":"./js/shared/values.js?v=e240ea1b65","./js/sight/app.js":"./js/sight/app.js?v=44f6c95ab2","./js/sight/fingerprint.js":"./js/sight/fingerprint.js?v=3460b8fafa","./js/sight/gen.js":"./js/sight/gen.js?v=6633bf6b2e","./js/sight/meter.js":"./js/sight/meter.js?v=94d1b94ae1","./js/sight/random.js":"./js/sight/random.js?v=3b9b511386","./js/sight/reading.js":"./js/sight/reading.js?v=a0436f327b","./js/sight/stage.js":"./js/sight/stage.js?v=9ca7fb07ed","./js/sight/strings.js":"./js/sight/strings.js?v=ca56df1a31","./js/tech/app.js":"./js/tech/app.js?v=d013838fe9","./js/tech/notation.js":"./js/tech/notation.js?v=5bee65ac3d","./js/tech/route.js":"./js/tech/route.js?v=f5279508d8","./js/tech/routes.js":"./js/tech/routes.js?v=3d068fd0ea","./js/tech/routespec.js":"./js/tech/routespec.js?v=cbc8011afc","./js/tech/rudiments.js":"./js/tech/rudiments.js?v=cc1a2635ff","./js/tech/store.js":"./js/tech/store.js?v=46a31a5e45","./js/tech/strings.js":"./js/tech/strings.js?v=9301f59c35"}}</script>
 <script type="application/json" id="pdVersions">{"data/drumkey.json":"a479cd9dd6","data/exam-rsl.json":"da0c434467","data/exam-trinity.json":"6de511bb79"}</script>
 <script src="vendor/opensheetmusicdisplay.min.js?v=4bfeb3d01c"></script>
-<script type="module" src="js/main.js?v=d630b9e62c"></script>
+<script type="module" src="js/main.js?v=c81f353352"></script>
 </body>
 </html>

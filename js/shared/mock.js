@@ -83,11 +83,17 @@ export function cardToTop(card){
 /* 模擬考卡的固定說明:practiceOnly + 不算總分 */
 export const resultNote = () => tr("只有各項的練習回饋:不算總分、不換算成官方分數。", "Feedback per item only: no total, and it doesn't convert to an exam mark.") + " " + T("practiceOnly");
 /* 開始 / 停止按鈕的文字 */
-export const mockLabel = state => (state === "run" ? tr("停止模擬考", "Stop mock") : state === "idle" ? tr("開始模擬考", "Start mock") : tr("再考一次", "Again"));
+export const mockLabel = state => (state === "item" ? tr("模擬考", "Mock exam") : state === "run" ? tr("停止模擬考", "Stop mock") : state === "idle" ? tr("開始模擬考", "Start mock") : tr("再考一次", "Again"));
 
 /* 模擬考卡(模組的 $("mockCard") 裡固定的 id:mockTitle、mockSub、mockText、mockList、mockBtn、mockLabel、mockClose、mockCloseLabel、mockNote)。
    btn = { label:() => 文字, disabled } | null(藏起來);close = { label } | null;rows = renderRows 的格式(null = 沒有清單) */
-export function paintCard($, { title, sub = "", text, rows = null, btn = null, close = null, note = resultNote }){
+export function paintCard($, { title, sub = "", text, rows = null, btn = null, close = null, note = resultNote, item = false }){
+  /* item = 本項卡(畫面設計 2026-10 版型 B:檢定頁還沒在考的時候,模擬考卡就是這一項的卡):大標題 = 這一項、標籤 = 進度(sub)、一句 --fs-md 淡色;
+     最後一行 左 =「模擬考」(btn,次要)、右 = 這一項的主要動作(close,主要) */
+  $("mockCard").classList.toggle("item-card", !!item);
+  $("mockText").classList.toggle("item-hint", !!item);
+  $("mockBtn").classList.toggle("primary", !item);
+  $("mockClose").classList.toggle("primary", item === true);   // item: "head" = 出了題目以後的標題列(兩顆都是次要)
   pairText($("mockTitle"), title);
   $("mockSub").textContent = sub;
   const tx = text || (() => "");

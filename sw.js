@@ -12,7 +12,7 @@
 const APP = "drumdrill";
 // @app-end
 /*@precache-begin*/
-const CACHE = APP + "-app-d770847e";
+const CACHE = APP + "-app-c3ba46df";
 const PRECACHE = [
   "./",
   "manifest.webmanifest",
@@ -24,13 +24,13 @@ const PRECACHE = [
   "licenses.html",
   "privacy.html",
   "support.html",
-  "css/app.css?v=8ec33b20bf",
-  "css/drum.css?v=29b3ed07dd",
+  "css/app.css?v=09afe61e45",
+  "css/drum.css?v=1d12a55c0b",
   "vendor/opensheetmusicdisplay.min.js?v=4bfeb3d01c",
-  "js/ear/app.js?v=6446e55552",
+  "js/ear/app.js?v=4c0d0c5626",
   "js/ear/gen.js?v=353441acde",
-  "js/ear/strings.js?v=4744c41d13",
-  "js/main.js?v=d630b9e62c",
+  "js/ear/strings.js?v=26e468e125",
+  "js/main.js?v=c81f353352",
   "js/shared/a11y.js?v=4ece20f2e5",
   "js/shared/audio.js?v=453f7237f3",
   "js/shared/daily.js?v=90d712e055",
@@ -38,7 +38,7 @@ const PRECACHE = [
   "js/shared/drill.js?v=9f698a5f44",
   "js/shared/examdata.js?v=48f1b46bf2",
   "js/shared/examview.js?v=3f2d59a5c9",
-  "js/shared/i18n.js?v=9758946cd1",
+  "js/shared/i18n.js?v=8e0a478460",
   "js/shared/kitevents.js?v=23a7a44853",
   "js/shared/kitgen.js?v=8298af9d7b",
   "js/shared/kitnotation.js?v=abfe448d01",
@@ -47,7 +47,7 @@ const PRECACHE = [
   "js/shared/level.js?v=4b5ae773cf",
   "js/shared/mic.js?v=5450b68a2d",
   "js/shared/micrhythm.js?v=2f8f692d8e",
-  "js/shared/mock.js?v=1bbd583003",
+  "js/shared/mock.js?v=c98269423f",
   "js/shared/onsets.js?v=d8df0b9ef2",
   "js/shared/pad.js?v=519b87f153",
   "js/shared/playbackgen.js?v=9a672a9ea2",
@@ -58,7 +58,7 @@ const PRECACHE = [
   "js/shared/tempo.js?v=1e38af7d3f",
   "js/shared/timing.js?v=9ab84e3e3f",
   "js/shared/values.js?v=e240ea1b65",
-  "js/sight/app.js?v=d2bfe0b863",
+  "js/sight/app.js?v=44f6c95ab2",
   "js/sight/fingerprint.js?v=3460b8fafa",
   "js/sight/gen.js?v=6633bf6b2e",
   "js/sight/meter.js?v=94d1b94ae1",
@@ -66,7 +66,7 @@ const PRECACHE = [
   "js/sight/reading.js?v=a0436f327b",
   "js/sight/stage.js?v=9ca7fb07ed",
   "js/sight/strings.js?v=ca56df1a31",
-  "js/tech/app.js?v=b4235c1fda",
+  "js/tech/app.js?v=d013838fe9",
   "js/tech/notation.js?v=5bee65ac3d",
   "js/tech/route.js?v=f5279508d8",
   "js/tech/routes.js?v=3d068fd0ea",
