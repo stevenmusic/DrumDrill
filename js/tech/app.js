@@ -615,7 +615,10 @@ function fitTitle(){
   const g = $("qTags"); let k = 1; g.style.setProperty("--tag-scale", 1); g.classList.add("measure");
   // 量最後一個標籤的右緣(留 2px:小數寬度四捨五入時不會多出「…」)
   const over = () => g.lastElementChild && g.lastElementChild.getBoundingClientRect().right + 2 > g.getBoundingClientRect().right;
-  while (over() && k > 0.6) { k -= 0.04; g.style.setProperty("--tag-scale", k); }
+  g.classList.remove("wrap");
+  while (over() && k > 0.82) { k -= 0.04; g.style.setProperty("--tag-scale", k); }
+  // 縮到 0.82 還放不下(折疊機、今日練習四個標籤):換到第二行,不再縮小、不截掉
+  if (over()) { g.style.setProperty("--tag-scale", 0.82); g.classList.add("wrap"); }
   g.classList.remove("measure");
 }
 const onStageResize = () => {
