@@ -165,7 +165,7 @@ const WHY_GROOVE = {
   "0": c("先跟穩拍點,之後加什麼都不會亂", "Lock onto the click first, and whatever you add stays steady"),
   A: c("四分音符先打穩,手和腳才對得齊", "Steady quarter notes first, so hands and feet line up"),
   B: c("大部分流行歌都是 8 Beat,學會就能跟著歌打", "Most pop songs use the 8-beat; learn it and play along"),
-  C: c("手的打法一換,同一個 8 Beat 就能配慢歌", "Change what the hands play, and the 8-beat fits slow songs"),
+  C: c("手的打法變一點,8 Beat 就能配更多種歌", "Small changes in the hands make the 8-beat fit more songs"),
   D: c("右手移到 Ride、加上左腳,四肢才算真的分工", "Move to the ride, add the left foot: all four limbs at work"),
   E: c("十六分音符練起來,快歌和放克的節奏才打得來", "16th notes let you handle faster pop songs and funk"),
   F: c("三連音的感覺練起來,12/8 抒情歌和 Shuffle 都會打", "Get the triplet feel for 12/8 ballads and shuffles")
