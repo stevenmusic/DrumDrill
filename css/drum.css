@@ -334,8 +334,8 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 /* 練習紀錄:每週目標(照 PianoDrill 聽音的 .goal;目標是分鐘)、各級 / 各題型的統計 */
 .goal .chip{white-space:nowrap}
 .stats-card .stats{margin-top:4px}
-.stats-card .srow{grid-template-columns:minmax(0, 8.5em) 1fr 5.4em}
-@media (max-width:360px){ .stats-card .srow{grid-template-columns:minmax(0, 7em) 1fr 5em} }
+.stats-card .stats{grid-template-columns:minmax(0, 8.5em) minmax(24px, 1fr) auto}   /* 數字欄 auto(app.css:各列共用一組欄,靠右對齊、不換行) */
+@media (max-width:360px){ .stats-card .stats{grid-template-columns:minmax(0, 7em) minmax(24px, 1fr) auto} }
 /* 用麥克風評分節奏(選用;視奏的正式打、聽力的回打共用;照 PianoDrill 視奏的 .along-opt;js/shared/micrhythm.js) */
 .along .mic-row{display:flex;flex-direction:column;align-items:stretch;gap:0;border-top:1px solid var(--line);padding-top:6px}
 .along .along-opt{display:inline-flex;align-items:center;gap:8px;min-height:44px;max-width:100%;align-self:flex-start;color:var(--muted-bright);font-size:var(--fs-sm);cursor:pointer}
@@ -403,7 +403,7 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 #mod-ear .quiz .lvl-row{margin:8px 0 4px}
 /* 題目卡上的「正式打」(主要動作,佔整行;鼓墊卡上還有一顆,打的時候在鼓墊旁邊停) */
 #mod-sight .q-foot{flex-wrap:wrap}
-#mod-sight .s-perform-top{flex:1 1 100%;min-height:48px;height:auto;margin-top:2px;font-size:var(--fs-md)}
+#mod-sight .s-perform-top{flex:1 0 auto;min-height:48px;height:auto;margin-top:0;padding:0 22px;font-size:var(--fs-md)}   /* 最後一行右邊;窄畫面放不下才整條掉到下一行 */
 /* 視奏分頁(.free):最後一行 左 = 小的「新題目」、右 = 大的「正式打」(唯一的主要動作);沒有準備倒數 */
 #s-quiz.free #s-generate{order:-1}
 #s-quiz.free .s-perform-top{flex:0 1 auto;min-width:48%;margin-top:0;padding:0 22px}
@@ -419,8 +419,6 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
   .rd-card .rd-ans-grid{grid-column:2;grid-row:4;margin-top:0}
   .rd-ans-grid .opt{min-height:44px;font-size:var(--fs-sm);padding:2px 4px}
 }
-/* 手機橫式的檢定頁:本項卡(模擬考卡 .item-card)放在考試卡右邊(app.css;第一個畫面就看得到) */
-@media (orientation:landscape) and (max-height:500px){ body.view-exam .item-card{align-self:start} }
 /* 手機橫式:認音 / 認譜的題目卡(左)與設定卡(右)並排,作答與設定同一個畫面 */
 @media (orientation:landscape) and (max-height:500px) and (max-width:1099px){
   #mod-sight:has(#s-rdCard:not([hidden])){display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:8px;align-items:start}
@@ -520,12 +518,11 @@ button.xitem{cursor:pointer;border-color:var(--gold)}
 
 /* ══ 畫面設計 2026-10 版型 B(檢定頁):本項卡(模擬考卡 .item-card)→ 清單 → 「考試內容」(收起來的一行,最下面)══ */
 body.view-exam .exam-info:is(#t-paneExam,#s-paneExam,#e-paneExam){order:20}
-body.view-exam #t-mockCard.item-card{order:1}
+.x-empty{order:1}
 #e-xList{order:3}
 .exam-info .spec-cards{margin-top:10px}
 .exam-info .spec-card{border:0;border-top:1px solid var(--line);border-radius:0;background:none;box-shadow:none;padding:10px 0 0}
 .exam-info > .spec-note,.exam-info > .practice-only{margin-top:10px}
-.mock-card.item-card .x-actions{margin-top:10px}
 /* 技巧題目卡最後一行右邊:從檢定頁清單來練時的「下一項」 */
 #t-nextItem{margin-left:auto;min-height:44px;height:auto}
 @media (orientation:landscape) and (max-height:500px){ #t-nextItem{grid-column:1 / -1;justify-self:end} }

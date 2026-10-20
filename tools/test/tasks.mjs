@@ -45,7 +45,7 @@ const TASKS = [
   { name: "考 RSL 2 級的人想練這一級的視奏題", store: onboarded({ exam: { system: "rsl", grade: 2 }, view: "tech" }), steps: [
       { sel: '#tabbar [data-view="exam"]', say: "檢定分頁", wait: 600 },
       { sel: '#subSeg [data-v="sight"]', say: "視奏(子項目列)", wait: 800 },
-      { sel: "#s-mockClose", say: "練習這一級(在檢定頁出題)", start: true, wait: 1500 },
+      { sel: "#s-xGo", say: "練習一題(題目卡空狀態右下;在檢定頁出題)", start: true, wait: 1500 },
       { sel: "#s-prepare", say: "準備 90 秒" }
     ],
     check: async page => page.evaluate(() => (window.__sight.xp && window.__sight.state.key === "rsl-2" && window.__sight.state.phase === "prep" ? null : "沒有出 RSL 2 級的題目:" + JSON.stringify(window.__sight.state.key))),

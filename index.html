@@ -18,8 +18,8 @@
 <title>DrumDrill 爵士鼓檢定特訓</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/app.css?v=5dae1140d9">
-<link rel="stylesheet" href="css/drum.css?v=048ece896b">
+<link rel="stylesheet" href="css/app.css?v=c658f52533">
+<link rel="stylesheet" href="css/drum.css?v=15985c0c6b">
 </head>
 <body>
 <header>
@@ -58,6 +58,12 @@
 
   <!-- 技巧:PAS 40 個基本打法 -->
   <div class="mod" id="mod-tech" data-mod="tech">
+    <!-- 本項列(檢定頁最上面一行;畫面設計 2026-10 版型 B):左「項目名 [進度]」、右 ghost「模擬考」(沒在考的時候) -->
+    <section class="item-row pane" data-pane="exam" id="t-itemRow" hidden>
+      <div class="ir-head"><b class="ir-name" id="t-irName"></b><span class="q-tag" id="t-irTag"></span></div>
+      <button class="btn ghost" id="t-itemMock" type="button" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg><span class="btn-label" data-i18n="mockShort">模擬考</span></button>
+      <div class="ir-opts" id="t-mockOpts" hidden><button class="chip" id="t-mockOneBar" aria-pressed="false"></button></div>
+    </section>
     <div class="mod-side">
         <section class="card picker" id="t-picker">
           <button class="setup-summary" aria-expanded="false"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span class="sum"></span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
@@ -84,7 +90,6 @@
         <section class="card mock-card" id="t-mockCard" hidden>
           <div class="card-title"><b id="t-mockTitle"></b><span class="sub" id="t-mockSub"></span></div>
           <p class="spec-note" id="t-mockText"></p>
-          <div class="chips mock-opts" id="t-mockOpts" hidden><button class="chip" id="t-mockOneBar" aria-pressed="false"></button></div>
           <div id="t-mockList"></div>
           <div class="x-actions">
             <button class="btn primary" id="t-mockBtn">
@@ -96,6 +101,11 @@
         </section>
     </div>
     <div class="mod-main">
+        <!-- 檢定頁的題目卡空狀態(畫面設計 2026-10 版型 B):一句提示 + 右下主要按鈕 -->
+        <section class="card quiz hint-empty x-empty pane" data-pane="exam" id="t-xEmpty" hidden>
+          <p class="q-hint" id="t-xHint"></p>
+          <div class="q-foot"><span style="flex:1"></span><button class="btn primary" id="t-xGo" type="button"></button></div>
+        </section>
         <!-- 今日練習(js/shared/dailycard.js 畫裡面;檢定頁不顯示):還沒開始 / 進行中縮成一行 / 練完了 -->
         <section class="card daily" id="t-dailyCard" hidden></section>
         <!-- 從檢定清單點「練習」:目標(哪一級哪一組、官方速度、頁碼;練習型另加「App 依大綱時值排的練習型 · 不是官方譜」與 practiceOnly);× 離開(速度回到自己的設定) -->
@@ -201,6 +211,11 @@
   <!-- 視奏(照 PianoDrill 視奏的卡片與流程):子項目 = 級數 0–8;RSL Debut–3 小鼓視奏出題(js/sight/gen.js),其他級數 / Trinity 只有說明卡;
        檢定頁:考試摘要 + 規格卡(不放練習紀錄、練習回饋) -->
   <div class="mod" id="mod-sight" data-mod="sight" hidden>
+    <!-- 本項列(檢定頁最上面一行;畫面設計 2026-10 版型 B):左「項目名 [進度]」、右 ghost「模擬考」(沒在考的時候) -->
+    <section class="item-row pane" data-pane="exam" id="s-itemRow" hidden>
+      <div class="ir-head"><b class="ir-name" id="s-irName"></b><span class="q-tag" id="s-irTag"></span></div>
+      <button class="btn ghost" id="s-itemMock" type="button" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg><span class="btn-label" data-i18n="mockShort">模擬考</span></button>
+    </section>
     <!-- 寬螢幕(≥1100)分兩欄:左 = 設定、紀錄;右 = 題目、譜、鼓墊。窄螢幕兩個容器都 display:contents,卡片照 order 排成一欄 -->
     <div class="mod-side">
         <section class="card rd-opts" id="s-rdOpts" hidden>
@@ -285,6 +300,11 @@
         </section>
     </div>
     <div class="mod-main">
+        <!-- 檢定頁的題目卡空狀態(畫面設計 2026-10 版型 B):一句提示 + 右下主要按鈕 -->
+        <section class="card quiz hint-empty x-empty pane" data-pane="exam" id="s-xEmpty" hidden>
+          <p class="q-hint" id="s-xHint"></p>
+          <div class="q-foot"><span style="flex:1"></span><button class="btn primary" id="s-xGo" type="button"></button></div>
+        </section>
         <!-- 認譜(視奏分頁的第一格;js/sight/reading.js):題目卡 = 目前的設定一行 + 一個記號的譜 + 鼓件格子(題目正下方);設定卡 = 一直看得到的按鈕 -->
         <section class="card rd-card" id="s-rdCard" hidden>
           <div class="rd-head"><p class="rd-set" id="s-rdSet"></p><span class="rd-score" id="s-rdScoreTxt"></span></div>
@@ -356,6 +376,11 @@
        RSL 有 Fill、Groove(js/ear/gen.js),Trinity 有 Playback(js/shared/playbackgen.js);不適用的題型只有說明卡。
        檢定頁:考試摘要 + 規格卡(不放練習紀錄、練習回饋) -->
   <div class="mod" id="mod-ear" data-mod="ear" hidden>
+    <!-- 本項列(檢定頁最上面一行;畫面設計 2026-10 版型 B):左「項目名 [進度]」、右 ghost「模擬考」(沒在考的時候) -->
+    <section class="item-row pane" data-pane="exam" id="e-itemRow" hidden>
+      <div class="ir-head"><b class="ir-name" id="e-irName"></b><span class="q-tag" id="e-irTag"></span></div>
+      <button class="btn ghost" id="e-itemMock" type="button" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg><span class="btn-label" data-i18n="mockShort">模擬考</span></button>
+    </section>
     <!-- 寬螢幕(≥1100)分兩欄:左 = 設定、紀錄;右 = 題目、譜、鼓墊。窄螢幕兩個容器都 display:contents,卡片照 order 排成一欄 -->
     <div class="mod-side">
         <section class="card picker" id="e-setup">
@@ -418,6 +443,11 @@
         </section>
     </div>
     <div class="mod-main">
+        <!-- 檢定頁的題目卡空狀態(畫面設計 2026-10 版型 B):一句提示 + 右下主要按鈕 -->
+        <section class="card quiz hint-empty x-empty pane" data-pane="exam" id="e-xEmpty" hidden>
+          <p class="q-hint" id="e-xHint"></p>
+          <div class="q-foot"><span style="flex:1"></span><button class="btn primary" id="e-xGo" type="button"></button></div>
+        </section>
         <!-- 這個題型不適用於選的考試(RSL 沒有 Playback、Trinity 沒有 Fill / Groove)、資料還沒載好:說明 + 規格卡(#e-specCards) -->
         <section class="card notice" id="e-unsupported" hidden><div class="card-title"><b id="e-unsupportedTitle"></b></div><p id="e-unsupportedText"></p><p class="practice-only" id="e-unsupportedNote"></p></section>
         <!-- 題目卡(跟技巧、視奏同一個排法):大標題 = 考試與級數,右邊 ▶(RSL:聽題目兩次;Trinity:聽整份譜);標籤;步驟說明;
@@ -524,7 +554,7 @@
   </div>
 </div>
 
-<script type="importmap">{"imports":{"./js/ear/app.js":"./js/ear/app.js?v=4c0d0c5626","./js/ear/gen.js":"./js/ear/gen.js?v=353441acde","./js/ear/strings.js":"./js/ear/strings.js?v=26e468e125","./js/main.js":"./js/main.js?v=74e2a2f4a7","./js/shared/a11y.js":"./js/shared/a11y.js?v=4ece20f2e5","./js/shared/audio.js":"./js/shared/audio.js?v=453f7237f3","./js/shared/daily.js":"./js/shared/daily.js?v=90d712e055","./js/shared/dailycard.js":"./js/shared/dailycard.js?v=ca043acf6b","./js/shared/drill.js":"./js/shared/drill.js?v=9f698a5f44","./js/shared/examdata.js":"./js/shared/examdata.js?v=48f1b46bf2","./js/shared/examview.js":"./js/shared/examview.js?v=3f2d59a5c9","./js/shared/i18n.js":"./js/shared/i18n.js?v=8e0a478460","./js/shared/kitevents.js":"./js/shared/kitevents.js?v=23a7a44853","./js/shared/kitgen.js":"./js/shared/kitgen.js?v=8298af9d7b","./js/shared/kitnotation.js":"./js/shared/kitnotation.js?v=abfe448d01","./js/shared/landscape.js":"./js/shared/landscape.js?v=31839615ad","./js/shared/legend.js":"./js/shared/legend.js?v=45383e9692","./js/shared/level.js":"./js/shared/level.js?v=4b5ae773cf","./js/shared/mic.js":"./js/shared/mic.js?v=5450b68a2d","./js/shared/micrhythm.js":"./js/shared/micrhythm.js?v=2f8f692d8e","./js/shared/mock.js":"./js/shared/mock.js?v=c98269423f","./js/shared/onsets.js":"./js/shared/onsets.js?v=d8df0b9ef2","./js/shared/pad.js":"./js/shared/pad.js?v=519b87f153","./js/shared/playbackgen.js":"./js/shared/playbackgen.js?v=9a672a9ea2","./js/shared/player.js":"./js/shared/player.js?v=3b242c7289","./js/shared/practicelog.js":"./js/shared/practicelog.js?v=acd9cd53aa","./js/shared/score.js":"./js/shared/score.js?v=6c396e99eb","./js/shared/staffframe.js":"./js/shared/staffframe.js?v=7d869b31d1","./js/shared/tempo.js":"./js/shared/tempo.js?v=1e38af7d3f","./js/shared/timing.js":"./js/shared/timing.js?v=9ab84e3e3f","./js/shared/values.js":"./js/shared/values.js?v=e240ea1b65","./js/sight/app.js":"./js/sight/app.js?v=44f6c95ab2","./js/sight/fingerprint.js":"./js/sight/fingerprint.js?v=3460b8fafa","./js/sight/gen.js":"./js/sight/gen.js?v=6633bf6b2e","./js/sight/meter.js":"./js/sight/meter.js?v=94d1b94ae1","./js/sight/random.js":"./js/sight/random.js?v=3b9b511386","./js/sight/reading.js":"./js/sight/reading.js?v=a0436f327b","./js/sight/stage.js":"./js/sight/stage.js?v=9ca7fb07ed","./js/sight/strings.js":"./js/sight/strings.js?v=ca56df1a31","./js/tech/app.js":"./js/tech/app.js?v=b33b258dc6","./js/tech/notation.js":"./js/tech/notation.js?v=5bee65ac3d","./js/tech/route.js":"./js/tech/route.js?v=f5279508d8","./js/tech/routes.js":"./js/tech/routes.js?v=3d068fd0ea","./js/tech/routespec.js":"./js/tech/routespec.js?v=cbc8011afc","./js/tech/rudiments.js":"./js/tech/rudiments.js?v=cc1a2635ff","./js/tech/store.js":"./js/tech/store.js?v=46a31a5e45","./js/tech/strings.js":"./js/tech/strings.js?v=9301f59c35"}}</script>
+<script type="importmap">{"imports":{"./js/ear/app.js":"./js/ear/app.js?v=0d28a014d6","./js/ear/gen.js":"./js/ear/gen.js?v=353441acde","./js/ear/strings.js":"./js/ear/strings.js?v=26e468e125","./js/main.js":"./js/main.js?v=74e2a2f4a7","./js/shared/a11y.js":"./js/shared/a11y.js?v=4ece20f2e5","./js/shared/audio.js":"./js/shared/audio.js?v=453f7237f3","./js/shared/daily.js":"./js/shared/daily.js?v=90d712e055","./js/shared/dailycard.js":"./js/shared/dailycard.js?v=ca043acf6b","./js/shared/drill.js":"./js/shared/drill.js?v=9f698a5f44","./js/shared/examdata.js":"./js/shared/examdata.js?v=48f1b46bf2","./js/shared/examview.js":"./js/shared/examview.js?v=3f2d59a5c9","./js/shared/i18n.js":"./js/shared/i18n.js?v=b40f34aae1","./js/shared/kitevents.js":"./js/shared/kitevents.js?v=23a7a44853","./js/shared/kitgen.js":"./js/shared/kitgen.js?v=8298af9d7b","./js/shared/kitnotation.js":"./js/shared/kitnotation.js?v=abfe448d01","./js/shared/landscape.js":"./js/shared/landscape.js?v=31839615ad","./js/shared/legend.js":"./js/shared/legend.js?v=45383e9692","./js/shared/level.js":"./js/shared/level.js?v=4b5ae773cf","./js/shared/mic.js":"./js/shared/mic.js?v=5450b68a2d","./js/shared/micrhythm.js":"./js/shared/micrhythm.js?v=2f8f692d8e","./js/shared/mock.js":"./js/shared/mock.js?v=c98269423f","./js/shared/onsets.js":"./js/shared/onsets.js?v=d8df0b9ef2","./js/shared/pad.js":"./js/shared/pad.js?v=519b87f153","./js/shared/playbackgen.js":"./js/shared/playbackgen.js?v=9a672a9ea2","./js/shared/player.js":"./js/shared/player.js?v=3b242c7289","./js/shared/practicelog.js":"./js/shared/practicelog.js?v=acd9cd53aa","./js/shared/score.js":"./js/shared/score.js?v=6c396e99eb","./js/shared/staffframe.js":"./js/shared/staffframe.js?v=7d869b31d1","./js/shared/tempo.js":"./js/shared/tempo.js?v=1e38af7d3f","./js/shared/timing.js":"./js/shared/timing.js?v=9ab84e3e3f","./js/shared/values.js":"./js/shared/values.js?v=e240ea1b65","./js/sight/app.js":"./js/sight/app.js?v=44de18968f","./js/sight/fingerprint.js":"./js/sight/fingerprint.js?v=3460b8fafa","./js/sight/gen.js":"./js/sight/gen.js?v=6633bf6b2e","./js/sight/meter.js":"./js/sight/meter.js?v=94d1b94ae1","./js/sight/random.js":"./js/sight/random.js?v=3b9b511386","./js/sight/reading.js":"./js/sight/reading.js?v=a0436f327b","./js/sight/stage.js":"./js/sight/stage.js?v=9ca7fb07ed","./js/sight/strings.js":"./js/sight/strings.js?v=ca56df1a31","./js/tech/app.js":"./js/tech/app.js?v=500fe567cf","./js/tech/notation.js":"./js/tech/notation.js?v=5bee65ac3d","./js/tech/route.js":"./js/tech/route.js?v=f5279508d8","./js/tech/routes.js":"./js/tech/routes.js?v=3d068fd0ea","./js/tech/routespec.js":"./js/tech/routespec.js?v=cbc8011afc","./js/tech/rudiments.js":"./js/tech/rudiments.js?v=cc1a2635ff","./js/tech/store.js":"./js/tech/store.js?v=46a31a5e45","./js/tech/strings.js":"./js/tech/strings.js?v=9301f59c35"}}</script>
 <script type="application/json" id="pdVersions">{"data/drumkey.json":"a479cd9dd6","data/exam-rsl.json":"da0c434467","data/exam-trinity.json":"6de511bb79"}</script>
 <script src="vendor/opensheetmusicdisplay.min.js?v=4bfeb3d01c"></script>
 <script type="module" src="js/main.js?v=74e2a2f4a7"></script>

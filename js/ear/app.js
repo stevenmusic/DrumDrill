@@ -218,7 +218,7 @@ function render(){
   const isExam = mode === "exam", run = isExam && mock.running(), only = isExam && (mock.state === "result" || mock.state === "aborted");
   ROOT.classList.toggle("mock-run", run);
   // 檢定頁不放練習紀錄;模擬考進行中、結果:考試摘要(配分、等第)與規格卡藏起來(練習回饋不跟等第放在同一個畫面)
-  ROOT.querySelectorAll(".pane").forEach(el => { el.hidden = !isExam || run || only; });
+  ROOT.querySelectorAll(".pane").forEach(el => { el.hidden = !isExam || ((run || only) && !el.classList.contains("item-row")); });   // 本項列在模擬考時也留著
   $("logCard").hidden = isExam;
   if (isExam) $("statsCard").hidden = true;
   if (run) {
@@ -1305,7 +1305,7 @@ const idleMsg = () => (!cur ? "" : freeLevel() && mode !== "exam" && !mockOn() &
   : tr(`先看譜 ${studySec()} 秒(${studySrc()};可以在鼓墊上試打),再按「第一次(練習)」:App 播一句,你接著打同一句。`, `Study the chart for ${studySec()} s (${studySrc()}; try it on the pads), then Play 1 (practice): the App plays a phrase, you play it back.`));
 function refreshTexts(){
   if (!cur) return;
-  const c = cur, name = freeLevel() && mode !== "exam" ? tr(...TYPE_LABEL[c.type]) : `${sysName(c.sys)} ${gl(c.grade, c.sys)}`;   // 沒選考試:標題 = 題型(難度在題目卡自己的一列)
+  const c = cur, name = tr(...TYPE_LABEL[c.type]);   // 標題 = 題型(考試名、級數在考試卡 / 練習題那一行;難度在題目卡自己的一列)
   $("qTitle").classList.remove("empty");
   $("qTitle").textContent = name;
   // 沒選考試(聽力分頁):不寫「照 RSL N 級大綱出的練習題」、practiceOnly、頁碼(跟視奏分頁一樣);譜卡標題「鼓譜」
@@ -1560,7 +1560,6 @@ $("mockBtn").onclick = () => {
   startMock();
 };
 $("mockClose").onclick = () => {
-  if (mock.state === "idle") { const L = xTypes(); if (L.length) goType(L[Math.floor(Math.random() * L.length)]); return; }   // 本項卡的主要動作:隨機抽一題
   mock.close(); render(); window.scrollTo({ top: 0 });
 };
 /* 本級聽力清單(檢定頁;畫面設計 2026-10 版型 B):這一級 App 能練的題型,點一項 = 到聽力分頁練這一級的那一種 */
@@ -1604,9 +1603,24 @@ function mockDetail(r){
     return parts.join(tr(";", "; "));
   };
 }
+/* 本項列(檢定頁最上面一行)+ 題目卡的空狀態(畫面設計 2026-10 版型 B):聽力 [已練 n 題] … 模擬考;空狀態 = 一句 + 右下「隨機抽一題」 */
+function renderItem(){
+  if (mode !== "exam") return;
+  const ex = curExam(), ms = mock.state, d = dataOf(ex.system), L = xTypes();
+  const ok = !ex.auto && (ex.system === "rsl" ? ["fill", "groove"] : ["playback"]).every(t => practicable(ex.system, ex.grade, t));
+  $("irName").textContent = tr("聽力", "Aural");
+  $("irTag").textContent = d ? examStatus() : "";
+  $("itemMock").hidden = !(ok && ms === "idle");
+  $("xEmpty").hidden = ms !== "idle";
+  pairText($("xHint"), () => (!d ? tr("考試資料還沒載好。", "Exam data isn't loaded yet.") : !L.length ? tr("圖例資料還沒載好。", "The drum key isn't loaded yet.") : tr("選下面一項練,或隨機抽一題", "Pick a test below, or tap Random")));
+  $("xGo").hidden = !L.length; $("xGo").textContent = tr("隨機抽一題", "Random");
+}
+$("itemMock").onclick = () => $("mockBtn").click();
+$("xGo").onclick = () => { const L = xTypes(); if (L.length) goType(L[Math.floor(Math.random() * L.length)]); };
 function renderMockCard(){
   const ex = curExam(), ms = mock.state, card = $("mockCard");
-  card.hidden = mode !== "exam" || (ms === "idle" && ex.auto);
+  renderItem();
+  card.hidden = mode !== "exam" || ms === "idle";   // 沒在考的時候:本項列 + 題目卡的空狀態
   if (card.hidden) return;
   const { sys, grade: g } = mock.who(ex), name = `${sysName(sys)} ${gl(g, sys)}`;
   const queue = ex.system === "rsl" ? ["fill", "groove"] : ["playback"], ok = !ex.auto && queue.every(t => practicable(ex.system, ex.grade, t));
@@ -1637,9 +1651,4 @@ function renderMockCard(){
       rows: rows(), btn: { label: () => mockLabel("run") } });
     return;
   }
-  // idle(檢定頁)= 本項卡(畫面設計 2026-10 版型 B):大標題「聽力」+ 標籤 = 已練 n 題;一句;左 模擬考、右 隨機抽一題(規格在最下面的「考試內容」)
-  const d = dataOf(ex.system), L = xTypes();
-  paintCard($, { item: true, title: () => tr("聽力", "Aural"), sub: examStatus(),
-    text: () => (!d ? tr("考試資料還沒載好。", "Exam data isn't loaded yet.") : !L.length ? tr("圖例資料還沒載好。", "The drum key isn't loaded yet.") : tr("選下面一項練,或隨機抽一題", "Pick a test below, or tap Random")),
-    btn: ok ? { label: () => mockLabel("item") } : null, close: L.length ? { label: () => tr("隨機抽一題", "Random") } : null, note: null });
 }

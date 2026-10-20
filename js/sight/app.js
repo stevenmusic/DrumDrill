@@ -291,7 +291,7 @@ function render(){
   const run = isExam && mock.running(), only = isExam && (mock.state === "result" || mock.state === "aborted"), xpo = xpOn();
   ROOT.classList.toggle("mock-run", run);
   // 檢定頁不放練習紀錄;模擬考進行中、結果、檢定頁的練習:考試摘要(配分、等第)與規格卡藏起來(練習回饋不跟等第放在同一個畫面)
-  ROOT.querySelectorAll(".pane").forEach(el => { el.hidden = !isExam || run || only; });   // 檢定頁的練習(xp)照樣有「考試內容」(收起來的一行,在最下面)
+  ROOT.querySelectorAll(".pane").forEach(el => { el.hidden = !isExam || ((run || only) && !el.classList.contains("item-row")); });   // 本項列在模擬考時也留著   // 檢定頁的練習(xp)照樣有「考試內容」(收起來的一行,在最下面)
   $("logCard").hidden = isExam;
   if (isExam) $("statsCard").hidden = true;
   if (isExam) { $("rdCard").hidden = $("rdOpts").hidden = true; reading.leave(); }
@@ -652,7 +652,7 @@ function refreshTexts(){
   if (!cur) return;
   const c = cur, t = c.test;
   $("title").classList.remove("empty");
-  $("title").textContent = c.free ? catName(c.cat) : curName(c);   // 視奏分頁:大標題只寫分類,難度在難度列
+  $("title").textContent = catName(c.free ? c.cat : { snare: "rhythm", kit: "groove", playback: "chart" }[c.kind]);   // 大標題 = 材料名(小鼓譜 / 鼓組譜 / 樂譜;考試名在考試卡);視奏分頁的難度在難度列
   $("scoreSub").textContent = c.free ? "" : t.src;
   $("scoreTitle").textContent = tr(...SCORE_TITLE);   // 譜卡標題一律「鼓譜」(畫面設計 2026-10:不重複子項目、題目的名字)
   // 視奏分頁不寫「照 RSL N 級大綱出的練習題」、practiceOnly(那些在檢定頁);題目卡的大標題 = 分類 · 難度
@@ -1514,19 +1514,37 @@ function startXp(){
   cardToTop(q.bottom - m.top <= room && q.top >= m.top ? $("mockCard") : $("quiz"));
 }
 $("mockClose").onclick = () => {
-  const st = mock.state, ex = curExam();
-  if (st === "idle" && !xpOn() && !practicable(ex.system, ex.grade)) { ctx.showView("sight", "groove"); return; }   // RSL 6–8:到視奏分頁練整組鼓讀譜
-  if (st === "idle" && !xpOn()) { startXp(); return; }   // 本項卡的「練習一題」
-  if (xpOn()) { xp = false; stopAll(); render(); window.scrollTo({ top: 0 }); return; }   // 檢定頁的練習 → 回到規格
+  const st = mock.state;
   mock.close();
   // 結果:在檢定頁看這一題的譜、聽正確版本(同一題,檢定頁的練習畫面)
   if (st === "result" && cur && !cur.free && cur.key === target().key) { xp = true; render(); cardToTop($("mockCard")); return; }
   render(); window.scrollTo({ top: 0 });
 };
 $("mockMetro").onclick = () => $("optMetro").click();
+/* 本項列(檢定頁最上面一行)+ 題目卡的空狀態(畫面設計 2026-10 版型 B):視奏 [已練 n 題] … 模擬考;
+   空狀態 = 一句流程 + 右下「練習一題」(RSL 6–8:「練整組鼓讀譜」帶去視奏分頁);出了題目(xp)= 題目卡,本項列照樣在最上面 */
+function renderItem(){
+  if (mode !== "exam") return;
+  const ex = curExam(), ms = mock.state, ok = practicable(ex.system, ex.grade), qsp = ex.system === "rsl" && ex.grade >= 6;
+  $("irName").textContent = tr("視奏", "Sight reading");
+  $("irTag").textContent = dataOf(ex.system) ? itemTag() : "";
+  $("itemMock").hidden = !(ok && !ex.auto && ms === "idle");
+  $("xEmpty").hidden = ms !== "idle" || xpOn();
+  const P = ex.system === "rsl" ? specOf(ex.system, ex.grade) : null, sec = ex.system === "trinity" ? ((dataOf("trinity") && dataOf("trinity").playback.flow.studySec) || 30) : P && P.prepSec;
+  pairText($("xHint"), () => (!dataOf(ex.system) ? tr("考試資料還沒載好。", "Exam data isn't loaded yet.")
+    : qsp ? tr("6–8 級是 Quick Study Piece(要伴奏音軌和 lead sheet),App 不出題", "Grades 6–8 have a Quick Study Piece (backing track, lead sheet): no App tests")
+    : !ok ? tr("圖例資料還沒載好。", "The drum key isn't loaded yet.")
+    : ex.system === "trinity" ? tr(`出一份譜 → 看譜 ${sec} 秒 → 跟拍點打一遍`, `Get a chart → ${sec} s to study → play it with a click`)
+    : tr(`出一題 → 準備 ${sec} 秒 → 打一遍`, `Get a test → ${sec} s to prepare → play it`)));
+  const go = ok ? tr("練習一題", "Get a test") : qsp && kindOf("rsl", 5) ? tr("練整組鼓讀譜", "Practise kit reading") : "";
+  $("xGo").hidden = !go; $("xGo").textContent = go;
+}
+$("itemMock").onclick = () => startMock();
+$("xGo").onclick = () => { const ex = curExam(); if (practicable(ex.system, ex.grade)) startXp(); else ctx.showView("sight", "groove"); };
 function renderMockCard(){
   const ex = curExam(), ms = mock.state, card = $("mockCard");
-  card.hidden = mode !== "exam" || (ms === "idle" && ex.auto);
+  renderItem();
+  card.hidden = mode !== "exam" || ms === "idle" || xpOn();   // 沒在考的時候:本項列 + 題目卡(空狀態或出了題目)
   if (card.hidden) return;
   const { sys, grade: g } = mock.who(ex), pb = sys === "trinity";
   const name = `${sysName(sys)} ${gl(g, sys)}`;
@@ -1535,12 +1553,6 @@ function renderMockCard(){
   const P = pb ? null : specOf(sys, g), sec = pb ? ((dataOf("trinity") && dataOf("trinity").playback.flow.studySec) || 30) : P && P.prepSec;
   const src = pb ? (dataOf("trinity") ? V.srcOf("trinity", dataOf("trinity").playback.flow.src.p) : "") : P ? V.srcOf("rsl", P.src.p) : "";
   const prepName = () => (pb ? tr(`看譜 ${sec} 秒`, `Study ${sec} s`) : tr(`準備 ${sec} 秒`, `Prepare ${sec} s`));
-  if (xpOn()) {
-    $("mockOpts").hidden = true;
-    // 出了題目(畫面設計 2026-10:題目卡換成版型 A):本項卡縮成標題列 = 視奏 + 已練 n 題、模擬考 | 返回(兩顆都是次要;流程與 practiceOnly 寫在題目卡上)
-    paintCard($, { item: "head", title: () => tr("視奏", "Sight reading"), sub: itemTag(), btn: { label: () => mockLabel("item") }, close: { label: () => tr("返回", "Back") }, note: null });
-    return;
-  }
   if (ms === "aborted") {
     paintCard($, { title: () => tr("模擬考已中止", "Mock exam stopped"), sub: name, text: () => abortText(mock.reason),
       btn: practicable(ex.system, ex.grade) && !ex.auto ? { label: () => mockLabel("aborted") } : null, close: { label: () => tr("返回", "Back") } });
@@ -1572,17 +1584,6 @@ function renderMockCard(){
     paintCard($, { title: () => tr("模擬考 · 視奏", "Mock exam · Sight reading"), sub: name, rows: rows(), btn: { label: () => mockLabel("run") } });
     return;
   }
-  // idle(檢定頁)= 本項卡(畫面設計 2026-10 版型 B):大標題「視奏」+ 標籤 = 已練 n 題;一句流程;左 模擬考、右 練習一題。
-  // 規格、配分、出處都在最下面收起來的「考試內容」;RSL 6–8(Quick Study Piece)不出題:主要按鈕帶去視奏分頁練整組鼓讀譜
-  const ok = practicable(ex.system, ex.grade), qsp = ex.system === "rsl" && ex.grade >= 6;
-  paintCard($, { item: true, title: () => tr("視奏", "Sight reading"), sub: itemTag(),
-    text: () => (!dataOf(ex.system) ? tr("考試資料還沒載好。", "Exam data isn't loaded yet.")
-      : qsp ? tr("6–8 級是 Quick Study Piece(要伴奏音軌和 lead sheet),App 不出題", "Grades 6–8 have a Quick Study Piece (backing track, lead sheet): no App tests")
-      : !ok ? tr("圖例資料還沒載好。", "The drum key isn't loaded yet.")
-      : ex.system === "trinity" ? tr(`出一份譜 → 看譜 ${sec} 秒 → 跟拍點打一遍`, `Get a chart → ${sec} s to study → play it with a click`)
-      : tr(`出一題 → 準備 ${sec} 秒 → 打一遍`, `Get a test → ${sec} s to prepare → play it`)),
-    btn: ok ? { label: () => mockLabel("item") } : null,
-    close: ok ? { label: () => tr("練習一題", "Get a test") } : qsp && kindOf("rsl", 5) ? { label: () => tr("練整組鼓讀譜", "Practise kit reading") } : null, note: null });
 }
 /* 本項卡的標籤:已練 n 題(RSL 6–8:只列規格) */
 function itemTag(){ const ex = curExam(); return ex.system === "rsl" && ex.grade >= 6 ? tr("只列規格", "Spec only") : tr(`已練 ${(SS.stats[keyOf(ex.system, ex.grade)] || {}).n || 0} 題`, `${(SS.stats[keyOf(ex.system, ex.grade)] || {}).n || 0} practised`); }

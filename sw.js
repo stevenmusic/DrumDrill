@@ -12,7 +12,7 @@
 const APP = "drumdrill";
 // @app-end
 /*@precache-begin*/
-const CACHE = APP + "-app-18c68d69";
+const CACHE = APP + "-app-e6d2cecd";
 const PRECACHE = [
   "./",
   "manifest.webmanifest",
@@ -24,10 +24,10 @@ const PRECACHE = [
   "licenses.html",
   "privacy.html",
   "support.html",
-  "css/app.css?v=5dae1140d9",
-  "css/drum.css?v=048ece896b",
+  "css/app.css?v=c658f52533",
+  "css/drum.css?v=15985c0c6b",
   "vendor/opensheetmusicdisplay.min.js?v=4bfeb3d01c",
-  "js/ear/app.js?v=4c0d0c5626",
+  "js/ear/app.js?v=0d28a014d6",
   "js/ear/gen.js?v=353441acde",
   "js/ear/strings.js?v=26e468e125",
   "js/main.js?v=74e2a2f4a7",
@@ -38,7 +38,7 @@ const PRECACHE = [
   "js/shared/drill.js?v=9f698a5f44",
   "js/shared/examdata.js?v=48f1b46bf2",
   "js/shared/examview.js?v=3f2d59a5c9",
-  "js/shared/i18n.js?v=8e0a478460",
+  "js/shared/i18n.js?v=b40f34aae1",
   "js/shared/kitevents.js?v=23a7a44853",
   "js/shared/kitgen.js?v=8298af9d7b",
   "js/shared/kitnotation.js?v=abfe448d01",
@@ -58,7 +58,7 @@ const PRECACHE = [
   "js/shared/tempo.js?v=1e38af7d3f",
   "js/shared/timing.js?v=9ab84e3e3f",
   "js/shared/values.js?v=e240ea1b65",
-  "js/sight/app.js?v=44f6c95ab2",
+  "js/sight/app.js?v=44de18968f",
   "js/sight/fingerprint.js?v=3460b8fafa",
   "js/sight/gen.js?v=6633bf6b2e",
   "js/sight/meter.js?v=94d1b94ae1",
@@ -66,7 +66,7 @@ const PRECACHE = [
   "js/sight/reading.js?v=a0436f327b",
   "js/sight/stage.js?v=9ca7fb07ed",
   "js/sight/strings.js?v=ca56df1a31",
-  "js/tech/app.js?v=b33b258dc6",
+  "js/tech/app.js?v=500fe567cf",
   "js/tech/notation.js?v=5bee65ac3d",
   "js/tech/route.js?v=f5279508d8",
   "js/tech/routes.js?v=3d068fd0ea",

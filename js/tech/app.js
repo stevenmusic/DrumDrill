@@ -933,7 +933,6 @@ $("mockBtn").onclick = () => {
   startMock();
 };
 $("mockClose").onclick = () => {
-  if (mock.state === "idle") { $("drawBtn").click(); return; }   // 本項卡的主要動作:隨機抽一項
   mock.close(); renderExam(); window.scrollTo({ top: 0 });
 };
 $("mockOneBar").onclick = () => { S.mockOneBar = !S.mockOneBar; store.save(); renderMockCard(dataOf("rsl"), mockGrade()); if (mock.running()) renderMockStep(); };
@@ -952,17 +951,34 @@ const stepDetail = (st, i) => () => {
 };
 const stepMark = (st, i) => (st.status === "done" ? "ok" : st.status === "skip" ? "skip" : st.status === "stopped" || st.status === "none" ? "no" : mock.running() && mock.data.i === i ? "cur" : "todo");
 /* 模擬考卡:檢定頁的說明 + 開始 / 進行中的進度 / 結果 / 中止的說明 */
-function renderMockCard(d, g){
-  const ex = curExam(), card = $("mockCard"), ms = mock.state;
-  card.hidden = ms === "idle" && !!ex.auto;   // 沒選考試:跟視奏、聽力一樣不顯示(檢定頁不會出現)
-  if (card.hidden) return;
-  const name = (sys, gg) => `${sys === "rsl" ? "RSL" : "Trinity"} ${ctx.gradeLabel(gg, sys)}`;
-  const g0 = mock.who(ex).grade;   // 中止的說明(含重新整理後):那一場的級數
-  $("mockOpts").hidden = !((ms === "idle" || ms === "run") && ex.system === "rsl" && oneBarOK(g0));
+/* 本項列(檢定頁最上面一行)+ 題目卡的空狀態(畫面設計 2026-10 版型 B):技巧 [會了 n/m] … 模擬考;「拍點只響第一小節」是本項列下面一顆小 chip(大綱寫可選的級數);
+   空狀態 = 一句 + 右下「隨機抽一項」(Trinity 沒有技巧項目:只有一句,沒有按鈕) */
+function renderItem(d, g){
+  const ex = curExam(), ms = mock.state, rsl = ex.system === "rsl", t = rsl && d && d.tech && d.tech[g], pool = t ? practiceItems() : [];
+  $("irName").textContent = tr("技巧", "Technique");
+  $("irTag").textContent = d ? examStatus() : "";
+  $("itemMock").hidden = !(t && !ex.auto && ms === "idle" && pool.length);
+  const g0 = mock.who(ex).grade;
+  $("mockOpts").hidden = !((ms === "idle" || ms === "run") && rsl && oneBarOK(g0));
   if (!$("mockOpts").hidden) {
     $("mockOneBar").setAttribute("aria-pressed", String(!!S.mockOneBar));
     pairText($("mockOneBar"), () => tr("拍點只響第一小節", "Count-in only"));   // 頁碼在說明裡
   }
+  $("xEmpty").hidden = ms !== "idle" || tab !== "exam";
+  pairText($("xHint"), () => (!d ? tr("考試資料還沒載好。", "Exam data isn't loaded yet.") : !rsl ? tr("Rock & Pop 沒有獨立的技巧項目;點下面一類練", "No separate technique items in Rock & Pop; pick a family below")
+    : pool.length ? tr("點下面一項練,或隨機抽一項", "Pick an item below, or tap Random") : tr("這一級還沒有 App 能直接練的項目", "Nothing in this grade can be practised in the App yet")));
+  $("xGo").hidden = !pool.length;
+  $("xGo").textContent = tr("隨機抽一項", "Random");
+}
+$("itemMock").onclick = () => $("mockBtn").click();
+$("xGo").onclick = () => $("drawBtn").click();
+function renderMockCard(d, g){
+  const ex = curExam(), card = $("mockCard"), ms = mock.state;
+  renderItem(d, g);
+  card.hidden = ms === "idle";   // 沒在考的時候:本項列 + 題目卡的空狀態(模擬考卡只在進行中、結果、中止時出現)
+  if (card.hidden) return;
+  const name = (sys, gg) => `${sys === "rsl" ? "RSL" : "Trinity"} ${ctx.gradeLabel(gg, sys)}`;
+  const g0 = mock.who(ex).grade;   // 中止的說明(含重新整理後):那一場的級數
   const rows = mock.data && (ms === "run" || ms === "result") ? mock.data.steps.map((st, i) => ({ id: st.gr.id, name: stepName(st), detail: stepDetail(st, i), mark: stepMark(st, i) })) : null;
   if (ms === "aborted") {
     paintCard($, { title: () => tr("模擬考已中止", "Mock exam stopped"), sub: name(mock.who(ex).sys, g0), text: () => abortText(mock.reason),
@@ -987,17 +1003,6 @@ function renderMockCard(d, g){
       rows, btn: { label: () => mockLabel("run") }, note: () => tr(`每一項 ${MOCK_BEATS / 4} 小節(${TS("srcPractice")})。`, `${MOCK_BEATS / 4} bars each (${TS("srcPractice").toLowerCase()}).`) + " " + resultNote() });
     return;
   }
-  // idle(檢定頁)= 本項卡(畫面設計 2026-10 版型 B):大標題「技巧」+ 標籤 = 會了 n/m;一句;左 模擬考、右 隨機抽一項。
-  // Trinity 沒有技巧模擬考(在 Song 3 評):只有標題、標籤與一句,下面的清單是類別
-  if (ex.system !== "rsl") {
-    paintCard($, { item: true, title: () => tr("技巧", "Technique"), sub: examStatus(), text: () => (d ? tr("Rock & Pop 沒有獨立的技巧項目;點下面一類練", "No separate technique items in Rock & Pop; pick a family below") : tr("考試資料還沒載好。", "Exam data isn't loaded yet.")), note: null });
-    return;
-  }
-  const t = d && d.tech && d.tech[g], pool = t ? practiceItems() : [];
-  paintCard($, { item: true, title: () => tr("技巧", "Technique"), sub: t ? examStatus() : "",
-    text: () => (!t ? tr("考試資料還沒載好。", "Exam data isn't loaded yet.") : pool.length ? tr("點下面一項練,或隨機抽一項", "Pick an item below, or tap Random") : tr("這一級還沒有 App 能直接練的項目", "Nothing in this grade can be practised in the App yet")),
-    btn: t && !ex.auto ? { label: () => mockLabel("item"), disabled: !pool.length } : null,
-    close: t && pool.length ? { label: () => tr("隨機抽一項", "Random") } : null, note: null });
 }
 /* 模擬考進行中的題目卡:這一組的項目(或「用檢定書練」)、第幾組、下一組 */
 function renderMockStep(){
