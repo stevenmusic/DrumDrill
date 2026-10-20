@@ -303,7 +303,10 @@ for (const [name, w, h, mobile] of VPS) {
   }
   // 聽力的譜卡:到檢定頁、不適用的題型(說明卡)再回來,同一題的譜還在(Trinity 一直有譜;RSL 揭曉後有譜)
   {
-    const svgOk = () => page.evaluate(() => !document.getElementById("e-scoreCard").hidden && !!document.querySelector("#e-osmd svg"));
+    // Fill 揭曉 = 選項上標出對 / 錯(不放譜卡;CLAUDE.md):看選項的譜還在;其他看譜卡
+    const svgOk = () => page.evaluate(() => window.__ear.state.type === "fill"
+      ? (() => { const a = document.getElementById("e-answers"), p = [...a.querySelectorAll(".e-paper")]; return a.checkVisibility() && p.length > 0 && p.every(x => x.querySelector("svg")); })()
+      : !document.getElementById("e-scoreCard").hidden && !!document.querySelector("#e-osmd svg"));
     const back = async (sys, t, label) => {
       const key = await page.evaluate(() => window.__ear.state.key);
       for (const [v, s] of [["exam", "ear"], ["ear", sys === "rsl" ? "playback" : "fill"]]) {
