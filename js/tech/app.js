@@ -17,7 +17,7 @@ import { createDaily, clickPlays, dayNum } from "../shared/daily.js";
 import { createDailyCard } from "../shared/dailycard.js";
 import { ROUTES, WARM } from "./routes.js";
 import { createRouteView } from "./route.js";
-import { toSpec, valueTag } from "./routespec.js";
+import { toSpec } from "./routespec.js";
 import "./strings.js";
 const T = scoped("tech");
 
@@ -617,7 +617,7 @@ function fitTitle(){
   const over = () => g.lastElementChild && g.lastElementChild.getBoundingClientRect().right + 2 > g.getBoundingClientRect().right;
   g.classList.remove("wrap");
   while (over() && k > 0.82) { k -= 0.04; g.style.setProperty("--tag-scale", k); }
-  // 縮到 0.82 還放不下(折疊機、今日練習四個標籤):換到第二行,不再縮小、不截掉
+  // 縮到 0.82 還放不下(折疊機、標籤多的關):換到第二行,不再縮小、不截掉
   if (over()) { g.style.setProperty("--tag-scale", 0.82); g.classList.add("wrap"); }
   g.classList.remove("measure");
 }
@@ -1157,20 +1157,8 @@ let stepDone = false, stepText = null;
 /* 段落面板(dailycard.js 畫的;路線段的兩顆按鈕經 createDailyCard 的 acts 放進按鈕列) */
 function paintStep(s, o){ dcard.renderStep(s, o); }
 const stepStatus = () => stepText || (routeOn() && rv.pad ? () => { const s = dseg; return (s.welcome ? TS("daily.welcome").replace("{b}", s.bpm).replace("♩=", s.level && s.level.time === "12/8" ? "♩.=" : "♩=") + tr("", " ") : "") + tr(...(s.click && s.click !== "every" ? PAD_HINT.solo : PAD_HINT.hint)); } : null);
-/* 路線段的標籤:[律動 第 3 關] [♩=68 → 90](現在的實際速度;12/8 寫 ♩.) */
-function routeTags(){
-  // 時值放在標籤(關卡名稱不放時值括號):[律動 第 1 關] [四分音符] [♩=56 → 80]
-  const tags = dcard.segTags({ ...dseg, bpm }), vt = valueOfSeg(dseg);
-  if (vt) tags.splice(1, 0, tr(vt[0], vt[1]));
-  return tags;   // 12/8 的 ♩.= 由 dailycard 的 mark 處理
-}
-let vtCache = { k: null, v: null };
-function valueOfSeg(s){
-  const k = s.level ? s.level.id + ":" + seedOf(s) : null; if (!k) return null;
-  if (vtCache.k !== k) { let v = null; try { v = valueTag(toSpec(s.level, seedOf(s)).spec); } catch (e) { console.error(e); } vtCache = { k, v }; }
-  return vtCache.v;
-}
-function paintTags(){ if (dseg && target && target.daily) $("qTags").innerHTML = (dseg.k === "warm" ? dcard.segTags({ ...dseg, bpm }) : routeTags()).map(t => `<span class="q-tag">${t}</span>`).join(""); }
+/* 段落的標籤:[律動 3 / 30] [速度 68 → 90](現在的實際速度;到了目標「速度 90 · 穩 ●○○」;12/8 的 ♩.= 由 dailycard 的 mark 處理;時值不放,譜上看得到) */
+function paintTags(){ if (dseg && target && target.daily) $("qTags").innerHTML = dcard.segTags({ ...dseg, bpm }).map(t => `<span class="q-tag">${t}</span>`).join(""); }
 /* 路線段:藏起打法的鼓譜卡、選擇器的選項;顯示鼓組譜卡(鼓墊卡看模式) */
 function routeMode(on){
   ROOT.classList.toggle("route-mode", on);

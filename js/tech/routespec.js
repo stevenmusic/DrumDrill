@@ -184,18 +184,6 @@ export function displaySpec(spec, times = 4){
   const out = ms.map((m, i) => (i && sig(m) === sig(ms[i - 1]) && !(spec.dyn || []).some(d => d.m === i) ? { ...m, pct: true } : m));
   return { spec: { ...spec, measures: out }, len: specBeats(spec), collapsed: false, pct: out.map(m => !!m.pct) };
 }
-/* 這一關最短的音符(題目卡的標籤;關卡名稱不放時值括號):三連音 > 十六分 > 八分 > 四分(休止也算:十六分休止 = 十六分的律動) */
-export function valueTag(spec){
-  let min = Infinity, tri = false;
-  for (const m of spec.measures) for (const v of m.voices) for (const e of v) {
-    const val = e.value[0] === "r" ? e.value.slice(1) : e.value;
-    if (/t3/.test(val)) tri = true;
-    const q = LEN_Q[val]; if (q == null) continue;
-    min = Math.min(min, q === 0.75 ? 0.25 : q === 1.5 ? 0.5 : q);   // 附點八分 = 跟十六分一組;12/8 的附點四分 = 三個八分
-  }
-  if (tri) return ["三連音", "Triplets"];
-  return min <= 0.25 ? ["十六分音符", "16th notes"] : min <= 0.5 ? ["八分音符", "Eighth notes"] : ["四分音符", "Quarter notes"];
-}
 /* 關卡 → { spec, bars(DSL 展開後), pieces, lenBeats(四分音符), time, compound, pulse(一拍幾個四分音符), seed } */
 export function toSpec(level, seed = 1, { key = null } = {}){
   const time = level.time || "4/4", compound = time === "12/8";

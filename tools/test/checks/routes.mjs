@@ -38,7 +38,7 @@ export default function check(ok){
       if (ids.has(where)) bad.push(where + " id 重複");
       ids.add(where);
       if (!(Array.isArray(L.name) && L.name[0] && L.name[1] && L.name[1].length <= 34)) bad.push(where + " 名字(中英、英文 ≤ 34 字)");
-      if (/[((](四分|八分|十六分|三連音)/.test(L.name[0]) || /\((quarters?|eighths?|16ths?|triplets?)/i.test(L.name[1])) bad.push(where + " 名稱不放時值括號(時值在標籤):" + L.name[0]);
+      if (/[((](四分|八分|十六分|三連音)/.test(L.name[0]) || /\((quarters?|eighths?|16ths?|triplets?)/i.test(L.name[1])) bad.push(where + " 名稱不放時值括號:" + L.name[0]);
       if (!((L.g === "0" ? L.start === L.target : L.start < L.target) && L.start >= 40 && L.target <= 200)) bad.push(where + ` 速度 ${L.start} → ${L.target}`);
       if (!(Array.isArray(L.check) && L.check.length >= 2 && L.check.length <= 3 && L.check.every(c => c[0] && c[1]))) bad.push(where + " 重點 2–3 項");
       const seeds = hasGen(L) ? 1000 : 1;
