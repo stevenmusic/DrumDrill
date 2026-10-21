@@ -12,7 +12,7 @@
 const APP = "drumdrill";
 // @app-end
 /*@precache-begin*/
-const CACHE = APP + "-app-1b2f62d7";
+const CACHE = APP + "-app-76950800";
 const PRECACHE = [
   "./",
   "manifest.webmanifest",
@@ -53,18 +53,18 @@ const PRECACHE = [
   "js/shared/playbackgen.js?v=72aac8d275",
   "js/shared/player.js?v=3b242c7289",
   "js/shared/practicelog.js?v=acd9cd53aa",
-  "js/shared/score.js?v=6c396e99eb",
+  "js/shared/score.js?v=b886986d48",
   "js/shared/staffframe.js?v=7d869b31d1",
   "js/shared/tempo.js?v=1e38af7d3f",
   "js/shared/timing.js?v=9ab84e3e3f",
   "js/shared/values.js?v=e240ea1b65",
-  "js/sight/app.js?v=6a4d79013e",
+  "js/sight/app.js?v=12ecdcdae1",
   "js/sight/fingerprint.js?v=3460b8fafa",
   "js/sight/gen.js?v=6633bf6b2e",
   "js/sight/meter.js?v=94d1b94ae1",
   "js/sight/random.js?v=3b9b511386",
   "js/sight/reading.js?v=cdad6c5e79",
-  "js/sight/stage.js?v=9ca7fb07ed",
+  "js/sight/stage.js?v=bee4aca9a4",
   "js/sight/strings.js?v=666e49e89c",
   "js/tech/app.js?v=a4b7697d91",
   "js/tech/notation.js?v=5bee65ac3d",

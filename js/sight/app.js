@@ -856,7 +856,8 @@ function ensureOsmd(){
     drawingParameters: "compacttight", drawMeasureNumbersOnlyAtSystemStart: true, stretchLastSystemLine: true
   });
   osmd.EngravingRules.FixedMeasureWidth = true;   // 每小節一樣寬(像印出來的考卷;整組鼓的譜在 drawOnce 改掉)
-  stage = createStage({ score: $("score"), playline: $("playline"), highlight: $("highlight") });
+  stage = createStage({ score: $("score"), playline: $("playline"), highlight: $("highlight"), osmd: () => osmd });
+  window.__stage = stage; window.__osmd = osmd;   // 測試用(tools/test/playhead.mjs)
   return true;
 }
 async function drawCurrent(){

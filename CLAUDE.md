@@ -362,6 +362,7 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
     layout / bilingual / clip / human 都有模擬考的狀態(`mockTour`:技巧 RSL 3、聽力 RSL 4 與 Trinity 4 × 進行中 / 結果 / 中止;human 的「模擬考中途中止」);
     layout / bilingual / clip / human 都有視奏、聽力的狀態(視奏:RSL 0、3、4、5、6,Trinity 0、4、8 × 準備 / 作答 / 結果 / 正確版本;Trinity 一首很長,測試用 `__sight.finishNow()` 提早出結果;
     聽力:human 的「照節奏回打」要「準」);playback.mjs 有視奏、聽力(換語言不停播、Trinity 空檔只有拍點)
+  - `node tools/test/playhead.mjs [寬度]`(播放軸對準符頭正中央:技巧、今日練習、視奏每個音與休止符 ≤ 2 px;兩個 App 同一份;改播放軸、譜面排法要跑)
   - 重構前後畫面要一樣:動手前 `node shots.mjs --save`,改完 `node shots.mjs --compare`(19 種尺寸 × 技巧四類 + #40×8 + 檢定頁 × 中英,逐像素比對)
   - `tools/test/notation-preview.html?n=1,2,3`:把指定的打法畫出來,跟官方表對照;`?pattern=rsl-7-A`(或 `rsl-7`):RSL 練習型
 - 上架:`docs/APPSTORE.md`;App Store 關鍵字不放 Trinity、RSL、Rockschool(考試機構的商標)
