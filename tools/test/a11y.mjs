@@ -239,7 +239,7 @@ for (const [sys, g] of [["rsl", 0], ["rsl", 4], ["trinity", 4]]) {
   await ev(() => window.__sight.finishNow());
   await wait(() => window.__sight.state.phase === "result", null, 30000); await page.waitForTimeout(300);
   const res = await ev(() => document.getElementById("srLive").textContent);
-  if (!/打完了/.test(res) || !/命中|沒有收到/.test(res)) fail(`${at} 結果`, `#srLive 沒有結果摘要:${res}`);
+  if (!/打完了/.test(res) || !/打中|沒有打到/.test(res)) fail(`${at} 結果`, `#srLive 沒有結果摘要:${res}`);
   await audit(`${at} 結果`, { sight: true });
   await ev(() => window.__sight.setBpm(window.__sight.test.bpm));
 }
@@ -262,7 +262,11 @@ await audit("聽力 rsl fill 選譜");
   if (!l.length || l.some((x, i) => !x.startsWith(`選項 ${"ABC"[i]}`) || !/第 1 小節/.test(x))) fail("聽力 選項", `選項的名稱應該是「選項 A:…第 1 小節…」:${l.join(" | ").slice(0, 160)}`);
 }
 await ev(() => window.__ear.choose(0)); await page.waitForTimeout(1200);
-await audit("聽力 rsl fill 結果", { ear: true });
+await audit("聽力 rsl fill 結果");
+{ // Fill 揭曉 = 選項上標出對 / 錯(不再畫「正確的譜」):正確的選項名稱帶「(正確)」
+  const l = await ev(() => [...document.querySelectorAll("#e-answers .e-opt")].map(b => b.getAttribute("aria-label")));
+  if (!l.some(x => /(正確)/.test(x))) fail("聽力 揭曉", `正確的選項名稱沒有「(正確)」:${l.join(" | ").slice(0, 160)}`);
+}
 await eGo("rsl", 4, "groove");
 await ev(() => window.__ear.reveal()); await page.waitForTimeout(1200);
 await audit("聽力 rsl groove 揭曉", { ear: true });
