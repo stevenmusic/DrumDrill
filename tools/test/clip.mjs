@@ -173,10 +173,11 @@ async function more(page, view, s, report){
     return;
   }
   if (view !== "tech") return;
-  const nos = await page.evaluate(() => [...document.querySelectorAll('#t-picker .opts[data-k="no"] .opt')].map(b => Number(b.dataset.v)));
+  // 選單每一格(PAS 編號,加上滾奏最前面的「單擊 四分 / 八分」s4、s8):直接點那一格
+  const nos = await page.evaluate(() => [...document.querySelectorAll('#t-picker .opts[data-k="no"] .opt')].map(b => b.dataset.v));
   for (const no of nos) {
     const b = await page.evaluate(() => window.__scoreReady || 0);
-    await page.evaluate(no => window.__tech.setRudiment(no), no);
+    await page.evaluate(no => document.querySelector(`#t-picker .opts[data-k="no"] .opt[data-v="${no}"]`).click(), no);
     await page.waitForFunction(b => (window.__scoreReady || 0) > b, b, { timeout: 8000 }).catch(() => {}); await page.waitForTimeout(100);
     await report(`${view}/${s} #${no}`);
   }
