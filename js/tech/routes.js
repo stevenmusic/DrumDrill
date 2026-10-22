@@ -18,7 +18,7 @@ const c = (zh, en) => [zh, en];
 
 const GROOVE = [
   // ── 0 初學基礎 ──
-  { id: "G01", g: "0", name: c("跟拍點數拍", "Count the beat"), start: 56, target: 56, need: 2, review: false, oneHand: "R", pat: { sd: Q },
+  { id: "G01", g: "0", name: c("跟拍點數拍", "Count along"), start: 56, target: 56, need: 2, review: false, oneHand: "R", pat: { sd: Q },
     check: [c("右手打小鼓(沒有鼓就拍桌子),邊打邊數 1 2 3 4", "Right hand on the snare (or a table); count 1 2 3 4 out loud"), c("跟拍點同時下去", "Land with the click")] },
   // ── A 四分音符(手腳對齊)──
   { id: "A1", g: "A", name: c("右手和大鼓一起", "Hand and kick together"), start: 56, target: 80, pat: { hh: Q, bd: Q },
