@@ -175,7 +175,8 @@ const appCheck = async () => {
     if (!s.play && !s.starting && !["播放示範", "Play"].includes(playLbl)) out.push(`技巧沒在播放但按鈕寫「${playLbl}」`);
     if (!(s.bpm >= 30 && s.bpm <= 240)) out.push(`速度超出範圍 ${s.bpm}`);
     if (String(s.bpm) !== document.getElementById("t-bpmVal").textContent) out.push("速度顯示不一致");
-    if (A.cur) {
+    // 「今日」(今日練習卡)不顯示自由練習的鼓譜:譜卡看得到才數左右手字母
+    if (A.cur && document.getElementById("t-osmd").offsetParent) {
       for (let t = 0; t < 60 && !document.querySelector("#t-osmd svg .dd-stick"); t++) await new Promise(r => setTimeout(r, 50));
       const notes = A.groups.flat(), want = notes.reduce((n, x) => n + (x.rest ? 0 : (x.buzz ? 0 : 1) + (x.flam ? 1 : 0) + (x.drag ? 2 : 0)), 0);
       const got = document.querySelectorAll("#t-osmd svg .dd-stick").length;
