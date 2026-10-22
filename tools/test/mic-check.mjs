@@ -96,8 +96,9 @@ function rng(seed){ return () => { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; le
 async function collectPlans(page){
   const plans = [];
   const sightPlan = async (sys, g) => {
-    await page.evaluate(([sys, g]) => { if (sys === "trinity") window.__shell.setExam("trinity", g); window.__sight.goto("trinity", g); }, [sys, g]);
-    await page.waitForFunction(([sys, g]) => { const s = window.__sight.state; return s.key === `${sys}-${g}`; }, [sys, g], { timeout: 30000 });
+    // 視奏分頁:goto 換成同一組參數的分類 + 難度(題目的 key = 「分類-難度」,例 rhythm-2)
+    const key = await page.evaluate(([sys, g]) => { const cat = window.__sight.goto(sys, g); return cat ? `${cat}-${window.__sight.level(cat)}` : null; }, [sys, g]);
+    await page.waitForFunction(k => { const s = window.__sight.state; return s.key === k && s.drawn > 0; }, key, { timeout: 30000 });
     const p = await page.evaluate(() => window.__sight.micPlan());
     plans.push({ name: `視奏 ${sys} ${g}`, ...p });
   };

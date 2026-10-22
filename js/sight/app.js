@@ -209,8 +209,11 @@ export async function start(c){
     goto(sys, g){
       const cat = CATS.find(c => CAT_LEVELS[c].some(L => L.sys === sys && L.g === g));
       if (!cat) { ctx.showView("exam", "sight"); return null; }
-      levels.set(cat, CAT_LEVELS[cat].findIndex(L => L.sys === sys && L.g === g) + 1);
-      ctx.showView("sight", cat); return cat;
+      const lv = CAT_LEVELS[cat].findIndex(L => L.sys === sys && L.g === g) + 1, same = mode === "free" && freeCat === cat;
+      levels.set(cat, lv);
+      ctx.showView("sight", cat);
+      if (same && !(cur && cur.key === `${cat}-${lv}`)) { renderLevel(); newTest(); }   // 已經在這個分類:showView 不重出題
+      return cat;
     },
     /* 測試用:正式打中馬上結束、照目前收到的敲擊出結果(Trinity 8 級一首要打很久;layout / bilingual / clip 看結果畫面用) */
     finishNow(){ if (phase === "perform" && playKind === "perform") { playKind = null; player.stop(true); tempo.showBeat(null); finishPerform(); } }, get layout(){ return lastLayout; }, perfT0: () => (perf ? perf.t0 : null),
@@ -615,7 +618,7 @@ function applyBpm(){
   else if (playKind === "metro") { stopPlayer(); startMetro(); }
 }
 function tempoUI(){
-  tempo.sync(tr("拍 / 分鐘", "beats / min"));
+  tempo.sync(tr("拍 / 分鐘", "BPM"));
   if (!cur) return;
   const pb = cur.kind === "playback";
   // 「回到預設 / 回到官方速度」:自己改過速度才出現

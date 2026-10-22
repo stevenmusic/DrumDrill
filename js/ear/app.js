@@ -448,7 +448,7 @@ function setBpm(v){
   tempoUI(); renderMeta(); renderSum();
 }
 function tempoUI(){
-  tempo.sync(tr("拍 / 分鐘", "beats / min"));
+  tempo.sync(tr("拍 / 分鐘", "BPM"));
   lockTempo();
   if ($("osmd").hasAttribute("role")) imgLabel($("osmd"), scoreLabel);   // 無障礙:譜的說明裡有速度
   if (!cur) { pairText($("tempoNote"), () => ""); return; }

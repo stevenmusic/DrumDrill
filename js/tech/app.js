@@ -635,7 +635,7 @@ if (typeof ResizeObserver !== "undefined") new ResizeObserver(() => requestAnima
 const MIN_BPM = 30, MAX_BPM = 240;
 const tempo = createTempo({ $, min: MIN_BPM, max: MAX_BPM, get: () => bpm, set: v => setBpm(v, true) });
 function syncTempoUI(){
-  tempo.sync(tr("拍 / 分鐘", "beats / min"));
+  tempo.sync(tr("拍 / 分鐘", "BPM"));
   $("examTempo").textContent = dseg ? tr("自動調整", "Auto") : tr("建議:慢 → 快 → 慢", "Slow → fast → slow");   // PAS 的 open – close – open
   if (routeOn()) { tempo.setBeats(4); return; }
   const beats = Math.max(1, Math.round(accentEvery(cycleLength(groups || [[{ dur: 4 * DIV }]])) / DIV));
