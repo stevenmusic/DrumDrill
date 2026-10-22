@@ -125,7 +125,7 @@ const appActions = ({ page, tap, tapAny }) => [
     if (left.length) fail(`模擬考中途${how}:${left.join("、")}`);
     // 回到檢定頁:要說明「模擬考已中止」
     await page.evaluate(m => window.__shell.showView("exam", m), mod); await page.waitForTimeout(400);
-    const r = await page.evaluate(([m, a]) => ({ st: m === "tech" ? window.__tech.state.mock : window[a].mock.state, txt: document.getElementById(m[0] + "-mockText").textContent, card: !document.getElementById(m[0] + "-mockCard").hidden }), [mod, api]);
+    const r = await page.evaluate(([m, a]) => ({ st: m === "tech" ? window.__tech.state.mock : window[a].mock.state, txt: document.getElementById(m[0] + "-mockTitle").textContent + " " + document.getElementById(m[0] + "-mockText").textContent, card: !document.getElementById(m[0] + "-mockCard").hidden }), [mod, api]);
     if (r.st !== "aborted" || !r.card || !/中止|stopped/.test(r.txt)) fail(`模擬考中途${how}(${mod} ${sys} ${g}):回來沒有說明中止 ${JSON.stringify(r)}`);
     if (how === "旋轉") { const v = page.viewportSize(); await page.setViewportSize({ width: v.height, height: v.width }); }
     return true;
