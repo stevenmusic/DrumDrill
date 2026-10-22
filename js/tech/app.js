@@ -1078,8 +1078,8 @@ const daily = createDaily({ routes: ROUTES, load: () => S.daily, save: d => { S.
 const dcard = createDailyCard({ $, daily, announce,
   // 段落按鈕「穩了 / 還要練」(不跟熟練度的「會了 / 再練」撞名);狀態一句短話(fold-280 不超過兩行)
   labels: { ok: ["穩了", "Steady"], again: ["還要練", "Not yet"], verb: ["打", "play"], good: ["很穩!", "Steady!"],
-    hint: ["跟著打,穩了按 ✓", "Play along, then ✓"],
-    solo: ["自己打,穩了按 ✓", "Play it yourself, then ✓"] },
+    hint: ["按 ▶ 跟著打,穩了按 ✓", "Tap ▶, play along, then ✓"],
+    solo: ["按 ▶ 自己打,穩了按 ✓", "Tap ▶, play it yourself, then ✓"] },
   mark: s => (s && s.level && s.level.time === "12/8" ? "♩.=" : "♩="),   // 12/8 的速度是附點四分
   warmName: warmName, log: () => S.log,
   onStart: () => { dShow(daily.begin()); window.scrollTo({ top: 0 }); },

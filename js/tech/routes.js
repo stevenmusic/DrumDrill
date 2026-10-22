@@ -19,11 +19,11 @@ const c = (zh, en) => [zh, en];
 const GROOVE = [
   // ── 0 初學基礎 ──
   { id: "G01", g: "0", name: c("跟拍點數拍", "Count with the click"), start: 56, target: 56, need: 2, review: false, oneHand: "R", pat: { sd: Q },
-    check: [c("只用右手,邊打邊數 1 2 3 4", "Right hand only; count 1 2 3 4 out loud"), c("跟拍點同時下去", "Land with the click")] },
+    check: [c("右手打小鼓(沒有鼓就拍桌子),邊打邊數 1 2 3 4", "Right hand on the snare (or a table); count 1 2 3 4 out loud"), c("跟拍點同時下去", "Land with the click")] },
   // ── A 四分音符(手腳對齊)──
   { id: "A1", g: "A", name: c("右手和大鼓一起", "Hand and kick together"), start: 56, target: 80, pat: { hh: Q, bd: Q },
-    check: [c("Hi-hat 和大鼓同時下去", "Hi-hat and kick land together"), c("數出來:1、2、3、4", "Count out loud: 1 2 3 4")] },
-  { id: "A2", g: "A", name: c("Hi-hat 和小鼓", "Hi-hat with snare on 2 & 4"), start: 56, target: 84, pat: { hh: Q, sd: SD24 },
+    check: [c("右腳踩大鼓,跟右手同時下去", "Right foot on the kick, with the right hand"), c("數出來:1、2、3、4", "Count out loud: 1 2 3 4")] },
+  { id: "A2", g: "A", name: c("Hi-hat 和小鼓", "Hi-hat with snare"), start: 56, target: 84, pat: { hh: Q, sd: SD24 },
     check: [c("右手 Hi-hat、左手小鼓", "Right hand hi-hat, left hand snare"), c("2、4 拍兩手同時", "Both hands together on 2 and 4")] },
   { id: "A3", g: "A", name: c("大鼓和小鼓輪流", "Kick and snare trade"), start: 60, target: 96, pat: { sd: SD24, bd: BD13 },
     check: [c("大鼓 1、3,小鼓 2、4", "Kick on 1 & 3, snare on 2 & 4"), c("間隔一樣,不要越打越快", "Even spacing, don't rush")] },

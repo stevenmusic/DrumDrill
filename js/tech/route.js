@@ -301,7 +301,7 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
     $("rModeBtn").hidden = on;
     $("rPerform").hidden = !on;
     $("rPerform").classList.toggle("primary", !done);   // 同一時間只有一顆主要:過關 / 複習完出現「下一段 ›」時「打一遍」改成次要(還可以再打一次)
-    pairText($("rModeBtn"), () => tr("沒有鼓?用手機打", "Use the phone"));   // 短:折疊機上跟「還要練 / 穩了」排在同一行
+    pairText($("rModeBtn"), () => tr("沒有鼓?用手機打", "No drums? Use phone"));   // 短:折疊機上跟「還要練 / 穩了」排在同一行
     pairText($("rKitBtn"), () => tr("改回在鼓上打", "Back to the kit"));
     pairText($("rPadNote"), () => tr("先聽 1 小節拍點再打", "One bar of count-in first") + (showKeys() ? tr(" · 鍵盤 F / J / K", " · keys F / J / K") : ""));
     syncPerform();
