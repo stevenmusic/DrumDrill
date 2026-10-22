@@ -489,7 +489,7 @@ function renderRsl(d, g, withPractice){
     V.addPara(c, () => V.L(d.sightNote.qsp));
     V.addPara(c, () => tr("要伴奏音軌和 lead sheet,拍號、時值、速度大綱也沒寫:App 不出這一項的題目。", "Needs a backing track and lead sheet, and the metre, values and tempo aren't stated: the App sets no tests for it."));
     // 練讀譜:到視奏分頁的「律動」(整組鼓讀譜,難度由 App 調整;不是 QSP)
-    if (!curExam().auto && kindOf("rsl", 5)) goButton(c, () => tr("到視奏頁練鼓組譜(不是 QSP)", "Practise Kit in Sight-reading (not QSP)"), () => ctx.showView("sight", "groove"));
+    if (!curExam().auto && kindOf("rsl", 5)) goButton(c, () => tr("到視奏頁練鼓組譜(不是 QSP)", "Sight-reading › Kit (not QSP)"), () => ctx.showView("sight", "groove"));
   }
 }
 
