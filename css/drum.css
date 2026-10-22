@@ -528,3 +528,5 @@ body.view-exam .exam-info:is(#t-paneExam,#s-paneExam,#e-paneExam){order:20}
 /* 技巧題目卡最後一行右邊:從檢定頁清單來練時的「下一項」 */
 #t-nextItem{margin-left:auto;min-height:44px;height:auto}
 @media (orientation:landscape) and (max-height:500px){ #t-nextItem{grid-column:1 / -1;justify-self:end} }
+/* 手機直式:視奏題目卡標籤(小鼓譜 · 4/4 · 4 小節 · ♩=80)跟標題同一行;內距與間距小一點,中英文(4 小節 / 12 bars)都放得下(跟 PianoDrill sight.css 一樣) */
+@media (max-width:430px){ #mod-sight .q-ht .q-tags{gap:4px} #mod-sight .q-ht .q-tag{padding-left:6px;padding-right:6px} }
