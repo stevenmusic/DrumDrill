@@ -1162,6 +1162,7 @@ function countInClicks(p){
 /* ── 準備(RSL 90 秒:準備加練習 / Trinity 看譜 30 秒,可以試打;節拍器可開可關;鼓墊可以試打,不計分)── */
 function startPrep(){
   if (!cur) return;
+  if (freeQ() && phase !== "prep") return;   // 視奏分頁沒有準備倒數(按鈕藏起來;官方準備時間只在檢定頁)
   if (phase === "prep") { endPrep(false); return; }   // 「結束準備」
   if (phase === "perform") stopPerform();
   if (playKind === "listen") stopListening();

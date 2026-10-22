@@ -534,3 +534,4 @@ body.view-exam .exam-info:is(#t-paneExam,#s-paneExam,#e-paneExam){order:20}
 @media (max-width:300px){ #s-quiz .q-foot{column-gap:6px} }
 /* 檢定頁的視奏標籤多了出處(4/4 · 推估、♩=80 · 練習設定),英文 Assumed / Practice setting 長:一律放在標題下一行,中英一樣高(自由練習的標籤照舊跟標題同一行) */
 body.view-exam #mod-sight .q-ht .q-tags{flex:1 1 100%}
+@media (max-width:360px){ #mod-sight .q-ht .q-tags{flex:1 1 100%} }   /* SE 320 / 折疊機:視奏標籤放不下標題旁邊(中文「小鼓譜」、英文「12 bars」輪流掉行),一律在標題下一行 */
