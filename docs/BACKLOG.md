@@ -41,3 +41,16 @@
   → 照規則:沒選級數 disabled,選了級數就變主色
 - [x] [小] 子項目列高度改 44(整個頂部會多 12–16px;換來點擊安全)
   → 看起來不變,點擊區已用透明 ::after 擴大到 44
+
+## 第 2 輪健檢(體驗員;iphone 390 英文;第一次使用 / 出狀況 / 無障礙 / 英文用詞;腳本與截圖在暫存 ddux2/)
+流程實測:第一次問題 → 「不考試」→ 今日(1 下開始)→ 暖身「下一段 ›」→ 滾奏 ▶ → 穩了 → 過關 → 檢定 RSL 1 級 → 模擬考;每一步下一步都看得到,頂欄 / 分頁 / 子項目沒有沒名字的按鈕,四個分頁都有 h1、tabpanel、lang。
+- [ ] [中] 今日練習「穩了 / Steady」— 播完前 disabled(實測播放後約 13 秒才亮),沒有任何一句說為什麼(無 title、無 aria-describedby、狀態句只寫「Tap ▶, play along, then ✓」,按鈕上是「Steady」不是 ✓)→ disabled 時狀態句或鈕下小字寫「先播一輪(約 12 秒)」,「then ✓」改成「then Steady」
+- [ ] [中] 鼓聲載入失敗 / 慢 — 提示 `#t-loadingMsg` 只有 11px(--fs-2xs)、對比 5.15、擠在題目卡最上緣(top 119,貼著頂欄下);失敗時 ▶ 仍寫「Play」、按了沒聲音沒有第二個提示,srLive 不播報失敗 → 失敗句 ≥ --fs-sm、放在 ▶ 下面或狀態句位置、加「重試」文字鈕、同步 announce
+- [ ] [中] 第一次的問題 — role=dialog / aria-modal 正確,但 Tab 不被困住:按 13 次後焦點跑到背景的 themeToggle、langToggle(11 個鈕後離開 dialog);Esc 會直接關掉(等於沒回答)→ 焦點循環在 dialog 內(a11y 檢查加一條)
+- [ ] [小] localStorage 不能寫(私密瀏覽 / 滿)— App 照常用,但沒有任何一句說「紀錄不會保存」;getItem 丟例外時每次打開都重問第一次的問題 → 偵測到寫入失敗時,練習紀錄卡一行淡字「這個瀏覽器無法儲存紀錄」
+- [ ] [小] 英文用詞不一致 — 檢定頁清單寫 quavers / semiquavers / crotchets(英式官方用語,7 歲、美國老師不懂),同一個 App 的難度說明寫 eighth notes、「Singles in quarters」;「Count-in only」「Debut」鈕上只寫「D」(aria-label 是 Debut,語音控制說「點 Debut」對不上可見字)→ 清單括號補 8th notes / 16th notes 或統一「8th notes」,官方題名留在「考試內容」;級數鈕可見字改 Debut 或 aria-label 以「D」開頭
+- [ ] [小] 今日練習進行中 — 主要面板有「Steady / Not yet」時,進度列右上仍有「Next part ›」(規則是面板有主要按鈕時進度列那顆藏起來;實測 main 段兩顆並存,44 高)→ 檢查 barHost 隱藏條件
+- [ ] [小] 頂欄主題 / 語言圓鈕 — 34×34,實測點擊區約 42(掃描 48×48 範圍 77% 命中),未達 44 → ::after 擴到 44
+- [ ] [小] 模擬考卡「Stop mock」 — 手機直式 34 高,是這張卡唯一一顆鈕且比 44 矮 → min-height 44;卡片寫了「Now」但沒寫怎麼開始(要按 ▶?)→ 狀態句加一步
+## 要使用者決定(第 2 輪)
+- 無(第 2 輪的問題都是文字與行為,不動外觀)
