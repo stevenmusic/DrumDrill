@@ -93,6 +93,8 @@ try { dailycheck(ok); } catch (e) { ok(false, "今日練習引擎檢查出錯:" 
 try { routescheck(ok); } catch (e) { ok(false, "今日練習路線檢查出錯:" + e.stack); }
 // 6l. 練習紀錄備份(js/shared/backup.js;兩個 App 同一份):往返、壞檔、別的 App、惡意 key、太大、寫入失敗還原(checks/backup.mjs)
 try { const { default: bakcheck } = await import("./checks/backup.mjs"); bakcheck(ok); } catch (e) { ok(false, "練習紀錄備份檢查出錯:" + e.stack); }
+// 6l2. 練習紀錄卡(js/shared/practicelog.js;兩個 App 同一份):每週目標預設 40、舊資料 60 沒有 goalSet → 40、自己選的照舊、重新開始(checks/practicelog.mjs)
+try { const { default: plcheck } = await import("./checks/practicelog.mjs"); plcheck(ok); } catch (e) { ok(false, "練習紀錄卡檢查出錯:" + e.stack); }
 // 6m. 本週摘要(js/shared/digest.js;兩個 App 同一份):0 天、有資料、中英、單複數、過關最多 5 個(checks/digest.mjs)
 try { const { default: dgcheck } = await import("./checks/digest.mjs"); dgcheck(ok); } catch (e) { ok(false, "本週摘要檢查出錯:" + e.stack); }
 // 6j. 可選:APPWWW=1 時跑 App 打包檢查(tools/test/app-www.mjs:先跑 app-www 再檢查 app/www 完整;要下載取樣,所以預設不跑)

@@ -1,11 +1,12 @@
 /* 基本打法分頁的設定與紀錄(localStorage;讀不到就用預設值) */
-import { cleanLog } from "../shared/practicelog.js";
+import { cleanLog, loadGoal } from "../shared/practicelog.js";
 const KEY = "drumdrill.tech.v1";
 let S = null;
 export function load(){
   try { S = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) {}
   S = { cat: "roll", pick: {}, lead: "R", reps: 4, bpm: {}, mastery: {}, best: {}, loop: false, ramp: false, clickOnly: false, log: {}, ...(S || {}) };
   S.log = cleanLog(S.log);   // 讀進來先消毒(日期格式、數字)
+  Object.assign(S, loadGoal(S));   // 每週目標(分鐘;goalSet = 自己點過;舊資料存 60 沒點過 → 40;js/shared/practicelog.js)
   // 第一次進來各類的一行說明:播放過一次的類別 = true
   const intro = {}; if (S.intro && typeof S.intro === "object") for (const k of ["roll", "diddle", "flam", "drag"]) if (S.intro[k] === true) intro[k] = true;
   S.intro = intro;

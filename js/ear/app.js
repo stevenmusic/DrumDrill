@@ -27,7 +27,7 @@
    - 練習紀錄(js/shared/practicelog.js):連續天數、今天題數、今天正確率(回打命中的音 + 選對的譜 ÷ 全部)+ 每週目標 + 最近 7 天;
      秒數 = 聽題目、看譜、回打的時間;各題型正確率(#e-statsCard:Fill 選譜、各題型的回打命中率)
    - localStorage drumdrill.ear.v1:{ level:{ fill: 2 }、streak(沒選考試時各題型的難度;level.js), bpmBy(Trinity 每一級的練習速度), hideChart,
-     stats:{ "rsl-3-fill": {n, picks, ok, hits, total} }, log:{ 日期: {n, sec, hits, total} }, goal(每週目標分鐘), mockRun(進行中的模擬考標記) }
+     stats:{ "rsl-3-fill": {n, picks, ok, hits, total} }, log:{ 日期: {n, sec, hits, total} }, goal、goalSet(每週目標分鐘;自己點過才 true), mockRun(進行中的模擬考標記) }
      讀進來先消毒:速度 30–240、數字;舊版的 grades、examSeen(設定卡選的級數)丟掉 */
 import { tr, T as TS, scoped, getLang, pairText } from "../shared/i18n.js";
 import { playbackFor } from "../shared/examdata.js";
@@ -45,7 +45,7 @@ import { fitLandZoom, createLandPlay } from "../shared/landscape.js";
 import { toEvents, hitsOnly } from "../shared/kitevents.js";
 import { genChart, phraseSpec, playbackParams, NOTES as PB_NOTES } from "../shared/playbackgen.js";
 import { genFill, fillOptions, genGroove, NOTES as EAR_NOTES } from "./gen.js";
-import { addLog, cleanLog, renderLog as paintLog, today, nextGoal, cleanGoal } from "../shared/practicelog.js";
+import { addLog, cleanLog, renderLog as paintLog, today, tapGoal, loadGoal } from "../shared/practicelog.js";
 import { createMock, abortText, paintCard, resultNote, mockLabel, cardToTop } from "../shared/mock.js";
 import { createMicTake, dropBleed, MIC_LANES, MIC_TEXT, micFailText, MIC_UI } from "../shared/micrhythm.js";
 import { createLevels, levelText, paintVotes, paramDesc, valueList } from "../shared/level.js";
@@ -79,7 +79,7 @@ const SS = (() => {
     s.stats[k] = { n: cnt(v.n), picks: cnt(v.picks), ok: Math.min(cnt(v.ok), cnt(v.picks)), total: cnt(v.total), hits: Math.min(cnt(v.hits), cnt(v.total)) };
   }
   s.log = cleanLog(s.log);
-  s.goal = cleanGoal(s.goal);
+  Object.assign(s, loadGoal(s));   // 每週目標(goalSet = 自己點過;舊資料存 60 沒點過 → 40)
   s.hideChart = !!s.hideChart;
   // 第一次進來各題型的一行說明(題目卡狀態那行):做完一題的題型 = true
   { const o = {}; if (s.intro && typeof s.intro === "object") for (const t of ["fill", "groove", "playback"]) if (s.intro[t] === true) o[t] = true; s.intro = o; }
@@ -1496,7 +1496,7 @@ function renderLog(){
   const t = today(SS.log);
   $("logAcc").textContent = t.total ? Math.round(100 * t.hits / t.total) + "%" : "–";
 }
-$("goalBtn").onclick = () => { SS.goal = nextGoal(SS.goal); save(); renderLog(); };
+$("goalBtn").onclick = () => { tapGoal(SS); save(); renderLog(); };
 /* 各題型正確率(設定卡的系統與級數):Fill 選譜(答對 ÷ 選過)、各題型的回打命中率(命中的音 ÷ 該打的音)。練習回饋:檢定頁不放 */
 function renderStats(){
   const sys = sysNow(), g = gradeNow(sys), rows = [];

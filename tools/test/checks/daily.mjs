@@ -1,6 +1,6 @@
 // 今日練習引擎(js/shared/daily.js)的檢查;兩個 App 同一份(sync.json same),verify.mjs 會呼叫;也可以單獨跑:node tools/test/checks/daily.mjs
 //   菜單(暖身第一、順序固定、還沒開放的路線、到期複習一天一題)、慢練優先、速度階梯、連續 N 次穩才過關、失手重算、退速度、建議回上一關、
-//   快速通道(開 / 關)、回上一關、歡迎回來(≥ 7 天)、複習盒與變化(穩 → 下一盒、不穩 → 上一盒隔天)、拍點模式、跨午夜換日、消毒、沒練不扣分
+//   快速通道(開 / 關)、回上一關、歡迎回來(≥ 7 天)、複習盒與變化(穩 → 下一盒、不穩 → 上一盒隔天)、拍點模式、跨午夜換日、消毒、沒練不扣分、新路線開放那一天
 import { pick as pickMs, byId as msById, MILESTONES } from "../../../js/shared/milestone.js";
 import { createDaily, cleanDaily, buildPlan, clickPlays, gapBars, verdictOf, addDays, dayNum, DEFAULT_VARY, REVIEW_GAPS, SEG_SEC, METRO, tempoUp, tempoDown } from "../../../js/shared/daily.js";
 
@@ -78,6 +78,11 @@ export default function check(ok){
   const sum = d.summary({ "2026-10-19": { n: 1, sec: 300 }, "2026-10-17": { n: 2, sec: 60 }, "2026-10-01": { n: 1, sec: 1 } });
   ok(sum.segs === 2 && sum.passed === 1 && sum.week === 2 && sum.tomorrow.map(l => l.id).join() === "A2,B1" && sum.review && sum.review.id === "A1",
     "完成摘要:2 段、過 1 關、最近 7 天 2 天、明天 A2 + B1 + 複習 A1:" + JSON.stringify({ ...sum, tomorrow: sum.tomorrow.map(l => l.id), review: sum.review && sum.review.id }));
+  // 新路線開放(練完卡一句;開放條件那一關今天過的才說,一輩子一次)
+  ok(d.opened().map(R => R.id).join() === "b" && d.data.open.b === "2026-10-19" && d.opened().length === 1, "今天開放的路線 = b(記在 open,同一天重畫照樣有)");
+  ok(cleanDaily({ open: { b: "2026-10-19", a: "2026-10-19", zz: "2026-10-19" } }, ROUTES).open.b === "2026-10-19" && Object.keys(cleanDaily({ open: { b: "2026-10-19", a: "2026-10-19", zz: "2026-10-19" } }, ROUTES).open).join() === "b"
+    && Object.keys(cleanDaily({ open: { b: "x" } }, ROUTES).open).length === 0 && Object.keys(cleanDaily({ open: [1] }, ROUTES).open).length === 0, "新路線開放:消毒(只留有 unlock 的路線、日期)");
+  ok(mk({ lv: { "a/A1": { passed: "2026-10-01" } } }).d.opened().length === 0, "新路線開放:以前就開放的不補說");
   // 再練一下:約 5 分鐘 = 還沒過的那一關(進度比較慢的路線:b 剛開放)+ 一題沒到期的複習(不改排程)
   s = d.addExtra();
   ok(s && s.r === "b" && s.lv === "B1" && d.state() === "run" && d.plan().length === 4 && d.plan()[3].k === "review" && d.plan()[3].extra && d.plan()[3].lv === "A1",
@@ -92,6 +97,7 @@ export default function check(ok){
   plan = d.plan();
   ok(plan.length === 4 && plan[0].k === "warm" && plan.some(p => p.k === "review" && p.lv === "A1" && p.box === 1) && plan.some(p => p.r === "b" && p.k === "route"), "隔天:暖身 + a + b + 複習:" + JSON.stringify(plan));
   ok(d.state() === "idle", "換日重排(還沒開始)");
+  ok(d.opened().length === 0, "新路線開放:隔天不再說");
   const orders = new Set();
   for (let i = 0; i < 6; i++) orders.add(buildPlan({ routes: ROUTES, daily: d.data, today: addDays("2026-10-20", i), extras: { warm: () => ({}) } }).map(p => p.k + (p.r || "")).join(","));
   ok(orders.size === 1 && [...orders][0] === "warm,routea,routeb,reviewa", "每天順序固定:暖身 → 主要路線 → 第二條路線 → 複習:" + [...orders].join(" | "));
@@ -185,6 +191,17 @@ export default function check(ok){
   const m = mk(null, {}); m.d.begin(); m.d.attempt({ bpm: 60, self: "ok" });
   const again = createDaily({ routes: ROUTES, load: () => m.store, now });
   ok(again.bpmFor("a", "A1") === 63 && again.state() === "run" && again.seg().lv === "A1", "存檔 → 讀回來接著練");
+  // 今天的速度進步(練完卡沒過關那天的進步句):今天第一次 → 今天最快,升最多的那一關;存回去讀得回來;消毒;隔天重置
+  ok(m.d.summary().climb === null, "速度進步:60 穩一次還沒彈過 63 → 沒有升");
+  m.d.attempt({ bpm: 63, self: "ok" }); m.d.attempt({ bpm: 66, self: "again" });
+  const cl = m.d.summary().climb;
+  ok(cl && cl.level.id === "A1" && cl.from === 60 && cl.to === 66 && cl.target === 69, "速度進步:今天 60 → 66(目標 69):" + JSON.stringify(cl && { id: cl.level.id, from: cl.from, to: cl.to }));
+  const ccl = createDaily({ routes: ROUTES, load: () => m.store, now }).summary().climb;
+  ok(ccl && ccl.from === 60 && ccl.to === 66, "速度進步:存檔讀回來一樣");
+  const ct = cleanDaily({ today: { date: "2026-10-19", plan: [{ k: "route", r: "a", lv: "A1" }], tempo: { "a/A1": [60, 999], "a/A2": [70, 50], "q/Q1": [60, 66], "a/A3": "x" } } }, ROUTES, "2026-10-19").today.tempo;
+  ok(eq(ct, { "a/A1": [60, 300], "a/A2": [70, 70] }), "速度進步:消毒(數字夾住、最快不低於第一次、未知關丟掉):" + JSON.stringify(ct));
+  ok(eq(cleanDaily({ today: { date: "2026-10-19", plan: [{ k: "warm" }], tempo: 5 } }, ROUTES, "2026-10-19").today.tempo, {}), "速度進步:亂資料 → 空的");
+  { const c0 = clock; clock = new Date(2026, 9, 20, 9, 0); ok(createDaily({ routes: ROUTES, load: () => m.store, now }).summary().climb === null, "速度進步:隔天重置"); clock = c0; }
   ok(dayNum("2026-10-20") - dayNum("2026-10-19") === 1 && addDays("2026-12-31", 1) === "2027-01-01" && addDays("2026-03-01", -1) === "2026-02-28", "日期換算");
   ok(REVIEW_GAPS.join() === "1,3,7,14,30", "複習間隔 1、3、7、14、30 天");
   // 節拍器刻度:往上 / 往下一格;不在刻度上的速度、刻度以外

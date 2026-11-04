@@ -28,7 +28,7 @@
      打完整段在裝置上找起音(全部鼓件合併成一條,只評時間),預備拍的拍點被收進去的拿掉(dropBleed);拒絕權限 / 沒有麥克風:這一次照鼓墊評分、說明原因
    - localStorage drumdrill.sight.v1:{ metroPractice, clickPerform, bpmOverride:{ "rsl-3": 75, "rhythm-2": 90 }(檢定頁每一級 / 視奏頁每個分類的每個難度), history(出過的題目指紋),
      stats:{ "rsl-3": {n, hits, total} }(檢定頁的題目), cats:{ rhythm: {n, hits, total} }(視奏頁), level:{ rhythm: 2 }、streak(level.js), log:{ 日期: {n, sec} },
-     goal(每週目標分鐘), mockRun(進行中的模擬考標記), layout:{ 形狀: {measuresPerLine, zoom} } }
+     goal、goalSet(每週目標分鐘;自己點過才 true), mockRun(進行中的模擬考標記), layout:{ 形狀: {measuresPerLine, zoom} } }
      讀進來先消毒:bpmOverride 夾在 30–240、不是有限數的刪掉;layout 每一項 zoom 夾在 0.45–1、每行小節數不對的刪掉;stats、cats、log 的數字;舊版的 pick 丟掉 */
 import { tr, T as TS, scoped, getLang, pairText } from "../shared/i18n.js";
 import { playbackFor } from "../shared/examdata.js";
@@ -49,7 +49,7 @@ import { genSnare, SNARE_GRADES } from "./gen.js";
 import { timeline, clickAt, barAt } from "./meter.js";
 import { createHistory, generateUnique } from "./fingerprint.js";
 import { randomSeed } from "./random.js";
-import { addLog, cleanLog, renderLog as paintLog, today, nextGoal, cleanGoal } from "../shared/practicelog.js";
+import { addLog, cleanLog, renderLog as paintLog, today, tapGoal, loadGoal } from "../shared/practicelog.js";
 import { createMock, abortText, paintCard, resultNote, mockLabel, cardToTop } from "../shared/mock.js";
 import { createMicTake, dropBleed, MIC_LANES, MIC_TEXT, micFailText, MIC_UI } from "../shared/micrhythm.js";
 import { createLevels, levelText, paintVotes, paramDesc, valueList } from "../shared/level.js";
@@ -97,7 +97,7 @@ const SS = (() => {
     s.cats[k] = { n: cnt(v.n), total: cnt(v.total), hits: Math.min(cnt(v.hits), cnt(v.total)) };
   }
   s.log = cleanLog(s.log);
-  s.goal = cleanGoal(s.goal);
+  Object.assign(s, loadGoal(s));   // 每週目標(goalSet = 自己點過;舊資料存 60 沒點過 → 40)
   s.read = cleanRead(s.read);
   // 第一次進來各分類的一行說明(題目卡狀態那行):正式打完一題的分類 = true
   { const o = {}; if (s.intro && typeof s.intro === "object") for (const c of CATS) if (s.intro[c] === true) o[c] = true; s.intro = o; }
@@ -1476,7 +1476,7 @@ function renderLog(){
   paintLog($, SS.log, SS.goal);
   $("logMin").textContent = Math.floor(today(SS.log).sec / 60);
 }
-$("goalBtn").onclick = () => { SS.goal = nextGoal(SS.goal); save(); renderLog(); };
+$("goalBtn").onclick = () => { tapGoal(SS); save(); renderLog(); };
 /* 各分類練過題數 + 目前難度(視奏分頁的題目;長條 = 鼓墊或麥克風的節奏命中率,練習回饋,檢定頁不放) */
 function renderStats(){
   // 沒有資料(還沒練過任何一題)、認譜、檢定頁:整張藏起來(不放一張全是 0 的卡)

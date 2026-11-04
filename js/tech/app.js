@@ -11,7 +11,7 @@ import { createScore } from "../shared/score.js";
 import { announce } from "../shared/a11y.js";
 import { createTempo } from "../shared/tempo.js";
 import { fitLandZoom, createLandPlay } from "../shared/landscape.js";
-import { addLog, renderLog as paintLog, today, nextGoal, cleanGoal } from "../shared/practicelog.js";
+import { addLog, renderLog as paintLog, today, tapGoal } from "../shared/practicelog.js";
 import { createMock, abortText, paintCard, resultNote, mockLabel, cardToTop } from "../shared/mock.js";
 import { createDaily, clickPlays, dayNum } from "../shared/daily.js";
 import { createDailyCard } from "../shared/dailycard.js";
@@ -861,7 +861,7 @@ function renderLog(){
   paintLog($, S.log, S.goal);
   $("logMin").textContent = Math.floor(today(S.log).sec / 60);
 }
-$("goalBtn").onclick = () => { S.goal = nextGoal(S.goal); store.save(); renderLog(); };
+$("goalBtn").onclick = () => { tapGoal(S); store.save(); renderLog(); };
 
 /* ══ 模擬考(S14;js/shared/mock.js):RSL 照考試形式,每一組抽一項(考官從每一組抽一部分考 [RSL §3.1]),依組的順序一項一項;
    只抽 App 能直接練的(pas = PAS 原譜、pattern = 依大綱時值的練習型);只有檢定書譜的組(Fill 等)顯示「這一組請用檢定書練」並跳過。
@@ -1249,7 +1249,6 @@ function dNext(){
 /* ── 啟動(外框呼叫)── */
 export async function start(c){
   ctx = c; exam = c.exam;
-  S.goal = cleanGoal(S.goal);
   renderLog();
   dcard.render();
   replanWarm();
