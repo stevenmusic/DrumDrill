@@ -16,7 +16,7 @@
 | 支援頁(中英) | `support.html` → `https://stevenmusic.github.io/DrumDrill/support.html`(常見問題、GitHub 回報;支援信箱設好才顯示寄信) |
 | 授權與出處(中英) | `licenses.html`(Naked Drums CC BY 4.0 + 修改說明、OSMD BSD-3 全文、PAS 出處、商標聲明) |
 | 麥克風 | **目前版本未開放**(畫面藏起來,之後再開);開放時視奏「正式打」、聽力「接著打」可選用(S15):**要加** `NSMicrophoneUsageDescription` 與中英文 InfoPlist.strings(`docs/IOS.md` 第 4 節)、AudioSession 外掛(第 3b 節) |
-| 商店截圖 | **還沒有**(第 7 節的清單;要真實畫面) |
+| 商店截圖 | `app/screenshots/{zh,en}/`:iPhone 6.9 吋 1290×2796、iPad 13 吋 2064×2752 各 5 張(真實畫面、沒有透明通道);`node tools/test/appshots.mjs` 重新產生(第 7 節) |
 
 ## 2. 2026 年的硬性規定(先看)
 
@@ -86,20 +86,20 @@
 
 | 尺寸 | 像素(直式) | 狀態 |
 |---|---|---|
-| iPhone 6.9 吋 | 1320×2868(或 1290×2796、1260×2736) | 要做 |
-| iPhone 6.5 吋 | 1284×2778(或 1242×2688) | 要做(沒有 6.9 吋時才是必填,一起準備比較保險) |
-| iPad 13 吋 | 2064×2752(或 2048×2732) | 要做(App 支援 iPad 就必填) |
+| iPhone 6.9 吋 | 1320×2868(或 1290×2796、1260×2736) | **做好了**:1290×2796(430×932 × 3) |
+| iPhone 6.5 吋 | 1284×2778(或 1242×2688) | 不另外做(有 6.9 吋就不是必填;Apple 會縮給較小的裝置) |
+| iPad 13 吋 | 2064×2752(或 2048×2732) | **做好了**:2064×2752(1032×1376 × 2) |
 
-- 每個尺寸 1–10 張,PNG / JPEG,**不能有透明通道**。Apple 會把最大尺寸縮給較小的裝置用。
-- Apple 的規格頁(2026-10)同時寫了「iPhone 至少一張 Dynamic Island(中尺寸,6.3 吋 1206×2622)」;上傳時看 App Store Connect 實際要求哪一格,要的話用同一組畫面輸出 1206×2622。
+- 每個尺寸 1–10 張,PNG / JPEG,**不能有透明通道**(Playwright 存的 PNG 是 RGB)。Apple 會把最大尺寸縮給較小的裝置用。
+- Apple 的規格頁(2026-10)同時寫了「iPhone 至少一張 Dynamic Island(中尺寸,6.3 吋 1206×2622)」;上傳時看 App Store Connect 實際要求哪一格,要的話在 `appshots.mjs` 加一個 402×874 × 3 的尺寸。
 - 一定要是 App 的真實畫面(審核 2.3.3),不要放考試機構的標誌;可以加簡短的說明文字,但不要寫「官方」。
-- 建議的 5 張(兩種語言各一套,語言用頂欄的語言按鈕切):
-  1. 檢定分頁:選好 RSL 3 級的考試摘要與要求清單(看得到頁碼與「僅供練習」)
-  2. 技巧:#16 Single Paradiddle 的鼓譜(左右手、播放軸)
-  3. 視奏:RSL 4 級整組鼓譜 + 圖例 + 觸控鼓墊
-  4. 聽力:RSL Fill 的選譜作答
-  5. 聽力:Trinity Playback 回打(句子與空檔)
-- 產生方式:PianoDrill 有 `tools/test/appshots.mjs`(Playwright 依尺寸截圖),DrumDrill 還沒有,要照它做一支或在模擬器 / 實機截圖。
+- 5 張(中英同一組畫面、同一題;檔名 `app/screenshots/{zh,en}/{iphone,ipad13}-n-名稱.png`;照 PianoDrill 的順序,今日練習放第一張):
+  1. `1-today` 今日練習開始後:律動 8 / 30「大鼓加在 3&」(題目卡 + 重點 + 鼓譜(標示左右手)+ 圖例 + 鼓墊)
+  2. `2-paradiddle` 技巧:#16 Single Paradiddle(鼓譜、R / L、速度卡)
+  3. `3-sight` 視奏:鼓組譜 8 小節(圖例 + 鼓墊)
+  4. `4-ear` 聽力:過門(聽一遍、照節奏打回來後「哪一個是剛才的過門?」A / B 兩份譜)
+  5. `5-exam` 檢定:RSL 3 級(考試卡 + 本級要求清單)
+- 產生方式:`node tools/test/appshots.mjs` 重新產生(Playwright;固定亂數種子讓中英、iPhone / iPad 同一題;練習紀錄與今日練習進度塞幾天假資料,紀錄卡與路線才不是空的)。改了畫面就重跑一次,上傳前每張看過:載入完、沒有「載入中」、沒被切掉。
 
 ## 8. 年齡分級
 
@@ -164,5 +164,5 @@
 2. 在 Mac 上照 `docs/IOS.md` 做:`cap add ios`、AppDelegate、AudioSession 外掛(第 3b 節)、Info.plist(含麥克風)、InfoPlist.strings、PrivacyInfo.xcprivacy、圖示、Archive、TestFlight。
 3. 實機測試(第 14 節),特別是「邊放音樂邊練」(`docs/IOS.md` 第 3 節還沒解決的那一點)。
 4. 支援信箱:要不要公開一個 Email?要的話填在 `support.html` 的 `APP.EMAIL`(空白時只顯示 GitHub 回報)。
-5. 截圖(第 7 節)、英文名稱是否被用掉(第 3 節)、中國大陸是否上架(第 12 節)。
+5. 上傳截圖(第 7 節;已產生,上傳前看過一次)、英文名稱是否被用掉(第 3 節)、中國大陸是否上架(第 12 節)。
 6. 寄信給 Trinity、RSL、PAS(第 13 節)。
