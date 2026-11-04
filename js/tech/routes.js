@@ -33,7 +33,7 @@ const GROOVE = [
   { id: "B1", g: "B", name: c("右手八分、大鼓 1、3", "Eighths over kick on 1 & 3"), start: 60, target: 92, pat: { hh: E8, bd: BD13 },
     check: [c("右手平均、不停", "Right hand even, never stops"), c("數 1 & 2 & 3 & 4 &(& 唸 and = 拍子的後半)", "Count 1 & 2 & 3 & 4 & (& = the second half of the beat)")] },
   { id: "B2", g: "B", name: c("8 Beat 基本節奏", "Basic 8-beat"), start: 60, target: 100, pat: BEAT8,
-    check: [c("之後每一關的底子", "The base for every level after"), c("Hi-hat 每一下一樣大", "Even hi-hat"), c("小鼓 2、4 打清楚", "Clear snare on 2 & 4")] },
+    check: [c("之後每一關都從這個節奏變化", "Every level after builds on this"), c("Hi-hat 每一下一樣大", "Even hi-hat"), c("小鼓 2、4 打清楚", "Clear snare on 2 & 4")] },
   { id: "B3", g: "B", name: c("大鼓加在 3&", "Kick on 3&"), start: 60, target: 96, pat: { ...BEAT8, bd: "x--- ---- x-x- ----" },
     check: [c("3& 的大鼓跟 Hi-hat 同時", "The 3& kick lands with the hi-hat"), c("手不要跟著腳變", "Hands stay the same")] },
   { id: "B4", g: "B", name: c("大鼓加在 1&", "Kick on 1&"), start: 60, target: 96, pat: { ...BEAT8, bd: "x-x- ---- x--- ----" },
@@ -54,7 +54,7 @@ const GROOVE = [
   { id: "C3", g: "C", name: c("Cross stick 抒情節奏", "Cross-stick ballad"), start: 56, target: 80, pat: { hh: E8, xs: SD24, bd: BD13 },
     check: [c("左手鼓棒平放,敲鼓框", "Left stick flat, click the rim"), c("比 Hi-hat 小聲、柔和", "Softer than the hi-hat")] },
   { id: "C4", g: "C", name: c("Half-time(小鼓在第 3 拍)", "Half-time feel"), start: 60, target: 96, pat: { hh: E8, sd: "---- ---- x--- ----", bd: "x--- --x- ---- ----" },
-    check: [c("小鼓只在第 3 拍", "Snare only on 3"), c("感覺慢一半,Hi-hat 照常", "Feels half as fast; hi-hat as usual")] },
+    check: [c("小鼓只在第 3 拍", "Snare only on 3"), c("Half-time = 聽起來慢一半,Hi-hat 照常", "Half-time = feels half as fast; hi-hat as usual")] },
   { id: "C5", g: "C", name: c("讀小鼓(每天不一樣)", "Read the snare (new daily)"), start: 60, target: 88, pat: { hh: E8, sd: "@snare8", bd: BD13 },
     check: [c("先看譜再打", "Read it before you play"), c("右手不停", "Right hand keeps going")] },
   // ── D 加入左腳(四肢;先換到 Ride,再加左腳:每一關只加一件新東西)──
@@ -73,18 +73,18 @@ const GROOVE = [
   // ── E 十六分音符(預設不標左右手)──
   { id: "E1", g: "E", name: c("十六分 Hi-hat(一隻手)", "16th-note hi-hat, one hand"), start: 50, target: 76, rl: false, pat: { hh: S16, sd: SD24, bd: BD13 },
     check: [c("手腕放鬆,用彈的", "Loose wrist, let it bounce"), c("小鼓那一下 Hi-hat 照打", "Keep the hi-hat going on the snare")] },
-  { id: "E2", g: "E", name: c("大鼓在 2 拍最後一個十六分", "Kick on the 'a' of 2"), start: 50, target: 76, rl: false, pat: { hh: S16, sd: SD24, bd: "x--- ---x x--- ----" },
-    check: [c("數 1 e & a", "Count 1 e & a"), c("那一下大鼓緊貼著 3", "That kick leads straight into 3")] },
+  { id: "E2", g: "E", name: c("大鼓在 2a", "Kick on 2a"), start: 50, target: 76, rl: false, pat: { hh: S16, sd: SD24, bd: "x--- ---x x--- ----" },
+    check: [c("數 1 e & a(把一拍分成四份來數)", "Count 1 e & a (each beat split into four)"), c("2a 的大鼓緊貼著 3", "The 2a kick leads straight into 3")] },
   { id: "E3", g: "E", name: c("八分 Hi-hat 下的十六分大鼓", "16th kick under eighth hi-hat"), start: 56, target: 84, rl: false, pat: { hh: E8, sd: SD24, bd: "x--- ---x x-x- ----" },
     check: [c("大鼓落在兩下 Hi-hat 中間", "The kick falls between hi-hat notes"), c("心裡數十六分", "Count 16ths in your head")] },
   // ── F 三連音感(預設不標左右手)──
   { id: "F1", g: "F", name: c("12/8 抒情節奏", "12/8 ballad"), time: "12/8", start: 40, target: 60, rl: false,
     pat: { hh: "xxx xxx xxx xxx", sd: "--- x-- --- x--", bd: "x-- --- x-- ---" },
-    check: [c("一拍三下平均", "Three even notes per beat"), c("小鼓在第 2、4 大拍", "Snare on big beats 2 & 4")] },
+    check: [c("一拍三下平均", "Three even notes per beat"), c("小鼓在第 2、4 拍", "Snare on beats 2 & 4")] },
   { id: "F2", g: "F", name: c("Shuffle", "Shuffle"), start: 60, target: 96, rl: false, pat: { hh: "x-x x-x x-x x-x", sd: "--- x-- --- x--", bd: "x-- --- x-- ---" },
-    check: [c("長—短、長—短", "Long–short, long–short"), c("第二下是三連音的最後一個", "The short note is the last triplet")] },
+    check: [c("Shuffle:一拍分三份,打第 1、3 份", "Shuffle: split each beat in 3, play the 1st and 3rd"), c("所以 Hi-hat 聽起來一長一短", "So the hi-hat sounds long, short")] },
   { id: "F3", g: "F", name: c("Shuffle 大鼓接一下", "Shuffle with a kick pickup"), start: 60, target: 92, rl: false, pat: { hh: "x-x x-x x-x x-x", sd: "--- x-- --- x--", bd: "x-- --x x-- ---" },
-    check: [c("2 拍最後那下大鼓接到 3", "The last triplet of 2 leads into 3"), c("Hi-hat 照樣長—短", "Hi-hat stays long–short")] }
+    check: [c("第 2 拍最後那下大鼓接到第 3 拍", "The last kick of beat 2 leads into 3"), c("Hi-hat 照樣一長一短", "Hi-hat stays long, short")] }
 ];
 
 const FILLS = [
@@ -116,7 +116,7 @@ const FILLS = [
     check: [c("兩手交替 RLRL", "Alternate RLRL"), c("八下一樣大", "All eight even")] },
   { id: "FB4", g: "FB", name: c("八分接十六分", "Eighths, then 16ths"), start: 60, target: 88,
     pat: fill({ hh: HH12, sd: "---- x--- x-x- ----", t1: "---- ---- ---- xx--", ft: "---- ---- ---- --xx", bd: BD1 }),
-    check: [c("換成十六分不要搶拍", "Don't rush into the 16ths"), c("落地鼓那兩下不要晚", "Floor tom notes on time")] },
+    check: [c("換成十六分不要打太快、跑到拍子前面", "On the 16ths, don't get ahead of the beat"), c("落地鼓那兩下不要晚", "Floor tom notes on time")] },
   { id: "FB5", g: "FB", name: c("繞鼓 2-2-2-2", "Around the drums, 2 each"), start: 60, target: 84, rl: false,
     pat: fill({ hh: HH12, sd: "---- x--- xx-- ----", t1: "---- ---- --xx ----", t2: "---- ---- ---- xx--", ft: "---- ---- ---- --xx", bd: BD1 }),
     check: [c("手臂帶著移動", "Move from the arm"), c("每個鼓音量一樣", "Even on every drum")] },
@@ -133,10 +133,10 @@ const FILLS = [
   // ── FT 三連音的過門(預設不標左右手)──
   { id: "FT1", g: "FT", name: c("第 4 拍三連音", "Triplet on beat 4"), start: 60, target: 88, rl: false,
     pat: fill({ hh: HH123, sd: "---- x--- ---- xxx", bd: BD13 }),
-    check: [c("三下平均", "Three even notes"), c("回到 1 不要搶", "Don't rush back to 1")] },
+    check: [c("三下平均", "Three even notes"), c("回到 1 不要太早", "Don't come back to 1 early")] },
   { id: "FT2", g: "FT", name: c("兩拍三連音", "Two beats of triplets"), start: 60, target: 84, rl: false,
     pat: fill({ hh: HH12, sd: "---- x--- xxx ---", t1: "---- ---- --- xx-", ft: "---- ---- --- --x", bd: BD1 }),
-    check: [c("數 1-2-3、2-2-3", "Count 1-2-3, 2-2-3"), c("兩手交替", "Alternate hands")] },
+    check: [c("每拍數三下:1-2-3、2-2-3", "Count 3 per beat: 1-2-3, 2-2-3"), c("兩手交替", "Alternate hands")] },
   { id: "FT3", g: "FT", name: c("三連音繞鼓", "Triplets around the drums"), start: 56, target: 80, rl: false,
     pat: fill({ sd: "xxx --- --- ---", t1: "--- xxx --- ---", t2: "--- --- xxx ---", ft: "--- --- --- xxx", bd: "x-- --- --- ---" }),
     check: [c("三下一組平均", "Even groups of three"), c("換鼓不斷", "No gap between drums")] },
@@ -174,7 +174,7 @@ const WHY_FILL = {
   FA: c("過門是告訴大家要換段了,先練打完準時回到 1", "A fill says a new section is coming; first, land back on 1"),
   FB: c("十六分的過門最常用,練到換鼓也不掉拍", "16th fills are the most common; move drums and keep the time"),
   FC: c("整小節的過門常用在副歌前,從頭到尾速度不能變", "Full-bar fills often lead into a chorus; hold the tempo through"),
-  FT: c("8 Beat 的歌也常用三連音過門,練到回 1 不搶拍", "Triplet fills show up in 8-beat songs too; don't rush back to 1"),
+  FT: c("8 Beat 的歌也常用三連音過門,練到回 1 不會太早", "Triplet fills show up in 8-beat songs too; land on 1 on time"),
   FD: c("歌是四小節一句,數著小節,過門才不會早或晚", "Songs move in 4-bar phrases; count bars so the fill lands right")
 };
 export const ROUTES = [
