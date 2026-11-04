@@ -10,6 +10,9 @@
    - 切到背景(visibilitychange / pagehide)或聲音被系統打斷:目前的模組 leave() + 全部停止;回到前景再 enter() */
 import { tr, T, applyStatic, setLang, getLang, onLang } from "./shared/i18n.js";
 import * as audio from "./shared/audio.js";
+import { exportAll, validate, importAll, MAX_BYTES } from "./shared/backup.js";
+import { build as buildDigest } from "./shared/digest.js";
+import { dayKey } from "./shared/practicelog.js";
 import * as tech from "./tech/app.js";
 import * as sight from "./sight/app.js";
 import * as ear from "./ear/app.js";
@@ -78,6 +81,24 @@ const appCtx = async () => {
     // 麥克風評分的開關(drumdrill.v1 的 mic;視奏的正式打、聽力的回打共用,換分頁也一樣)
     micPref: () => S.mic, setMicPref: on => { S.mic = !!on; save(); } };
 };
+/* 頁尾「備份紀錄」(js/shared/backup.js):備份檔的 App 名、localStorage 的前綴(drumdrill.*)與語言 key(js/shared/i18n.js 的 LANG_KEY);name = 檔名開頭 */
+const BACKUP = { app: "drumdrill", name: "DrumDrill", prefix: "drumdrill.", langKey: "drumdrill-lang" };
+/* 頁尾「分享本週摘要」(js/shared/digest.js)要的資料:三個分頁的練習紀錄(各模組 localStorage 的 log)+ 這幾天今日練習過了的關卡名稱(技巧的 daily.lv[…].passed;律動 / 過門)。
+   同步讀(分享面板要在點擊的當下打開);關卡名稱用 js/tech/routes.js(技巧模組本來就載入了) */
+let digestRoutes = [];
+import("./tech/routes.js").then(m => { digestRoutes = m.ROUTES || []; }).catch(() => {});
+function digestData(days){
+  const read = k => { try { const o = JSON.parse(localStorage.getItem(k) || "null"); return o && typeof o === "object" ? o : {}; } catch (e) { return {}; } };
+  const tech = read("drumdrill.tech.v1"), sight = read("drumdrill.sight.v1"), ear = read("drumdrill.ear.v1");
+  const lv = tech.daily && typeof tech.daily.lv === "object" && tech.daily.lv ? tech.daily.lv : {};
+  const passed = Object.entries(lv).filter(([, e]) => e && days.includes(e.passed)).sort((a, b) => (a[1].passed < b[1].passed ? -1 : 1));
+  const daily = [];
+  for (const [k] of passed) {
+    const [r, id] = k.split("/"), R = digestRoutes.find(x => x.id === r), L = R && R.levels.find(l => l.id === id);
+    if (L && L.name) daily.push(L.name);
+  }
+  return { mods: { tech: tech.log, sight: sight.log, ear: ear.log }, daily };
+}
 // @app-end
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
 const GRADES = [0, 1, 2, 3, 4, 5, 6, 7, 8];
@@ -217,7 +238,7 @@ function showView(view, sub){
   balanceSoon();
 }
 /* ══ 寬畫面(≥ 1100)兩欄高度接近(使用者:左欄下面不要空一大塊):練習紀錄卡(id 結尾 logCard)放在比較矮的那一欄最下面
-   (照其他卡片的高度決定,搬過去不會再來回);左欄沒有東西(例如今日練習進行中:選擇器、紀錄都藏起來)= 一欄(.mod.one-col,app.css)。
+   (照其他卡片的高度決定,搬過去不會再來回);左欄沒有東西(例如今日練習進行中:選擇器、紀錄都藏起來)或只剩練習紀錄(今日練習還沒開始:紀錄搬到今日練習卡下面)= 一欄(.mod.one-col,app.css)。
    窄畫面、檢定頁放回原處 */
 const WIDE = matchMedia("(min-width:1100px)");
 function balanceCols(){
@@ -230,11 +251,12 @@ function balanceCols(){
     if (mod.hidden || !WIDE.matches || document.body.classList.contains("view-exam")) { if (!mod.hidden) { home(); mod.classList.remove("one-col"); } continue; }
     const shown = el => !el.hidden && getComputedStyle(el).display !== "none";
     const h = col => [...col.children].filter(c => c !== log && shown(c)).reduce((a, c) => a + c.getBoundingClientRect().height + 16, 0);
+    const others = [...side.children].some(c => c !== log && shown(c));   // 左欄除了練習紀錄還有別的
     if (log && shown(log)) {
-      const want = h(side) <= h(main) ? side : main;
+      const want = others && h(side) <= h(main) ? side : main;
       if (log.parentNode !== want) { if (want === log._home.parent) home(); else want.appendChild(log); }
     }
-    mod.classList.toggle("one-col", ![...side.children].some(shown));
+    mod.classList.toggle("one-col", !others);
   }
 }
 let balanceRaf = 0;
@@ -309,7 +331,7 @@ function renderExamCard(){
 export function examChanged(){ if (S.view === "exam") renderExamCard(); }
 
 /* ══ 第一次打開:在準備考試嗎? ══
-   無障礙:對話框打開時焦點移進去(第一個按鈕)、Tab 只在對話框 + 頂欄右邊的主題 / 語言鈕之間轉(頂欄在對話框上面,可以邊選邊換語言)、
+   無障礙:對話框打開時焦點放在標題(不放 ABRSM,免得看起來像已選),Tab 才進第一顆、Tab 只在對話框 + 頂欄右邊的主題 / 語言鈕之間轉(頂欄在對話框上面,可以邊選邊換語言)、
    Esc = 「不考試,自由練習」;背景(內容、分頁列、子項目分段鈕、頂欄的考試標籤)設 inert;關掉時焦點回到打開前的地方(沒有就回到選到的分頁) */
 const ob = { system: null, grade: null };   // 第一次的問題:系統、級數都不預選(跟檢定頁「沒選不亮」一樣)
 let obReturn = null;
@@ -320,8 +342,8 @@ function openOnboard(){
   obReturn = document.activeElement && document.activeElement !== document.body ? document.activeElement : null;
   $("onboard").hidden = false;
   for (const el of OB_BG()) el.inert = true;
-  const first = $("onboard").querySelector("#obSystem button") || obFocusables()[0];
-  if (first) first.focus();
+  // 焦點放在標題(螢幕報讀先唸問題);不放在 ABRSM,否則焦點框看起來像已經選了(沒選考試時系統鈕都不亮)
+  $("onboardTitle")?.focus();
 }
 function closeOnboard(){
   $("onboard").hidden = true;
@@ -337,7 +359,8 @@ document.addEventListener("keydown", e => {
   const f = obFocusables(); if (!f.length) return;
   const i = f.indexOf(document.activeElement);
   e.preventDefault();   // 每一下都自己移(頂欄右邊的鈕跟對話框在 DOM 裡不相鄰,交給瀏覽器會跑到子項目分段鈕)
-  f[i < 0 ? 0 : (i + (e.shiftKey ? -1 : 1) + f.length) % f.length].focus();
+  const ob0 = f.findIndex(el => $("onboard").contains(el));   // 從標題按 Tab = 對話框第一顆(ABRSM),Shift+Tab = 最後一顆
+  f[i < 0 ? (e.shiftKey ? f.length - 1 : Math.max(ob0, 0)) : (i + (e.shiftKey ? -1 : 1) + f.length) % f.length].focus();
 });
 function showOnboard(){
   // 沒選級數時「開始準備考試」不能按;先點級數 = 預設的系統(跟檢定頁一樣)
@@ -409,6 +432,76 @@ document.addEventListener("keydown", e => {
   if ((e.code === "Space" || e.key === "Enter") && e.target.closest && e.target.closest("button, a, [role=tab]") && e.target.matches(":focus-visible")) return;
   if (curMod) MODS[curMod].onKey(e);
 });
+
+/* ══ 頁尾:備份紀錄(兩個 App 一樣;js/shared/backup.js)══
+   「備份紀錄」點了在頁尾下面展開一小塊(不跳視窗):一行說明 + 「存成檔案」「從檔案還原」。
+   存:App 版(Capacitor 的 Filesystem + Share 外掛)寫到暫存再打開分享面板(可以存到「檔案」、傳給自己);
+       網頁版手機能分享檔案就用分享面板,其他(桌機)直接下載。檔名「PianoDrill-紀錄-2026-11-04.json」
+   還原:選檔 → 檢查(壞檔在這一塊寫一句原因)→ 確認 → 先讓目前的模組停下來(跟切到背景一樣,不會再把舊的紀錄存回去)→ 寫入 → 重新整理 */
+const BAK_OPT = { app: BACKUP.app, prefix: BACKUP.prefix, langKey: BACKUP.langKey };
+const bakMsg = t => { $("bakMsg").textContent = t; };
+$("bakLink").onclick = () => {
+  const open = $("bakPanel").hidden;
+  $("bakPanel").hidden = !open; $("bakLink").setAttribute("aria-expanded", String(open)); bakMsg("");
+  if (open) requestAnimationFrame(() => window.scrollTo({ top: document.documentElement.scrollHeight }));   // 頁尾在最下面:捲到底,這一塊不被分頁列蓋住
+};
+async function saveFile(name, text){
+  const cap = window.Capacitor && window.Capacitor.Plugins, FS = cap && cap.Filesystem, SH = cap && cap.Share;
+  if (FS && SH) {
+    const { uri } = await FS.writeFile({ path: name, data: text, directory: "CACHE", encoding: "utf8" });
+    await SH.share({ title: name, files: [uri] });
+    return;
+  }
+  // 網頁版:手機(觸控)能分享檔案就用分享面板(iPhone 可以「儲存到檔案」);桌機的分享面板不能存檔,直接下載
+  const file = typeof File === "function" ? new File([text], name, { type: "application/json" }) : null;
+  if (file && matchMedia("(pointer:coarse)").matches && navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: name }); return; }
+  const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+  const a = document.createElement("a"); a.href = url; a.download = name; a.hidden = true;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 30000);
+}
+$("bakSave").onclick = async () => {
+  bakMsg("");
+  const name = `${BACKUP.name}-${T("bak.file")}-${dayKey(new Date())}.json`;
+  try {
+    await saveFile(name, JSON.stringify(exportAll(localStorage, BAK_OPT)));
+    bakMsg(T("bak.saved").replace("{f}", name));
+  } catch (e) {
+    if (e && (e.name === "AbortError" || /cancel/i.test(e.message || ""))) return;   // 使用者關掉分享面板:不算失敗
+    bakMsg(T("bak.err_save"));
+  }
+};
+$("bakLoad").onclick = () => { bakMsg(""); $("bakFile").value = ""; $("bakFile").click(); };
+$("bakFile").onchange = async () => {
+  const f = $("bakFile").files && $("bakFile").files[0]; if (!f) return;
+  if (f.size >= MAX_BYTES) { bakMsg(T("bak.err_toolarge")); return; }
+  let obj = null;
+  try { obj = JSON.parse(await f.text()); } catch (e) { bakMsg(T("bak.err_notfile")); return; }
+  const err = validate(obj, BAK_OPT);
+  if (err) { bakMsg(T("bak.err_" + err)); return; }
+  if (!confirm(T("bak.confirm"))) return;
+  toBackground();   // 目前的模組停止播放與計時、存好現在的;之後切到背景 / 重新整理不會再存一次(inBackground)
+  if (importAll(localStorage, obj, BAK_OPT)) { toForeground(); bakMsg(T("bak.err_write")); return; }
+  location.reload();
+};
+
+/* ══ 頁尾:分享本週摘要(兩個 App 一樣;js/shared/digest.js)══
+   給家長 / 老師的幾行純文字(最近 7 天):App 版用 Capacitor 的 Share 外掛、網頁版 navigator.share;都不能用就複製,旁邊寫「已複製」2 秒 */
+let digestTimer = 0;
+const digestMsg = t => { $("digestMsg").textContent = t || ""; clearTimeout(digestTimer); if (t) digestTimer = setTimeout(() => { $("digestMsg").textContent = ""; }, 2000); };
+$("digestLink").onclick = async () => {
+  const days = [];
+  for (let i = 6; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); days.push(dayKey(d)); }
+  const text = buildDigest({ app: BACKUP.name, days, ...digestData(days), lang: getLang() });
+  const cancelled = e => e && (e.name === "AbortError" || /cancel/i.test(e.message || ""));
+  const SH = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Share;
+  try {
+    if (SH) { await SH.share({ text }); return; }
+    if (navigator.share) { await navigator.share({ text }); return; }
+  } catch (e) { if (cancelled(e)) return; }   // 其他錯誤(不准分享):改成複製
+  try { await navigator.clipboard.writeText(text); digestMsg(T("digest.copied")); }
+  catch (e) { digestMsg(T("digest.fail")); }
+};
 
 /* ── 啟動 ── */
 async function init(){

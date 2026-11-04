@@ -354,6 +354,8 @@ body{background:
 /* 無障礙:鍵盤(Tab、iPad 外接鍵盤)聚焦的地方一定看得到;滑鼠、手指點的不顯示(:focus-visible) */
 :focus-visible{outline:2px solid var(--gold-bright);outline-offset:2px}
 .tabbar button:focus-visible{outline-offset:-3px}
+.seg button:focus-visible{outline-offset:-2px}   /* .seg 有 overflow:hidden,框畫在外面會被切成只剩一邊 */
+#onboardTitle:focus{outline:none}   /* 對話框打開時焦點在標題(給報讀),不畫框 */
 /* 動態字級:控制項(分段鈕、chip、選項、按鈕、分頁列)的字最多放大到 1.3 倍(內文最多 2 倍);
    跟 iOS 一樣:分頁列、分段控制不跟著系統字級一直變大,一排放不下就破版 */
 .seg,.chips,.chip,.opts,.opt,.btn,.mbtn,.play-opts{
@@ -427,8 +429,8 @@ main{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
 .soon{font-size:var(--fs-md);line-height:1.8;color:var(--muted-bright)}
 .score-note{margin-top:8px;font-size:var(--fs-xs);color:var(--muted);line-height:1.6}
 
-/* 第一次打開的問題 */
-.modal{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px}
+/* 第一次打開的問題(遮罩夠深 + 模糊:後面的金色按鈕不會從對話框邊緣透出一條金邊) */
+.modal{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.78);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:16px}
 .modal-card{width:min(440px, 100%);background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);padding:20px;
   display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow-lg)}
 .modal-card h2{font-family:"Noto Serif TC",serif;color:var(--gold-bright);font-size:var(--fs-xl)}
@@ -865,14 +867,19 @@ body.land-play #t-stage{flex:1;display:flex;flex-direction:column;justify-conten
 @media (max-width:400px){ .item-row:has(> .ir-opts:not([hidden])){column-gap:6px;padding:0 4px} .item-row:has(> .ir-opts:not([hidden])) > .btn{padding:0 10px} .item-row:has(> .ir-opts:not([hidden])) > .btn svg{display:none} }
 .item-row .ir-opts[hidden]{display:none}
 .item-row .ir-opts .chip{min-height:44px;height:auto}
-@media (min-width:1100px){ .item-row{grid-column:1 / -1} }
+@media (min-width:1100px){ .item-row{grid-column:1 / -1;padding:0 17px} }   /* 寬畫面:左右對齊卡片裡的內容(卡片內距 16 + 框 1) */
 .q-hint{display:none}
-.quiz.hint-empty > :not(.quiz-top):not(.q-hint):not(.q-foot){display:none}
-.quiz.hint-empty .q-hint{display:block;margin:0;font-size:var(--fs-md);line-height:1.5;color:var(--muted-bright)}
+.quiz.hint-empty > :not(.quiz-top):not(.q-hint):not(.q-foot),:is(#t-quizCard,#s-quiz,#e-quizCard).hint-empty > .q-head{display:none}
+/* 提示與按鈕放得下就同一行(提示左、按鈕右);放不下按鈕緊接在下一行右邊(三個模組一樣;手機橫式的格子也改回這樣) */
+:is(#t-quizCard,#s-quiz,#e-quizCard).hint-empty{display:flex;flex-flow:row wrap;align-items:center;gap:8px 12px}
+#mod-tech .quiz.hint-empty > .q-last{display:flex}
+.quiz.hint-empty > :is(.q-last,.q-foot){flex:0 1 auto;margin-left:auto;min-width:0}
+.quiz.hint-empty .q-hint{display:block;margin:0;flex:1 1 auto;font-size:var(--fs-md);line-height:1.5;color:var(--muted-bright)}
 .quiz.hint-empty .q-actions{flex:1 1 auto;margin-left:0;justify-content:flex-end}
 .quiz.hint-empty .quiz-top > :empty{display:none}
 .quiz.hint-empty :is(#t-drawBtn,#e-drawBtn){height:auto;min-height:44px;padding:0 16px}
 .quiz.hint-empty :is(#t-drawBtn,#e-drawBtn) .btn-label{display:inline !important}
+@media (max-width:300px){ .quiz.hint-empty .q-hint{flex-basis:100%} }   /* 折疊機:提示自己一行、按鈕在下一行右邊(中英一樣高;中文放得下、英文放不下會不一樣) */
 /* 「考試內容」:一張收起來的 details(一行),考試摘要、規格、推估說明、出處都收在這裡;practiceOnly 在最下面一次 */
 details.exam-info{order:20}
 details.exam-info > summary .sub{font-weight:500}
@@ -930,6 +937,7 @@ body.view-exam #t-dailyCard,body.view-exam #t-dailyStep{display:none !important}
 .daily-btn{width:100%;min-height:48px;height:auto;font-size:var(--fs-lg);white-space:normal}
 .daily-note,.daily-sub{font-size:var(--fs-xs);color:var(--muted-bright);line-height:1.5;margin-top:8px}
 .daily-sum{font-size:var(--fs-md);color:var(--ivory);line-height:1.5}
+.daily-ms{margin-top:8px}   /* 里程碑稱讚(練完了卡最後一行;milestone.js) */
 .daily-more{width:100%;min-height:44px;height:auto;margin-top:12px;white-space:normal}
 /* 進行中:一行進度 */
 .daily.daily-run{padding-top:6px;padding-bottom:6px}
@@ -1002,6 +1010,7 @@ body.view-exam #t-dailyCard,body.view-exam #t-dailyStep{display:none !important}
   .mod.one-col{grid-template-columns:minmax(0,1fr)}
   .mod.one-col > .mod-side{display:none}
   .mod.one-col > .mod-main{width:100%;max-width:1100px;margin:0 auto}
+  #mod-tech.today-view:not(.daily-on).one-col > .mod-main{max-width:760px}   /* 今日還沒開始:只有今日卡 + 紀錄,1100 寬會把 7 天的點拉太開 */
 }
 #mod-tech.daily-on #t-metroCard .card-title{flex-wrap:nowrap}
 #mod-tech.daily-on #t-metroCard .card-title b{white-space:nowrap}
@@ -1066,3 +1075,14 @@ body.view-exam :is(#s-setup,#e-setup){order:19}
 .q-tags.wrap,#mod-tech .q-tags.wrap{flex-wrap:wrap;height:auto;overflow:visible;row-gap:4px}
 /* 折疊機(≤ 300):熟練度「會了 / 再練」+ 主要按鈕排不下一行(英文 Needs work 比再練寬),兩種語言都讓主要按鈕整條在下一行(畫面設計版型 B) */
 @media (max-width:300px){ .q-last:has(> .mastery .mbtn:not([hidden])) > .q-actions:has(> button:not([hidden])){flex:1 1 100%} }
+
+/* 頁尾「備份紀錄」(js/shared/backup.js、main.js 共用部分;兩個 App 一樣):文字連結的樣子;點了在頁尾下面展開一小塊(不跳視窗),兩顆按鈕 ≥ 44、中英一樣高 */
+footer .foot-link{display:inline-flex;align-items:center;min-height:44px;padding:0;border:0;background:none;font:inherit;color:var(--muted-bright);text-decoration:underline;cursor:pointer}
+footer .bak{margin-top:4px;padding:10px 0 4px;border-top:1px solid var(--line);font-size:var(--fs-sm);color:var(--muted-bright)}
+footer .bak-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+footer .bak-btns .btn{flex:1 1 10em;height:auto;min-height:44px;white-space:normal;line-height:1.25;text-align:center}
+footer .bak-msg{margin-top:6px}
+footer .bak-msg:empty{display:none}
+/* 頁尾「分享本週摘要」不能分享時複製,旁邊寫「已複製」2 秒(main.js 共用部分) */
+footer .foot-note{margin-left:8px;color:var(--gold);white-space:nowrap}
+footer .foot-note:empty{display:none}

@@ -91,6 +91,10 @@ try { sightmeter(ok); } catch (e) { ok(false, "視奏拍點時間軸檢查出錯
 try { dailycheck(ok); } catch (e) { ok(false, "今日練習引擎檢查出錯:" + e.stack); }
 // 6k. 今日練習的路線(js/tech/routes.js + routespec.js):律動 28、過門 19 關的譜、拍數、速度、左右手、時值由慢到快、每天不一樣的關 1000 個種子(checks/routes.mjs)
 try { routescheck(ok); } catch (e) { ok(false, "今日練習路線檢查出錯:" + e.stack); }
+// 6l. 練習紀錄備份(js/shared/backup.js;兩個 App 同一份):往返、壞檔、別的 App、惡意 key、太大、寫入失敗還原(checks/backup.mjs)
+try { const { default: bakcheck } = await import("./checks/backup.mjs"); bakcheck(ok); } catch (e) { ok(false, "練習紀錄備份檢查出錯:" + e.stack); }
+// 6m. 本週摘要(js/shared/digest.js;兩個 App 同一份):0 天、有資料、中英、單複數、過關最多 5 個(checks/digest.mjs)
+try { const { default: dgcheck } = await import("./checks/digest.mjs"); dgcheck(ok); } catch (e) { ok(false, "本週摘要檢查出錯:" + e.stack); }
 // 6j. 可選:APPWWW=1 時跑 App 打包檢查(tools/test/app-www.mjs:先跑 app-www 再檢查 app/www 完整;要下載取樣,所以預設不跑)
 if (process.env.APPWWW) {
   try { console.log(execFileSync("node", [new URL("./app-www.mjs", import.meta.url).pathname], { stdio: "pipe" }).toString().trim().split("\n").pop()); checks++; }
