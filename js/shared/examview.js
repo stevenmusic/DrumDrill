@@ -55,10 +55,11 @@ const REST_NAMES = {
   "4": ["四分休止符", "crotchet rests"], "4.": ["附點四分休止符", "dotted crotchet rests"], "8": ["八分休止符", "quaver rests"],
   "8.": ["附點八分休止符", "dotted quaver rests"], "16": ["十六分休止符", "semiquaver rests"], "16.": ["附點十六分休止符", "dotted semiquaver rests"]
 };
-/* 單一時值(技巧練習型的名稱用,單數、短) */
+/* 單一時值(技巧練習型的名稱用,單數、短;英文用美式 quarter / eighth notes,跟難度說明一樣,7 歲、美國老師看得懂;
+   英式官方用語只留在「考試內容」的規格表(values():crotchets (quarter notes))) */
 const VALUE_SHORT = {
-  "4": ["四分音符", "crotchets"], "8": ["八分音符", "quavers"], "16": ["十六分音符", "semiquavers"], "32": ["三十二分音符", "demisemiquavers"],
-  "8t3": ["八分三連音", "quaver triplets"], "16t5": ["十六分五連音", "quintuplets"], "16t6": ["十六分六連音", "sextuplets"],
+  "4": ["四分音符", "quarter notes"], "8": ["八分音符", "eighth notes"], "16": ["十六分音符", "16th notes"], "32": ["三十二分音符", "32nd notes"],
+  "8t3": ["八分三連音", "eighth-note triplets"], "16t5": ["十六分五連音", "quintuplets"], "16t6": ["十六分六連音", "sextuplets"],
   "16t7": ["十六分七連音", "septuplets"], "32t9": ["三十二分九連音", "nonuplets"], "32t10": ["三十二分十連音", "double quintuplets"]
 };
 const DYN_NAMES = { accent: ["重音", "accents"], cresc: ["漸強", "crescendo"], dim: ["漸弱", "diminuendo"] };

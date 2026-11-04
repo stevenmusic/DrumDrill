@@ -47,8 +47,14 @@ const STR = {
   examHelp: ["看檢定書封面或問老師;不考試可以直接用前三個分頁", "Check the exam book or ask your teacher — or just use the other tabs"],
   examAssumed: ["推估 = 大綱沒寫清楚,App 先這樣練", "Assumed = not clear in the syllabus; the App's best guess"],
   examInfo: ["考試內容", "Exam details"],   // 檢定頁最下面那張收起來的卡(考試摘要、規格、推估說明、出處;畫面設計 2026-10)
-  mockShort: ["模擬考", "Mock exam"]   // 本項列右邊的按鈕(畫面設計 2026-10)
+  mockShort: ["模擬考", "Mock exam"],   // 本項列右邊的按鈕(畫面設計 2026-10)
+  // 按了 ▶ 鼓聲還沒載入好 / 載入失敗(題目卡標題下面一行 .q-load;2026-11 第 2 輪健檢,跟 PianoDrill 同一套)
+  loadWait: ["鼓聲載入中,好了會自動播放", "Loading the drums — plays when ready"],
+  loadOffline: ["現在沒有網路,連上網路後再按 ▶", "No internet — connect, then tap ▶"],
+  loadFailed: ["鼓聲沒有載入成功,再按一次 ▶ 試試", "The drums didn't load — tap ▶ to try again"]
 };
+/* wait = true:按了 ▶ 還在載入;false:載入失敗(沒有網路跟其他失敗分開說) */
+export const loadMsg = wait => T(wait ? "loadWait" : typeof navigator !== "undefined" && navigator.onLine === false ? "loadOffline" : "loadFailed");
 // @app-end
 /* 模組的字串:addStrings("tech", { play: ["播放示範", "Play"] }) → "tech.play" */
 export function addStrings(ns, dict){ for (const [k, v] of Object.entries(dict)) STR[ns + "." + k] = v; }
@@ -98,6 +104,10 @@ addStrings("bak", {
   err_save: ["沒有存成功,請再試一次", "Couldn't save. Please try again."]
 });
 /* 本週摘要(頁尾「分享本週摘要」;內文在 js/shared/digest.js(純函式,自己帶中英);兩個 App 一樣):分享不了就複製,旁邊寫「已複製」2 秒 */
+/* localStorage 不能寫(私密瀏覽、空間滿;main.js 共用部分啟動時試寫一次):頁尾最上面一行淡字,能寫就不出現(兩個 App 一樣) */
+addStrings("store", {
+  nosave: ["這個瀏覽器不能存紀錄(可能是私密瀏覽),關掉就不見", "This browser can't save your progress (private mode?) — it's gone when you close it"]
+});
 addStrings("digest", {
   link: ["分享本週摘要", "Share this week"],
   copied: ["已複製", "Copied"], fail: ["沒辦法分享", "Couldn't share"]

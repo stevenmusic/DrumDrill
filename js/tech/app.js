@@ -3,7 +3,7 @@
 import * as store from "./store.js";
 import { RUDIMENTS, CATEGORIES, byNo, withLead, strokes, cycleLength, DIV, pattern } from "./rudiments.js";
 import { rudimentXML } from "./notation.js";
-import { tr, T as TS, scoped, getLang, pairText, unpair } from "../shared/i18n.js";
+import { tr, T as TS, scoped, getLang, pairText, unpair, loadMsg } from "../shared/i18n.js";
 import { techItems, techPasNos } from "../shared/examdata.js";
 import { L, srcOf, assumed, fillSpec, para, valueName, bandsText, summaryRows, notInApp, dataRow, pairStack } from "../shared/examview.js";
 import * as audio from "../shared/audio.js";
@@ -34,6 +34,7 @@ let bpm = 60;
 let target = null, lastKey = null;
 let dseg = null;   // 今日練習目前顯示的段落(下面「今日練習」一段)
 let rv = null;     // 今日練習的路線段(js/tech/route.js;下面「今日練習」一段建立)
+let kitLoading = false;   // 整組鼓還在載入(route.js 的 onLoad 進度):按了 ▶ 才寫「載入中」
 /* 模擬考(下面「模擬考」一段):中止時停止播放、速度還原,在檢定頁就重畫(說明「模擬考已中止」) */
 const mock = createMock({ store: S, save: store.save, onAbort: () => { stopPlayback(); mockRestore(); if (tab === "exam") { renderExam(); if (active) cardToTop($("mockCard")); } } });
 let mockSaved = null;   // 開始模擬考前的速度(結束後還原;目標模式的速度也不受影響)
@@ -655,20 +656,23 @@ function setRing(p){
   r.classList.toggle("indet", p == null);
   r.querySelector(".ring-fg").style.strokeDashoffset = String(p == null ? 0.82 : 1 - Math.max(0.03, p));
 }
-let preloadJob = null;
+let preloadJob = null, samplesReady = false;
+/* 鼓聲載入中 / 失敗那一句:寫在題目卡標題下面(#t-loadingMsg),同時唸給報讀(全頁唯一的 #srLive,不另外加 role=status) */
+function loadSay(wait){ setMsg("loadingMsg", () => loadMsg(wait)); announce(loadMsg(wait)); }
+/* 背景載入只轉 ▶ 外圈(不寫字、版面不動);按了 ▶ 還沒好寫「載入中,好了會自動播放」,失敗寫沒有網路 / 再按一次(跟 PianoDrill 同一套,i18n 的 loadMsg) */
 function preloadSamples(){
   if (preloadJob) return preloadJob;
   preloadJob = (async () => {
     try {
       setRing(null);
-      setMsg("loadingMsg", () => tr("載入鼓聲…", "Loading drums…"));
-      await audio.loadDrums(["snare"], p => { setRing(p * 0.95); setMsg("loadingMsg", () => tr("載入鼓聲… ", "Loading drums… ") + Math.round(p * 100) + "%"); });
+      await audio.loadDrums(["snare"], p => setRing(p * 0.95));
       await audio.loadClick().catch(() => {});
+      samplesReady = true;
       setRing(1); setMsg("loadingMsg", null);
       return true;
     } catch (e) {
-      preloadJob = null;
-      setMsg("loadingMsg", () => tr("小鼓聲音載入失敗,再按一次播放重試(需要網路,之後會存在裝置上)", "Could not load the snare — tap play to retry (needs internet once; then cached)"));
+      preloadJob = null;   // 失敗的不留著:下次按 ▶ 重新載
+      loadSay(false);
       return false;
     }
   })();
@@ -752,6 +756,7 @@ async function startInner(){
   const actx = audio.ensureAudio();
   $("playLabel").textContent = tr("準備中…", "Preparing…"); $("playBtn").classList.add("busy");
   if (actx.state !== "running") await within(actx.resume().catch(() => {}), 1500);
+  if (!samplesReady) loadSay(true);   // 好了照樣自動播(下面接著播)
   const loaded = await preloadSamples();
   await within(audio.masterReady, 1500);
   if (starting !== token || cur !== r0) { if (starting === token) { starting = 0; $("playLabel").textContent = playText(); } $("playBtn").classList.remove("busy"); return "busy"; }
@@ -1078,8 +1083,9 @@ const daily = createDaily({ routes: ROUTES, load: () => S.daily, save: d => { S.
 const dcard = createDailyCard({ $, daily, announce,
   // 段落按鈕「穩了 / 還要練」(不跟熟練度的「會了 / 再練」撞名);狀態一句短話(fold-280 不超過兩行)
   labels: { ok: ["穩了", "Steady"], again: ["還要練", "Not yet"], verb: ["打", "play"], good: ["很穩!", "Steady!"],
-    hint: ["按 ▶ 跟著打,穩了按 ✓", "Tap ▶, play along, then ✓"],
-    solo: ["按 ▶ 自己打,穩了按 ✓", "Tap ▶, play it yourself, then ✓"] },
+    // 「穩了」要先播過一輪才亮(dailycard 的 ready):狀態句直接說,按鈕還不能按時 title / aria-describedby 也指到這句
+    hint: ["按 ▶ 跟著打一輪,「穩了」就會亮", "Tap ▶ and play along once — then Steady turns on"],
+    solo: ["按 ▶ 自己打一輪,「穩了」就會亮", "Tap ▶, play it yourself once — then Steady turns on"] },
   mark: s => (s && s.level && s.level.time === "12/8" ? "♩.=" : "♩="),   // 12/8 的速度是附點四分
   warmName: warmName, log: () => S.log,
   onStart: () => { dShow(daily.begin()); window.scrollTo({ top: 0 }); },
@@ -1105,6 +1111,8 @@ rv = createRouteView({ $, tempo, drumKey: () => (ctx && ctx.drumKey ? ctx.drumKe
   onResult: ({ score: sc, res, bpm: b }) => dTry({ score: sc, res, at: b }),
   onPlayState: st => {
     $("playBtn").classList.toggle("busy", st === "busy");
+    if (st === "busy" && kitLoading) loadSay(true);
+    else setMsg("loadingMsg", null);   // 開始播了 / 取消了(失敗時 route.js 接著呼叫 onLoad(null, true) 寫失敗那句)
     const on = st === "demo";
     $("playLabel").textContent = on ? T("stop") : st === "busy" ? tr("準備中…", "Preparing…") : playText();
     $("playIcon").innerHTML = on ? '<rect x="6" y="6" width="12" height="12" rx="1.5"/>' : '<path d="M7 4v16l13-8z"/>';
@@ -1112,10 +1120,12 @@ rv = createRouteView({ $, tempo, drumKey: () => (ctx && ctx.drumKey ? ctx.drumKe
     rv.syncPerform();
     if (st === "perform" || on) revealRoute(st === "perform");
   },
+  // 整組鼓:背景載入只轉 ▶ 外圈;按了 ▶ / 打一遍(busy)還在載入才寫「載入中」,失敗寫沒有網路 / 再按一次
   onLoad: (p, failed) => {
     setRing(p == null ? 1 : p);
-    setMsg("loadingMsg", failed ? () => tr("鼓聲載入失敗,再按一次重試(需要網路,之後會存在裝置上)", "Could not load the drums — try again (needs internet once; then cached)")
-      : p == null ? null : () => tr(`載入鼓聲 ${Math.round(p * 100)}%`, `Loading drums ${Math.round(p * 100)}%`));
+    kitLoading = p != null;
+    if (failed) loadSay(false);
+    else setMsg("loadingMsg", p != null && $("playBtn").classList.contains("busy") ? () => loadMsg(true) : null);
   },
   rlFor, setRl: (level, v) => { S.rl = { ...(S.rl || {}), [level.route.id]: !!v }; store.save(); },
   onHeard: () => { heardAt = heardKey(); syncReady(); } });
