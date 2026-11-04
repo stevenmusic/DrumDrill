@@ -731,6 +731,7 @@ function renderMeta(){
   const tags = cur.free ? [metre, tr(`${t.bars} 小節`, `${t.bars} bars`), `♩=${b}`]   // 視奏分頁:速度不標「練習」
     : [metre, tr(`${t.bars} 小節`, `${t.bars} bars`), pb ? `♩=${b} · ${custom() ? tr("練習", "Practice") : TS("srcPractice")}` : overridden() ? `♩=${b} · ${tr("練習", "Practice")}` : `♩=${b}`];
   $("meta").innerHTML = tags.map(x => `<span class="q-tag">${x}</span>`).join("");
+  $("meta").classList.toggle("metres", pb && t.times.length > 1);   // 好幾個拍號(Trinity 高級):標籤一律在標題下一行(drum.css)
   imgLabel($("score"), scoreLabel);   // 速度改了:譜的說明跟著改
   if (active) fitTags();
 }
