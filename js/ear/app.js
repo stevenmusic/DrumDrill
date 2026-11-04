@@ -1564,7 +1564,7 @@ $("mockClose").onclick = () => {
 };
 /* 本級聽力清單(檢定頁;畫面設計 2026-10 版型 B):這一級 App 能練的題型,點一項 = 到聽力分頁練這一級的那一種 */
 const xTypes = () => { const ex = curExam(); return ex.auto ? [] : (ex.system === "rsl" ? ["fill", "groove"] : ["playback"]).filter(t => practicable(ex.system, ex.grade, t)); };
-const X_NAME = { fill: ["過門(Fill Playback & Recognition)", "Fill Playback & Recognition"], groove: ["律動(Groove Recall)", "Groove Recall"], playback: ["接著打(Playback)", "Playback"] };
+const X_NAME = { fill: ["過門", "Fill Playback & Recognition"], groove: ["律動", "Groove Recall"], playback: ["接著打", "Playback"] };   // 中文只寫中文(官方英文題名在「考試內容」)
 function goType(sub){ const ex = curExam(); if (ex.auto) levels.set(sub, ex.grade + 1); ctx.showView("ear", sub); }
 function renderXList(sys, g){
   const box = $("xItems"); box.innerHTML = "";

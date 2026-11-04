@@ -522,7 +522,7 @@ $("targetList").onclick = () => ctx.showView("exam", "tech");
    看不到時延後重畫、短的放大填滿、長的左右捲、播放軸停在 25% 都在共用元件裡;這裡只給縮放、左右手字母、一輪的長度 */
 const scoreZoom = () => (window.innerWidth < 600 ? 1 : window.innerWidth < 1100 ? 1.15 : 1.35);
 const score = createScore({
-  $, zoom: scoreZoom,
+  $, zoom: scoreZoom, minFit: 0.6,   // 比紙張長的先縮到放得下(折疊機 280 的複點一小節就比紙張寬;不小於 0.6,再長才左右捲)
   setup: osmd => { osmd.EngravingRules.TupletNumberLimitConsecutiveRepetitions = false; },   // 每一組三連音都標「3」(官方表就是這樣)
   afterRender: drawSticking,
   lenBeats: () => cycleLength(groups) / DIV,

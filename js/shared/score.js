@@ -19,6 +19,7 @@
      fitLand()    手機橫式依高度放大;回傳 true 表示已經重畫
      setup(osmd)  第一次建立 OSMD 時(EngravingRules 之類)
      beforeRender(osmd, n)  每次 render 之前(n = 每行幾小節;例如換行時行距多留給譜下面的字)
+     minFit       比紙張長的譜先縮到放得下,最小 = 平常縮放 × minFit(技巧自由練習 0.6;沒有 = 不縮,一律左右捲);再長才左右捲
      perLine()    換行排法(今日練習的路線譜):回傳每行幾小節(0 / 沒有 = 一整行左右捲);換行時譜照紙張寬度排、播放軸照每一行上下移動
      label()      無障礙:譜的文字說明(用 tr();a11y.js 的 imgLabel 換語言自動重算)。$("osmd") 加 role="img" + aria-label;clear() 拿掉
    回傳的物件(實際 API;沒有 setActive,看不看得到一律問 opts.isActive()):
@@ -97,13 +98,13 @@ export function createScore(opts){
     if (opts.beforeRender) opts.beforeRender(osmd, n);
     osmd.render(); afterRender($("osmd").querySelector("svg"));
   }
-  /* 短的譜放大到大約填滿紙張(最多 1.6 倍);太長的照原本大小,左右捲動、播放軸跟著走 */
+  /* 短的譜放大到大約填滿紙張(最多 1.6 倍);太長的縮到放得下(不小於 opts.minFit;沒有就照原本大小),再長才左右捲動、播放軸跟著走 */
   function fitWidth(){
     if (perLine()) return;   // 換行排法:OSMD 已經照紙張寬度排
     const svg = $("osmd").querySelector("svg"); if (!svg) return;
     const w = svg.getBoundingClientRect().width, avail = $("stage").clientWidth - 16;
     if (!w || !avail) return;
-    const z = Math.max(api.zoom(), Math.min(1.6, osmd.zoom * avail * 0.94 / w));
+    const z = Math.max(api.zoom() * (opts.minFit || 1), Math.min(1.6, osmd.zoom * avail * 0.94 / w));
     if (Math.abs(z - osmd.zoom) < 0.03) return;
     osmd.zoom = z; lastZoom = api.zoom(); render();
   }
