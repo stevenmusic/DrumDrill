@@ -272,7 +272,7 @@ export function relang(){
 export function examStatus(){
   const ex = curExam(), n = (SS.stats[keyOf(ex.system, ex.grade)] || {}).n || 0;
   if (ex.system === "trinity") return tr(`Playback 看譜 ${n} 題`, `Playback charts: ${n}`);
-  if (ex.grade <= 5) return tr(`已練 ${n} 題`, `${n} practised`);
+  if (ex.grade <= 5) return tr(`已練 ${n} 題`, `${n} practiced`);
   return tr("只列規格", "Spec only");
 }
 export function onKey(e){
@@ -1526,7 +1526,7 @@ function renderItem(){
     : !ok ? tr("圖例資料還沒載好。", "The drum key isn't loaded yet.")
     : ex.system === "trinity" ? tr(`出題 → 看譜 ${sec} 秒 → 跟拍點打`, `New chart → Study ${sec} s → Play with a click`)
     : tr(`出題 → 準備 ${sec} 秒 → 正式打`, `New test → Prepare ${sec} s → Perform`)));
-  const go = ok ? tr("練習一題", "Get a test") : qsp && kindOf("rsl", 5) ? tr("練整組鼓讀譜", "Practise kit reading") : "";
+  const go = ok ? tr("練習一題", "Get a test") : qsp && kindOf("rsl", 5) ? tr("練整組鼓讀譜", "Practice kit reading") : "";
   $("xGo").hidden = !go; $("xGo").textContent = go;
 }
 $("xGo").onclick = () => { const ex = curExam(); if (practicable(ex.system, ex.grade)) startXp(); else ctx.showView("sight", "groove"); };
@@ -1575,4 +1575,4 @@ function renderMockCard(){
   }
 }
 /* 本項卡的標籤:已練 n 題(RSL 6–8:只列規格) */
-function itemTag(){ const ex = curExam(); return ex.system === "rsl" && ex.grade >= 6 ? tr("只列規格", "Spec only") : tr(`已練 ${(SS.stats[keyOf(ex.system, ex.grade)] || {}).n || 0} 題`, `${(SS.stats[keyOf(ex.system, ex.grade)] || {}).n || 0} practised`); }
+function itemTag(){ const ex = curExam(); return ex.system === "rsl" && ex.grade >= 6 ? tr("只列規格", "Spec only") : tr(`已練 ${(SS.stats[keyOf(ex.system, ex.grade)] || {}).n || 0} 題`, `${(SS.stats[keyOf(ex.system, ex.grade)] || {}).n || 0} practiced`); }

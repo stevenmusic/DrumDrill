@@ -386,8 +386,8 @@ function renderRsl(d, g){
       }
       const w = el("div", "xwrap"); its.appendChild(w); w.appendChild(row);
       pairText(row.querySelector(".xi-name"), () => itemName(it));
-      if (it.kind === "pas") row.setAttribute("aria-label", tr("練習 ", "Practise ") + itemName(it));
-      if (it.kind === "pattern") row.setAttribute("aria-label", tr("依大綱時值練習 ", "Practise in the syllabus values: ") + itemName(it));
+      if (it.kind === "pas") row.setAttribute("aria-label", tr("練習 ", "Practice ") + itemName(it));
+      if (it.kind === "pattern") row.setAttribute("aria-label", tr("依大綱時值練習 ", "Practice in the syllabus values: ") + itemName(it));
       // 這一項的說明:book = 譜見官方檢定書(+ 相關 PAS 打法);項目自己的備註、推估(4 級 C 組 Flam tap 的四分音符)
       const itNote = it.note && it.note !== gr.note ? noteFn(it.note) : null;
       const note = () => [
@@ -484,12 +484,12 @@ function renderTrinity(d, g){
       const b = el("button", "xcat", x.cat ? { "data-act": "cat", "data-cat": x.cat } : { "data-act": "pasno", "data-no": String(x.pas) });
       b.innerHTML = `<span></span>${ICON.go}`;
       cats.appendChild(b);
-      pairText(b.querySelector("span"), () => (x.cat ? tr("去練 ", "Practise ") + L([catOf(x.cat).zh, catOf(x.cat).en]) : tr("去練 ", "Practise ") + `${x.pas}. ${name(byNo(x.pas))}`));
+      pairText(b.querySelector("span"), () => (x.cat ? tr("去練 ", "Practice ") + L([catOf(x.cat).zh, catOf(x.cat).en]) : tr("去練 ", "Practice ") + `${x.pas}. ${name(byNo(x.pas))}`));
     }
     const n = el("p", "xnote"); G.appendChild(n); pairText(n, () => L(d.ownChoice.practiceNote));
   }
   const f = el("p", "xnote"); G.appendChild(f);
-  pairText(f, () => tr("技巧分頁的 PAS 40 個基本打法照常可以自由練習。沒有技巧模擬考。", "The 40 PAS rudiments in Technique are always free to practise. No technique mock."));
+  pairText(f, () => tr("技巧分頁的 PAS 40 個基本打法照常可以自由練習。沒有技巧模擬考。", "The 40 PAS rudiments in Technique are always free to practice. No technique mock."));
 }
 
 /* ── 目標橫幅(技巧分頁):「RSL 3 級 · D 組 · ♩=75 · p.42」;清單鈕回檢定頁、× 離開目標(速度回到自己的) ── */
@@ -954,7 +954,7 @@ const stepDetail = (st, i) => () => {
   const b = st.gr.bpm ? `♩=${st.gr.bpm}` : "";
   const mk = mock.state === "result" && mock.data.marks ? mock.data.marks[i] : "";
   const mark = (mk === "good" ? tr(" · 會了", " · got it") : mk === "weak" ? tr(" · 再練", " · needs work") : "")
-    + (mock.state === "result" && st.book ? tr(` · 這一組另有 ${st.book} 項只在檢定書(這次沒練)`, ` · ${st.book} more in the grade book (not practised)`) : "");
+    + (mock.state === "result" && st.book ? tr(` · 這一組另有 ${st.book} 項只在檢定書(這次沒練)`, ` · ${st.book} more in the grade book (not practiced)`) : "");
   if (st.status === "skip") return tr("這一組請用檢定書練(App 沒有譜)", "Use the grade book for this group (no part in the App)");
   if (st.status === "done") return tr(`跟拍點打完 · ${b}`, `Played through with the click · ${b}`) + mark;
   if (st.status === "stopped") return tr(`中途停止 · ${b}`, `Stopped part-way · ${b}`) + mark;
@@ -978,7 +978,7 @@ function renderItem(d, g){
   }
   $("xEmpty").hidden = ms !== "idle" || tab !== "exam";
   pairText($("xHint"), () => (!d ? tr("考試資料還沒載好。", "Exam data isn't loaded yet.") : !rsl ? tr("點下面一類練", "Pick a family below")
-    : pool.length ? tr("點下面一項開始練", "Or pick one below") : tr("這一級還沒有 App 能直接練的項目", "Nothing in this grade can be practised in the App yet")));
+    : pool.length ? tr("點下面一項開始練", "Or pick one below") : tr("這一級還沒有 App 能直接練的項目", "Nothing in this grade can be practiced in the App yet")));
   $("xGo").hidden = !pool.length;
   $("xGo").textContent = tr("隨機抽一項", "Random");
 }
