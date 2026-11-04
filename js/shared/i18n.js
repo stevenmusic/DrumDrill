@@ -77,9 +77,9 @@ addStrings("daily", {
   // 練完了那一行:{s} = parts / part1(英文單複數)、{t} = 分鐘或秒(不到 1 分鐘寫秒,不進位成 1 分鐘)、{p} = passedN(0 關不寫);一段都沒練 = none
   done: ["練完 {s} · {t}{p}。今天到這裡就好", "Done: {s} · {t}{p}. That's enough for today"], passedN: [" · 過了 {n} 關", " · {n} passed"],
   parts: ["{n} 段", "{n} parts"], part1: ["{n} 段", "{n} part"], min: ["{n} 分鐘", "{n} min"], sec: ["{n} 秒", "{n} s"],
-  none: ["今天還沒練到", "Nothing practised today"],
-  week: ["最近 7 天練了 {d} 天", "Practised {d} of the last 7 days"], tomorrow: ["明天:{list}", "Tomorrow: {list}"],
-  more: ["再練一下", "Practise a bit more"]
+  none: ["今天還沒練到", "Nothing practiced today"],
+  week: ["最近 7 天練了 {d} 天", "Practiced {d} of the last 7 days"], tomorrow: ["明天:{list}", "Tomorrow: {list}"],
+  more: ["再練一下", "Practice a bit more"]
 });
 /* 練習紀錄備份(頁尾「備份紀錄」;js/shared/backup.js + main.js 共用部分;兩個 App 一樣):{f} = 檔名;err_* = backup.js 的錯誤代碼 */
 addStrings("bak", {
