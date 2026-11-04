@@ -19,6 +19,7 @@ import { setupKit, decorate, drawLegend, graphicalNotes, headBox } from "../shar
 import { describeSpec, announce } from "../shared/a11y.js";
 import { clickPlays } from "../shared/daily.js";
 import { tr, pairText } from "../shared/i18n.js";
+import { isPhoneLand } from "../shared/landscape.js";
 import { toSpec, eventsOf, handsOf, displaySpec } from "./routespec.js";
 
 const NS = "http://www.w3.org/2000/svg";
@@ -35,16 +36,17 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
   /* 縮放:平常照畫面寬度;整份(2 或 4 小節)一行放不下紙張寬度時縮到放得下(不小於 ONE_MIN);
      再小就換行(像視奏的考卷):4 小節先試每行 2 小節(不小於 ONE_MIN),最後一小節一行(不小於 WRAP_MIN1)— 不左右捲 */
   const ONE_MIN = 0.55, WRAP_MIN1 = 0.45;   // 0.55 = 視奏考卷排法的下限(口袋總譜大小)
-  let fitZ = null, fitW = 0, wrapN = 0;
+  const FILL = 1.35, FILL_H = 0.34;   // 短譜放大:最多正常大小的 1.35 倍、譜高 ≤ 畫面高的 34%(docs/DESIGN.md 第 5 節;照 PianoDrill 的 fitWrap)
+  let fitZ = null, fillZ = null, fitW = 0, wrapN = 0;
   const baseZ = () => (window.innerWidth < 600 ? 0.9 : window.innerWidth < 1100 ? 1 : 1.15);
-  const zoom = () => Math.min(baseZ(), fitZ || Infinity);
+  const zoom = () => fillZ || Math.min(baseZ(), fitZ || Infinity);
   function fitOnce(){
     const svg = $r("osmd").querySelector("svg"), avail = $r("stage").clientWidth - 16;
     if (!svg || !avail || !score.osmd) return;
     fitW = $r("stage").clientWidth;
-    if (wrapN) return;
+    if (wrapN || fillZ) return;
     const w = svg.getBoundingClientRect().width;
-    if (w <= avail + 1) return;
+    if (w <= avail + 1) { fill(avail); return; }
     const z1 = score.osmd.zoom * avail * 0.97 / w;
     if (z1 >= ONE_MIN) { fitZ = z1; score.refit(); return; }
     // 一行放不下:換行
@@ -66,8 +68,29 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
     if (!pick) pick = { n: 1, z: WRAP_MIN1 };
     wrapN = pick.n; fitZ = pick.z; score.refit();
   }
+  /* 短譜(整份一行、原本的大小就放得下):放大到用滿寬度,最多 FILL 倍、譜高不超過畫面的 FILL_H(第一個畫面還看得到題目卡與主要按鈕);
+     R / L、×N、% 都畫完才量(不能超出畫布)。手機橫放照舊(score.js 的 fitWidth) */
+  function fill(avail){
+    const o = score.osmd; if (isPhoneLand() || !o) return;
+    const ok = z => {
+      o.zoom = z; score.render();
+      const svg = $r("osmd").querySelector("svg"); if (!svg) return false;
+      const r = svg.getBoundingClientRect();
+      if (r.width > avail * 0.97 + 1 || r.height > innerHeight * FILL_H) return false;
+      const vb = svg.viewBox && svg.viewBox.baseVal, bb = svg.getBBox();
+      return !(vb && vb.width) || (bb.x >= vb.x - 1 && bb.x + bb.width <= vb.x + vb.width + 1 && bb.y >= vb.y - 1 && bb.y + bb.height <= vb.y + vb.height + 1);
+    };
+    const z0 = o.zoom; let lo = z0, hi = baseZ() * FILL;
+    if (hi > z0 + 0.005) {
+      if (ok(hi)) lo = hi;
+      else for (let k = 0; k < 6; k++) { const mid = (lo + hi) / 2; if (ok(mid)) lo = mid; else hi = mid; }
+    }
+    const z = Math.max(z0, Math.floor(lo * 100) / 100);   // 取整不能比原本的大小還小
+    if (z > z0 + 0.005) fillZ = z;
+    score.refit();
+  }
   const score = createScore({
-    $: $r, zoom, perLine: () => wrapN,
+    $: $r, zoom, perLine: () => wrapN, noFill: () => !isPhoneLand(),   // 直式不用 fitWidth 的放大(fill 照畫面高度放大);手機橫放照舊
     // 換行時:R / L 寫在譜上面,行與行之間多留空間
     beforeRender: (osmd, n) => { const R = osmd.EngravingRules; if (R._sysGap == null) R._sysGap = R.MinSkyBottomDistBetweenSystems; R.MinSkyBottomDistBetweenSystems = R._sysGap + (n && rlOn() ? 5 : 0); },
     setup: osmd => setupKit(osmd, 5, cur ? cur.xml : ""),
@@ -159,7 +182,7 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
     $("rResult").hidden = true; $("rResult").innerHTML = "";
     syncRlBtn(); syncPadUI();
     if (score.osmd) setupKit(score.osmd, 5, xml);
-    fitZ = null; wrapN = 0;
+    fitZ = null; fillZ = null; wrapN = 0;
     score.load(osmdXML(xml)).then(done => { if (done && cur && cur.xml === xml) fitOnce(); });
     drawLegend($("rLegend"), { pieces: r.pieces, lines: 5, key, plain: true }).catch(e => console.error(e));
     preload();
@@ -325,7 +348,7 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
     onResize(){
       if (!cur || $("rScoreCard").hidden) return;
       const pend = score.pending;
-      if (Math.abs($r("stage").clientWidth - fitW) > 24) { fitZ = null; wrapN = 0; score.onResize(); if (score.osmd) { score.refit(); fitOnce(); } return; }
+      if (Math.abs($r("stage").clientWidth - fitW) > 24) { fitZ = null; fillZ = null; wrapN = 0; score.onResize(); if (score.osmd) { score.refit(); fitOnce(); } return; }
       score.onResize();
       if (pend && !score.pending) requestAnimationFrame(fitOnce);
     },
