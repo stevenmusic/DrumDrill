@@ -37,9 +37,10 @@ const STR = {
   licenses: ["授權與出處", "Licenses"],
   privacy: ["隱私權政策", "Privacy"],
   support: ["支援", "Support"],
-  // 頁尾只寫一行簡短出處(完整的授權、修改說明、商標在 licenses.html)
-  footer: ["鼓聲 Naked Drums(CC BY 4.0)· 鼓譜 OpenSheetMusicDisplay(BSD-3-Clause)· 基本打法 © PAS",
-    "Drums: Naked Drums (CC BY 4.0) · Notation: OpenSheetMusicDisplay (BSD-3-Clause) · Rudiments © PAS"],
+  // 第一次打開 = 歡迎(主要「開始練習」= 自由練習);按「我在準備檢定」才展開系統 + 級數(標題換成 obTitle、說明換成 obSub、「開始練習」換成次要的 obNo)
+  obWelcome: ["每天 10 分鐘,跟著打就會", "10 minutes a day. Play along."],
+  obWelcomeSub: ["App 一步一步帶你練技巧、視奏、聽力", "Technique, sight-reading and aural, step by step"],
+  obStart: ["開始練習", "Start practicing"], obExam: ["我在準備檢定", "I'm preparing for an exam"],
   obTitle: ["你在準備爵士鼓檢定嗎?", "Taking a drum exam?"],
   obSub: ["選好後會打開「檢定」分頁,技巧、視奏、聽力都照這一級練。", "Opens the Exams tab; technique, sight-reading and aural use this grade."],
   obYes: ["開始準備考試", "Start exam prep"], obNo: ["不考試,自由練習", "No exam — free practice"],

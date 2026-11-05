@@ -26,7 +26,7 @@ const onboarded = (o = {}) => ({ [SHELL_KEY]: { onboarded: true, exam: null, the
 const READ_FIRST = [{ sel: "#subSeg", say: "子項目列" }, { sel: "#s-rdScore", say: "譜框" }, { sel: "#s-rdAns", say: "作答格子" }, { sel: "#s-rdQuick", say: "鼓件快捷" }];
 const TASKS = [
   { name: "新手想練小鼓節奏", store: null, steps: [
-      { sel: "#obNo", say: "第一次的問題:不考,自由練習" },
+      { sel: "#obNo", say: "第一次打開:開始練習(自由練習)" },
       { sel: '#tabbar [data-view="sight"]', say: "視奏分頁(預設子項目 = 節奏,題目已經出好)", start: true, wait: 1500 },
       { sel: "#s-performTop", say: "打一遍(題目卡上)", wait: 1200 },
       { run: async page => { await page.waitForFunction(() => window.__sight.state.phase === "perform", null, { timeout: 30000 }); await page.evaluate(() => window.__sight.finishNow()); await page.waitForTimeout(400); }, say: "(打完)" }
