@@ -195,9 +195,9 @@ export const ROUTES = [
    一開始是 RSL 練習型的寫法(rudiments.js 的 pattern():單擊四分、八分),PAS 原譜(三十二分、滾奏斜線)等到十六分那一組練過才出現。
    after = 律動過了哪一關才加進來 */
 export const WARM = [
-  { pas: 1, sticking: "single", value: "4", name: ["單擊 四分音符 RL", "Singles in quarters, RL"], check: [c("鼓棒高度一樣", "Same stick height"), c("兩手音量一樣", "Both hands equally loud")] },
-  { pas: 1, sticking: "single", value: "8", after: "A2", name: ["單擊 八分音符 RLRL", "Singles in eighths, RLRL"] },
-  { pas: 6, sticking: "double", value: "8", after: "B2", name: ["雙擊 八分音符 RRLL", "Doubles in eighths, RRLL"] },
+  { pas: 1, sticking: "single", value: "4", name: ["單擊 四分音符(右左輪流)", "Hand-to-hand quarters"], check: [c("鼓棒高度一樣", "Same stick height"), c("兩手音量一樣", "Both hands equally loud")] },
+  { pas: 1, sticking: "single", value: "8", after: "A2", name: ["單擊 八分音符(右左輪流)", "Hand-to-hand eighths"] },
+  { pas: 6, sticking: "double", value: "8", after: "B2", name: ["雙擊 八分音符(右右左左)", "Double strokes, eighths"] },
   { pas: 16, value: "8", after: "B2" },
   { pas: 20, value: "4", after: "C5" },
   { pas: 31, value: "4", after: "C5" },

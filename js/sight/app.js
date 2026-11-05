@@ -1335,7 +1335,9 @@ function finishPerform(){
   renderResult();
   showChecklist(cur.free ? null : "self");   // 自我檢查只在檢定頁(練習、模擬考);視奏分頁不放
   if (!mockOn() && active) requestAnimationFrame(() => showResultBox());
-  say(() => (freeQ() ? tr("打完了,按 ▶ 對照", "Done — ▶ to compare") : tr("打完了。看下面的練習回饋;按 ▶ 聽正確版本,或按「下一題」。", "Done. See the feedback below; tap ▶ to hear it, or Next.")), true);
+  // 準度很低(< 20;打中沒幾下):下一步寫清楚 = 先聽、再跟著預備拍打一遍
+  const low = lastResult.taps && !lastResult.silent && lastResult.r.score != null && lastResult.r.score < 20;
+  say(() => (freeQ() ? (low ? tr("先按 ▶ 聽一遍,再按「打一遍」跟著預備拍打", "▶ to listen, then Play it again") : tr("打完了,按 ▶ 對照", "Done — ▶ to compare")) : tr("打完了。看下面的練習回饋;按 ▶ 聽正確版本,或按「下一題」。", "Done. See the feedback below; tap ▶ to hear it, or Next.")), true);
   announce(tr("打完了。", "Done. ") + resultSpeech(lastResult) + (lastResult.lvText ? " " + lastResult.lvText() : ""));
   if (mockOn()) { mock.data.result = lastResult; mock.finish(); render(); cardToTop($("mockCard")); }   // 模擬考:正式打完 = 結果
   renderStats();
@@ -1346,8 +1348,11 @@ function showResultBox(){
   const box = $("alongResult"); if (box.hidden) return;
   const r = box.getBoundingClientRect(), head = document.querySelector("header"), top = head ? head.getBoundingClientRect().bottom : 0;
   const bar = document.getElementById("tabbar"), bt = bar ? bar.getBoundingClientRect().top : innerHeight, bottom = bt > innerHeight / 2 ? bt : innerHeight;
-  if (r.top >= top && r.bottom <= bottom) return;
-  window.scrollBy({ top: r.bottom > bottom ? Math.min(r.bottom - bottom + 12, r.top - top - 8) : r.top - top - 8, behavior: "smooth" });
+  // 視奏分頁:狀態句「按 ▶ 對照」在題目卡,題目卡的標題列(大標題 + ▶)要留在頂欄下(正式打時捲到鼓譜,打完捲回來;PianoDrill revealScore 的 keep)
+  const keep = freeQ() ? Math.min($("title").getBoundingClientRect().top, $("play").getBoundingClientRect().top) - top - 6 : Infinity;   // 手機橫式 .q-head 是 contents(高 0),看標題與 ▶ 本身
+  let d = r.top >= top && r.bottom <= bottom ? 0 : r.bottom > bottom ? Math.min(r.bottom - bottom + 12, r.top - top - 8) : r.top - top - 8;
+  d = Math.min(d, keep);
+  if (Math.abs(d) > 2) window.scrollBy({ top: d, behavior: "smooth" });
 }
 /* 無障礙:結果的一句話摘要(aria-live 播報;詳細的在 #s-alongResult) */
 function resultSpeech(R){

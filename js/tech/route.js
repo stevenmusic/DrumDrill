@@ -117,7 +117,8 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
     const isRep = g => g.tagName === "text" && /^×\d+$/.test(g.textContent.trim());   // ×N 下面另外放(不墊高 R / L)
     svg.querySelectorAll(".vf-stavenote, .vf-beam, .vf-stem, .staffline, text:not(.rt-hand), .rt-pct").forEach(g => { if (isRep(g)) return; const b = g.getBBox(); if (b.height || b.width) { const i = sysOf(b.y + b.height / 2); inkTop[i] = Math.min(inkTop[i], b.y); } });
     const h0 = svg.querySelector(".vf-notehead"); if (h0) sp = h0.getBBox().height || sp;
-    const fs = sp * 1.45, cols = new Map();
+    const vb0 = svg.viewBox.baseVal, k = vb0 && vb0.width ? svg.getBoundingClientRect().width / vb0.width : 0;
+    const fs = Math.max(sp * 1.45, k ? 12 / k : 0), cols = new Map();   // 畫面上的字至少 12px(窄畫面譜縮小時)
     for (const h of hs) {
       const g = gns.find(x => x.mi === h.mi && x.t === h.t && x.k === h.k), hb = g && headBox(g.gn);
       if (!hb) continue;

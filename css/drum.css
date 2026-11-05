@@ -162,6 +162,10 @@ button.xitem{cursor:pointer;border-color:transparent;background:var(--fill-btn)}
 .xi-rel{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .xi-rel .chip{gap:6px;font-variant-numeric:tabular-nums}
 .xnote.strong{color:var(--ivory);font-size:var(--fs-sm)}
+/* 本級要求開頭的說明(怎麼看這份清單):讀得到的大小(--fs-sm),不是 12px 小字 */
+#t-listRule,.xnote.lead{font-size:var(--fs-sm)}
+/* 速度卡副標(「建議:慢 → 快 → 慢」/「自動調整」)是要照著做的提示,不是次要標籤:--fs-sm */
+#t-examTempo{font-size:var(--fs-sm)}
 .xcats{display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:6px;margin-top:8px}
 .xcat{display:flex;align-items:center;gap:8px;min-height:44px;padding:6px 12px;border-radius:var(--radius-sm);border:1px solid transparent;background:var(--fill-btn);
   color:var(--gold);font-family:inherit;font-size:var(--fs-sm);text-align:left;cursor:pointer;min-width:0}
@@ -370,7 +374,7 @@ button.xitem{cursor:pointer;border-color:transparent;background:var(--fill-btn)}
 .rd-miss{margin-top:8px;font-size:var(--fs-xs);color:var(--muted-bright);line-height:1.5;overflow-wrap:anywhere}
 .rd-miss:empty{display:none}
 /* 作答格子上面一行「不知道就先猜…」(答對 3 題以前) */
-.rd-guess{margin-top:2px;text-align:center;font-size:var(--fs-xs);line-height:1.5;color:var(--muted-bright)}
+.rd-guess{margin-top:2px;text-align:center;font-size:var(--fs-sm);line-height:1.5;color:var(--muted-bright)}
 .rd-row{display:grid;grid-template-columns:4.6em minmax(0,1fr);align-items:center;gap:8px;min-width:0}
 .rd-row + .rd-row{margin-top:10px}
 .rd-row > .lbl{font-size:var(--fs-xs);color:var(--muted-bright)}
@@ -552,3 +556,5 @@ body.view-exam .exam-info:is(#t-paneExam,#s-paneExam,#e-paneExam){order:20}
 body.view-exam #mod-sight .q-ht .q-tags{flex:1 1 100%}
 @media (max-width:360px){ #mod-sight .q-ht .q-tags{flex:1 1 100%} }   /* SE 320 / 折疊機:視奏標籤放不下標題旁邊(中文「小鼓譜」、英文「12 bars」輪流掉行),一律在標題下一行 */
 #mod-sight .q-ht .q-tags:has(> :nth-child(5)),#mod-sight .q-ht .q-tags.metres{flex:1 1 100%}   /* 標籤 5 個以上、或一題有好幾個拍號(Trinity 高級;拍號寫在同一個標籤「12/8 5/8」):一律在標題下一行(只看內容,中英一定一樣) */
+/* 本項列「拍點只響第一小節」能按:金字(docs/DESIGN.md「金色只給能按的」),跟旁邊灰字的進度標籤「會了 0/5」分得出來 */
+#t-mockOneBar:not([aria-pressed="true"]){color:var(--gold)}

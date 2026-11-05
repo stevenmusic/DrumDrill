@@ -343,7 +343,7 @@ function renderRsl(d, g){
   // 開頭只說一次:名稱後面寫時值的是練習型(拍點、抽考方式寫在模擬考卡,不重複);頁碼接在後面
   const hasPattern = items.some(x => x.kind === "pattern");
   if (hasPattern) $("listRule").dataset.src = srcOf("rsl", t.src.p);
-  para($("listRule"), () => (hasPattern ? tr("名稱後面寫時值的是 App 依大綱排的練習型,不是官方譜;同一個打法的練習型「會了 / 再練」一起記", "Items with a note value are App drills in the syllabus values, not official parts; one rudiment's drills share Got it / Needs work") : ""));
+  para($("listRule"), () => (hasPattern ? tr("後面寫音符的是 App 照大綱排的練習,不是官方譜;同一個打法的「會了」一起算", "Items with a note value are App drills, not official parts; one rudiment shares Got it") : ""));
   // 「…見檢定書」不在每一項寫:清單最前面一行「配置、重音位置、譜見檢定書」,各項的備註拿掉那一段(資料不變)
   let anyBook = items.some(x => x.kind === "book");
   const stripBook = ([zh, en]) => {
@@ -363,7 +363,7 @@ function renderRsl(d, g){
   };
   let prevBpm = null, prevSrc = null;
   const box = $("qGroups");
-  const bookLine = el("p", "xnote"); box.appendChild(bookLine);
+  const bookLine = el("p", "xnote lead"); box.appendChild(bookLine);
   for (const gr of t.groups) {
     const G = el("div", "xgroup"), head = el("div", "xhead");
     // 速度、頁碼跟前一組一樣就不寫(頁碼在開頭的說明或第一組)
@@ -417,7 +417,7 @@ function renderRsl(d, g){
     ].filter(Boolean).join(" ");
     if (gnote()) { const p = el("p", "xnote"); G.appendChild(p); pairText(p, gnote); }
   }
-  if (anyBook) pairText(bookLine, () => tr("配置、重音位置、譜見檢定書", "Layouts, accents and parts: see the grade book")); else bookLine.remove();
+  if (anyBook) pairText(bookLine, () => tr("打在哪些鼓、重音、譜:看檢定書", "Which drums, accents, parts: see the grade book")); else bookLine.remove();
   // 抽一項 / 下一項:App 能直接練的項目(PAS 原譜 + 依大綱時值的練習型;book 不算)
   // 抽一項在本項卡(模擬考卡)上、下一項在出了題目的題目卡上:清單底下不放按鈕列(listActions 一直藏著)
 }
@@ -562,7 +562,9 @@ function drawSticking(svg){
   svg.querySelectorAll(".vf-stavenote, .vf-stavetie, .vf-beam").forEach(g => { const b = g.getBBox(); if (b.height) bottom = Math.max(bottom, b.y + b.height); });
   if (!isFinite(bottom)) return;
   const head0 = svg.querySelector(".vf-notehead"); if (head0) sp = head0.getBBox().height || sp;
-  const fs = sp * 1.45, small = fs * 0.72, y = bottom + fs * 1.15;
+  // 畫面上的字至少 12px(裝飾音 10px):窄畫面譜縮小時不跟著縮到看不清(k = 每個 SVG 單位在畫面上幾 px)
+  const vb0 = svg.viewBox.baseVal, k = vb0 && vb0.width ? svg.getBoundingClientRect().width / vb0.width : 0;
+  const fs = Math.max(sp * 1.45, k ? 12 / k : 0), small = Math.max(fs * 0.72, k ? 10 / k : 0), y = bottom + fs * 1.15;
   const text = (x, t, size, bold) => {
     const el = document.createElementNS(NS, "text");
     el.setAttribute("x", x); el.setAttribute("y", y); el.setAttribute("text-anchor", "middle");
@@ -993,7 +995,7 @@ function renderItem(d, g){
     pairText($("mockOneBar"), () => tr("拍點只響第一小節", "Count-in only"));   // 頁碼在說明裡
   }
   $("xEmpty").hidden = ms !== "idle" || tab !== "exam";
-  pairText($("xHint"), () => (!d ? tr("考試資料還沒載好。", "Exam data isn't loaded yet.") : !rsl ? tr("點下面一類練", "Pick a family below")
+  pairText($("xHint"), () => (!d ? tr("考試資料還沒載好。", "Exam data isn't loaded yet.") : !rsl ? ((d.ownChoice && d.ownChoice.grades[g] || {}).practice || []).length ? tr("點下面一類練", "Pick a family below") : tr("這一級沒有單獨要練的技巧項目", "No separate technique items at this grade")
     : pool.length ? tr("點下面一項開始練", "Or pick one below") : tr("這一級還沒有 App 能直接練的項目", "Nothing in this grade can be practiced in the App yet")));
   $("xGo").hidden = !pool.length;
   $("xGo").textContent = tr("隨機抽一項", "Random");
