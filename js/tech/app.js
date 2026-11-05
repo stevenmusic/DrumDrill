@@ -838,8 +838,11 @@ function revealScore(){
   const r = $("scoreCard").getBoundingClientRect(), bar = document.querySelector(".tabbar");
   const bt = bar ? bar.getBoundingClientRect().top : innerHeight;
   const bottom = Math.min(bt > innerHeight / 2 ? bt : innerHeight, innerHeight - ctaH());   // 手機橫放時分頁列在左邊(top = 0),下面沒有東西擋;今日練習的底部按鈕列也會擋
-  if (r.bottom > bottom - 4) window.scrollBy({ top: Math.min(r.bottom - bottom + 8, r.top - 4), behavior: "smooth" });
-  else if (r.top < 0) window.scrollBy({ top: r.top - 8, behavior: "smooth" });
+  const hb = document.querySelector("header").getBoundingClientRect().bottom, qhEl = $("quizCard").querySelector(".q-head");
+  const qh = qhEl ? qhEl.getBoundingClientRect() : { height: 0 };
+  const keep = qh.height && qh.top < r.top ? qh.top - hb - 6 : Infinity;   // 標題列留在頂欄下面(同 revealRoute)
+  if (r.bottom > bottom - 4) { const d = Math.min(r.bottom - bottom + 8, r.top - hb - 4, keep); if (d > 2) window.scrollBy({ top: d, behavior: "smooth" }); }
+  else if (r.top < hb) window.scrollBy({ top: r.top - hb - 8, behavior: "smooth" });
 }
 $("playBtn").onclick = () => { if (routeOn()) { rv.toggleDemo(playOpts()); return; } if (play) stopPlayback(); else if (!starting) startPlayback(); };
 function syncPlayOpts(){
@@ -1108,7 +1111,7 @@ const dcard = createDailyCard({ $, daily, announce, routes: ROUTES,   // routes:
   onBack: () => { stopPlayback(); if (daily.back()) dShow(daily.seg()); },
   // 底部按鈕的 ▶ / ■(跟題目卡的圓形 ▶ 同一個播放;路線段 = 示範,準備中按 = 取消)
   onPlay: () => { if (routeOn()) { rv.toggleDemo(playOpts()); return; } if (play || starting) stopPlayback(); else startPlayback(); },
-  // 路線段的底部按鈕列:左邊「沒有鼓?用手機打」(次要);手機鼓墊模式的主要按鈕 =「打一遍」(取代「▶ 跟著打一輪 / 穩了」,穩了 / 還要練不出現)
+  // 路線段:「沒有鼓?用手機打」在面板裡(acts.panel);手機鼓墊模式的主要按鈕 =「打一遍」(取代「▶ 跟著打一輪 / 穩了」,穩了 / 還要練不出現)
   acts: {
     // 同一時間只有一顆主要:過關 / 複習完(主要 =「下一段 ›」)時「打一遍」改成次要、放到左邊(還能再打一次)
     primary: (s, o, st) => {
@@ -1117,7 +1120,9 @@ const dcard = createDailyCard({ $, daily, announce, routes: ROUTES,   // routes:
       const on = rv.pad && !rv.done; $("rPerform").classList.toggle("cta-main", on);   // 底部主要的位置與大小(drum.css)
       return on ? $("rPerform") : null;
     },
-    left: () => (!routeOn() ? [] : rv.pad ? (rv.done ? [$("rPerform")] : []) : [$("rModeBtn")]) } });
+    left: () => (routeOn() && rv.pad && rv.done ? [$("rPerform")] : []),
+    // 「沒有鼓?用手機打」放在題目卡面板裡一行(跟「回上一關」同一種文字鈕),不放底部:底部只有「還要練」+ 主要,主要按鈕位置不會變(newbie.mjs)
+    panel: () => (routeOn() && !rv.pad ? [$("rModeBtn")] : []) } });
 /* 鼓墊模式的下一步(還沒打過 / 打完):照路線的狀態一句 */
 const PAD_HINT = { hint: ["▶ 聽示範,再按「打一遍」用鼓墊打", "▶ for the demo, then Play it on the pads"],
   solo: ["只有拍點:按「打一遍」用鼓墊打", "Click only: tap Play it, use the pads"] };
@@ -1161,7 +1166,11 @@ function revealRoute(pads){
   const el = pads ? $("rPadCard") : $("rScoreCard"); if (!el || el.hidden) return;
   const r = el.getBoundingClientRect(), bar = document.querySelector(".tabbar");
   const bt = bar ? bar.getBoundingClientRect().top : innerHeight, bottom = Math.min(bt > innerHeight / 2 ? bt : innerHeight, innerHeight - ctaH());   // 底部按鈕列也會擋
-  if (r.bottom > bottom - 4) window.scrollBy({ top: Math.min(r.bottom - bottom + 8, r.top - 60), behavior: "smooth" });
+  // 題目卡的標題列(大標題 + ▶)要留在頂欄下面:捲過頭會切掉標題、▶ 只露一半(停止也要按它;newbie.mjs,同步 PianoDrill revealScore)
+  const hb = document.querySelector("header").getBoundingClientRect().bottom, qhEl = $("quizCard").querySelector(".q-head");
+  const qh = qhEl ? qhEl.getBoundingClientRect() : { height: 0 };
+  const keep = qh.height && qh.top < r.top ? qh.top - hb - 6 : Infinity;
+  if (r.bottom > bottom - 4) { const d = Math.min(r.bottom - bottom + 8, r.top - hb - 4, keep); if (d > 2) window.scrollBy({ top: d, behavior: "smooth" }); }
 }
 const playOpts = () => ({ click: (dseg && dseg.click) || "every", solo: !!(dseg && dseg.click && dseg.click !== "every") });
 $("rModeBtn").onclick = () => setPadMode(true);
@@ -1248,7 +1257,7 @@ function dTry({ self = null, score: sc = null, res = null, at = null } = {}){
   const txt = () => head() + dcard.resultText(r, s);
   announce(txt());
   if (r.passed) cheer(); else if (r.verdict === "steady") cue();   // 過關 = 小鼓兩下 + 大鼓和 Crash;穩了(還沒過關)= 單音
-  if (r.passed && r.cont) { dShow(daily.seg(), txt); dcard.celebrate(); return; }
+  if (r.passed && r.cont) { dShow(daily.seg(), txt); dcard.celebrate(); landBack(); return; }
   dseg = daily.seg();
   if (s.k === "route") { bpm = r.nextBpm; target.bpm = bpm; syncTempoUI(); }
   renderTitle(); if (active) fitTitle();
@@ -1256,8 +1265,14 @@ function dTry({ self = null, score: sc = null, res = null, at = null } = {}){
   if (self) heardAt = null;   // 每一次自評 = 打過一輪:要再按 ▶ 打一輪才能再自評(狀態寫「按 ▶ 再打一次」)
   syncReady();
   paintStep(dseg, { status: txt, passedDone: stepDone });
+  landBack();
   dcard.render();
   if (r.passed) dcard.celebrate();   // 過關慶祝:狀態句上面一條短橫幅(複習升盒不放)
+}
+/* 手機橫放:播放時鼓譜捲到頂欄下(滿版);自評後播放停了,捲回題目卡標題(結果那一句、▶ 看得到;PianoDrill 停止時捲回 landScroll;newbie.mjs) */
+function landBack(){
+  if (!(innerHeight <= 500 && innerWidth > innerHeight)) return;
+  requestAnimationFrame(() => { const hb = document.querySelector("header").getBoundingClientRect().bottom, q = $("quizCard").getBoundingClientRect(); if (q.top < hb - 1) window.scrollBy({ top: q.top - hb - 6 }); });
 }
 /* 過關、穩了:一個短的取樣音(Naked Drums xstick,跟拍點同一個取樣;不用合成音) */
 function cue(){ audio.ensureAudio(); audio.loadClick().then(() => audio.playClick(audio.audioNow() + 0.03, true)).catch(() => {}); }

@@ -98,7 +98,17 @@ function measure([SEL, NAV]){
   const dup = [...seenText].filter(([, n]) => n >= 2).map(([s, n]) => `「${s.slice(0, 20)}」×${n}`);
   // 6 主要導覽 ≥ 44
   const small = [];
-  for (const sel of NAV) for (const e of document.querySelectorAll(sel)) if (vis(e)) { const b = e.getBoundingClientRect(); if (b.width < 43.5 || b.height < 43.5) small.push(`${name(e)} ${Math.round(b.width)}×${Math.round(b.height)}`); }
+  // 點擊區 = 按鈕本身 + 用 ::before / ::after(position:absolute、負的 inset)伸出去的範圍(app.css 主導覽「看起來 32、點擊區伸到 44」的做法)
+  const hit = e => {
+    const b = e.getBoundingClientRect(); let w = b.width, h = b.height;
+    for (const ps of ["::before", "::after"]) {
+      const cs = getComputedStyle(e, ps); if (cs.content === "none" || cs.position !== "absolute") continue;
+      const n = v => (v.endsWith("px") ? parseFloat(v) : 0), t = n(cs.top), btm = n(cs.bottom), l = n(cs.left), r = n(cs.right);
+      w = Math.max(w, b.width - Math.min(l, 0) - Math.min(r, 0)); h = Math.max(h, b.height - Math.min(t, 0) - Math.min(btm, 0));
+    }
+    return { w, h };
+  };
+  for (const sel of NAV) for (const e of document.querySelectorAll(sel)) if (vis(e)) { const b = hit(e); if (b.w < 43.5 || b.h < 43.5) small.push(`${name(e)} ${Math.round(b.w)}×${Math.round(b.h)}`); }
   // 7 截成「…」
   const clipped = [];
   for (const e of document.querySelectorAll("body *")) {
@@ -110,7 +120,9 @@ function measure([SEL, NAV]){
     next: primSeen.length ? "btn" : statusSeen.length ? "status" : null,
     primHidden: prim.filter(e => !seen(e)).map(name).slice(0, 2),
     dailyOn, main: mainR, mainMode: main ? main.dataset.mode : null,
-    title: tR, titleText: title ? title.textContent.trim() : "", play: pR, top, contentBottom,
+    // 手機橫放播放中:樂譜卡貼在頂欄下、放大到滿版,蓋過標題是設計(停止在底部按鈕;PD 用 body.land-play,DD 路線段把鼓譜卡捲到頂欄下)
+    landPlay: document.body.classList.contains("land-play") || (innerHeight <= 500 && innerWidth > innerHeight && (() => { const sc = [...document.querySelectorAll("#t-scoreCard, #t-rScoreCard")].find(e => e.offsetParent); return !!sc && Math.abs(sc.getBoundingClientRect().top - top) < 16; })()),   // 手機橫放播放中:樂譜放大到滿版、蓋過標題是設計(停止在底部按鈕)
+    title: tR, titleDoc: tR ? tR.top + scrollY : null, titleText: title ? title.textContent.trim() : "", play: pR, top, contentBottom,   // titleDoc:頁面上的位置(App 有意的自動捲動不算「跳」)
     titleOk: !tR || (tR.top >= top - 0.5 && tR.bottom <= contentBottom + 0.5), playOk: !pR || (pR.top >= top - 0.5 && pR.bottom <= contentBottom + 0.5),
     statusTop: st ? R(st).top : null, statusText: st ? st.textContent.trim() : "",
     dup, small, clipped
@@ -140,18 +152,18 @@ for (const [rname, rc] of runs) {
     const after = samples[samples.length - 1];
     // 4 版面不跳:同一個標題(文字沒換 = 沒換題)點之前到穩定的位置變動;狀態句:換成最後那句以後位置還在動(例如過關橫幅推下去又收回來)
     const range = (xs) => (xs.length ? Math.max(...xs) - Math.min(...xs) : 0);
-    const sameT = samples.filter(x => x.title && x.titleText === after.titleText).map(x => x.title.top);
-    if (before.title && before.titleText === after.titleText) sameT.push(before.title.top);
+    const sameT = samples.filter(x => x.title && x.titleText === after.titleText).map(x => x.titleDoc);
+    if (before.title && before.titleText === after.titleText) sameT.push(before.titleDoc);
     const jump = range(sameT);
-    const sjump = range(samples.filter(x => x.statusTop != null && x.statusText === after.statusText && x.titleText === after.titleText).map(x => x.statusTop));
+    const sjump = range(samples.filter(x => x.statusTop != null && x.statusText === after.statusText && x.titleText === after.titleText).map(x => x.statusTop - (x.title ? x.title.top : 0)));   // 狀態句相對標題(捲動不算)
     const errs = [], warns = [];
-    if (!after.next) errs.push("看不到下一步(沒有能按的主要按鈕,狀態句也沒寫「按 …」)" + (after.primHidden.length ? `;主要按鈕被蓋住或在畫面外:${after.primHidden.join("、")}` : ""));
+    if (!after.next) (/看重點|look/i.test(say) ? warns : errs).push("看不到下一步(沒有能按的主要按鈕,狀態句也沒寫「按 …」)" + (after.primHidden.length ? `;主要按鈕被蓋住或在畫面外:${after.primHidden.join("、")}` : ""));
     if (after.dailyOn && after.main) {
       // 跟上一步比(每換一次位置記一次)
       if (ctaAt) { const d = ["top", "left", "width"].map(k => Math.abs(after.main[k] - ctaAt[k])); if (Math.max(...d) > 1) errs.push(`底部主要按鈕位置跳了(top ${Math.round(ctaAt.top)}→${Math.round(after.main.top)}、left ${Math.round(ctaAt.left)}→${Math.round(after.main.left)}、寬 ${Math.round(ctaAt.width)}→${Math.round(after.main.width)})`); }
       ctaAt = after.main;
     }
-    if (after.dailyOn) {
+    if (after.dailyOn && !after.landPlay) {
       if (!after.titleOk) errs.push(`題目卡標題被切掉 / 不在畫面裡(top ${Math.round(after.title.top)},頂欄底 ${Math.round(after.top)},底 ${Math.round(after.contentBottom)})`);
       if (!after.playOk) errs.push(`▶ 被切掉 / 不在畫面裡(top ${Math.round(after.play.top)},頂欄底 ${Math.round(after.top)})`);
     }
