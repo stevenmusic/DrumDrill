@@ -1207,7 +1207,7 @@ function endPrep(done){
   if (!done) { $("countdownValue").textContent = String(prepSec()); $("countdown").hidden = true; }
   renderPrepareLabel();
   if (done && mockOn()) { mock.data.stage = "perform"; renderMockCard(); say(() => tr("準備時間到:正式打一次。", "Time's up: perform it once.")); startPerform(); return; }   // 模擬考:時間到自動正式打
-  if (done) say(() => tr("準備時間到。按「正式打」;錯了不要停,繼續往下打。", "Time's up. Tap Perform — keep going after a slip."));
+  if (done) { say(() => tr("準備時間到。按「正式打」;錯了不要停,繼續往下打。", "Time's up. Tap Perform — keep going after a slip.")); revealQuiz(); }   // 準備時樂譜捲在頂欄下:時間到要看得到 ▶、狀態句與「正式打」
   else if (active) say(startMsg);
 }
 function showFloat(sec){
@@ -1286,7 +1286,8 @@ function abortPerform(){
   perf = null; phase = "idle"; stage && stage.end();
   if (freeQ()) played = true;
   renderAlongLabel(); renderPrepareLabel(); syncButtons();
-  if (active) say(() => (freeQ() ? tr("停止了(不算),按 ▶ 對照", "Stopped (not counted) — ▶ to compare") : tr("停止了(這一次不算)。", "Stopped (not counted).")));
+  if (active) { say(() => (freeQ() ? tr("停止了(不算),按 ▶ 對照", "Stopped (not counted) — ▶ to compare") : tr("停止了(這一次不算)。", "Stopped (not counted).")));
+    if (!mockOn()) revealQuiz(); }   // 正式打時樂譜往下捲:捲回看得到 ▶ 與主要按鈕
   if (mockOn()) { mock.data.stopped = true; mock.finish(); render(); cardToTop($("mockCard")); }   // 模擬考:自己按停止 = 結束(正式打記「中途停止」)
 }
 /* 打完:照題目的每一個音評節奏(js/shared/timing.js;扣掉整體的固定延遲)→ 練習回饋 + 自我檢查;算一題練習。
@@ -1343,16 +1344,31 @@ function finishPerform(){
   renderStats();
   if (ctx) ctx.examChanged();
 }
-/* 打完:結果沒露出來就捲過去(已經在畫面裡就不動) */
+/* 打完、停下、準備時間到、難度回饋:題目卡從標題列(大標題 + ▶)到主要按鈕留在頂欄下、分頁列上面看得到;
+   extra(結果)放得下也露出來,但捲動量不把標題列捲出頂欄(PianoDrill 視奏的 revealQuiz;下一步寫在狀態句,▶ 與按鈕要看得到) */
+function revealQuiz(extra){
+  requestAnimationFrame(() => {
+    if (!active) return;
+    // 標題列的上緣 = 大標題與 ▶ 比較高的那個(手機橫式 .q-head 是 display:contents,量不到)
+    const tops = [$("title"), $("play")].filter(el => el.getClientRects().length).map(el => el.getBoundingClientRect().top);
+    if (!tops.length) return;
+    const head = document.querySelector("header"), hb = head ? head.getBoundingClientRect().bottom : 0;
+    const bar = document.getElementById("tabbar"), bt = bar ? bar.getBoundingClientRect().top : innerHeight, bottom = bt > innerHeight / 2 ? bt : innerHeight;   // 手機橫式分頁列在左邊
+    const keep = Math.min(...tops) - hb - 6;   // 把標題列捲到頂欄下的捲動量
+    let want = 0;
+    for (const el of [$("performTop"), extra]) {
+      if (!el || el.hidden || !el.getClientRects().length) continue;
+      want = Math.max(want, el.getBoundingClientRect().bottom - bottom + 8);
+    }
+    const d = keep < 0 ? keep : Math.min(want, keep);
+    // scrollTo 絕對位置:正式打時的平滑捲動還沒停,scrollBy 會疊加到它的終點;超過半個畫面直接跳(平滑捲太久,標題列要馬上看得到)
+    if (Math.abs(d) > 2) window.scrollTo({ top: Math.max(0, scrollY + d), behavior: Math.abs(d) > innerHeight / 2 ? "instant" : "smooth" });
+  });
+}
+/* 打完:結果沒露出來就捲過去(題目卡標題列與 ▶ 不捲出頂欄) */
 function showResultBox(){
   const box = $("alongResult"); if (box.hidden) return;
-  const r = box.getBoundingClientRect(), head = document.querySelector("header"), top = head ? head.getBoundingClientRect().bottom : 0;
-  const bar = document.getElementById("tabbar"), bt = bar ? bar.getBoundingClientRect().top : innerHeight, bottom = bt > innerHeight / 2 ? bt : innerHeight;
-  // 視奏分頁:狀態句「按 ▶ 對照」在題目卡,題目卡的標題列(大標題 + ▶)要留在頂欄下(正式打時捲到鼓譜,打完捲回來;PianoDrill revealScore 的 keep)
-  const keep = freeQ() ? Math.min($("title").getBoundingClientRect().top, $("play").getBoundingClientRect().top) - top - 6 : Infinity;   // 手機橫式 .q-head 是 contents(高 0),看標題與 ▶ 本身
-  let d = r.top >= top && r.bottom <= bottom ? 0 : r.bottom > bottom ? Math.min(r.bottom - bottom + 12, r.top - top - 8) : r.top - top - 8;
-  d = Math.min(d, keep);
-  if (Math.abs(d) > 2) window.scrollBy({ top: d, behavior: "smooth" });
+  revealQuiz(box);
 }
 /* 無障礙:結果的一句話摘要(aria-live 播報;詳細的在 #s-alongResult) */
 function resultSpeech(R){
@@ -1410,6 +1426,7 @@ function vote(R, v){
   const keep = document.activeElement && document.activeElement.closest(".diff-fb") ? v : null;
   renderResult(); renderLevel(); renderSum(); renderStats();
   if (keep) { const b = $("alongResult").querySelector(`.diff-fb [data-v="${keep}"]`); if (b) b.focus({ preventScroll: true }); }
+  revealQuiz();   // 狀態句寫「按 ▶」:回饋鈕在結果最下面,按了捲回看得到題目卡的 ▶ 與「打一遍」
   announce(R.lvText());
 }
 $("playAlong").onclick = () => startPerform();
