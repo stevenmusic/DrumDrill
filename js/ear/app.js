@@ -1200,6 +1200,14 @@ const onStageResize = () => {
 };
 window.addEventListener("resize", onStageResize);
 if (typeof ResizeObserver !== "undefined") new ResizeObserver(() => requestAnimationFrame(onStageResize)).observe($("stage"));
+/* 系統字級在 App 開著時改了(iOS 更大的文字):標題、標籤重新縮字 / 換行(過門揭曉前譜卡藏著,上面那個不會叫;第 8 輪健檢) */
+let remPx = 0;
+if (typeof ResizeObserver !== "undefined") new ResizeObserver(() => {
+  const r = parseFloat(getComputedStyle(document.documentElement).fontSize);
+  if (r === remPx) return;
+  remPx = r;
+  if (active && cur) requestAnimationFrame(fitTitle);
+}).observe($("qTags"));
 
 /* ══ 聲音:整組鼓(Fill 只要小鼓)+ 拍點(js/shared/audio.js;不用合成鼓聲)══ */
 let kitJob = null;

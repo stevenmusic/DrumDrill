@@ -1084,8 +1084,9 @@ const dcard = createDailyCard({ $, daily, announce,
   // 段落按鈕「穩了 / 還要練」(不跟熟練度的「會了 / 再練」撞名);狀態一句短話(fold-280 不超過兩行)
   labels: { ok: ["穩了", "Steady"], again: ["還要練", "Not yet"], verb: ["打", "play"], good: ["很穩!", "Steady!"],
     // 「穩了」要先播過一輪才亮(dailycard 的 ready):狀態句直接說,按鈕還不能按時 title / aria-describedby 也指到這句
-    hint: ["按 ▶ 跟著打一輪,「穩了」就會亮", "Tap ▶ and play along once — then Steady turns on"],
-    solo: ["按 ▶ 自己打一輪,「穩了」就會亮", "Tap ▶, play it yourself once — then Steady turns on"] },
+    // 英文要在 390 一行放得下(pairText 照比較高的,英文兩行中文也多一行空白;第 8 輪健檢,跟 PianoDrill 同一種寫法)
+    hint: ["按 ▶ 跟著打一輪,「穩了」就會亮", "Tap ▶, play along once — Steady turns on"],
+    solo: ["按 ▶ 自己打一輪,「穩了」就會亮", "Tap ▶, play it alone once — Steady turns on"] },
   mark: s => (s && s.level && s.level.time === "12/8" ? "♩.=" : "♩="),   // 12/8 的速度是附點四分
   warmName: warmName, log: () => S.log,
   onStart: () => { dShow(daily.begin()); window.scrollTo({ top: 0 }); },
@@ -1216,6 +1217,7 @@ function dExit(){
 /* 一次嘗試:自評(穩了 / 再練)或鼓墊的分數 */
 function dTry({ self = null, score: sc = null, res = null, at = null } = {}){
   if (!dseg || dseg.k === "warm") return;
+  if (!self && !res) return;   // 沒自評、沒鼓墊結果:不算嘗試(不然沒練的段也算練過,練完卡寫「練完 1 段 · 0 秒」;第 8 輪健檢)
   if (self === "ok" && !dcard.isReady) return;   // 還沒播過:不算嘗試
   if (self) stopPlayback();
   const s = dseg, r = daily.attempt(res ? { bpm: at || bpm, score: sc } : { bpm, self });
