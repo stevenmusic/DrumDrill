@@ -16,8 +16,9 @@ function openSetupHeight(stage){
   for (const [a, b] of spans) { if (b <= end) continue; h += b - Math.max(a, end); end = b; }
   return h;
 }
-/* score:js/shared/score.js 的 createScore 回傳的物件(landZoom、osmd、refit());回傳 true = 縮放改了、已經重畫 */
-export function fitLandZoom(score, { $ }){
+/* score:js/shared/score.js 的 createScore 回傳的物件(landZoom、osmd、refit());回傳 true = 縮放改了、已經重畫
+   reserve() = 畫面底部被蓋住的高度(技巧今日練習的底部按鈕列 .daily-cta;沒給 = 0) */
+export function fitLandZoom(score, { $, reserve = () => 0 }){
   if (!score.osmd) { score.landZoom = null; return false; }   // 沒有譜(clear 之後):不能 refit
   if (score.wrapped) { if (score.landZoom) { score.landZoom = null; return score.refit(); } return false; }   // 換行排法(聽力的接著打):照紙張寬度排,不照高度放大
   if (!isPhoneLand()) { if (score.landZoom) { score.landZoom = null; return score.refit(); } return false; }
@@ -27,16 +28,16 @@ export function fitLandZoom(score, { $ }){
   const playing = document.body.classList.contains("land-play");
   const top = playing ? document.querySelector("header").offsetHeight + $("scoreCard").querySelector(".card-title").offsetHeight + 30
     : $("stage").getBoundingClientRect().top + scrollY - openSetupHeight($("stage"));
-  const avail = Math.max(130, innerHeight - top - 14);
+  const avail = Math.max(130, innerHeight - top - 14 - reserve());   // 底部按鈕列蓋住的那一塊不算
   const z = Math.max(0.6, Math.min(1.8, osmd.zoom * avail / H));
   if (Math.abs(z - osmd.zoom) < 0.03) { score.landZoom = osmd.zoom; return false; }
   score.landZoom = z; return score.refit();
 }
 /* 播放時的手機橫式畫面:reveal()(播放開始;不是手機橫式回傳 false,模組自己捲)、release(keepView)(停止)、onResize()(播放中轉向)
    opts:$、score、playing()(是不是在播放)、stop()(停止播放)、reveal()(模組的「讓譜面看得到」:轉回直式時呼叫) */
-export function createLandPlay({ $, score, playing, stop, reveal }){
+export function createLandPlay({ $, score, playing, stop, reveal, reserve }){
   let landScroll = null;   // 播放前的捲動位置(播完捲回去,播放鈕才看得到)
-  const fit = () => fitLandZoom(score, { $ });
+  const fit = () => fitLandZoom(score, { $, reserve });
   function show(){
     if (!isPhoneLand()) return false;
     // 樂譜卡貼在頂欄下面、譜面延伸到底

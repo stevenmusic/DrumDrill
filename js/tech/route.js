@@ -29,6 +29,7 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
   const $r = id => $("r" + id[0].toUpperCase() + id.slice(1));
   let cur = null;      // { seg, level, r(toSpec 的結果), xml, key }
   let mode = null;     // "demo" | "perform" | null
+  let starting = null, gen = 0;   // 準備中(載入鼓聲)的那一次:"demo" | "perform";stop() 取消(gen 換號,準備好了也不開始)
   let run = null;      // 這一次播放:{ t0, startedAt, unit, pulseU, qbpm, cycleU, lenU, taps }
   let pad = false, active = true, kitJob = null, loadingP = null;
 
@@ -237,13 +238,16 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
   }
   /* kind = "demo"(▶:整組鼓 + 拍點,一直循環;solo = 只有拍點)/ "perform"(打一遍:預備拍 + 只有拍點,鼓墊評分) */
   async function start(kind, { click = "every", solo = false } = {}){
-    if (!cur || mode) return false;
-    const c0 = cur;
+    if (!cur || mode || starting) return false;
+    const c0 = cur, g = ++gen;
+    starting = kind;
     onPlayState("busy");
     const actx = audio.ensureAudio();
     if (actx.state !== "running") await within(actx.resume().catch(() => {}), 1500);
     const ok = await preload();
     await within(audio.masterReady, 1500);
+    if (g !== gen) return false;   // 準備中被 stop() 取消了(畫面那邊已經處理)
+    starting = null;
     if (cur !== c0 || !active) { onPlayState(null); return false; }
     if (!ok) { onPlayState(null); onLoad(null, true); return false; }
     const bpm = getBpm(), r = cur.r, compound = r.compound;
@@ -280,7 +284,10 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
     if (m === "perform" && judge) { onHeard(); judgeRun(R); }   // 鼓墊打完一遍也算播過
     else if (m === "demo") announce(judge ? tr("播完了", "Finished") : tr("停止了", "Stopped"));
   }
-  function stop(){ if (mode) { player.stop(true); finish(false); } }
+  function stop(){
+    if (mode) { player.stop(true); finish(false); }
+    else if (starting) { starting = null; gen++; onPlayState(null); }   // 還在準備(載入鼓聲):取消,準備好了也不開始
+  }
   function retempo(bpm){
     if (!run || run.kind !== "demo" || !cur) return;   // 打一遍中不改(評分照開始的速度)
     const qbpm = bpm * cur.r.pulse;
@@ -323,7 +330,6 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
     $("rPadCard").hidden = !on;
     $("rModeBtn").hidden = on;
     $("rPerform").hidden = !on;
-    $("rPerform").classList.toggle("primary", !done);   // 同一時間只有一顆主要:過關 / 複習完出現「下一段 ›」時「打一遍」改成次要(還可以再打一次)
     pairText($("rModeBtn"), () => tr("沒有鼓?用手機打", "No drums? Use phone"));   // 短:折疊機上跟「還要練 / 穩了」排在同一行
     pairText($("rKitBtn"), () => tr("改回在鼓上打", "Back to the kit"));
     pairText($("rPadNote"), () => tr("先聽 1 小節拍點再打", "One bar of count-in first") + (showKeys() ? tr(" · 鍵盤 F / J / K", " · keys F / J / K") : ""));
@@ -332,6 +338,8 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
   function syncPerform(){
     const b = $("rPerform");
     b.textContent = mode === "perform" ? tr("停止", "Stop") : tr("打一遍", "Play it");
+    // 同一時間只有一顆主要:過關 / 複習完出現「下一段 ›」時「打一遍」改成次要(還可以再打一次);打的時候「停止」= 次要的樣子(跟底部按鈕的「■ 停止」一樣)
+    b.classList.toggle("primary", !done && mode !== "perform");
     b.disabled = mode === "demo";
   }
 
@@ -341,8 +349,9 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
     get pad(){ return pad; }, set pad(v){ pad = !!v; syncPadUI(); },
     get done(){ return done; }, set done(v){ done = !!v; syncPadUI(); },
     set active(v){ active = !!v; if (!active) stop(); },
-    toggleDemo(opts){ if (mode === "demo") { stop(); return; } if (!mode) start("demo", opts); },
-    togglePerform(opts){ if (mode === "perform") { stop(); return; } if (mode) stop(); start("perform", opts); },
+    get starting(){ return !!starting; },
+    toggleDemo(opts){ if (mode === "demo" || starting === "demo") { stop(); return; } if (!mode && !starting) start("demo", opts); },
+    togglePerform(opts){ if (mode === "perform" || starting === "perform") { stop(); return; } if (mode || starting) stop(); start("perform", opts); },
     syncPerform, syncPadUI,
     relang(){ syncRlBtn(); syncPadUI(); },
     onResize(){

@@ -531,7 +531,7 @@ const score = createScore({
   msg: fn => setMsg("paperMsg", fn),
   errorText: e => tr("鼓譜繪製失敗:", "Could not draw the score: ") + e.message,
   onDrawn: xml => { window.__lastXml = xml; window.__scoreReady = (window.__scoreReady || 0) + 1; },
-  fitLand: () => fitLandZoom(score, { $ }),
+  fitLand: () => fitLandZoom(score, { $, reserve: ctaH }),   // 今日練習(暖身)的底部按鈕列蓋住的不算
   label: () => scoreLabel()
 });
 function renderScore(){ if (cur) score.load(rudimentXML(groups, { reps: (dailyPlay() || {}).reps || S.reps, title: cur.en })); }   // 今日練習:反覆次數 = 這一段實際播的
@@ -734,7 +734,7 @@ function retempo(){
    不放掉會卡在「樂譜卡貼頂、放大」的畫面(別人接手的 "busy" 不放:那一次會自己處理) */
 async function startPlayback(){
   let r = "failed";
-  try { r = await startInner(); }
+  try { const p = startInner(); syncPlaying(); r = await p; }   // starting 在第一個 await 之前就設好了(底部按鈕換成「■ 停止」)
   catch (e) {
     console.error(e);
     starting = 0; $("playBtn").classList.remove("busy");
@@ -742,6 +742,7 @@ async function startPlayback(){
     $("playLabel").textContent = playText();
     setMsg("loadingMsg", () => tr("播放失敗:", "Playback failed: ") + (e && e.message || e));
   }
+  syncPlaying();
   if (r === "failed") land.release();
   if (r !== "started") loopNext = false;
   // 這一類播放過一次:說明不再出現(換打法、換類別時才收起來,播放中版面不動)
@@ -822,14 +823,21 @@ function stopPlayback(natural, keepView){
   $("playLabel").textContent = playText();
   $("playIcon").innerHTML = '<path d="M7 4v16l13-8z"/>';
   tempo.showBeat(null);
+  syncPlaying();
 }
 /* 按播放時鼓譜要看得到:手機橫式 → 樂譜卡貼到頂欄下、放大到滿版(landscape.js);其他 → 沒露出來就捲過去 */
-const land = createLandPlay({ $, score, playing: () => !!play, stop: () => stopPlayback(), reveal: () => revealScore() });
+const land = createLandPlay({ $, score, playing: () => !!play, stop: () => stopPlayback(), reveal: () => revealScore(), reserve: () => ctaH() });
+/* 今日練習的底部按鈕列(dailycard 的 .daily-cta,position:fixed 貼在畫面底部)佔掉的高度:手機橫放貼底;直式在分頁列上面 */
+function ctaH(){
+  const c = $("dailyStep") && !$("dailyStep").hidden ? $("dailyStep").querySelector(".daily-cta") : null;
+  if (!c || !c.offsetHeight) return 0;
+  return Math.max(0, innerHeight - c.getBoundingClientRect().top);
+}
 function revealScore(){
   if (land.reveal()) return;
   const r = $("scoreCard").getBoundingClientRect(), bar = document.querySelector(".tabbar");
   const bt = bar ? bar.getBoundingClientRect().top : innerHeight;
-  const bottom = bt > innerHeight / 2 ? bt : innerHeight;
+  const bottom = Math.min(bt > innerHeight / 2 ? bt : innerHeight, innerHeight - ctaH());   // 手機橫放時分頁列在左邊(top = 0),下面沒有東西擋;今日練習的底部按鈕列也會擋
   if (r.bottom > bottom - 4) window.scrollBy({ top: Math.min(r.bottom - bottom + 8, r.top - 4), behavior: "smooth" });
   else if (r.top < 0) window.scrollBy({ top: r.top - 8, behavior: "smooth" });
 }
@@ -1098,11 +1106,18 @@ const dcard = createDailyCard({ $, daily, announce,
   barHost: el => { if (ctx && ctx.subBar) ctx.subBar(el, "tech"); },   // 進行中:子項目列換成今日練習的那一行
   onOk: () => dTry({ self: "ok" }), onAgain: () => dTry({ self: "again" }),
   onBack: () => { stopPlayback(); if (daily.back()) dShow(daily.seg()); },
-  // 路線段的按鈕列:「沒有鼓?用手機鼓墊」接在「回上一關」後面、「打一遍」放在最右邊(主要按鈕;藏不藏照鼓墊模式,route.js syncPadUI)
+  // 底部按鈕的 ▶ / ■(跟題目卡的圓形 ▶ 同一個播放;路線段 = 示範,準備中按 = 取消)
+  onPlay: () => { if (routeOn()) { rv.toggleDemo(playOpts()); return; } if (play || starting) stopPlayback(); else startPlayback(); },
+  // 路線段的底部按鈕列:左邊「沒有鼓?用手機打」(次要);手機鼓墊模式的主要按鈕 =「打一遍」(取代「▶ 跟著打一輪 / 穩了」,穩了 / 還要練不出現)
   acts: {
     // 同一時間只有一顆主要:過關 / 複習完(主要 =「下一段 ›」)時「打一遍」改成次要、放到左邊(還能再打一次)
-    left: (s, o) => { if (!routeOn()) return []; rv.done = !!(o && o.passedDone); return rv.done ? [$("rModeBtn"), $("rPerform")] : [$("rModeBtn")]; },
-    right: () => (routeOn() && !rv.done ? [$("rPerform")] : []) } });
+    primary: (s, o, st) => {
+      if (!routeOn()) return null;
+      rv.done = !!st.done;
+      const on = rv.pad && !rv.done; $("rPerform").classList.toggle("cta-main", on);   // 底部主要的位置與大小(drum.css)
+      return on ? $("rPerform") : null;
+    },
+    left: () => (!routeOn() ? [] : rv.pad ? (rv.done ? [$("rPerform")] : []) : [$("rModeBtn")]) } });
 /* 鼓墊模式的下一步(還沒打過 / 打完):照路線的狀態一句 */
 const PAD_HINT = { hint: ["▶ 聽示範,再按「打一遍」用鼓墊打", "▶ for the demo, then Play it on the pads"],
   solo: ["只有拍點:按「打一遍」用鼓墊打", "Click only: tap Play it, use the pads"] };
@@ -1122,6 +1137,7 @@ rv = createRouteView({ $, tempo, drumKey: () => (ctx && ctx.drumKey ? ctx.drumKe
     $("playIcon").innerHTML = on ? '<rect x="6" y="6" width="12" height="12" rx="1.5"/>' : '<path d="M7 4v16l13-8z"/>';
     $("playBtn").disabled = st === "perform";
     rv.syncPerform();
+    syncPlaying();
     if (st === "perform" || on) revealRoute(st === "perform");
   },
   // 整組鼓:背景載入只轉 ▶ 外圈;按了 ▶ / 打一遍(busy)還在載入才寫「載入中」,失敗寫沒有網路 / 再按一次
@@ -1137,12 +1153,14 @@ rv = createRouteView({ $, tempo, drumKey: () => (ctx && ctx.drumKey ? ctx.drumKe
 let heardAt = null;
 const heardKey = () => (dseg ? `${dseg.i}/${dseg.lv || ""}/${bpm}` : null);
 function syncReady(){ dcard.ready(!!dseg && heardAt === heardKey()); }
+/* 底部按鈕「■ 停止」:正在播(或正在準備播放;路線段的示範、打一遍也算) */
+function syncPlaying(){ dcard.playing(!!(dseg && (play || starting || (rv && (rv.mode || rv.starting))))); }
 rv.pad = !!S.padMode;
 /* 按 ▶ / 打一遍:鼓譜(鼓墊模式連鼓墊)沒露出來就捲過去 */
 function revealRoute(pads){
   const el = pads ? $("rPadCard") : $("rScoreCard"); if (!el || el.hidden) return;
   const r = el.getBoundingClientRect(), bar = document.querySelector(".tabbar");
-  const bt = bar ? bar.getBoundingClientRect().top : innerHeight, bottom = bt > innerHeight / 2 ? bt : innerHeight;
+  const bt = bar ? bar.getBoundingClientRect().top : innerHeight, bottom = Math.min(bt > innerHeight / 2 ? bt : innerHeight, innerHeight - ctaH());   // 底部按鈕列也會擋
   if (r.bottom > bottom - 4) window.scrollBy({ top: Math.min(r.bottom - bottom + 8, r.top - 60), behavior: "smooth" });
 }
 const playOpts = () => ({ click: (dseg && dseg.click) || "every", solo: !!(dseg && dseg.click && dseg.click !== "every") });

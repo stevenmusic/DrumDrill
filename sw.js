@@ -12,7 +12,7 @@
 const APP = "drumdrill";
 // @app-end
 /*@precache-begin*/
-const CACHE = APP + "-app-eef504c5";
+const CACHE = APP + "-app-7e5ac124";
 const PRECACHE = [
   "./",
   "manifest.webmanifest",
@@ -24,8 +24,8 @@ const PRECACHE = [
   "licenses.html",
   "privacy.html",
   "support.html",
-  "css/app.css?v=a809140533",
-  "css/drum.css?v=0f4fbd69da",
+  "css/app.css?v=cc5182ead0",
+  "css/drum.css?v=c18dfdcfdf",
   "vendor/opensheetmusicdisplay.min.js?v=4bfeb3d01c",
   "js/ear/app.js?v=5d1dfe7eb2",
   "js/ear/gen.js?v=88f8af4408",
@@ -35,16 +35,16 @@ const PRECACHE = [
   "js/shared/audio.js?v=453f7237f3",
   "js/shared/backup.js?v=620efafdf5",
   "js/shared/daily.js?v=07a2184cb8",
-  "js/shared/dailycard.js?v=0f653b6eb7",
+  "js/shared/dailycard.js?v=d6a671f304",
   "js/shared/digest.js?v=c5327e7818",
   "js/shared/drill.js?v=9f698a5f44",
   "js/shared/examdata.js?v=48f1b46bf2",
   "js/shared/examview.js?v=5bff5cdc60",
-  "js/shared/i18n.js?v=edb6c22c07",
+  "js/shared/i18n.js?v=ea47783a91",
   "js/shared/kitevents.js?v=23a7a44853",
   "js/shared/kitgen.js?v=d8b300ef0e",
   "js/shared/kitnotation.js?v=abfe448d01",
-  "js/shared/landscape.js?v=31839615ad",
+  "js/shared/landscape.js?v=1dc6b1e75d",
   "js/shared/legend.js?v=40cb0227d1",
   "js/shared/level.js?v=4b5ae773cf",
   "js/shared/mic.js?v=5450b68a2d",
@@ -69,9 +69,9 @@ const PRECACHE = [
   "js/sight/reading.js?v=cdad6c5e79",
   "js/sight/stage.js?v=bee4aca9a4",
   "js/sight/strings.js?v=666e49e89c",
-  "js/tech/app.js?v=f0e0d5bff9",
+  "js/tech/app.js?v=4491b1db2c",
   "js/tech/notation.js?v=5bee65ac3d",
-  "js/tech/route.js?v=96f3a74bb3",
+  "js/tech/route.js?v=96e761cd9f",
   "js/tech/routes.js?v=e0fc25884b",
   "js/tech/routespec.js?v=204c6a53af",
   "js/tech/rudiments.js?v=cc1a2635ff",
