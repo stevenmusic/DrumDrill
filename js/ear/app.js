@@ -1474,8 +1474,8 @@ function fitTitle(){
 function fitTags(){
   const g = $("qTags"); let k = 1; g.style.setProperty("--tag-scale", 1); g.classList.remove("wrap");
   const over = () => g.lastElementChild && g.lastElementChild.getBoundingClientRect().right + 2 > g.getBoundingClientRect().right;
-  while (over() && k > 0.6) { k -= 0.04; g.style.setProperty("--tag-scale", k); }
-  if (over()) g.classList.add("wrap");   // 縮到 0.6 還放不下(字級 200% 的折疊機):換行,不超出畫面
+  while (over() && k > 0.57) { k -= 0.02; g.style.setProperty("--tag-scale", k); }   // 下限 0.56 ≈ 設計 B 以前的 13px × 0.6(標籤字從 13 變 14,實際最小字一樣)
+  if (over()) g.classList.add("wrap");   // 縮到下限還放不下(字級 200% 的折疊機):換行,不超出畫面
 }
 /* 圖例裡 pairText 的字換語言(drawLegend 只畫一次) */
 function relangPairs(root){ for (const el of root.querySelectorAll("*")) if (el._pair) el.textContent = el._pair[getLang() === "en" ? 1 : 0]; }
