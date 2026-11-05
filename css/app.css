@@ -49,6 +49,9 @@
   --surface-glass:rgba(32,26,15,.88);
   --surface-inset:rgba(22,18,9,.55);
   --seg-track:rgba(255,255,255,.07);--seg-sep:rgba(242,185,75,.28);   /* 分段鈕的軌道、沒選的格子之間的分隔線 */
+  /* 分頁輔色(2026-11 使用者選 B,docs/DESIGN.md):只給底部分頁列選中的那格與分段鈕(.seg);技巧 = 金、視奏 = 天藍、聽力 = 紫、檢定 = 中性。
+     外框在 body 加 tab-tech / tab-sight / tab-ear / tab-exam(main.js 共用部分);沒有 class = 技巧(金)。主要按鈕、▶、chip 一律金 */
+  --acc-text:var(--gold);--acc-fill:var(--gold-fill);--acc-on:var(--on-fill);--acc-tint:rgba(242,185,75,.12);--acc-sep:var(--seg-sep);
   --card-tint:rgba(255,255,255,.035);
   --stage-glow:#171208;
   --paper:#FFFDF6;        /* 樂譜紙張:深色/淺色主題都一樣 */
@@ -76,6 +79,7 @@
   --surface-glass:rgba(252,249,241,.92);
   --surface-inset:rgba(255,255,255,.7);
   --seg-track:rgba(60,45,10,.08);--seg-sep:rgba(122,92,22,.3);
+  --acc-tint:rgba(133,100,24,.10);
   --card-tint:rgba(133,100,24,.05);
   --stage-glow:#FFFDF6;
   --fill-btn:rgba(122,92,22,.10);
@@ -86,6 +90,13 @@
   --shadow-play:0 6px 16px rgba(122,92,22,.25);
   color-scheme:light;
 }
+/* 分頁輔色:每個分頁換一組(選中塊上的字對比 ≥ 4.5:1,深淺兩種主題;沒選的字在軌道上也是) */
+body.tab-sight{--acc-text:#62B6F0;--acc-fill:#62B6F0;--acc-on:#16110A;--acc-tint:rgba(98,182,240,.14);--acc-sep:rgba(98,182,240,.30)}
+body.tab-ear{--acc-text:#B79AF5;--acc-fill:#B79AF5;--acc-on:#16110A;--acc-tint:rgba(183,154,245,.14);--acc-sep:rgba(183,154,245,.30)}
+body.tab-exam{--acc-text:#F4ECDA;--acc-fill:#5A5242;--acc-on:#F4ECDA;--acc-tint:rgba(244,236,218,.10);--acc-sep:rgba(244,236,218,.22)}
+:root.light body.tab-sight{--acc-text:#0D5A8C;--acc-tint:rgba(13,90,140,.10);--acc-sep:rgba(13,90,140,.30)}
+:root.light body.tab-ear{--acc-text:#5B3DA8;--acc-tint:rgba(91,61,168,.10);--acc-sep:rgba(91,61,168,.30)}
+:root.light body.tab-exam{--acc-text:#241E12;--acc-fill:#FFFFFF;--acc-on:#241E12;--acc-tint:rgba(36,30,18,.07);--acc-sep:rgba(36,30,18,.22)}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 button,[role="button"],.seg,.chips,.dg-wrap{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 html{height:100%;font-size:106.25%;-webkit-text-size-adjust:100%;text-size-adjust:100%}   /* 17px;手機橫放時不要自己放大字 */
@@ -171,12 +182,12 @@ main{
 /* 分段按鈕(照 HarmonyHands) */
 /* 分段鈕 = iOS 原生樣式(2026-10-21 使用者選定):灰底軌道 + 浮起來的選中塊;沒選的格子之間一條淡分隔線 */
 .seg{display:flex;gap:0;padding:2px;border:0;border-radius:10px;background:var(--seg-track);overflow:hidden}   /* 內距 2、格子不留間隔:軌道不多吃寬度(折疊機級數 9 格每格 ≥ 28) */
-.seg button{flex:1 1 0;min-width:0;min-height:36px;border:0;background:transparent;color:var(--gold);font-family:inherit;
+.seg button{flex:1 1 0;min-width:0;min-height:36px;border:0;background:transparent;color:var(--acc-text);font-family:inherit;
   font-size:var(--fs-md);font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;padding:0 8px;
   overflow:hidden;overflow-wrap:anywhere;text-align:center;transition:background .15s,color .15s;border-radius:8px}   /* 平常一行放得下;動態字級很大又很窄(折疊機)時換行,不截字(高度用 min-height) */
-.seg button + button:not([aria-pressed="true"]){background:linear-gradient(var(--seg-sep),var(--seg-sep)) no-repeat left center / 1px 50%}
+.seg button + button:not([aria-pressed="true"]){background:linear-gradient(var(--acc-sep),var(--acc-sep)) no-repeat left center / 1px 50%}
 .seg button[aria-pressed="true"] + button{background:transparent}
-.seg button[aria-pressed="true"]{background:var(--gold-fill);color:var(--on-fill);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.35),0 0 0 .5px rgba(0,0,0,.08)}
+.seg button[aria-pressed="true"]{background:var(--acc-fill);color:var(--acc-on);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.35),0 0 0 .5px rgba(0,0,0,.08)}
 .seg.small button{min-height:44px;font-size:var(--fs-sm)}
 
 /* ── 設定 ── */
@@ -414,7 +425,7 @@ main{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
   box-shadow:0 -8px 24px rgba(0,0,0,.25)}
 .tabbar button{display:flex;flex-direction:column;align-items:center;gap:2px;border:0;background:transparent;color:var(--muted);
   font-family:inherit;font-size:var(--fs-xs);padding:6px 0;cursor:pointer;border-radius:var(--radius-sm);min-height:52px}
-.tabbar button[aria-selected="true"]{color:var(--gold)}
+.tabbar button[aria-selected="true"]{color:var(--acc-text)}
 .tabbar button[aria-selected="true"] span{font-weight:700}
 /* 寬畫面(平板橫式、電腦)也跟直式一樣滿版貼底、四格平均分配整個寬度(使用者要求) */
 #examChip{max-width:44vw;white-space:nowrap}   /* 字很短(「ABRSM 3 級」),不截;overflow 不能藏:點擊區要伸到外面(第 2 輪健檢) */
@@ -502,10 +513,9 @@ header{z-index:60}
 }
 /* 選項全部看得到:換行,不橫向捲(捲動看不出還有東西) */
 .opts{flex-wrap:wrap;overflow:visible}
-/* 分頁列:目前的分頁淡金底 */
+/* 分頁列:目前的分頁淡底(分頁輔色) */
 .tabbar button{transition:color .15s,background .15s}
-.tabbar button[aria-selected="true"]{background:rgba(242,185,75,.12)}
-:root.light .tabbar button[aria-selected="true"]{background:rgba(133,100,24,.10)}
+.tabbar button[aria-selected="true"]{background:var(--acc-tint)}
 /* 手機橫放:分頁列改成矮的(圖示和文字並排) */
 @media (max-height:420px), (orientation:landscape) and (max-height:500px){
   .tabbar{padding-top:3px;padding-bottom:calc(3px + env(safe-area-inset-bottom))}
@@ -515,10 +525,9 @@ header{z-index:60}
 }
 /* 選項全部看得到:換行,不橫向捲(捲動看不出還有東西) */
 .opts{flex-wrap:wrap;overflow:visible}
-/* 分頁列:目前的分頁淡金底 */
+/* 分頁列:目前的分頁淡底(分頁輔色) */
 .tabbar button{transition:color .15s,background .15s}
-.tabbar button[aria-selected="true"]{background:rgba(242,185,75,.12)}
-:root.light .tabbar button[aria-selected="true"]{background:rgba(133,100,24,.10)}
+.tabbar button[aria-selected="true"]{background:var(--acc-tint)}
 /* 手機橫放:分頁列改成矮的(圖示和文字並排) */
 @media (max-height:420px), (orientation:landscape) and (max-height:500px){
   .tabbar{padding-top:3px;padding-bottom:calc(3px + env(safe-area-inset-bottom))}
@@ -941,8 +950,9 @@ details.exam-info .verify-note{margin-top:0}
 :root.light{--line-opt:#BFAE86}
 .ans{border-color:var(--line-opt)}
 .opt{transition:background .15s,border-color .15s,color .15s,transform .09s}
-.chip:active,.opt:active,.ans:active,.seg button:active{background:rgba(242,185,75,.16)}
-:root.light .chip:active,:root.light .opt:active,:root.light .ans:active,:root.light .seg button:active{background:rgba(122,92,22,.12)}
+.chip:active,.opt:active,.ans:active{background:rgba(242,185,75,.16)}
+:root.light .chip:active,:root.light .opt:active,:root.light .ans:active{background:rgba(122,92,22,.12)}
+.seg button:active{background:var(--acc-tint)}
 .opt:active{transform:scale(.95)}
 @media (prefers-reduced-motion:reduce){ .btn:active,.seg button:active,.chip:active,.mbtn:active,.opt:active,.ans:active{transform:none} }
 
@@ -966,6 +976,43 @@ body.view-exam #t-dailyCard,body.view-exam #t-dailyStep{display:none !important}
 .daily-sum{font-size:var(--fs-md);color:var(--ivory);line-height:1.5}
 .daily-ms{margin-top:8px}   /* 里程碑稱讚(練完了卡最後一行;milestone.js) */
 .daily-more{width:100%;min-height:44px;height:auto;margin-top:12px;white-space:normal}
+/* 路線圖(今日卡最下面的「路線」鈕,點了在卡內往下展開;dailycard.js 的 fillRoad、js/shared/roadmap.js;2026-11)。
+   一列一組:狀態圖示 + 組名 + 「3 / 6」+ ⌄;組裡一關一行(關名放不下換行、不截字),點一關展開重點(凹進去的方塊)。
+   顏色:過了 = 青綠(達成)、目前 = 象牙白粗體、還沒到 / 還沒開放 = 淡色;金色只給能按的「路線」鈕 */
+.daily-road-btn{width:100%;min-height:44px;height:auto;margin-top:8px;white-space:normal;gap:6px}
+.daily-road-btn .road-chev{display:inline-flex;transition:transform .2s}
+.daily-road-btn[aria-expanded="true"] .road-chev,.road-gb[aria-expanded="true"] .road-chev{transform:rotate(180deg)}
+.daily-road{margin-top:8px;display:grid;gap:12px}
+.road-r h3.road-rn{margin:0 0 4px;font-size:var(--fs-sub);font-weight:700;color:var(--muted-bright);letter-spacing:.06em}
+.road-gs,.road-ls{list-style:none;margin:0;padding:0}
+.road-gs{display:grid;gap:4px}
+.road-gb,.road-lb{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:8px;width:100%;min-height:44px;padding:4px 8px;border-radius:var(--radius-btn);cursor:pointer;color:var(--ivory);font-size:var(--fs-sub);line-height:1.35;-webkit-tap-highlight-color:transparent}
+.road-gb{background:var(--fill-btn);font-weight:500}   /* 能按的列:跟檢定清單 .qrow 一樣的淡底 */
+.road-gb:focus-visible,.road-lb:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.road-lb:disabled{cursor:default}
+.road-t{flex:1 1 0;min-width:0;display:block;overflow-wrap:anywhere}   /* 名字放不下就換行(不切成「…」) */
+.road-gc{flex:none;font-variant-numeric:tabular-nums;color:var(--muted-bright)}
+.road-gb .road-chev{flex:none;display:inline-flex;color:var(--muted-bright);transition:transform .2s}
+.road-mark{flex:none;display:inline-flex;width:20px;height:20px;color:var(--muted-bright)}
+.road-mark.road-pass{color:var(--teal)}
+.road-mark.road-cur{color:var(--ivory)}
+.road-g.st-cur > .road-gb,.road-l.st-cur > .road-lb{font-weight:700}
+.road-ls{padding:4px 0 2px 12px}
+.road-l.st-todo > .road-lb .road-t{color:var(--muted-bright)}
+.road-chk{margin:2px 0 6px 36px;padding:8px 12px;background:var(--fill-inset);border-radius:var(--radius-inset);font-size:var(--fs-sub);color:var(--ivory);line-height:1.45}
+.road-chk ul{margin:0;padding-left:1.1em}
+.road-chk li + li{margin-top:2px}
+.road-lock{display:flex;align-items:center;gap:8px;margin:0;min-height:32px;font-size:var(--fs-sub);color:var(--muted-bright)}
+/* 過關慶祝(js/shared/celebrate.js):狀態句上面一條短橫幅「過關 ✓」+ 線稿星星畫出來,約 1.6 秒後消失;
+   青綠 = 達成(跟「本週達標」同一個意思;金色只給能按的);margin-bottom 抵掉面板的 gap,消失時下面不跳;不動(prefers-reduced-motion)= 靜態 */
+.celebrate{display:flex;align-items:center;gap:8px;align-self:flex-start;min-height:36px;margin-bottom:-8px;padding:4px 14px 4px 10px;border-radius:999px;
+  background:rgba(63,191,174,.14);color:var(--teal);font-size:var(--fs-sub);font-weight:700;line-height:1.3;overflow:hidden;animation:cel-box var(--cel-ms,1.6s) ease both}
+:root.light .celebrate{background:rgba(15,95,86,.10)}
+.celebrate svg{flex:none;width:24px;height:24px}
+.celebrate path{stroke-dasharray:1;stroke-dashoffset:1;animation:cel-draw .55s .1s ease-out forwards}
+@keyframes cel-box{0%{opacity:0;transform:scale(.9)}12%{opacity:1;transform:scale(1.04)}20%{transform:none}85%{opacity:1}100%{opacity:0}}
+@keyframes cel-draw{to{stroke-dashoffset:0}}
+@media (prefers-reduced-motion:reduce){ .celebrate path{stroke-dashoffset:0} .daily-road-btn .road-chev,.road-gb .road-chev{transition:none} }
 /* 進行中:一行進度 */
 .daily.daily-run{padding-top:6px;padding-bottom:6px}
 .daily-bar{display:flex;align-items:center;gap:8px;min-height:44px;min-width:0}

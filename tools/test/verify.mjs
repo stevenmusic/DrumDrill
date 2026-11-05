@@ -91,6 +91,8 @@ try { sightmeter(ok); } catch (e) { ok(false, "視奏拍點時間軸檢查出錯
 try { dailycheck(ok); } catch (e) { ok(false, "今日練習引擎檢查出錯:" + e.stack); }
 // 6k. 今日練習的路線(js/tech/routes.js + routespec.js):律動 28、過門 19 關的譜、拍數、速度、左右手、時值由慢到快、每天不一樣的關 1000 個種子(checks/routes.mjs)
 try { routescheck(ok); } catch (e) { ok(false, "今日練習路線檢查出錯:" + e.stack); }
+// 6k2. 路線圖(js/shared/roadmap.js;兩個 App 同一份):組數加總、過 / 目前 / 還沒到 / 還沒開放、每一組有名字(checks/roadmap.mjs)
+try { const { default: rmcheck } = await import("./checks/roadmap.mjs"); rmcheck(ok); } catch (e) { ok(false, "路線圖檢查出錯:" + e.stack); }
 // 6l. 練習紀錄備份(js/shared/backup.js;兩個 App 同一份):往返、壞檔、別的 App、惡意 key、太大、寫入失敗還原(checks/backup.mjs)
 try { const { default: bakcheck } = await import("./checks/backup.mjs"); bakcheck(ok); } catch (e) { ok(false, "練習紀錄備份檢查出錯:" + e.stack); }
 // 6l2. 練習紀錄卡(js/shared/practicelog.js;兩個 App 同一份):每週目標預設 40、舊資料 60 沒有 goalSet → 40、自己選的照舊、重新開始(checks/practicelog.mjs)

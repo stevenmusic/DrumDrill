@@ -1088,7 +1088,7 @@ function replanWarm(){
   if (!dseg) dcard.render();
 }
 const daily = createDaily({ routes: ROUTES, load: () => S.daily, save: d => { S.daily = d; store.save(); }, extras: { warm: warmItem } });
-const dcard = createDailyCard({ $, daily, announce,
+const dcard = createDailyCard({ $, daily, announce, routes: ROUTES,   // routes:今日卡的「路線」(路線圖)
   // 段落按鈕「穩了 / 還要練」(不跟熟練度的「會了 / 再練」撞名);狀態一句短話(fold-280 不超過兩行)
   labels: { ok: ["穩了", "Steady"], again: ["還要練", "Not yet"], verb: ["打", "play"], good: ["很穩!", "Steady!"],
     // 「穩了」要先播過一輪才亮(dailycard 的 ready):狀態句直接說,按鈕還不能按時 title / aria-describedby 也指到這句
@@ -1214,6 +1214,7 @@ function dShow(s, status = null){
     bpm = s.bpm;
     routeMode(true);
     rv.show(s, seedOf(s));
+    preCheer();   // 過關的鼓聲先載好
     syncMastery(); renderTitle(); syncTempoUI();
     if (active) fitTitle();
     $("playBtn").disabled = false;
@@ -1246,8 +1247,8 @@ function dTry({ self = null, score: sc = null, res = null, at = null } = {}){
   const head = res ? (res.offsetTooLarge ? () => "" : () => tr(`準度 ${sc} · `, `Accuracy ${sc} · `)) : () => "";
   const txt = () => head() + dcard.resultText(r, s);
   announce(txt());
-  if (r.passed || r.verdict === "steady") cue();
-  if (r.passed && r.cont) { dShow(daily.seg(), txt); return; }
+  if (r.passed) cheer(); else if (r.verdict === "steady") cue();   // 過關 = 小鼓兩下 + 大鼓和 Crash;穩了(還沒過關)= 單音
+  if (r.passed && r.cont) { dShow(daily.seg(), txt); dcard.celebrate(); return; }
   dseg = daily.seg();
   if (s.k === "route") { bpm = r.nextBpm; target.bpm = bpm; syncTempoUI(); }
   renderTitle(); if (active) fitTitle();
@@ -1256,9 +1257,23 @@ function dTry({ self = null, score: sc = null, res = null, at = null } = {}){
   syncReady();
   paintStep(dseg, { status: txt, passedDone: stepDone });
   dcard.render();
+  if (r.passed) dcard.celebrate();   // 過關慶祝:狀態句上面一條短橫幅(複習升盒不放)
 }
 /* 過關、穩了:一個短的取樣音(Naked Drums xstick,跟拍點同一個取樣;不用合成音) */
 function cue(){ audio.ensureAudio(); audio.loadClick().then(() => audio.playClick(audio.audioNow() + 0.03, true)).catch(() => {}); }
+/* 過關:Naked Drums 小鼓兩下 + 大鼓和 Crash 一起(不用合成音;鼓件都在 App 打包清單裡);取樣還沒載好(超過 0.6 秒)改成 xstick 單音、不報錯。
+   路線段顯示時先在背景載好(preCheer;技巧模組 holdKit("tech"),不會被釋放) */
+const CHEER = [["snare", 0, 0.55], ["snare", 0.1, 0.7], ["kick", 0.2, 0.8], ["crash", 0.2, 0.7]];
+const preCheer = () => audio.loadKit(["snare", "kick", "crash"]).catch(() => {});
+function cheer(){
+  audio.ensureAudio();
+  const t0 = performance.now();
+  preCheer().then(ok => {
+    if (!ok || performance.now() - t0 > 600) { cue(); return; }
+    const t = audio.audioNow() + 0.03;
+    CHEER.forEach(([p, at, v]) => audio.playKit(p, t + at, v));
+  });
+}
 /* 下一段:練過的那一段算一次練習 */
 function dNext(){
   stopPlayback();

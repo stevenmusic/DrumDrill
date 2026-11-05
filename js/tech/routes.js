@@ -177,9 +177,18 @@ const WHY_FILL = {
   FT: c("8 Beat 的歌也常用三連音過門,練到回 1 不會太早", "Triplet fills show up in 8-beat songs too; land on 1 on time"),
   FD: c("歌是四小節一句,數著小節,過門才不會早或晚", "Songs move in 4-bar phrases; count bars so the fill lands right")
 };
+/* 路線圖(js/shared/roadmap.js;今日卡的「路線」)每一組的名字:7 歲看得懂的說法(中文 ≤ 8 字、英文 ≤ 20 字,checks/roadmap.mjs 檢查) */
+const GROUPS_GROOVE = {
+  "0": c("跟拍點", "Count along"), A: c("四分音符", "Quarter notes"), B: c("8 Beat", "8-beat"), C: c("手的變化", "Hand changes"),
+  D: c("加入左腳", "Add the left foot"), E: c("十六分音符", "16th notes"), F: c("三連音", "Triplets")
+};
+const GROUPS_FILL = {
+  FA: c("四分、八分過門", "Quarters & eighths"), FB: c("十六分過門", "16th-note fills"), FC: c("一整小節", "Full-bar fills"),
+  FT: c("三連音過門", "Triplet fills"), FD: c("四小節一句", "Four-bar phrases")
+};
 export const ROUTES = [
-  { id: "groove", name: ["律動", "Grooves"], why: WHY_GROOVE, levels: GROOVE },
-  { id: "fill", name: ["過門", "Fills"], unlock: { route: "groove", passed: "B2" }, why: WHY_FILL, levels: FILLS }
+  { id: "groove", name: ["律動", "Grooves"], why: WHY_GROOVE, groups: GROUPS_GROOVE, levels: GROOVE },
+  { id: "fill", name: ["過門", "Fills"], unlock: { route: "groove", passed: "B2" }, why: WHY_FILL, groups: GROUPS_FILL, levels: FILLS }
 ];
 
 /* 暖身(現有的基本打法畫面;不過關、只記時間):照律動的進度一層一層加進來,只從最新的兩層挑(照日子輪流;標「再練」的優先)。
