@@ -535,6 +535,7 @@ body.view-exam .exam-info:is(#t-paneExam,#s-paneExam,#e-paneExam){order:20}
 @media (max-width:430px){ #mod-sight .q-ht .q-tags{gap:4px} #mod-sight .q-ht .q-tag{padding-left:6px;padding-right:6px} }
 /* 折疊機:視奏題目卡最後一行(準備 90 秒 · 倒數 · 下一題 · 正式打)間距小一點,英文 Perform 比正式打寬,兩種語言才都一行 */
 @media (max-width:400px){ #s-quiz .q-foot{column-gap:6px} #mod-sight #s-quiz .s-perform-top{padding:0 14px} }   /* 檢定頁準備中:準備 + 倒數 + 下一題 + 正式打 一行放得下(字 14 以後;中英一樣) */
+@media (max-width:300px){ #mod-ear .q-head{gap:4px} }   /* 折疊機:聽力標籤多 6px(英文「12 bars · 4 phrases」才不會比中文多一行) */
 /* 檢定頁的視奏標籤多了出處(4/4 · 推估、♩=80 · 練習設定),英文 Assumed / Practice setting 長:一律放在標題下一行,中英一樣高(自由練習的標籤照舊跟標題同一行) */
 body.view-exam #mod-sight .q-ht .q-tags{flex:1 1 100%}
 @media (max-width:360px){ #mod-sight .q-ht .q-tags{flex:1 1 100%} }   /* SE 320 / 折疊機:視奏標籤放不下標題旁邊(中文「小鼓譜」、英文「12 bars」輪流掉行),一律在標題下一行 */
