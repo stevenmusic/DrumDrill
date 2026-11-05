@@ -106,6 +106,7 @@ for (const [sname, sz] of sizes) {
       if (info.collapsed) r.collapsed.push(st.say);
       if (info.w < 28 || info.h < 28) { if (st.small) r.notes.push(`${st.say} ${info.w}×${info.h}(${st.small})`); else r.small.push(`${st.say} ${info.w}×${info.h}`); }
       const el = page.locator("[data-task-target='1']").first();
+      const before = st.changes ? await page.evaluate(s => document.querySelector(s)?.textContent, st.changes) : null;
       try { if (sz.mobile) await el.tap({ timeout: 4000 }); else await el.click({ timeout: 4000 }); }
       catch (e) { r.fail = `點不到「${st.say}」:${e.message.split("\n")[0]}`; break; }
       await page.evaluate(() => document.querySelectorAll("[data-task-target]").forEach(e => e.removeAttribute("data-task-target")));
@@ -113,6 +114,9 @@ for (const [sname, sz] of sizes) {
       const starting = st.start && r.start == null;
       if (starting) r.start = r.clicks;
       await page.waitForTimeout(st.wait || 400);
+      // 點完要等字變了(連點同一顆箭頭):沒變 = 這一下沒算到,印出前後的字
+      if (st.changes) try { await page.waitForFunction(([s, v]) => document.querySelector(s)?.textContent !== v, [st.changes, before], { timeout: 3000 }); }
+        catch (e) { r.fail = `「${st.say}」點了 ${st.changes} 沒有變(還是 ${before})`; break; }
       // 開始練的那一刻(還沒捲動):第一個畫面要有的東西
       if (starting) for (const f of task.first || []) {
         const fi = await look(page, f.sel, false);
