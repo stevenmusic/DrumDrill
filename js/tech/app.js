@@ -1098,8 +1098,8 @@ const dcard = createDailyCard({ $, daily, announce, routes: ROUTES,   // routes:
   labels: { ok: ["穩了", "Steady"], again: ["還要練", "Not yet"], verb: ["打", "play"], good: ["很穩!", "Steady!"],
     // 「穩了」要先播過一輪才亮(dailycard 的 ready):狀態句直接說,按鈕還不能按時 title / aria-describedby 也指到這句
     // 英文要在 390 一行放得下(pairText 照比較高的,英文兩行中文也多一行空白;第 8 輪健檢,跟 PianoDrill 同一種寫法)
-    hint: ["按 ▶ 跟著打一輪,「穩了」就會亮", "Tap ▶, play along once — Steady turns on"],
-    solo: ["按 ▶ 自己打一輪,「穩了」就會亮", "Tap ▶, play it alone once — Steady turns on"],
+    hint: ["按 ▶ 跟著打一輪,「穩了」就會亮", "Tap ▶ and play along to unlock \"Steady\""],
+    solo: ["按 ▶ 自己打一輪,「穩了」就會亮", "Tap ▶ and play alone to unlock \"Steady\""],
     // 播完一輪的下一步(dailycard 的 ready;手機鼓墊模式由「打一遍」自己評分,不問)、自評 / 鼓墊結果後的下一步
     get ask(){ return rv && rv.pad ? null : ["打得穩就按「穩了」,不穩按「還要練」", "Steady? Tap Steady. If not, Not yet"]; },
     get go(){ return rv && rv.pad ? ["按「打一遍」再打一次", "Tap Play it to go again"] : null; } },
