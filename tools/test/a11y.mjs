@@ -227,6 +227,8 @@ for (const [sys, g] of [["rsl", 0], ["rsl", 4], ["trinity", 4]]) {
   const at = `視奏 ${sys} ${g}`;
   await ev(([s, g]) => { window.__shell.setExam(s, g); window.__sight.goto(s, g); }, [sys, g]); await sightReady();
   await audit(at, { sight: true });
+  // 視奏分頁沒有準備倒數(2026-10;只在檢定頁):到檢定頁出這一級的題目再按準備
+  await ev(() => { window.__shell.showView("exam", "sight"); window.__sight.startXp(); }); await sightReady();
   await ev(() => document.getElementById("s-prepare").click()); await page.waitForTimeout(300);
   const live = await ev(() => document.getElementById("srLive").textContent);
   if (!/秒/.test(live)) fail(`${at} 準備`, `#srLive 沒有寫準備開始(幾秒):${live}`);
