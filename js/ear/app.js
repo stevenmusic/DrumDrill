@@ -1472,9 +1472,10 @@ function fitTitle(){
   fitTags();
 }
 function fitTags(){
-  const g = $("qTags"); let k = 1; g.style.setProperty("--tag-scale", 1);
+  const g = $("qTags"); let k = 1; g.style.setProperty("--tag-scale", 1); g.classList.remove("wrap");
   const over = () => g.lastElementChild && g.lastElementChild.getBoundingClientRect().right + 2 > g.getBoundingClientRect().right;
   while (over() && k > 0.6) { k -= 0.04; g.style.setProperty("--tag-scale", k); }
+  if (over()) g.classList.add("wrap");   // 縮到 0.6 還放不下(字級 200% 的折疊機):換行,不超出畫面
 }
 /* 圖例裡 pairText 的字換語言(drawLegend 只畫一次) */
 function relangPairs(root){ for (const el of root.querySelectorAll("*")) if (el._pair) el.textContent = el._pair[getLang() === "en" ? 1 : 0]; }
