@@ -193,7 +193,7 @@ async function run(label, limit){
   const ul = await page.evaluate(() => window.__ear.unloadMs);
   await page.evaluate(() => { window.__ear.unloadMs = 1500; window.__shell.setExam("rsl", 3); window.__shell.showView("ear", "groove"); });
   await page.waitForFunction(() => window.__ear.state.key === "rsl-3-groove", null, { timeout: 20000 });
-  try { await page.waitForFunction(async () => { const A = await import("./js/shared/audio.js"); return Object.keys(A.kitStats().pieces).length >= 10 && !document.getElementById("e-loadingMsg").textContent; }, null, { timeout: 120000, polling: 300 }); }
+  try { await page.waitForFunction(async () => { const A = await import("./js/shared/audio.js"); return Object.keys(A.kitStats().pieces).length >= 10 && !window.__ear.state.loading; }, null, { timeout: 120000, polling: 300 }); }
   catch (e) { fail(`${label}:聽力 Groove 沒有載入整組鼓`); }
   await page.click('#tabbar button[data-view="tech"]');
   await page.waitForTimeout(2500);
@@ -262,7 +262,7 @@ await run("桌機", 170e6);
   const toSight = async () => { await page.evaluate(() => window.__sight.goto("rsl", 4)); await page.waitForFunction(() => window.__sight.state.loaded && window.__sight.state.loading == null, null, { timeout: 60000 }); };
   const toEar = async () => {
     await page.evaluate(() => window.__shell.showView("ear", "groove"));
-    await page.waitForFunction(async () => { const a = await import("./js/shared/audio.js"); return window.__ear.state.key === "rsl-4-groove" && Object.keys(a.kitStats().pieces).length >= 8 && !document.getElementById("e-loadingMsg").textContent; }, null, { timeout: 120000, polling: 300 });
+    await page.waitForFunction(async () => { const a = await import("./js/shared/audio.js"); return window.__ear.state.key === "rsl-4-groove" && Object.keys(a.kitStats().pieces).length >= 8 && !window.__ear.state.loading; }, null, { timeout: 120000, polling: 300 });
   };
   await setMs(1500);
   // 10a

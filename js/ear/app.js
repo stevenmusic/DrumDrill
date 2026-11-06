@@ -138,7 +138,7 @@ export async function start(c){
         listened: cur ? cur.listened : 0, pass: cur ? cur.pass : 0, chosen: cur ? cur.chosen : null, answer: cur ? cur.answer : null, revealed: !!(cur && cur.revealed),
         options: cur && cur.opts ? cur.opts.length : 0, optsDrawn: cur ? cur.optsDrawn : 0, drawn, pending: score.pending, timer: !!countdown, left,
         taps: perf ? perf.taps.length : 0, result: cur && cur.result ? summary(cur.result) : null, lanes: cur ? cur.lanes.length : 0,
-        mic: micOn(), micFail, micActive: mic.active };
+        mic: micOn(), micFail, micActive: mic.active, loading: !!loadFn };
     },
     get lastMic(){ return lastMic; }, micPlan: () => micPlan(),
     get q(){ return cur && cur.q; }, get xml(){ return cur && cur.xml; }, get tl(){ return tl; },
@@ -1230,10 +1230,13 @@ function preload(){
   return job;
 }
 let loadFn = null;
+/* 載入進度暫時寫在狀態那一行(跟視奏一樣;原本標題下另外冒出一列,把狀態句推下去又收回來),載完還原那一行原本的字。
+   不用 pairText:高度照原本那句,版面不跳;不播報百分比 */
 function loading(p){
+  const was = loadFn, f = $("feedback");
   loadFn = p == null ? null : () => tr(`載入鼓聲 ${Math.round(p * 100)}%`, `Loading drums ${Math.round(p * 100)}%`);
-  $("loadingMsg").textContent = loadFn ? loadFn() : "";
-  $("infoRow").hidden = !loadFn;   // 標題下那一列只放載入進度(標籤在標題同一行):沒在載入就收掉
+  if (loadFn) f.textContent = loadFn();
+  else if (was) f.textContent = f._pair ? f._pair[getLang() === "en" ? 1 : 0] : "";
 }
 const within = (p, ms) => Promise.race([p, new Promise(r => setTimeout(r, ms))]);
 /* 叫醒音訊、等取樣;回傳 false = 不能播(取樣沒載到、等的時候離開了 / 換題了) */
@@ -1326,7 +1329,7 @@ function refreshTexts(){
   renderNotes();
   renderMeta(); renderSum(); tempoUI();
   if (lastMsg) say(lastMsg, true);
-  if (loadFn) $("loadingMsg").textContent = loadFn();
+  if (loadFn) $("feedback").textContent = loadFn();
   if (c.opts && !$("answers").hidden) markOptions();
   renderResult();
   renderLabels();
