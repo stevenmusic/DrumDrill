@@ -89,6 +89,7 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
   main 底部留白加這一列的高度(`body.daily-on main`);狀態句照舊(ready / ask / resultText)。
   DD:路線段的 ▶ = 示範(route.js 的 `toggleDemo`;準備中(載入鼓聲)再按 = 取消);「沒有鼓?用手機打」是題目卡面板裡一行文字鈕(`acts.panel`,不放底部);手機鼓墊模式底部主要 =「打一遍」(`acts.primary`,不出現穩了 / 還要練;過關 / 複習完改成左邊次要);
   手機橫式縮放(landscape.js 的 `reserve`)與自動捲動(`revealScore` / `revealRoute`)扣掉這一列的高度(app.js 的 `ctaH`)
+  **所有練習畫面也一樣**(2026-11 使用者選「全部固定在底部」,同步 PianoDrill):視奏、聽力、檢定、技巧自由練習的題目卡最後一行(`.q-foot` / `.q-last`;檢定頁空狀態 `.x-empty` 那一行、技巧模擬考的 `#t-mockFoot` 也是)在手機直式(≤ 600)與手機橫式固定在底部(main.js 共用部分的 `syncCta`:目前模組第一張看得到的 `.quiz` 最後一個有按鈕的列加 `.cta-bar`、body `has-cta` + `--cta-h`;今日練習進行中照舊用 `.daily-cta`,不會兩條);外觀照 `.daily-cta`,「打一遍 / 正式打」用滿剩下寬度(drum.css);平板、桌機留在卡裡;**鼓墊卡在底部列上面要看得到、能打**:自動捲動(技巧 `ctaH`、視奏 `revealQuiz` / `floorY`、聽力 `bringIntoView`)與手機橫式縮放(landscape.js 的 `ctaReserve` / `floorY`,`reserve` 的預設)扣掉這一列
 - **今日練習進行中**:子項目列換成今日練習的那一行(進度、暫停、下一段 ›;外框 `ctx.subBar(el, view)`,`dailycard.js` 的 `barHost`),不再上下兩行;
   過關、穩了 / 做到了一個短的取樣音(鼓 xstick、琴 Salamander 高音 C,不用合成音);速度卡副標「自動調整」;重點是每項一行的清單
 - **時值模式**(認音 / 認譜的「題目」列:音名 / 鼓件 ↔ 時值;`js/shared/values.js` 兩邊同一份):看一個音符或休止符,問「這是幾拍?」作答 ½ 1 2 3 4;

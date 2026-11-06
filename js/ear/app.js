@@ -41,7 +41,7 @@ import { setupKit, decorate, drawLegend } from "../shared/legend.js";
 import { imgLabel, announce, describeSpec } from "../shared/a11y.js";
 import { createTempo } from "../shared/tempo.js";
 import { createScore } from "../shared/score.js";
-import { fitLandZoom, createLandPlay } from "../shared/landscape.js";
+import { fitLandZoom, createLandPlay, floorY } from "../shared/landscape.js";
 import { toEvents, hitsOnly } from "../shared/kitevents.js";
 import { genChart, phraseSpec, playbackParams, NOTES as PB_NOTES } from "../shared/playbackgen.js";
 import { genFill, fillOptions, genGroove, NOTES as EAR_NOTES } from "./gen.js";
@@ -945,8 +945,8 @@ function placeFloat(){
   const f = $("studyFloat");
   if (phase !== "study" || !active) { f.hidden = true; return; }
   const header = document.querySelector("header"), top = header ? header.getBoundingClientRect().bottom : 0;
-  const bar = document.getElementById("tabbar"), bb = bar ? bar.getBoundingClientRect() : null;
-  const bottom = bb && bb.top > innerHeight / 2 ? bb.top : innerHeight;
+  // 分頁列 / 固定在底部的按鈕列(.cta-bar)上緣;倒數就在固定的按鈕列裡 = 一直看得到
+  const bottom = $("countdown").closest(".cta-bar") ? innerHeight : floorY();
   const cd = $("countdown").getBoundingClientRect();
   if (cd.height > 0 && cd.top >= top && cd.bottom <= bottom) { f.hidden = true; return; }
   f.hidden = false;
@@ -1181,8 +1181,7 @@ function revealScore(){
 function bringIntoView(el){
   if (!el || el.hidden) return;
   const r = el.getBoundingClientRect(), header = document.querySelector("header"), top = header ? header.getBoundingClientRect().bottom : 0;
-  const bar = document.getElementById("tabbar"), bt = bar ? bar.getBoundingClientRect().top : innerHeight;
-  const bottom = bt > innerHeight / 2 ? bt : innerHeight;
+  const bottom = floorY();   // 手機橫式分頁列在左邊不算;固定在底部的按鈕列(.cta-bar)也會擋
   if (r.top < top + 4) window.scrollBy({ top: r.top - top - 8, behavior: "smooth" });
   else if (r.bottom > bottom - 4) window.scrollBy({ top: Math.min(r.bottom - bottom + 8, r.top - top - 8), behavior: "smooth" });
 }

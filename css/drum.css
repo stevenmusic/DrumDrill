@@ -420,6 +420,12 @@ button.xitem{cursor:pointer;border-color:transparent;background:var(--fill-btn)}
 #s-quiz.free #s-generate{order:-1}
 #s-quiz.free .s-perform-top{flex:0 1 auto;min-width:48%;margin-top:0;padding:0 22px}
 #s-quiz.free .q-foot{margin-top:6px}
+/* 題目卡最後一行固定在底部時(app.css 的 .cta-bar;手機):「打一遍 / 正式打」跟其他主要按鈕一樣用滿剩下的寬度、高 52(手機橫式 44);照 PianoDrill sight.css */
+#mod-sight #s-quiz > .cta-bar .s-perform-top,#mod-ear #e-quizCard > .cta-bar .e-perform{flex:1 1 0;min-width:max-content;max-width:100%;min-height:52px;margin-left:0;padding:8px 16px;font-size:var(--fs-body)}
+.quiz > .cta-bar .btn{min-width:44px}   /* 折疊機只剩圖示的「準備 90 秒」「下一題」也 ≥ 44(主要導覽;newbie.mjs) */
+/* 接著打(Trinity):看答案 + 看譜 30 秒 + 倒數 + 下一題 + 打一遍 中文一行放不下的寬度(折疊機;341–379 看譜鈕有字),主要按鈕整條在下一行(中英一樣高) */
+@media (max-width:300px), (min-width:341px) and (max-width:379px){ #mod-ear #e-quizCard > .cta-bar:has(#e-studyBtn:not([hidden])) .e-perform{flex-basis:100%} }
+@media (orientation:landscape) and (max-height:500px){ #mod-sight #s-quiz > .cta-bar .s-perform-top,#mod-ear #e-quizCard > .cta-bar .e-perform{min-height:44px} }
 @media (max-width:340px){ #s-generate .btn-label{display:none} #s-generate{padding:0 12px} #s-quiz.free #s-generate .btn-label{display:inline} }
 /* 手機橫式:認譜的題目卡左右排(左 = 譜、右 = 訊息與作答),設定卡的第一排在同一個畫面看得到 */
 @media (orientation:landscape) and (max-height:500px){

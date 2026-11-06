@@ -12,7 +12,7 @@
 const APP = "drumdrill";
 // @app-end
 /*@precache-begin*/
-const CACHE = APP + "-app-ed7e6105";
+const CACHE = APP + "-app-af99c6f6";
 const PRECACHE = [
   "./",
   "manifest.webmanifest",
@@ -24,13 +24,13 @@ const PRECACHE = [
   "licenses.html",
   "privacy.html",
   "support.html",
-  "css/app.css?v=421e6b8e18",
-  "css/drum.css?v=f2defbd8fc",
+  "css/app.css?v=20405e49fa",
+  "css/drum.css?v=9635c15b78",
   "vendor/opensheetmusicdisplay.min.js?v=4bfeb3d01c",
-  "js/ear/app.js?v=e05d6c14c1",
+  "js/ear/app.js?v=ac4a543d27",
   "js/ear/gen.js?v=88f8af4408",
   "js/ear/strings.js?v=308e48339f",
-  "js/main.js?v=ddeac49009",
+  "js/main.js?v=d1ac9ccd89",
   "js/shared/a11y.js?v=4ece20f2e5",
   "js/shared/audio.js?v=453f7237f3",
   "js/shared/backup.js?v=620efafdf5",
@@ -45,7 +45,7 @@ const PRECACHE = [
   "js/shared/kitevents.js?v=23a7a44853",
   "js/shared/kitgen.js?v=d8b300ef0e",
   "js/shared/kitnotation.js?v=abfe448d01",
-  "js/shared/landscape.js?v=1dc6b1e75d",
+  "js/shared/landscape.js?v=cec65dab42",
   "js/shared/legend.js?v=40cb0227d1",
   "js/shared/level.js?v=4b5ae773cf",
   "js/shared/mic.js?v=5450b68a2d",
@@ -63,7 +63,7 @@ const PRECACHE = [
   "js/shared/tempo.js?v=1e38af7d3f",
   "js/shared/timing.js?v=9ab84e3e3f",
   "js/shared/values.js?v=e240ea1b65",
-  "js/sight/app.js?v=c587d932a9",
+  "js/sight/app.js?v=4e8af23003",
   "js/sight/fingerprint.js?v=3460b8fafa",
   "js/sight/gen.js?v=6633bf6b2e",
   "js/sight/meter.js?v=94d1b94ae1",
@@ -71,7 +71,7 @@ const PRECACHE = [
   "js/sight/reading.js?v=cdad6c5e79",
   "js/sight/stage.js?v=bee4aca9a4",
   "js/sight/strings.js?v=666e49e89c",
-  "js/tech/app.js?v=2d04ffe44a",
+  "js/tech/app.js?v=4f4d6f2578",
   "js/tech/notation.js?v=5bee65ac3d",
   "js/tech/route.js?v=7f0a0fce8d",
   "js/tech/routes.js?v=f2dee0a9f7",

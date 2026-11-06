@@ -44,6 +44,7 @@ import { toEvents, hitsOnly, specBeats, EVENT_NOTES } from "../shared/kitevents.
 import { genRslKit, SIGHT_KIT_GRADES, NOTES as KIT_NOTES } from "../shared/kitgen.js";
 import { genChart, playbackParams, NOTES as PB_NOTES } from "../shared/playbackgen.js";
 import { createTempo } from "../shared/tempo.js";
+import { floorY as floorBase, ctaTop } from "../shared/landscape.js";
 import { createStage } from "./stage.js";
 import { genSnare, SNARE_GRADES } from "./gen.js";
 import { timeline, clickAt, barAt } from "./meter.js";
@@ -917,10 +918,21 @@ function renderedScoreHeight(){ const svg = $("score").querySelector("svg"); ret
 /* 樂譜卡捲到頂欄下時,頂欄與底部分頁列之間放得下多高(手機橫式分頁列在左邊,不扣) */
 function availableScoreHeight(){
   const header = document.querySelector("header"), top = header ? header.getBoundingClientRect().height : 0;
-  const bar = document.getElementById("tabbar"), bb = bar ? bar.getBoundingClientRect() : null;
-  const bottom = bb && bb.top > innerHeight / 2 ? bb.top : innerHeight;
+  const bottom = floorY(true);   // 固定在底部的按鈕列(.cta-bar)也扣掉
   const chrome = $("score").getBoundingClientRect().top - $("scoreCard").getBoundingClientRect().top;
   return Math.max(120, bottom - top - chrome - SCORE_BOTTOM_GAP);
+}
+/* 題目卡最後一行固定在畫面底部(main.js 共用部分的 syncCta、app.css 的 .cta-bar;手機)時回傳那一列(照 PianoDrill 視奏) */
+function ctaFixed(){
+  const c = $("quiz").querySelector(":scope > .cta-bar");
+  return c && c.getClientRects().length && getComputedStyle(c).position === "fixed" ? c : null;
+}
+const CTA_MQ = matchMedia("(max-width:600px), (orientation:landscape) and (max-height:500px)");   // = app.css 的 .cta-bar
+/* 內容的下緣(分頁列 / 固定在底部的按鈕列);predict = 量樂譜大小時按鈕列可能還沒固定(下一個 frame 才加 .cta-bar):先扣掉它平常的高度,同一題前後排法才一樣 */
+function floorY(predict){
+  if (ctaTop() != null || !predict || !CTA_MQ.matches || $("quiz").hidden) return floorBase();
+  const bar = document.getElementById("tabbar"), bt = bar ? bar.getBoundingClientRect().top : innerHeight;
+  return floorBase() - (bt > innerHeight / 2 ? 64 : 56);
 }
 /* OSMD 有沒有照要求的「每行 n 小節」排(放不下時它會自己換成別的排法) */
 function matchesRequestedLayout(layout, n, totalBars){
@@ -989,8 +1001,15 @@ window.addEventListener("resize", () => {
 function bringScoreIntoView(){
   const header = document.querySelector("header"), top = header ? header.getBoundingClientRect().bottom : 0;
   const card = $("scoreCard").getBoundingClientRect();
-  if (Math.abs(card.top - top - 8) < 4) return;
-  window.scrollTo({ top: Math.max(0, scrollY + card.top - top - 8), behavior: "smooth" });
+  let d = card.top - top - 8;
+  // 鼓墊要在底部固定的按鈕列(.cta-bar;手機橫式)上面整個看得到、能打:放不下時再往下捲,最多捲過樂譜卡的標題列(譜不切掉)
+  const pads = $("pads");
+  if (pads.getClientRects().length && !pads.closest("[hidden]")) {
+    const over = pads.getBoundingClientRect().bottom - d - (floorY() - 4);
+    if (over > 0) d += Math.min(over, Math.max(0, $("stage").getBoundingClientRect().top - card.top - 4));
+  }
+  if (Math.abs(d) < 4) return;
+  window.scrollTo({ top: Math.max(0, scrollY + d), behavior: "smooth" });
 }
 
 /* ══ 聲音:鼓的取樣 + 拍點(js/shared/audio.js;不用合成鼓聲)。
@@ -1220,8 +1239,7 @@ function placeFloat(){
   const f = $("prepFloat");
   if (phase !== "prep" || !active) { f.hidden = true; return; }
   const header = document.querySelector("header"), top = header ? header.getBoundingClientRect().bottom : 0;
-  const bar = document.getElementById("tabbar"), bb = bar ? bar.getBoundingClientRect() : null;
-  const bottom = bb && bb.top > innerHeight / 2 ? bb.top : innerHeight;
+  const bottom = ctaFixed() ? innerHeight : floorY();   // 倒數在固定在底部的按鈕列裡 = 一直看得到
   const cd = $("countdown").getBoundingClientRect();
   if (cd.height > 0 && cd.top >= top && cd.bottom <= bottom) { f.hidden = true; return; }
   f.hidden = false;
@@ -1353,10 +1371,11 @@ function revealQuiz(extra){
     const tops = [$("title"), $("play")].filter(el => el.getClientRects().length).map(el => el.getBoundingClientRect().top);
     if (!tops.length) return;
     const head = document.querySelector("header"), hb = head ? head.getBoundingClientRect().bottom : 0;
-    const bar = document.getElementById("tabbar"), bt = bar ? bar.getBoundingClientRect().top : innerHeight, bottom = bt > innerHeight / 2 ? bt : innerHeight;   // 手機橫式分頁列在左邊
+    const bottom = floorY();   // 分頁列 / 固定在底部的按鈕列上緣(手機橫式分頁列在左邊不算)
     const keep = Math.min(...tops) - hb - 6;   // 把標題列捲到頂欄下的捲動量
     let want = 0;
-    for (const el of [$("performTop"), extra]) {
+    // 主要按鈕固定在底部(.cta-bar)時一直看得到:只要狀態句(與結果)露出來
+    for (const el of [ctaFixed() ? $("message") : $("performTop"), extra]) {
       if (!el || el.hidden || !el.getClientRects().length) continue;
       want = Math.max(want, el.getBoundingClientRect().bottom - bottom + 8);
     }

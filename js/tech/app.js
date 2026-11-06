@@ -831,8 +831,13 @@ function stopPlayback(natural, keepView){
 const land = createLandPlay({ $, score, playing: () => !!play, stop: () => stopPlayback(), reveal: () => revealScore(), reserve: () => ctaH() });
 /* 今日練習的底部按鈕列(dailycard 的 .daily-cta,position:fixed 貼在畫面底部)佔掉的高度:手機橫放貼底;直式在分頁列上面 */
 function ctaH(){
-  const c = $("dailyStep") && !$("dailyStep").hidden ? $("dailyStep").querySelector(".daily-cta") : null;
-  if (!c || !c.offsetHeight) return 0;
+  let c = $("dailyStep") && !$("dailyStep").hidden ? $("dailyStep").querySelector(".daily-cta") : null;
+  if (!c || !c.offsetHeight) {
+    // 自由練習、檢定頁:題目卡最後一行固定在底部(main.js 的 syncCta、app.css 的 .cta-bar;手機;同步 PianoDrill ctaEl)
+    const b = $("quizCard").querySelector(":scope > .cta-bar");
+    c = b && b.offsetHeight && getComputedStyle(b).position === "fixed" ? b : null;
+  }
+  if (!c) return 0;
   return Math.max(0, innerHeight - c.getBoundingClientRect().top);
 }
 function revealScore(){

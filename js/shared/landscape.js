@@ -5,6 +5,19 @@
    元素都用模組自己的 $(id => document.getElementById(前綴 + id)),這裡不寫死前綴:$("osmd")、$("stage")、$("scoreCard") */
 export const PHONE_LAND = "(orientation: landscape) and (max-height: 500px)";
 export const isPhoneLand = () => matchMedia(PHONE_LAND).matches;
+/* 固定在畫面底部的按鈕列(今日練習 .daily-cta、題目卡最後一行 .cta-bar = main.js 共用部分的 syncCta;手機)的上緣;沒有 = null */
+export function ctaTop(){
+  const c = [...document.querySelectorAll(".daily-cta, .cta-bar")].find(e => e.offsetHeight && getComputedStyle(e).position === "fixed");
+  return c ? c.getBoundingClientRect().top : null;
+}
+/* 畫面底部被固定按鈕列蓋住的高度(fitLandZoom 的 reserve 預設) */
+export const ctaReserve = () => { const t = ctaTop(); return t == null ? 0 : Math.max(0, innerHeight - t); };
+/* 內容的下緣:底部分頁列的上緣(手機橫式分頁列在左邊,不算)與固定按鈕列的上緣,取比較高的 */
+export function floorY(){
+  const bar = document.getElementById("tabbar"), bt = bar ? bar.getBoundingClientRect().top : innerHeight;
+  const base = bt > innerHeight / 2 ? bt : innerHeight, t = ctaTop();
+  return t == null ? base : Math.min(base, t);
+}
 
 /* 上方展開的設定卡不算(照收合時的位置算):不然展開/收合設定、切語言時譜面大小跟著變;並排的設定卡垂直範圍重疊,只算一次 */
 function openSetupHeight(stage){
@@ -17,8 +30,8 @@ function openSetupHeight(stage){
   return h;
 }
 /* score:js/shared/score.js 的 createScore 回傳的物件(landZoom、osmd、refit());回傳 true = 縮放改了、已經重畫
-   reserve() = 畫面底部被蓋住的高度(技巧今日練習的底部按鈕列 .daily-cta;沒給 = 0) */
-export function fitLandZoom(score, { $, reserve = () => 0 }){
+   reserve() = 畫面底部被蓋住的高度(沒給 = 固定在底部的按鈕列 .daily-cta / .cta-bar,ctaReserve) */
+export function fitLandZoom(score, { $, reserve = ctaReserve }){
   if (!score.osmd) { score.landZoom = null; return false; }   // 沒有譜(clear 之後):不能 refit
   if (score.wrapped) { if (score.landZoom) { score.landZoom = null; return score.refit(); } return false; }   // 換行排法(聽力的接著打):照紙張寬度排,不照高度放大
   if (!isPhoneLand()) { if (score.landZoom) { score.landZoom = null; return score.refit(); } return false; }
@@ -35,7 +48,7 @@ export function fitLandZoom(score, { $, reserve = () => 0 }){
 }
 /* 播放時的手機橫式畫面:reveal()(播放開始;不是手機橫式回傳 false,模組自己捲)、release(keepView)(停止)、onResize()(播放中轉向)
    opts:$、score、playing()(是不是在播放)、stop()(停止播放)、reveal()(模組的「讓譜面看得到」:轉回直式時呼叫) */
-export function createLandPlay({ $, score, playing, stop, reveal, reserve }){
+export function createLandPlay({ $, score, playing, stop, reveal, reserve = ctaReserve }){
   let landScroll = null;   // 播放前的捲動位置(播完捲回去,播放鈕才看得到)
   const fit = () => fitLandZoom(score, { $, reserve });
   function show(){
