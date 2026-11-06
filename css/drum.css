@@ -348,6 +348,8 @@ button.xitem{cursor:pointer;border-color:transparent;background:var(--fill-btn)}
 .stats-card .stats{margin-top:4px}
 .stats-card .stats{grid-template-columns:minmax(0, 8.5em) minmax(24px, 1fr) auto}   /* 數字欄 auto(app.css:各列共用一組欄,靠右對齊、不換行) */
 @media (max-width:360px){ .stats-card .stats{grid-template-columns:minmax(0, 7em) minmax(24px, 1fr) auto} }
+/* 折疊機 / SE:「小鼓譜 · 難度 1」一行放不下 → 分類、難度各一行(兩種語言都兩行,版面一樣高;不切成「…」) */
+@media (max-width:360px){ #s-statsCard .srow>span .sep{display:none} #s-statsCard .srow>span .cn,#s-statsCard .srow>span .lv{display:block} }
 /* 用麥克風評分節奏(選用;視奏的正式打、聽力的回打共用;照 PianoDrill 視奏的 .along-opt;js/shared/micrhythm.js) */
 .along .mic-row{display:flex;flex-direction:column;align-items:stretch;gap:0;border-top:1px solid var(--line);padding-top:6px}
 .along .along-opt{display:inline-flex;align-items:center;gap:8px;min-height:44px;max-width:100%;align-self:flex-start;color:var(--muted-bright);font-size:var(--fs-sm);cursor:pointer}

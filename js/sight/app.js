@@ -1526,7 +1526,7 @@ function renderStats(){
   const box = $("statsList");
   box.innerHTML = CATS.map(c => {
     const st = SS.cats[c] || { n: 0, hits: 0, total: 0 }, p = st.total ? Math.round(100 * st.hits / st.total) : null;
-    return `<div class="srow"><span>${catName(c)} · ${lvName(levels.get(c))}</span><div class="bar"><i class="${p != null && p < 70 ? "low" : ""}" style="width:${p || 0}%"></i></div><small>${tr(`${st.n} 題`, `${st.n} q`)}${p != null ? tr(` · 打中 ${p}%`, ` · hit ${p}%`) : ""}</small></div>`;
+    return `<div class="srow"><span><span class="cn">${catName(c)}</span><span class="sep"> · </span><span class="lv">${lvName(levels.get(c))}</span></span><div class="bar"><i class="${p != null && p < 70 ? "low" : ""}" style="width:${p || 0}%"></i></div><small>${tr(`${st.n} 題`, `${st.n} q`)}${p != null ? tr(` · 打中 ${p}%`, ` · hit ${p}%`) : ""}</small></div>`;
   }).join("");
 }
 
