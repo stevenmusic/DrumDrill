@@ -260,7 +260,7 @@ DrumDrill 爵士鼓檢定特訓(2026-10,使用者要求):照 PianoDrill(stevenmu
       鼓墊卡 `#t-rPadCard`(LANES[3]、鍵盤 F / J / K)+ 底部主要按鈕「打一遍」(`#t-rPerform`,`acts.primary`;穩了 / 還要練不出現):預備拍 1 小節 → 4 小節(中途消失 8 小節)只有拍點 → `scoreLanes` 打中 ≥ 85 = 穩;存 `S.padMode`
     - 鼓譜卡 `#t-rScoreCard`(score.js;一行放不下寬度時縮到放得下,不小於 0.55;再小就換行(score.js 的 `perLine`):4 小節先每行 2 小節(≥ 0.55),最後一小節一行(≥ 0.45),不左右捲;
       換行時 R / L 照每一行自己的最低點、行距多留;播放軸照每一行上下移動;`node tools/test/dailyfit.mjs` 檢查每關 × 種子 × 尺寸;圖例 plain);12/8 的速度是 ♩.(標籤寫 ♩.=);速度卡藏起循環 / 每輪 +4 / 只聽拍點,副標「自動調整」
-    - 整組鼓:技巧模組 enter 時 `audio.holdKit("tech")`、leave 時 `dropKit("tech")`;路線段 `audio.loadKit(這一關的鼓件 + 鼓墊的聲音)`,進度畫在 ▶ 外圈
+    - 整組鼓:只有今日練習的路線段在畫面上(段落進行中、路線段)時 `audio.holdKit("tech")`,暫停、換子項目、練完、到檢定頁、暖身段、leave 就 `dropKit("tech")`(app.js 的 `syncKit`;自由練習、檢定頁技巧不拿著;回到路線段重新 preload / preCheer,kitaudio.mjs 第 11 項);路線段 `audio.loadKit(這一關的鼓件 + 鼓墊的聲音)`,進度畫在 ▶ 外圈
     - 段落用技巧模組的 `target`(`daily` = 段落種類、`route` = 路線段;不寫進 S.bpm、不顯示目標橫幅、選擇器藏起來);標籤的速度 = 現在實際的速度(自己改了速度也跟著變)
     - 暖身(`WARM`):照律動的進度一層一層加,從最新的兩層照日子輪流(「再練」的優先):單擊四分音符(RSL 練習型寫法)→ 單擊八分(A2)→ 雙擊 RRLL、#16 八分(B2)→ #20、#31 四分(C5)→ #22、#19 八分(D5)→ PAS 原譜(E3 以後);
       今日練習不看考試級數(有選考試也一樣;檢定頁才照級數)。舊版用考試項目排的今天暖身(`item.exam`)還沒開始:start 時照路線進度重排(`replanWarm`;checks/routes.mjs 檢查 warmItem 不讀考試)

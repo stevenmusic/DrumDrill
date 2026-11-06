@@ -34,6 +34,7 @@ let bpm = 60;
 let target = null, lastKey = null;
 let dseg = null;   // 今日練習目前顯示的段落(下面「今日練習」一段)
 let rv = null;     // 今日練習的路線段(js/tech/route.js;下面「今日練習」一段建立)
+let kitHeld = false;   // 技巧模組現在拿著整組鼓(syncKit)
 let kitLoading = false;   // 整組鼓還在載入(route.js 的 onLoad 進度):按了 ▶ 才寫「載入中」
 /* 模擬考(下面「模擬考」一段):中止時停止播放、速度還原,在檢定頁就重畫(說明「模擬考已中止」) */
 const mock = createMock({ store: S, save: store.save, onAbort: () => { stopPlayback(); mockRestore(); if (tab === "exam") { renderExam(); if (active) cardToTop($("mockCard")); } } });
@@ -62,7 +63,7 @@ export function enter(t){
   const today = t === "today";
   ROOT.classList.toggle("today-view", today);
   if (today) t = CATEGORIES.some(c => c.id === S.cat) ? S.cat : "roll";
-  audio.holdKit("tech"); rv.active = true;   // 今日練習的路線段用整組鼓(跟視奏、聽力共用一份;離開 60 秒沒人拿才釋放)
+  rv.active = true; syncKit();   // 整組鼓只有今日練習的路線段拿著(syncKit;下面 dExit 會放掉)
   // 今日練習的段落:點了子項目(外框把分段鈕亮回來)或到檢定頁 = 暫停,回到一般的打法畫面(卡片寫「繼續今天的練習」)
   if (dseg && (t === "exam" || (ctx && ctx.subActive && ctx.subActive("tech")))) { dExit(); if (t !== "exam") { switchTab(t); requestAnimationFrame(onStageResize); return; } }
   // 模擬考進行中:離開檢定頁(到技巧分頁)= 中止;還在檢定頁(再點一次同一項)只重畫,不停止
@@ -72,7 +73,7 @@ export function enter(t){
   requestAnimationFrame(onStageResize);
 }
 /* 離開(切分頁、切到背景):停止播放,題目保留;模擬考進行中就中止(回來時說明) */
-export function leave(){ active = false; mock.abort("leave"); stopPlayback(); rv.active = false; audio.dropKit("tech"); }
+export function leave(){ active = false; mock.abort("leave"); stopPlayback(); rv.active = false; syncKit(); }
 /* 檢定分頁的進度:RSL = 本級用到的 PAS 編號已經會了幾個(pattern 也算在它的 PAS 編號上);Trinity 沒有技巧項目 = 在 Song 3 評 */
 export function examStatus(){
   const ex = curExam(), d = dataOf(ex.system);
@@ -1203,6 +1204,17 @@ function routeMode(on){
   $("scoreCard").hidden = on || tab === "exam";
   $("quizCard").classList.toggle("pad-mode", on && rv.pad);
   if (!on) rv.hide();
+  syncKit();
+}
+/* 整組鼓(iPhone 約 83 MB,跟視奏、聽力共用一份):只有今日練習的路線段在畫面上時 holdKit("tech");
+   暫停、換子項目、練完、到檢定頁、離開模組就 dropKit("tech")(沒有人拿著 60 秒後釋放,小鼓保留)。
+   回到路線段:釋放過就重新載(preload / preCheer;已經載好的 loadKit 馬上回來) */
+function syncKit(){
+  const want = !!(active && routeOn());
+  if (want === kitHeld) return;
+  kitHeld = want;
+  if (want) { audio.holdKit("tech"); if (rv.cur) { rv.preload(); preCheer(); } }
+  else audio.dropKit("tech");
 }
 /* 這一段的播放(暖身用現有的打法播放):長度 4 小節(中途消失 8 小節);拍點模式不是每拍 = 只有拍點 */
 function dailyPlay(){
@@ -1284,7 +1296,7 @@ function landBack(){
 /* 過關、穩了:一個短的取樣音(Naked Drums xstick,跟拍點同一個取樣;不用合成音) */
 function cue(){ audio.ensureAudio(); audio.loadClick().then(() => audio.playClick(audio.audioNow() + 0.03, true)).catch(() => {}); }
 /* 過關:Naked Drums 小鼓兩下 + 大鼓和 Crash 一起(不用合成音;鼓件都在 App 打包清單裡);取樣還沒載好(超過 0.6 秒)改成 xstick 單音、不報錯。
-   路線段顯示時先在背景載好(preCheer;技巧模組 holdKit("tech"),不會被釋放) */
+   路線段顯示時先在背景載好(preCheer;路線段在畫面上時 holdKit("tech"),不會被釋放) */
 const CHEER = [["snare", 0, 0.55], ["snare", 0.1, 0.7], ["kick", 0.2, 0.8], ["crash", 0.2, 0.7]];
 const preCheer = () => audio.loadKit(["snare", "kick", "crash"]).catch(() => {});
 function cheer(){

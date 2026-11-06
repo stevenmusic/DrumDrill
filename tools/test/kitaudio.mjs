@@ -13,7 +13,9 @@
 //  8. 聽力(js/ear/app.js):Groove 題目載入整組鼓;離開聽力 unloadMs(實際 60 秒,測試改 1.5 秒)後只剩小鼓;回到聽力按播放會重新載入
 //  9. 視奏(js/sight/app.js):RSL 4 級載入整組鼓;離開 60 秒(測試 1.5 秒)釋放、時間到以前回來不釋放、回來重新載入
 //  10. 整組鼓的所有權(audio.js holdKit / dropKit):聽力 ↔ 視奏切換不釋放、兩個都離開到時間才釋放;視奏結果畫面的訊息不被載入中蓋掉;載入中被釋放不顯示失敗
-//  「離開」= 到技巧分頁(技巧模組 enter 時 holdKit("tech"),今日練習的路線段用整組鼓:這時只剩 tech 拿著、不在計時)再切到背景(tech 也放掉 → 開始計時);away() / toFront()
+//  「離開」= 到技巧分頁的自由練習(技巧模組只有今日練習的路線段在畫面上才 holdKit("tech"):自由練習沒有人拿著 → 開始計時)再切到背景;away() / toFront()
+//  11. 今日練習的路線段:路線段在畫面上 = tech 拿著、不計時(會載好整組鼓);今日卡還沒開始、暫停、切到背景、到檢定頁 = tech 放掉、開始計時;
+//      釋放後回到路線段(繼續、回到前景)重新載入整組鼓
 // 用法:node tools/test/kitaudio.mjs
 import { open } from "./harness.mjs";
 let bad = 0;
@@ -30,11 +32,13 @@ const setHidden = hidden => page.evaluate(h => {
   Object.defineProperty(document, "hidden", { configurable: true, get: () => h });
   document.dispatchEvent(new Event("visibilitychange"));
 }, hidden);
-/* 離開視奏 / 聽力:到技巧分頁(只剩 tech 拿著、不計時、不釋放)→ 切到背景(沒有人拿著 → 開始計時) */
+/* 已經釋放(只剩小鼓) */
+const released = () => page.evaluate(async A => Object.keys((await import(A)).kitStats().pieces).join(",") === "snare", AUDIO);
+/* 離開視奏 / 聽力:到技巧分頁的自由練習(沒有人拿著 → 開始計時;等待時間很短時可能已經釋放)→ 切到背景 */
 async function away(label, click = false){
   if (click) await page.click('#tabbar button[data-view="tech"]'); else await page.evaluate(() => window.__shell.showView("tech"));
   const r = await kitRel();
-  if (r.holders !== "tech" || r.pending) fail(`${label}:到技巧分頁應該只有 tech 拿著整組鼓、不計時(holders「${r.holders}」、pending ${r.pending})`);
+  if (r.holders || (!r.pending && !(await released()))) fail(`${label}:到技巧分頁的自由練習應該沒有人拿著整組鼓、開始計時(holders「${r.holders}」、pending ${r.pending})`);
   await setHidden(true);
 }
 const toFront = () => setHidden(false);
@@ -346,6 +350,54 @@ await run("桌機", 170e6);
   if (!/kick/.test(await pieces())) fail("10d:回到視奏沒有重新載入整組鼓");
   await setMs(60000);
   if (bad === n10) ok(`整組鼓所有權:聽力 ↔ 視奏切換不釋放(${k0.split(",").length} 個鼓件)、兩個都離開到時間才釋放;視奏結果畫面重新載入時訊息不被蓋、載完還原;載入中被釋放回來不顯示失敗`);
+}
+// 11. 今日練習的路線段(js/tech/app.js 的 syncKit):只有路線段在畫面上 tech 才拿著整組鼓
+{
+  const n11 = bad, A = AUDIO;
+  await page.evaluate(() => { localStorage.clear(); localStorage.setItem("drumdrill-lang", "zh"); localStorage.setItem("drumdrill.v1", JSON.stringify({ onboarded: true, view: "tech", sub: { tech: "today" } })); });
+  await page.reload(); await page.waitForFunction(() => window.__stageReady >= 1);
+  const setMs = ms => page.evaluate(async ([A, ms]) => { (await import(A)).kitRelease.ms = ms; }, [A, ms]);
+  const kick = () => page.evaluate(async A => "kick" in (await import(A)).kitStats().pieces, A);
+  const waitKick = async label => { try { await page.waitForFunction(async A => "kick" in (await import(A)).kitStats().pieces, A, { timeout: 60000, polling: 200 }); } catch (e) { fail(`11 ${label}:路線段沒有載入整組鼓`); } };
+  const noOne = async label => { const r = await kitRel(); if (r.holders || (!r.pending && !(await released()))) fail(`11 ${label}:應該沒有人拿著整組鼓、開始計時(holders「${r.holders}」、pending ${r.pending})`); };
+  const techHolds = async label => { const r = await kitRel(); if (r.holders !== "tech" || r.pending) fail(`11 ${label}:路線段應該 tech 拿著整組鼓、不計時(holders「${r.holders}」、pending ${r.pending})`); };
+  const onRoute = () => page.evaluate(() => !!window.__tech.routeOn());
+  await setMs(1500);
+  await page.waitForSelector("#t-dailyCard .daily-btn", { state: "visible", timeout: 20000 });
+  await noOne("今日卡還沒開始");
+  // 開始:暖身(用小鼓,不拿整組鼓)→ 下一段 = 路線段
+  await page.click("#t-dailyCard .daily-btn"); await page.waitForTimeout(200);
+  if (await page.evaluate(() => window.__tech.dseg && window.__tech.dseg.k === "warm")) {
+    await noOne("暖身段");
+    await page.evaluate(() => window.__tech.dNext()); await page.waitForTimeout(200);
+  }
+  if (!(await onRoute())) fail("11:開始今日練習後沒有到路線段(測試前提)");
+  await techHolds("路線段");
+  await waitKick("路線段");
+  // 暫停 → 放掉;釋放後繼續 → 重新拿著、重新載入
+  await setMs(200);
+  await page.evaluate(() => document.querySelector(".daily-pause").click()); await page.waitForTimeout(100);
+  await noOne("暫停");
+  await page.waitForTimeout(500);
+  if (!(await released())) fail("11:暫停超過等待時間,整組鼓沒有釋放");
+  await page.click("#t-dailyCard .daily-btn"); await page.waitForTimeout(200);
+  if (!(await onRoute())) fail("11:繼續今天的練習沒有回到路線段(測試前提)");
+  await techHolds("繼續");
+  await waitKick("繼續(釋放後)");
+  // 切到背景 → 放掉;釋放後回到前景(路線段還在)→ 重新拿著、重新載入
+  await setHidden(true); await page.waitForTimeout(100);
+  await noOne("切到背景");
+  await page.waitForTimeout(500);
+  if (!(await released())) fail("11:切到背景超過等待時間,整組鼓沒有釋放");
+  await setHidden(false); await page.waitForTimeout(200);
+  if (await onRoute()) { await techHolds("回到前景"); await waitKick("回到前景(釋放後)"); }
+  else fail("11:回到前景路線段不見了(測試前提)");
+  // 到檢定頁 → 放掉
+  await setMs(1500);
+  await page.evaluate(() => window.__shell.showView("exam", "tech")); await page.waitForTimeout(200);
+  await noOne("到檢定頁");
+  await setMs(60000);
+  if (bad === n11) ok("今日練習:只有路線段 tech 拿著整組鼓;還沒開始、暖身、暫停、切到背景、到檢定頁都放掉;釋放後回到路線段重新載入");
 }
 await page.addInitScript(ua => { Object.defineProperty(Navigator.prototype, "userAgent", { configurable: true, get: () => ua }); }, IPHONE_UA);
 await run("iPhone UA", 85e6);
