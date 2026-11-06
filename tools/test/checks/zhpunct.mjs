@@ -12,9 +12,9 @@ const WIDE = /[\u3400-\u9fff\uf900-\ufaff\u3000-\u303f\uff00-\uffef]/;   // 中�
 const HALF = { ",": "\uff0c", ":": "\uff1a", ";": "\uff1b", "?": "\uff1f", "!": "\uff01" };   // 半形 → 全形
 const isWide = c => !!c && WIDE.test(c);
 
-// 先不換的:麥克風打分(另一個人在改)、今日練習「App 聽你彈」那一段(lis*;tools/tech/listen-check.mjs 比對「麥克風聽你彈:開」)
-const SKIP = new Set(["js/sight/micscore.js"]);
-const HOLD = { "js/tech/app.js": [/^let lisTap\b/m, /^micBtn\.onclick\b/m] };   // [從這一行, 到這一行之前] 不換、不查
+// 先不換的檔案、段落(目前沒有;HOLD = [從這一行, 到這一行之前])
+const SKIP = new Set([]);
+const HOLD = {};   // [從這一行, 到這一行之前] 不換、不查
 function held(src, file, fn){
   const h = HOLD[file]; if (!h) return fn(src);
   const a = src.search(h[0]), b = a < 0 ? -1 : src.slice(a).search(h[1]);
