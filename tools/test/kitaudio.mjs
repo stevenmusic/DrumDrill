@@ -13,6 +13,7 @@
 //  8. 聽力(js/ear/app.js):Groove 題目載入整組鼓;離開聽力 unloadMs(實際 60 秒,測試改 1.5 秒)後只剩小鼓;回到聽力按播放會重新載入
 //  9. 視奏(js/sight/app.js):RSL 4 級載入整組鼓;離開 60 秒(測試 1.5 秒)釋放、時間到以前回來不釋放、回來重新載入
 //  10. 整組鼓的所有權(audio.js holdKit / dropKit):聽力 ↔ 視奏切換不釋放、兩個都離開到時間才釋放;視奏結果畫面的訊息不被載入中蓋掉;載入中被釋放不顯示失敗
+//  「離開」= 到技巧分頁(技巧模組 enter 時 holdKit("tech"),今日練習的路線段用整組鼓:這時只剩 tech 拿著、不在計時)再切到背景(tech 也放掉 → 開始計時);away() / toFront()
 // 用法:node tools/test/kitaudio.mjs
 import { open } from "./harness.mjs";
 let bad = 0;
@@ -21,6 +22,22 @@ const ok = m => console.log("✓ " + m);
 const E6 = 1e6;   // 記憶體一律用十進位 10⁶ 位元組(跟 docs/STAGES.md 決定 11、docs/APPSTORE.md 一樣)
 const IPHONE_UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1";
 const { page, errors, close } = await open({ viewport: { width: 1280, height: 800 } });
+const AUDIO = "./js/shared/audio.js";
+const kitRel = () => page.evaluate(async A => { const r = (await import(A)).kitRelease; return { holders: r.holders.join(","), pending: r.pending }; }, AUDIO);
+/* 切到背景 / 回到前景(外框的 visibilitychange:目前的模組 leave / enter) */
+const setHidden = hidden => page.evaluate(h => {
+  Object.defineProperty(document, "visibilityState", { configurable: true, get: () => (h ? "hidden" : "visible") });
+  Object.defineProperty(document, "hidden", { configurable: true, get: () => h });
+  document.dispatchEvent(new Event("visibilitychange"));
+}, hidden);
+/* 離開視奏 / 聽力:到技巧分頁(只剩 tech 拿著、不計時、不釋放)→ 切到背景(沒有人拿著 → 開始計時) */
+async function away(label, click = false){
+  if (click) await page.click('#tabbar button[data-view="tech"]'); else await page.evaluate(() => window.__shell.showView("tech"));
+  const r = await kitRel();
+  if (r.holders !== "tech" || r.pending) fail(`${label}:到技巧分頁應該只有 tech 拿著整組鼓、不計時(holders「${r.holders}」、pending ${r.pending})`);
+  await setHidden(true);
+}
+const toFront = () => setHidden(false);
 
 async function run(label, limit){
   await page.evaluate(() => { localStorage.clear(); localStorage.setItem("drumdrill-lang", "zh"); localStorage.setItem("drumdrill.v1", JSON.stringify({ onboarded: true, view: "tech", sub: { tech: "roll", exam: "tech" } })); });
@@ -195,10 +212,11 @@ async function run(label, limit){
   await page.waitForFunction(() => window.__ear.state.key === "rsl-3-groove", null, { timeout: 20000 });
   try { await page.waitForFunction(async () => { const A = await import("./js/shared/audio.js"); return Object.keys(A.kitStats().pieces).length >= 10 && !window.__ear.state.loading; }, null, { timeout: 120000, polling: 300 }); }
   catch (e) { fail(`${label}:聽力 Groove 沒有載入整組鼓`); }
-  await page.click('#tabbar button[data-view="tech"]');
+  await away(label, true);
   await page.waitForTimeout(2500);
   const left = await page.evaluate(async () => Object.keys((await import("./js/shared/audio.js")).kitStats().pieces));
   if (left.join() !== "snare") fail(`${label}:離開聽力之後沒有釋放整組鼓(還有 ${left.join(", ")})`);
+  await toFront();
   await page.click('#tabbar button[data-view="ear"]'); await page.waitForTimeout(300);
   await page.evaluate(() => window.__ear.listen());
   try { await page.waitForFunction(() => window.__ear.state.kind === "listen", null, { timeout: 120000 }); } catch (e) { fail(`${label}:釋放後回到聽力不能播放`); }
@@ -226,11 +244,12 @@ await run("桌機", 170e6);
   if (!/kick/.test(p0) || p0 === "snare") fail(`視奏 RSL 4 級:整組鼓沒有載入(${p0})`);
   if (!sawRing) fail("視奏的 ▶ 沒有進度環");
   if (await page.evaluate(() => document.getElementById("s-play").disabled)) fail("視奏:整組鼓載完 ▶ 還不能按");
-  await page.evaluate(() => { window.__sight.unloadMs = 1500; window.__shell.showView("tech"); });
+  await page.evaluate(() => { window.__sight.unloadMs = 1500; });
+  await away("視奏");
   await page.waitForTimeout(700);
-  await page.evaluate(() => window.__sight.goto("rsl", 4));   // 時間到以前回來:取消
+  await toFront(); await page.evaluate(() => window.__sight.goto("rsl", 4));   // 時間到以前回來:取消
   await page.waitForTimeout(400);
-  await page.evaluate(() => window.__shell.showView("tech"));
+  await away("視奏");
   await page.waitForTimeout(1000);
   const p1 = await pieces();   // 第二次離開才 1 秒:還在
   if (p1 !== p0) fail(`視奏:回來又離開 1 秒(< 1.5 秒)整組鼓就被釋放了(${p1})`);
@@ -240,7 +259,7 @@ await run("桌機", 170e6);
   const tech = await page.evaluate(async A => { const a = await import(A); a.ensureAudio(); return !!a.playDrum("snare", a.getCtx().currentTime + 0.05, 0.7); }, A);
   if (!tech) fail("視奏釋放整組鼓後,技巧的小鼓不出聲");
   // 一直沒離開的話不釋放:在視奏等 2 秒
-  await toSight();
+  await toFront(); await toSight();
   await page.waitForTimeout(2000);
   const p3 = await pieces();
   if (!/kick/.test(p3)) fail(`視奏:回到視奏沒有重新載入整組鼓(${p3})`);
@@ -257,7 +276,7 @@ await run("桌機", 170e6);
   await page.reload(); await page.waitForFunction(() => window.__stageReady >= 1);
   const A = "./js/shared/audio.js";
   const pieces = () => page.evaluate(async A => Object.keys((await import(A)).kitStats().pieces).sort().join(","), A);
-  const rel = () => page.evaluate(async A => { const r = (await import(A)).kitRelease; return { holders: r.holders.join(","), pending: r.pending }; }, A);
+  const rel = kitRel;
   const setMs = ms => page.evaluate(async ([A, ms]) => { (await import(A)).kitRelease.ms = ms; }, [A, ms]);
   const toSight = async () => { await page.evaluate(() => window.__sight.goto("rsl", 4)); await page.waitForFunction(() => window.__sight.state.loaded && window.__sight.state.loading == null, null, { timeout: 60000 }); };
   const toEar = async () => {
@@ -275,14 +294,14 @@ await run("桌機", 170e6);
   r = await rel(); const k2 = await pieces();
   if (r.holders !== "ear" || r.pending || !/kick/.test(k2)) fail(`視奏 → 聽力:聽力拿著整組鼓還是被釋放 / 在計時(holders ${r.holders}、pending ${r.pending}、${k2})`);
   // 10b
-  await page.evaluate(() => window.__shell.showView("tech")); await page.waitForTimeout(800);
+  await away("10b"); await page.waitForTimeout(800);
   r = await rel(); const k3 = await pieces();
   if (r.holders || !r.pending || !/kick/.test(k3)) fail(`兩個都離開 0.8 秒(< 1.5 秒):應該在計時、還沒釋放(holders「${r.holders}」、pending ${r.pending}、${k3})`);
   await page.waitForTimeout(1200);
   const k4 = await pieces();
   if (k4 !== "snare") fail(`兩個都離開超過等待時間,整組鼓沒有釋放(還有 ${k4})`);
   // 10c
-  await toSight();
+  await toFront(); await toSight();
   await page.evaluate(() => { window.__sight.setBpm(240); window.__sight.startPerform(); });
   await page.waitForFunction(() => window.__sight.state.phase === "perform", null, { timeout: 20000 });
   await page.waitForTimeout(400);
@@ -291,7 +310,7 @@ await run("桌機", 170e6);
   const msg = () => page.evaluate(() => document.getElementById("s-message").textContent);
   const m0 = await msg();
   await setMs(200);
-  await page.evaluate(() => window.__shell.showView("tech")); await page.waitForTimeout(700);
+  await away("10c"); await page.waitForTimeout(700);
   if ((await pieces()) !== "snare") fail("10c:離開視奏後整組鼓沒有釋放(測試前提)");
   // 記下回來之後訊息列出現過的每一段文字、▶ 有沒有進入載入中(busy)
   await page.evaluate(() => {
@@ -300,7 +319,7 @@ await run("桌機", 170e6);
     window.__mo = [new MutationObserver(() => window.__msgs.push(m.textContent)), new MutationObserver(() => { if (p.classList.contains("busy")) window.__busy = true; })];
     window.__mo[0].observe(m, { childList: true, characterData: true, subtree: true }); window.__mo[1].observe(p, { attributes: true, attributeFilter: ["class"] });
   });
-  await page.evaluate(() => window.__sight.goto("rsl", 4)); await page.waitForTimeout(50);
+  await toFront(); await page.evaluate(() => window.__sight.goto("rsl", 4)); await page.waitForTimeout(50);
   const during = await page.evaluate(() => ({ loading: window.__sight.state.loading, phase: window.__sight.state.phase, msg: document.getElementById("s-message").textContent }));
   await page.waitForFunction(() => window.__sight.state.loaded && window.__sight.state.loading == null, null, { timeout: 60000 });
   const seen = await page.evaluate(() => { window.__mo.forEach(o => o.disconnect()); return { msgs: window.__msgs, busy: window.__busy }; });
@@ -313,13 +332,15 @@ await run("桌機", 170e6);
   if (!/kick/.test(await pieces())) fail("10c:回到視奏沒有重新載入整組鼓");
   // 10d:新題目(idle)載入中離開,馬上釋放
   await setMs(1);
-  await page.evaluate(() => { window.__shell.showView("tech"); });
+  await away("10d");
   await page.waitForTimeout(100);
+  await toFront();
   await page.evaluate(async A => { (await import(A)).kitRelease.ms = 1; }, A);
-  await page.evaluate(() => { window.__sight.goto("rsl", 4); window.__sight.newTest(); window.__shell.showView("tech"); });
+  await page.evaluate(() => { window.__sight.goto("rsl", 4); window.__sight.newTest(); });
+  await away("10d");   // 新題目還在載入就離開:馬上釋放("kit unloaded")
   await page.waitForTimeout(3000);
   await setMs(1500);
-  await toSight();
+  await toFront(); await toSight();
   const m2 = await msg();
   if (/失敗/.test(m2)) fail(`10d:載入中被釋放,回來顯示「${m2}」(應該靜靜重新載)`);
   if (!/kick/.test(await pieces())) fail("10d:回到視奏沒有重新載入整組鼓");
