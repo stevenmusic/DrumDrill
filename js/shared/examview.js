@@ -93,7 +93,7 @@ export function summaryRows(sys, data, g){
   const rows = [];
   if (sys === "rsl") {
     const m = data.marks.gradeExam;
-    rows.push({ k: () => tr("整場門檻", "Overall"), v: () => tr(`滿分 ${m.total.max}:`, `Out of ${m.total.max}: `) + bandsText(m.total.bands, "%"), src: srcOf(sys, m.src.p) });
+    rows.push({ k: () => tr("整場門檻", "Overall"), v: () => tr(`滿分 ${m.total.max}：`, `Out of ${m.total.max}: `) + bandsText(m.total.bands, "%"), src: srcOf(sys, m.src.p) });
     const min = data.minutes.gradeExam[g];
     if (min != null) rows.push({ k: () => tr("考試時間", "Exam length"), v: () => tr(`${min} 分鐘`, `${min} minutes`), src: srcOf(sys, data.minutes.src.p) });
   } else {

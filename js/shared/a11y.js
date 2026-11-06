@@ -101,7 +101,7 @@ export function describeSpec(spec, opts = {}){
   else if (opts.bpm) head.push(`♩=${opts.bpm}`);
   const bars = spec.measures.map((m, i) => {
     const label = tr(`第 ${i + 1} 小節`, `bar ${i + 1}`);
-    if (m.slash) return label + tr(":自由發揮(斜線)", ": free development (slashes)");
+    if (m.slash) return label + tr("：自由發揮（斜線）", ": free development (slashes)");
     const voices = (m.voices || []).filter(Boolean);
     if (snare && opts.detail !== false) {
       const words = (voices[0] || []).map(noteWord);
@@ -117,7 +117,7 @@ export function describeSpec(spec, opts = {}){
         t += dur;
       }
     }
-    if (!starts.size) return label + tr(":休止", ": rest");
+    if (!starts.size) return label + tr("：休止", ": rest");
     const order = key && key.pieces ? Object.keys(key.pieces) : [];
     const ps = [...pieces].sort((a, b) => order.indexOf(a) - order.indexOf(b));
     return label + tr(`:${starts.size} 下(${pieceNames(ps, key)})`, `: ${starts.size} hit${starts.size > 1 ? "s" : ""} (${pieceNames(ps, key)})`);

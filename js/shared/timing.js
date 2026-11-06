@@ -254,11 +254,11 @@ export function offsetNote(r){
   // 偏移太大(不給分數):用秒寫(自學者看得懂),結果不放「—/100」
   const sec = (ms / 1000).toFixed(1);
   if (r.offsetTooLarge) return r.offsetMs > 0
-    ? [`整體晚了約 ${sec} 秒,這次不算分數;跟著預備拍再打一次(藍牙耳機會晚一點)`, `About ${sec} s late overall — no score this time; follow the count-in (Bluetooth adds delay)`]
-    : [`整體早了約 ${sec} 秒,這次不算分數;跟著預備拍再打一次`, `About ${sec} s early overall — no score this time; follow the count-in`];
+    ? [`整體晚了約 ${sec} 秒，這次不算分數；跟著預備拍再打一次（藍牙耳機會晚一點）`, `About ${sec} s late overall — no score this time; follow the count-in (Bluetooth adds delay)`]
+    : [`整體早了約 ${sec} 秒，這次不算分數；跟著預備拍再打一次`, `About ${sec} s early overall — no score this time; follow the count-in`];
   if (ms < LAG_NOTE_MS) return null;
-  return r.offsetMs > 0 ? ["整體稍晚一點(已自動校正,不影響準度)", "A little late overall (auto-corrected; accuracy unaffected)"]
-    : ["整體稍早一點(已自動校正,不影響準度)", "A little early overall (auto-corrected; accuracy unaffected)"];
+  return r.offsetMs > 0 ? ["整體稍晚一點（已自動校正，不影響準度）", "A little late overall (auto-corrected; accuracy unaffected)"]
+    : ["整體稍早一點（已自動校正，不影響準度）", "A little early overall (auto-corrected; accuracy unaffected)"];
 }
 /* lane 單獨偏移的提示 [中, 英](一條一句;沒有 lag 旗標的 lane 時 null;能比的 lane 全部都亮 = 分不出是哪一條,也是 null)。
    lanes = 鼓墊設定(LANES[3] 等,拿名稱) */
@@ -269,7 +269,7 @@ export function laneNote(r, lanes = LANES[3]){
   for (const id of r.lagLanes) {
     const l = lanes.find(x => x.id === id), ms = Math.abs(r.lanes[id].offsetMs), late = r.lanes[id].offsetMs > 0;
     const name = l ? l.label : [id, id];
-    zh.push(`${name[0]}比其他的${late ? "慢" : "快"}約 ${ms} 毫秒(沒有扣掉)`);
+    zh.push(`${name[0]}比其他的${late ? "慢" : "快"}約 ${ms} 毫秒（沒有扣掉）`);
     en.push(`${name[1]} ${ms} ms ${late ? "behind" : "ahead of"} the rest (not removed)`);
   }
   return [zh.join(";"), en.join("; ")];

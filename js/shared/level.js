@@ -71,10 +71,10 @@ export function paramDesc(cur, prev, base){
   const add = [...names("time", diff("time")), ...names("values", diff("values")).map(x => [x[0] + "音符", x[1] + " notes"]), ...names("rests", diff("rests")),
     ...names("dyn", diff("dyn")), ...names("pieces", diff("pieces")), ...names("extra", diff("extra"))];
   const uniq = [...new Map(add.map(x => [x[0], x])).values()];
-  if (uniq.length) { const s = uniq.slice(0, 4); return tr("加:" + s.map(x => x[0]).join("、") + (uniq.length > 4 ? "…" : ""), "Adds " + s.map(x => x[1]).join(", ") + (uniq.length > 4 ? "…" : "")); }
+  if (uniq.length) { const s = uniq.slice(0, 4); return tr("加：" + s.map(x => x[0]).join("、") + (uniq.length > 4 ? "…" : ""), "Adds " + s.map(x => x[1]).join(", ") + (uniq.length > 4 ? "…" : "")); }
   const bp = b => (Array.isArray(b) ? (b[0] === b[1] ? `${b[0]}` : `${b[0]}–${b[1]}`) : b != null ? `${b}` : "");
-  if (bp(cur.bpm) && bp(cur.bpm) !== bp(prev.bpm)) return tr(`記號一樣,速度 ${bp(cur.bpm)}`, `Same symbols, tempo ${bp(cur.bpm)}`);
-  return tr("記號一樣,題目變化更多", "Same symbols, more variety");
+  if (bp(cur.bpm) && bp(cur.bpm) !== bp(prev.bpm)) return tr(`記號一樣，速度 ${bp(cur.bpm)}`, `Same symbols, tempo ${bp(cur.bpm)}`);
+  return tr("記號一樣，題目變化更多", "Same symbols, more variety");
 }
 
 const VOTES = [["easy", ["太簡單", "Too easy"]], ["ok", ["剛好", "Just right"]], ["hard", ["太難", "Too hard"]]];
@@ -86,14 +86,14 @@ export function levelText({ auto = null, vote = null, from, to, max, hint = null
     if (vote === "ok" || to === from) return tr(`難度維持 ${to}。`, `Level stays at ${to}.`);
     return to > from ? tr(`下一題難度升到 ${to}。`, `Next test: level ${to}.`) : tr(`下一題難度降到 ${to}。`, `Next test: level ${to}.`);
   }
-  if (auto) return auto.why === "up" ? tr(`打得很準,難度升到 ${auto.to}。`, `Spot on — level up to ${auto.to}.`)
-    : tr(`這幾題比較吃力,難度降到 ${auto.to}。`, `These were tough — level down to ${auto.to}.`);
+  if (auto) return auto.why === "up" ? tr(`打得很準，難度升到 ${auto.to}。`, `Spot on — level up to ${auto.to}.`)
+    : tr(`這幾題比較吃力，難度降到 ${auto.to}。`, `These were tough — level down to ${auto.to}.`);
   return "";
 }
 /* 在 box 最後加上「這一題的難度」一排三顆鈕 + 一句話。onVote(v) 由模組處理(levels.vote、重畫設定卡、播報);
    R.lvText = 目前要顯示的那一句(函式,換語言重寫) */
 let qSeq = 0;
-const VOTE_Q = () => tr("這題對你來說?(會調整下一題難度)", "How was it? (sets the next level)");
+const VOTE_Q = () => tr("這題對你來說？（會調整下一題難度）", "How was it? (sets the next level)");
 onLang(() => document.querySelectorAll(".diff-fb[aria-label]").forEach(r => r.setAttribute("aria-label", VOTE_Q())));
 export function paintVotes(box, R, onVote){
   const msg = document.createElement("p"); msg.className = "diff-msg"; box.appendChild(msg);

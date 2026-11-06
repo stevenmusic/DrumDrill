@@ -72,10 +72,10 @@ export function valueInfo(code){
 /* 拍號 → { beats, type, len(一小節 divisions), groups(連桿 / 補休止的分組,divisions), text } */
 export function parseTime(time){
   const m = /^((\d+)(\+\d+)*)\/(2|4|8)$/.exec(String(time || ""));
-  if (!m) throw new Error(`拍號寫錯:${time}`);
+  if (!m) throw new Error(`拍號寫錯：${time}`);
   const parts = m[1].split("+").map(Number), beats = parts.reduce((a, b) => a + b, 0), type = Number(m[4]);
-  if (beats < 1 || beats > 15) throw new Error(`拍號寫錯:${time}`);
-  if (parts.length > 1 && type !== 8) throw new Error(`拍號分組只支援 x/8(${time}):x/2、x/4 照拍子分組,不寫加號`);
+  if (beats < 1 || beats > 15) throw new Error(`拍號寫錯：${time}`);
+  if (parts.length > 1 && type !== 8) throw new Error(`拍號分組只支援 x/8(${time}):x/2、x/4 照拍子分組，不寫加號`);
   if (parts.length > 1 && parts.some(p => p !== 2 && p !== 3)) throw new Error(`拍號分組每一組要是 2 或 3 個八分音符(${time})`);
   const unit = DIV * 4 / type, len = beats * unit;
   let groups;
@@ -90,17 +90,17 @@ export function parseTime(time){
 
 /* 一個 ev 整理成內部格式;不合法丟出 Error */
 function normEv(ev, where){
-  if (!ev || typeof ev !== "object") throw new Error(`${where}:不是物件`);
+  if (!ev || typeof ev !== "object") throw new Error(`${where}：不是物件`);
   let code = String(ev.value ?? ""), rest = !!ev.rest;
   if (code[0] === "r") { rest = true; code = code.slice(1); }
   const info = valueInfo(code);
-  if (!info) throw new Error(`${where}:時值代號不認得(${ev.value})`);
+  if (!info) throw new Error(`${where}：時值代號不認得(${ev.value})`);
   const notes = rest ? [] : (ev.notes || []);
-  if (!rest && !notes.length) throw new Error(`${where}:音符沒有 notes(休止符要寫 r)`);
+  if (!rest && !notes.length) throw new Error(`${where}：音符沒有 notes（休止符要寫 r）`);
   if (ev.roll != null && !(Number.isInteger(ev.roll) && ev.roll >= 1 && ev.roll <= 3)) throw new Error(`${where}:roll 要是 1–3`);
   if (ev.roll && ev.buzz) throw new Error(`${where}:roll 和 buzz 只能選一個`);
   if (ev.tuplet != null && ev.tuplet !== "stop" && ev.tuplet !== "continue") throw new Error(`${where}:tuplet 只能是 "stop" 或 "continue"(${ev.tuplet})`);
-  if (ev.tuplet != null && !info.tuplet) throw new Error(`${where}:不是連音卻寫了 tuplet`);
+  if (ev.tuplet != null && !info.tuplet) throw new Error(`${where}：不是連音卻寫了 tuplet`);
   return { info, rest, notes, tie: !!ev.tie && !rest, roll: rest ? 0 : (ev.roll || 0), buzz: !rest && !!ev.buzz,
     tupletStop: ev.tuplet === "stop", tupletCont: ev.tuplet === "continue", src: ev };
 }
@@ -115,18 +115,18 @@ function tupletGroups(evs, where){
   let open = null;
   for (let i = 0; i < evs.length; i++) {
     const e = evs[i], t = e.info.tuplet, at = `${where} 第 ${i + 1} 個`;
-    if (!t) { if (open) throw new Error(`${at}:連音還沒結束就接了一般時值`); continue; }
-    if (open && open.ratio !== t.ratio) throw new Error(`${at}:連音還沒結束就換了另一種連音(${open.ratio} → ${t.ratio})`);
+    if (!t) { if (open) throw new Error(`${at}：連音還沒結束就接了一般時值`); continue; }
+    if (open && open.ratio !== t.ratio) throw new Error(`${at}：連音還沒結束就換了另一種連音(${open.ratio} → ${t.ratio})`);
     if (!open) { open = { ratio: t.ratio, acc: 0, spans: new Set(), max: 0, members: [] }; e.tupStart = true; }
     open.acc += e.info.dur; open.spans.add(t.span); open.max = Math.max(open.max, t.span); open.members.push(e);
     e.tupGroup = open;
     const limit = open.cont ? RATIO_MAX[open.ratio] : open.max;
-    if (open.acc > limit) throw new Error(`${at}:連音一組超過長度(${bt(open.acc)} 拍 > ${bt(limit)} 拍)`);
+    if (open.acc > limit) throw new Error(`${at}：連音一組超過長度（${bt(open.acc)} 拍 > ${bt(limit)} 拍）`);
     if (e.tupletCont) { open.cont = true; continue; }
-    if (e.tupletStop && !open.spans.has(open.acc)) throw new Error(`${at}:連音在這裡結束(stop)的話長度 ${bt(open.acc)} 拍不是完整的一組`);
+    if (e.tupletStop && !open.spans.has(open.acc)) throw new Error(`${at}：連音在這裡結束(stop)的話長度 ${bt(open.acc)} 拍不是完整的一組`);
     if (e.tupletStop || (open.spans.has(open.acc) && open.acc >= Math.min(DIV, open.max))) { e.tupStop = true; open.span = open.acc; open = null; }
   }
-  if (open) throw new Error(`${where}:連音最後一組沒有結束`);
+  if (open) throw new Error(`${where}：連音最後一組沒有結束`);
 }
 
 /* 補休止:從 pos 補到 end(都不在連音裡);拍點對齊的地方用大的休止符 */
@@ -146,7 +146,7 @@ function fillRests(pos, end, meter, where){
       if (code) { out.push(restEv(code)); pos += g; continue; }
     }
     const v = REST_FILL.find(v => v.dur <= gEnd - pos && pos % v.dur === 0);
-    if (!v) throw new Error(`${where}:補不了休止符(位置 ${pos / DIV} 拍,可能是連音沒有結束)`);
+    if (!v) throw new Error(`${where}：補不了休止符（位置 ${pos / DIV} 拍，可能是連音沒有結束）`);
     out.push(restEv(v.code)); pos += v.dur;
   }
   return out;
@@ -204,17 +204,17 @@ function checkMods(e, where, voice, key){
   let fl = false, dr = false;
   for (const n of e.notes) {
     const mark = key.pieces[n.piece].mark;
-    if ((n.open || n.closed) && (voice !== 1 || !HH_HAND.has(n.piece))) throw new Error(`${where}:開 / 閉(open / closed)只能寫在手打的 Hi-hat(${n.piece})`);
+    if ((n.open || n.closed) && (voice !== 1 || !HH_HAND.has(n.piece))) throw new Error(`${where}：開 / 閉(open / closed)只能寫在手打的 Hi-hat(${n.piece})`);
     if ((n.open || mark === "o") && (n.closed || mark === "+")) throw new Error(`${where}:Hi-hat 不能同時開又閉(${n.piece})`);
     if ((n.flam || n.drag) && voice !== 1) throw new Error(`${where}:Flam / Drag 只能在手的聲部(${n.piece})`);
-    if (n.flam && n.drag) throw new Error(`${where}:同一個音 Flam、Drag 只能選一個(${n.piece})`);
+    if (n.flam && n.drag) throw new Error(`${where}：同一個音 Flam、Drag 只能選一個(${n.piece})`);
     fl = fl || !!n.flam; dr = dr || !!n.drag;
   }
-  if (fl && dr) throw new Error(`${where}:同一個和弦 Flam、Drag 只能選一個`);
+  if (fl && dr) throw new Error(`${where}：同一個和弦 Flam、Drag 只能選一個`);
   if (e.roll || e.buzz) {
-    if (voice !== 1) throw new Error(`${where}:滾奏(roll / buzz)只能在手的聲部`);
-    if (e.roll && e.info.beams > 0) throw new Error(`${where}:滾奏斜線(roll)的時值要四分音符以上,八分音符以下不可(${e.info.code})`);
-    if (e.buzz && e.info.beams > 1) throw new Error(`${where}:多次反彈(buzz)的時值要八分音符以上,十六分音符以下不可(${e.info.code})`);
+    if (voice !== 1) throw new Error(`${where}：滾奏(roll / buzz)只能在手的聲部`);
+    if (e.roll && e.info.beams > 0) throw new Error(`${where}：滾奏斜線(roll)的時值要四分音符以上，八分音符以下不可(${e.info.code})`);
+    if (e.buzz && e.info.beams > 1) throw new Error(`${where}：多次反彈(buzz)的時值要八分音符以上，十六分音符以下不可(${e.info.code})`);
   }
 }
 
@@ -223,16 +223,16 @@ function buildVoice(raw, meter, where, voice, key, lines, hide = false){
   const evs = (raw || []).map((ev, i) => normEv(ev, `${where} 第 ${i + 1} 個`));
   for (const e of evs) for (const n of e.notes) {
     const p = key.pieces[n.piece];
-    if (!p) throw new Error(`${where}:鼓件不在 drumkey.json(${n.piece})`);
-    if (lines === 1 && n.piece !== key.singleLine.piece) throw new Error(`${where}:單線譜只能有${key.singleLine.piece}(${n.piece})`);
-    if (voice === 2 && !FEET.has(n.piece)) throw new Error(`${where}:腳的聲部只能有 kick、hhFoot(${n.piece})`);
+    if (!p) throw new Error(`${where}：鼓件不在 drumkey.json(${n.piece})`);
+    if (lines === 1 && n.piece !== key.singleLine.piece) throw new Error(`${where}：單線譜只能有${key.singleLine.piece}(${n.piece})`);
+    if (voice === 2 && !FEET.has(n.piece)) throw new Error(`${where}：腳的聲部只能有 kick、hhFoot(${n.piece})`);
     if (voice === 1 && FEET.has(n.piece)) throw new Error(`${where}:${n.piece} 要放在腳的聲部(voices[1])`);
   }
   evs.forEach((e, i) => checkMods(e, `${where} 第 ${i + 1} 個`, voice, key));
   tupletGroups(evs, where);
   let pos = 0;
   for (const e of evs) { e.pos = pos; pos += e.info.dur; }
-  if (pos > meter.len) throw new Error(`${where}:時值加起來 ${pos / DIV} 拍,超過一小節 ${meter.len / DIV} 拍`);
+  if (pos > meter.len) throw new Error(`${where}：時值加起來 ${pos / DIV} 拍，超過一小節 ${meter.len / DIV} 拍`);
   if (!evs.length) return [{ measureRest: true, hidden: !!hide, rest: true, notes: [], pos: 0, info: { dur: meter.len }, beams: [] }];
   const out = [...evs, ...fillRests(pos, meter.len, meter, where)];
   pos = 0; for (const e of out) { e.pos = pos; pos += e.info.dur; }
@@ -338,16 +338,16 @@ export function scoreXML(spec){
   const placement = lines === 1 ? "below" : "above";
   // 有沒有腳的聲部:整份譜任何一小節有,每一小節都畫(沒有的補整小節休止)
   const feet = lines === 5 && measures.some(m => !m.slash && m.voices && m.voices[1] && m.voices[1].length);
-  if (lines === 1 && measures.some(m => m.voices && m.voices[1] && m.voices[1].length)) throw new Error("單線譜只有一個聲部(voices[1] 要是空的)");
+  if (lines === 1 && measures.some(m => m.voices && m.voices[1] && m.voices[1].length)) throw new Error("單線譜只有一個聲部（voices[1] 要是空的）");
   // 力度:照小節分好,wedge 補上結束的位置
   const dyn = measures.map(() => []);
   for (const [i, d] of (spec.dyn || []).entries()) {
     const where = `力度第 ${i + 1} 個`;
-    if (!d || !Number.isInteger(d.m) || d.m < 0 || d.m >= measures.length) throw new Error(`${where}:小節 m 不對(${d && d.m})`);
+    if (!d || !Number.isInteger(d.m) || d.m < 0 || d.m >= measures.length) throw new Error(`${where}：小節 m 不對(${d && d.m})`);
     if (!(typeof d.beat === "number" && d.beat >= 0 && isFinite(d.beat))) throw new Error(`${where}:beat 不對(${d.beat})`);
-    if (!DYN_MARKS.includes(d.mark) && !WEDGES[d.mark]) throw new Error(`${where}:不認得的力度記號(${d.mark})`);
+    if (!DYN_MARKS.includes(d.mark) && !WEDGES[d.mark]) throw new Error(`${where}：不認得的力度記號(${d.mark})`);
     const at = Math.round(d.beat * DIV), kind = WEDGES[d.mark] ? "wedge" : "dyn";
-    if (dyn[d.m].some(x => x.at === at && x.kind === kind)) throw new Error(`${where}:第 ${d.m + 1} 小節 ${d.beat} 拍已經有${kind === "wedge" ? "漸強 / 漸弱" : "力度記號"}了(同一個位置只能一個)`);
+    if (dyn[d.m].some(x => x.at === at && x.kind === kind)) throw new Error(`${where}：第 ${d.m + 1} 小節 ${d.beat} 拍已經有${kind === "wedge" ? "漸強 / 漸弱" : "力度記號"}了（同一個位置只能一個）`);
     dyn[d.m].push({ at, mark: d.mark, voice: 1, kind });
     if (WEDGES[d.mark]) {
       const end = d.end || { m: d.m, beat: null };
@@ -382,7 +382,7 @@ export function scoreXML(spec){
       const ds = dyn[mi];
       if (ds.length) body.unshift(...ds.filter(d => d.at === 0).map(d => dynXML(d, placement)));
       body.push(...ds.filter(d => d.at === null || d.at === meter.len).map(d => dynXML(d, placement)));
-      for (const d of ds) if (d.at !== 0 && d.at !== null && d.at !== meter.len && meter.groups.reduce((a, g, i) => (a.push(a[i] + g), a), [0]).indexOf(d.at) < 0) throw new Error(`${where}:力度的位置對不到拍(${d.at / DIV})`);
+      for (const d of ds) if (d.at !== 0 && d.at !== null && d.at !== meter.len && meter.groups.reduce((a, g, i) => (a.push(a[i] + g), a), [0]).indexOf(d.at) < 0) throw new Error(`${where}：力度的位置對不到拍(${d.at / DIV})`);
     } else {
       const vs = [buildVoice(m.voices && m.voices[0], meter, where + " 手", 1, key, lines, m.hideEmpty)];
       if (feet) vs.push(buildVoice(m.voices && m.voices[1], meter, where + " 腳", 2, key, lines, m.hideEmpty));
@@ -399,8 +399,8 @@ export function scoreXML(spec){
           }
           const next = evs[ei + 1] || null;
           const nextTie = e.tie ? new Set(((next && !next.rest) ? next.notes : ((measures[mi + 1] && !measures[mi + 1].slash && firstNotes(measures[mi + 1], vi)) || [])).map(n => n.piece)) : null;
-          if (e.tie && !nextTie.size) throw new Error(`${where}:連結線後面沒有同一個鼓件的音`);
-          if (e.tie) for (const n of e.notes) if (!nextTie.has(n.piece)) throw new Error(`${where}:連結線後面沒有同一個鼓件(${n.piece})`);
+          if (e.tie && !nextTie.size) throw new Error(`${where}：連結線後面沒有同一個鼓件的音`);
+          if (e.tie) for (const n of e.notes) if (!nextTie.has(n.piece)) throw new Error(`${where}：連結線後面沒有同一個鼓件(${n.piece})`);
           body.push(...noteXML(e, { voice, key, lines, voices: vs.length, prevTie, nextTie }));
           prevTie = e.tie ? new Set(e.notes.map(n => n.piece)) : null;
         });
@@ -409,7 +409,7 @@ export function scoreXML(spec){
       for (const [di, d] of dyn[mi].entries()) {
         if (used.has(di)) continue;
         if (d.at === null || d.at === meter.len) { body.push(dynXML(d, placement)); used.add(di); continue; }
-        throw new Error(`${where}:力度的位置 ${d.at / DIV} 拍對不到任何音或休止符的開頭`);
+        throw new Error(`${where}：力度的位置 ${d.at / DIV} 拍對不到任何音或休止符的開頭`);
       }
     }
     const last = mi === measures.length - 1;

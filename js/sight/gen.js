@@ -41,12 +41,12 @@ export function cellsFor(spec, grade){
 }
 
 export function genSnare(spec, seed, grade = spec && spec.grade){
-  if (!spec || spec.type !== "snare") throw new Error("genSnare:只出小鼓視奏(spec.type 要是 snare)");
-  if (!SNARE_GRADES.includes(grade)) throw new Error("genSnare:級數要是 0–3(" + grade + ")");
-  if ((spec.time && spec.time.v) !== "4/4") throw new Error("genSnare:拍號只支援 4/4(" + (spec.time && spec.time.v) + ")");
+  if (!spec || spec.type !== "snare") throw new Error("genSnare：只出小鼓視奏（spec.type 要是 snare）");
+  if (!SNARE_GRADES.includes(grade)) throw new Error("genSnare：級數要是 0–3(" + grade + ")");
+  if ((spec.time && spec.time.v) !== "4/4") throw new Error("genSnare：拍號只支援 4/4(" + (spec.time && spec.time.v) + ")");
   const rnd = createRandom(seed >>> 0);
   const pool = cellsFor(spec, grade);
-  if (!pool.length) throw new Error("genSnare:這一級沒有可以用的節奏格");
+  if (!pool.length) throw new Error("genSnare：這一級沒有可以用的節奏格");
   const bars = spec.bars, [lo, hi] = spec.bpm;
   const must = MUST[grade];
   let cells = null;
@@ -55,7 +55,7 @@ export function genSnare(spec, seed, grade = spec && spec.grade){
     for (let m = 0; m < bars; m++) all.push(genBar(rnd, pool, grade, m === bars - 1));
     if (!must || all.some(b => b.some(id => byId(id).evs.includes(must)))) cells = all;
   }
-  if (!cells) throw new Error("genSnare:出不了題");
+  if (!cells) throw new Error("genSnare：出不了題");
   const bpm = lo === hi ? lo : rnd.int(lo, hi);
   const measures = cells.map(bar => ({ voices: [bar.flatMap(id => byId(id).evs.map(v => (isRest(v) ? { value: v } : { value: v, notes: [{ piece: "snare" }] })))] }));
   const events = [];

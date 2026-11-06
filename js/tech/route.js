@@ -99,7 +99,7 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
     lenBeats: () => (cur ? cur.disp.len : null),
     playing: () => !!mode,
     isActive: () => active && isActive() && !$("rScoreCard").hidden,
-    label: () => (cur ? describeSpec(cur.r.spec, { key: cur.key, bpm: getBpm(), title: tr(cur.level.name[0], cur.level.name[1]) }) + (rlOn() ? tr(";手的音上面標 R / L", "; R / L above the hand notes") : "") : "")
+    label: () => (cur ? describeSpec(cur.r.spec, { key: cur.key, bpm: getBpm(), title: tr(cur.level.name[0], cur.level.name[1]) }) + (rlOn() ? tr("；手的音上面標 R / L", "; R / L above the hand notes") : "") : "")
   });
   const rlOn = () => !!cur && rlFor(cur.level);
   /* 左右手(使用者 / 審查定案 2026-10):R / L 寫在譜表上方(手的聲部在上;和弦上下疊、鈸在上),字放在所有音符、符桿、連桿、記號的上面;
@@ -176,7 +176,7 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
   async function show(seg, seed){
     stop();
     const key = await drumKey();
-    if (!key) { $("rPaperMsg").textContent = tr("鼓譜資料還沒載好(第一次要連網路)", "Drum key not loaded yet (needs internet once)"); return; }
+    if (!key) { $("rPaperMsg").textContent = tr("鼓譜資料還沒載好（第一次要連網路）", "Drum key not loaded yet (needs internet once)"); return; }
     // 畫面用的譜:一樣的小節縮起來(反覆記號 ×N、%);播放、評分照原本的 r.spec。×N = 一遍打幾小節(中途消失 8、其他 4)
     const level = seg.level, r = toSpec(level, seed, { key }), disp = displaySpec(r.spec, seg.click === "gap" ? 8 : 4), xml = scoreXML(disp.spec);
     cur = { seg, level, r, disp, xml, key, seed };
@@ -268,8 +268,8 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
     if (!(t0 > 0)) { onPlayState(null); return false; }
     R.t0 = t0; run = R; mode = kind;
     onPlayState(kind);
-    if (kind === "perform") { $("rPadCard").classList.add("you"); announce(tr("打一遍:先響 1 小節拍點", "Your turn: one bar of count-in first")); }
-    else announce(solo ? tr("開始:只有拍點,自己打", "Started: click only, you play") : tr("開始播放示範", "Playing the demo"));
+    if (kind === "perform") { $("rPadCard").classList.add("you"); announce(tr("打一遍：先響 1 小節拍點", "Your turn: one bar of count-in first")); }
+    else announce(solo ? tr("開始：只有拍點，自己打", "Started: click only, you play") : tr("開始播放示範", "Playing the demo"));
     return true;
   }
   /* 播完或停止:秒數算進今天的練習;打一遍播完才評分 */
@@ -316,7 +316,7 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
     pairText(el.querySelector(".r-line"), () => (n ? tr(`打中 ${res.hits}/${res.total} · 漏打 ${res.missed} · 多打 ${res.extra}`, `Hit ${res.hits}/${res.total} · missed ${res.missed} · extra ${res.extra}`)
       : tr("沒有打到鼓墊", "No pad taps")));
     el.querySelectorAll(".r-note").forEach((p, i) => pairText(p, () => tr(notes[i][0], notes[i][1])));
-    pairText(el.querySelector(".disclaimer"), () => tr("只評時間,不是考試分數", "Timing only, not an exam mark"));
+    pairText(el.querySelector(".disclaimer"), () => tr("只評時間，不是考試分數", "Timing only, not an exam mark"));
   }
 
   /* ── 鼓墊 ── */
@@ -331,7 +331,7 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
     $("rPadCard").hidden = !on;
     $("rModeBtn").hidden = on;
     $("rPerform").hidden = !on;
-    pairText($("rModeBtn"), () => tr("沒有鼓?用手機打", "No drums? Use phone"));   // 短:折疊機上跟「還要練 / 穩了」排在同一行
+    pairText($("rModeBtn"), () => tr("沒有鼓？用手機打", "No drums? Use phone"));   // 短:折疊機上跟「還要練 / 穩了」排在同一行
     pairText($("rKitBtn"), () => tr("改回在鼓上打", "Back to the kit"));
     pairText($("rPadNote"), () => tr("先聽 1 小節拍點再打", "One bar of count-in first") + (showKeys() ? tr(" · 鍵盤 F / J / K", " · keys F / J / K") : ""));
     syncPerform();

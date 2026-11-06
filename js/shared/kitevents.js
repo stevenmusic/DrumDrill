@@ -33,8 +33,8 @@ export const PIECE_VEL = {
 export const pieceVel = piece => (PIECE_VEL[piece] != null ? PIECE_VEL[piece] : DYN_VEL.mf);
 /* 說明 key(UI 用 tr(zh, en);kind 同 playbackgen.js 的 NOTES) */
 export const EVENT_NOTES = {
-  velocity: { kind: "practice", text: ["播放音量:pp 到 ff、重音、鬼音的音量對照是 App 自訂的", "Playback volume for pp–ff, accents and ghost notes is the App's setting"] },
-  pieceVel: { kind: "practice", text: ["沒寫力度時各鼓件的音量(鈸比鼓小聲)是 App 自訂的", "Default volume per drum when no dynamic is written is the App's setting"] }
+  velocity: { kind: "practice", text: ["播放音量：pp 到 ff、重音、鬼音的音量對照是 App 自訂的", "Playback volume for pp–ff, accents and ghost notes is the App's setting"] },
+  pieceVel: { kind: "practice", text: ["沒寫力度時各鼓件的音量（鈸比鼓小聲）是 App 自訂的", "Default volume per drum when no dynamic is written is the App's setting"] }
 };
 
 /* 裝飾音在主音前幾拍(技巧模組:min(32 ms, 1/10 拍)) */
@@ -102,7 +102,7 @@ export function toEvents(spec, { bpm = 80, dyn = null } = {}){
         let code = String(ev.value), rest = !!ev.rest;
         if (code[0] === "r") { rest = true; code = code.slice(1); }
         const info = valueInfo(code);
-        if (!info) throw new Error(`toEvents:第 ${mi + 1} 小節時值不認得(${ev.value})`);
+        if (!info) throw new Error(`toEvents：第 ${mi + 1} 小節時值不認得(${ev.value})`);
         if (!rest) {
           const at = T.velAt(pos), sfz = T.isSfz(pos);
           for (const n of ev.notes || []) {

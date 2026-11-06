@@ -64,7 +64,7 @@ async function audit(st, expect = {}){
     for (const lg of document.querySelectorAll(".kit-legend")) {
       if (!vis(lg) || !lg.querySelector(".kl-cell")) continue;
       const l = lg.getAttribute("aria-label") || "";
-      if (lg.getAttribute("role") !== "img" || !(zh ? /^圖例:/ : /^Drum key: /).test(l)) out.push(`圖例沒有說明(${lg.id}):${l}`);
+      if (lg.getAttribute("role") !== "img" || !(zh ? /^圖例[:：]/ : /^Drum key: /).test(l)) out.push(`圖例沒有說明(${lg.id}):${l}`);
     }
     // 2. 名稱
     for (const e of document.querySelectorAll("button, a[href], input, select, textarea, [role=tab]")) {
@@ -190,7 +190,7 @@ for (const c of ["roll", "diddle", "flam", "drag"]) {
 {
   await ev(() => window.__tech.setRudiment(6)); await techReady();
   const l = await ev(() => document.getElementById("t-osmd").getAttribute("aria-label"));
-  if (!/^6\. 雙擊開放滾奏:滾奏:R R L L R R L L/.test(l)) fail("技巧 #6", `說明應該是「6. 雙擊開放滾奏:滾奏:R R L L …」,實際 ${l.slice(0, 60)}`);
+  if (!/^6\. 雙擊開放滾奏[:：]滾奏[:：]R R L L R R L L/.test(l)) fail("技巧 #6", `說明應該是「6. 雙擊開放滾奏:滾奏:R R L L …」,實際 ${l.slice(0, 60)}`);
   await page.click("#langToggle"); await page.waitForTimeout(400);
   const en = await ev(() => document.getElementById("t-osmd").getAttribute("aria-label"));
   if (!/^6\. Double Stroke Open Roll: roll: R R L L/.test(en) || !/repeat ×\d/.test(en)) fail("技巧 #6 英文", `換英文後說明沒有跟著換:${en.slice(0, 60)}`);

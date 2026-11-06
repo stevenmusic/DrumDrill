@@ -3,7 +3,7 @@ import { addStrings } from "../shared/i18n.js";
 addStrings("ear", {
   xList: ["本級聽力", "This grade's tests"],   // 檢定頁的清單(畫面設計 2026-10)
   tempo: ["速度", "Tempo"],
-  bpmDown: ["慢 1(按住連續減少)", "Slower (hold)"], bpmUp: ["快 1(按住連續增加)", "Faster (hold)"],
+  bpmDown: ["慢 1（按住連續減少）", "Slower (hold)"], bpmUp: ["快 1（按住連續增加）", "Faster (hold)"],
   optHide: ["不看譜", "No chart"],
   playAria: ["聽題目", "Play the test"], playCap: ["題目", "Question"],
   countdownUnit: ["秒", "s"],

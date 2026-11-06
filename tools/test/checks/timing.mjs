@@ -40,7 +40,7 @@ export default function check(ok){
     ok(!r.offsetTooLarge && r.score >= 90, `偏移 ${off * 1000} ms:分數 ${r.score}(應該 ≥ 90)、不超過上限`);
     const note = offsetNote(r);
     ok(r.offsetMs >= 80 ? note && /整體稍晚/.test(note[0]) && /late/.test(note[1]) : note === null, `偏移 ${off * 1000} ms(估成 ${r.offsetMs})的說明不對:${note}`);
-    if (off === 0.2) ok(note && note[0] === "整體稍晚一點(已自動校正,不影響準度)" && !/毫秒|ms/.test(note.join()), `偏移 200 ms 的說明(不寫毫秒):${note}`);
+    if (off === 0.2) ok(note && note[0] === "整體稍晚一點（已自動校正，不影響準度）" && !/毫秒|ms/.test(note.join()), `偏移 200 ms 的說明(不寫毫秒):${note}`);
   }
   // 2. 漏一下、多一下
   {

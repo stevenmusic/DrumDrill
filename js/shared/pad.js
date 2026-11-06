@@ -54,7 +54,7 @@ export function createPads(el, lanes, onHit){
       b.querySelector(".pad-key").textContent = [].concat(l.key || [])[0] ? [].concat(l.key)[0].toUpperCase() : "";
       // 無障礙:名稱 + 鍵盤按鍵(VoiceOver 念得到;aria-keyshortcuts 給輔助工具)
       const keys = [].concat(l.key || []).map(k => k.toUpperCase());
-      b.setAttribute("aria-label", keys.length ? name + tr(`(鍵盤 ${keys.join(" / ")})`, ` (key${keys.length > 1 ? "s" : ""} ${keys.join(" / ")})`) : name);
+      b.setAttribute("aria-label", keys.length ? name + tr(`（鍵盤 ${keys.join(" / ")}）`, ` (key${keys.length > 1 ? "s" : ""} ${keys.join(" / ")})`) : name);
       if (keys.length) b.setAttribute("aria-keyshortcuts", keys.join(" "));
     }
     el.setAttribute("aria-label", tr("觸控鼓墊", "Touch pads"));

@@ -98,13 +98,13 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
     if (list.length < 2) { q = null; $("rdScore").innerHTML = ""; say(() => tr("至少選兩個鼓件。", "Pick at least two drums.")); paintAns(); return; }
     q = drill.pick(list, setting(), Math.random, last); last = q; t0 = performance.now();
     if (valOn()) {
-      say(() => (R.mode === "practice" || drill.running ? (R.seenVal ? tr("這是幾拍?", "How many beats?") : tr("看音符或休止符,點出是幾拍(四分音符 = 1 拍)", "How many beats? (quarter note = 1)")) : ""));
+      say(() => (R.mode === "practice" || drill.running ? (R.seenVal ? tr("這是幾拍？", "How many beats?") : tr("看音符或休止符，點出是幾拍（四分音符 = 1 拍）", "How many beats? (quarter note = 1)")) : ""));
       paintAns(); draw(); return;
     }
     // 譜和作答格子之間這一行不空著:平常寫題目,答了寫對錯
     // 60 秒 / 連對還沒開始:不寫題目(先按「開始」)
     // 第一次(還沒答過):寫這一格在練什麼、怎麼作答
-    say(() => (R.mode === "practice" || drill.running ? (R.seen ? tr("哪個鼓件?", "Which drum?") : tr("這是哪個鼓件?", "Which drum is this?")) : ""));
+    say(() => (R.mode === "practice" || drill.running ? (R.seen ? tr("哪個鼓件？", "Which drum?") : tr("這是哪個鼓件？", "Which drum is this?")) : ""));
     paintAns();
     draw();
   }
@@ -142,7 +142,7 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
   function paintAns(tapped = null, ok = null){
     // 作答格子上面一行:答對 3 題以前寫「不知道就先猜」
     $("rdGuess").hidden = R.okN >= 3 || !q || valOn();
-    if (!$("rdGuess").hidden) pairText($("rdGuess"), () => tr("不會就猜,答錯會告訴你", "Just guess — a miss shows you"));
+    if (!$("rdGuess").hidden) pairText($("rdGuess"), () => tr("不會就猜，答錯會告訴你", "Just guess — a miss shows you"));
     const box = $("rdAns"), list = valOn() ? BEATS.slice() : valid().sort((a, b) => order().indexOf(a) - order().indexOf(b));
     const sig = list.join(",");
     if (box.dataset.sig !== sig) {
@@ -176,7 +176,7 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
     for (const [id, zh, en] of [["rdQuickLbl", "鼓件", "Drums"], ["rdPiecesLbl", "自訂", "Custom"], ["rdModeLbl", "模式", "Mode"], ["rdKindLbl", "題目", "Quiz"], ["rdValsLbl", "時值", "Values"]]) $(id).textContent = tr(zh, en);
     pairText($("rdQuickHint"), () => tr("每一格都包含前一格", "Each one adds to the one before"));
     pairText($("rdValsHint"), () => tr("每一格都包含前一格", "Each one adds to the one before"));
-    pairText($("rdNote"), () => tr("點一下加入或拿掉(至少兩個)", "Tap to add or remove (two or more)"));
+    pairText($("rdNote"), () => tr("點一下加入或拿掉（至少兩個）", "Tap to add or remove (two or more)"));
   }
   function setText(){
     if (valOn()) return tr("時值 · ", "Values · ") + tr(...setOf(R.vset)[1]);
@@ -202,15 +202,15 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
   function paintMiss(){
     const t = drill.top(setting()).filter(x => x.n >= 2);   // 錯 2 次以上才寫(只錯 1 次 = 剛剛「答案是…」那一題,不重複)
     const tn = id => (valOn() ? valueName(id) : nameOf(id)), an = id => (valOn() ? beatText(id) : nameOf(id));
-    pairText($("rdMiss"), () => (t.length ? tr("常錯:", "Often missed: ") + t.map(x => tr(`${tn(x.target)} 看成 ${an(x.answer)}(${x.n} 次)`, `${tn(x.target)} as ${an(x.answer)} (${x.n}×)`)).join(tr(";", "; "))
-      + tr(",下一輪會多考", " — more next round") : ""));
+    pairText($("rdMiss"), () => (t.length ? tr("常錯：", "Often missed: ") + t.map(x => tr(`${tn(x.target)} 看成 ${an(x.answer)}（${x.n} 次）`, `${tn(x.target)} as ${an(x.answer)} (${x.n}×)`)).join(tr(";", "; "))
+      + tr("，下一輪會多考", " — more next round") : ""));
   }
   function showEnd(res){
     endRes = res; clearTimeout(nextTimer); lock = true;
     if (res.reason === "stop" || res.reason === "restart") { paintTop(); return; }
     const wn = res.reason === "wrong" ? wrongName : null;
-    say(() => (wn ? (valOn() ? tr(`答案是 ${beatText(VALUES[wn].beat)}(${valueName(wn)})。`, `It's ${beatText(VALUES[wn].beat)} (${valueName(wn)}). `) : tr(`答案是 ${nameOf(wn)}。`, `It was ${nameOf(wn)}. `)) : "") + (res.kind === "time" ? tr(`時間到:答對 ${res.score} 題`, `Time's up: ${res.score} right`) : tr(`連續答對 ${res.score} 題`, `Streak: ${res.score}`))
-      + (res.newBest ? tr(" · 新紀錄!", " · New best!") : tr(` · 最高 ${res.best}`, ` · best ${res.best}`)), res.newBest ? "ok" : "");
+    say(() => (wn ? (valOn() ? tr(`答案是 ${beatText(VALUES[wn].beat)}(${valueName(wn)})。`, `It's ${beatText(VALUES[wn].beat)} (${valueName(wn)}). `) : tr(`答案是 ${nameOf(wn)}。`, `It was ${nameOf(wn)}. `)) : "") + (res.kind === "time" ? tr(`時間到：答對 ${res.score} 題`, `Time's up: ${res.score} right`) : tr(`連續答對 ${res.score} 題`, `Streak: ${res.score}`))
+      + (res.newBest ? tr(" · 新紀錄！", " · New best!") : tr(` · 最高 ${res.best}`, ` · best ${res.best}`)), res.newBest ? "ok" : "");
     paintTop(); paintMiss();
   }
   function changed(){

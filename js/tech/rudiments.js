@@ -20,8 +20,8 @@ export const CATEGORIES = [
     { zh: "多次反彈滾奏類", en: "Multiple bounce roll rudiments", from: 4, to: 5 },
     { zh: "雙擊開放滾奏類", en: "Double stroke open roll rudiments", from: 6, to: 15 }] },
   { id: "diddle", zh: "複點", en: "Diddles", sub: [{ zh: "複點類", en: "Diddle rudiments", from: 16, to: 19 }] },
-  { id: "flam", zh: "Flam", en: "Flams", sub: [{ zh: "Flam 類(單裝飾音)", en: "Flam rudiments", from: 20, to: 30 }] },
-  { id: "drag", zh: "Drag", en: "Drags", sub: [{ zh: "Drag 類(雙裝飾音)", en: "Drag rudiments", from: 31, to: 40 }] }
+  { id: "flam", zh: "Flam", en: "Flams", sub: [{ zh: "Flam 類（單裝飾音）", en: "Flam rudiments", from: 20, to: 30 }] },
+  { id: "drag", zh: "Drag", en: "Drags", sub: [{ zh: "Drag 類（雙裝飾音）", en: "Drag rudiments", from: 31, to: 40 }] }
 ];
 
 // [號碼, 英文名(PAS), 中文名, 寫法, 官方表有第二行(左手先)]
@@ -144,16 +144,16 @@ export function parseValue(code){
   if (!m) throw new Error("pattern value: " + code);
   const val = m[1], tup = m[2] ? Number(m[2]) : 0;
   const perBeat = tup ? tup * DIV / (DUR[val] * TUPLET_NORMAL[tup]) : DIV / DUR[val];
-  if (!Number.isInteger(perBeat) || perBeat < 1) throw new Error("pattern value: " + code + "(每拍不是整數個音)");
+  if (!Number.isInteger(perBeat) || perBeat < 1) throw new Error("pattern value: " + code + "（每拍不是整數個音）");
   return { val, tup, perBeat };
 }
 /* PAS 打法 → 主擊序列 [{hand, accent, flam, drag}](最短重複單位) */
 export function patternSeq({ pas, sticking, lead = "R" }){
   const no = sticking === "single" ? 1 : sticking === "double" ? 6 : pas;
-  if (sticking && pas !== no) throw new Error(`pattern: sticking ${sticking} 要配 PAS #${no}(拿到 #${pas})`);
+  if (sticking && pas !== no) throw new Error(`pattern: sticking ${sticking} 要配 PAS #${no}（拿到 #${pas}）`);
   const r = byNo(no);
-  if (!r) throw new Error("pattern: 沒有 PAS #" + pas);
-  if (sticking !== "double" && r.groups.flat().some(n => n.trem || n.buzz)) throw new Error(`pattern: PAS #${no} 有滾奏斜線或多次反彈,不能換時值`);
+  if (!r) throw new Error("pattern：沒有 PAS #" + pas);
+  if (sticking !== "double" && r.groups.flat().some(n => n.trem || n.buzz)) throw new Error(`pattern: PAS #${no} 有滾奏斜線或多次反彈，不能換時值`);
   const seq = [];
   let grace = 0;
   for (const s of strokes(withLead(r, lead))) {

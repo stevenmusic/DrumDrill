@@ -80,18 +80,18 @@ export function dropBleed(hits, sounds, { window = BLEED_WINDOW, tol = BLEED_TOL
 
 /* 畫面上的字 [中, 英] */
 export const MIC_TEXT = {
-  label: ["用麥克風評分節奏(選用)", "Score my rhythm with the mic (optional)"],
+  label: ["用麥克風評分節奏（選用）", "Score my rhythm with the mic (optional)"],
   // 開關下面一行用法;打開以後才多一句細節(onNote)
-  note: ["在真的鼓上打,只聽時間;不存檔、不上傳。", "Play a real kit; timing only. Never saved or uploaded."],
-  onNote: ["這一次觸控鼓墊不出聲、不計分,只有預備拍的拍點。", "This take: pads silent and unscored; count-in clicks only."],
-  starting: ["打開麥克風…(第一次會問權限)", "Opening the microphone… (asks for permission the first time)"],
-  head: ["練習回饋 · 節奏(麥克風)", "Practice feedback · rhythm (microphone)"],
-  silent: ["沒有聽到鼓聲:把裝置放近一點、不要蓋住麥克風,再打一次。", "No drums heard — move the device closer, keep the mic uncovered and try again."],
-  disclaimer: ["只評時間(麥克風,全部鼓件一條)· 練習回饋,不是考試分數", "Timing only (mic, all drums as one) · practice feedback, not an exam mark"]
+  note: ["在真的鼓上打，只聽時間；不存檔、不上傳。", "Play a real kit; timing only. Never saved or uploaded."],
+  onNote: ["這一次觸控鼓墊不出聲、不計分，只有預備拍的拍點。", "This take: pads silent and unscored; count-in clicks only."],
+  starting: ["打開麥克風…（第一次會問權限）", "Opening the microphone… (asks for permission the first time)"],
+  head: ["練習回饋 · 節奏（麥克風）", "Practice feedback · rhythm (microphone)"],
+  silent: ["沒有聽到鼓聲：把裝置放近一點、不要蓋住麥克風，再打一次。", "No drums heard — move the device closer, keep the mic uncovered and try again."],
+  disclaimer: ["只評時間（麥克風，全部鼓件一條）· 練習回饋，不是考試分數", "Timing only (mic, all drums as one) · practice feedback, not an exam mark"]
 };
 export function micFailText(reason){
-  if (reason === "denied") return ["沒有取得麥克風權限,這一次照觸控鼓墊評分。要用麥克風:到瀏覽器 / 系統設定允許麥克風再試。",
+  if (reason === "denied") return ["沒有取得麥克風權限，這一次照觸控鼓墊評分。要用麥克風：到瀏覽器 / 系統設定允許麥克風再試。",
     "Microphone access wasn't granted, so this take uses the touch pads. To use the mic, allow it in browser/system settings and try again."];
-  if (reason === "none") return ["找不到可以用的麥克風(或瀏覽器不支援),這一次照觸控鼓墊評分。", "No usable microphone (or the browser doesn't support it), so this take uses the touch pads."];
-  return ["麥克風打不開,這一次照觸控鼓墊評分。", "The microphone couldn't start, so this take uses the touch pads."];
+  if (reason === "none") return ["找不到可以用的麥克風（或瀏覽器不支援），這一次照觸控鼓墊評分。", "No usable microphone (or the browser doesn't support it), so this take uses the touch pads."];
+  return ["麥克風打不開，這一次照觸控鼓墊評分。", "The microphone couldn't start, so this take uses the touch pads."];
 }

@@ -97,6 +97,8 @@ try { const { default: rmcheck } = await import("./checks/roadmap.mjs"); rmcheck
 try { const { default: bakcheck } = await import("./checks/backup.mjs"); bakcheck(ok); } catch (e) { ok(false, "練習紀錄備份檢查出錯:" + e.stack); }
 // 6l2. 練習紀錄卡(js/shared/practicelog.js;兩個 App 同一份):每週目標預設 40、舊資料 60 沒有 goalSet → 40、自己選的照舊、重新開始(checks/practicelog.mjs)
 try { const { default: plcheck } = await import("./checks/practicelog.mjs"); plcheck(ok); } catch (e) { ok(false, "練習紀錄卡檢查出錯:" + e.stack); }
+// 6l3. 中文字串的標點(台灣出版習慣;兩個 App 同一份):js/ 與 index.html 的字串裡,中文字旁邊不能用半形 , : ; ? !(checks/zhpunct.mjs)
+try { const { default: zpcheck } = await import("./checks/zhpunct.mjs"); zpcheck(ok); } catch (e) { ok(false, "中文標點檢查出錯:" + e.stack); }
 // 6m. 本週摘要(js/shared/digest.js;兩個 App 同一份):0 天、有資料、中英、單複數、過關最多 5 個(checks/digest.mjs)
 try { const { default: dgcheck } = await import("./checks/digest.mjs"); dgcheck(ok); } catch (e) { ok(false, "本週摘要檢查出錯:" + e.stack); }
 // 6j. 可選:APPWWW=1 時跑 App 打包檢查(tools/test/app-www.mjs:先跑 app-www 再檢查 app/www 完整;要下載取樣,所以預設不跑)

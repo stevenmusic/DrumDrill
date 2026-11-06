@@ -46,7 +46,7 @@ export function createScore(opts){
   const zoom = opts.zoom, afterRender = opts.afterRender || (() => {}), lenBeats = opts.lenBeats || (() => null);
   const playing = opts.playing || (() => false), isActive = opts.isActive || (() => true);
   const msg = opts.msg || (fn => { $("paperMsg").textContent = fn ? fn() : ""; });
-  const errorText = opts.errorText || (e => tr("樂譜繪製失敗:", "Could not draw the score: ") + e.message);
+  const errorText = opts.errorText || (e => tr("樂譜繪製失敗：", "Could not draw the score: ") + e.message);
   const onDrawn = opts.onDrawn || (() => {}), onPending = opts.onPending || (() => {}), fitLand = opts.fitLand || (() => false);
   const perLine = opts.perLine || (() => 0), noFill = opts.noFill || (() => false);
   let osmd = null, noteXs = [], seq = 0, lastZoom = null, stageW = 0, pending = false, lastXml = null, sysTops = [], sysExt = [];

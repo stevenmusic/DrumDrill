@@ -41,20 +41,20 @@ export const codeDur = c => Math.round(QV[String(c).replace(/^r/, "")] * DIV);
 
 /* 說明 key(UI 用 tr(zh, en) 顯示;kind = assumed 推估 / practice 練習設定 / omit 不出的項目) */
 export const NOTES = {
-  totalExcludesRepeat: { kind: "assumed", text: ["總長度不含你接著打的小節:譜上每一句寫一次", "Total bars exclude the repeats: each phrase is written once"] },
-  noTempo: { kind: "omit", text: ["速度:官方沒寫", "Tempo: not in the syllabus"] },
-  design: { kind: "practice", text: ["拍型與組合方式是 App 的出題設計,不是官方題目", "Patterns and their combination are the App's design, not official tests"] },
-  voices: { kind: "assumed", text: ["聲部數 = 同時打的肢體數;「部分 / 大多」是 App 的解讀", "Parts = limbs struck together; 'some / mostly' is the App's reading"] },
+  totalExcludesRepeat: { kind: "assumed", text: ["總長度不含你接著打的小節：譜上每一句寫一次", "Total bars exclude the repeats: each phrase is written once"] },
+  noTempo: { kind: "omit", text: ["速度：官方沒寫", "Tempo: not in the syllabus"] },
+  design: { kind: "practice", text: ["拍型與組合方式是 App 的出題設計，不是官方題目", "Patterns and their combination are the App's design, not official tests"] },
+  voices: { kind: "assumed", text: ["聲部數 = 同時打的肢體數；「部分 / 大多」是 App 的解讀", "Parts = limbs struck together; 'some / mostly' is the App's reading"] },
   lowTom: { kind: "assumed", text: ["官方的 LT(Low Tom)用落地鼓的位置與聲音", "Official LT (low tom) uses the floor tom"] },
-  noRollRuff: { kind: "omit", text: ["滾奏、Ruff 不出:大綱沒寫寫法與種類", "Rolls and ruffs are not generated: the syllabus does not say which or how"] },
-  fullKit: { kind: "assumed", text: ["全套鼓:App 用小鼓、大鼓、三個 Toms、Hi-hat、Ride、Crash、rim-click;不用 Ride bell(大綱沒列)", "Full kit: snare, kick, 3 toms, hi-hat, ride, crash, rim-click; no ride bell (not listed)"] },
-  compound: { kind: "assumed", text: ["複拍子依附點四分分組;5/8 = 3+2、7/8 = 2+2+3(常見寫法,大綱沒寫)", "Compound time grouped in dotted crotchets; 5/8 = 3+2, 7/8 = 2+2+3 (common use; not in the syllabus)"] },
-  independence: { kind: "practice", text: ["進階手腳獨立:App 用比較多樣的大鼓節奏表示", "Extended independence: the App uses more varied kick rhythms"] },
+  noRollRuff: { kind: "omit", text: ["滾奏、Ruff 不出：大綱沒寫寫法與種類", "Rolls and ruffs are not generated: the syllabus does not say which or how"] },
+  fullKit: { kind: "assumed", text: ["全套鼓：App 用小鼓、大鼓、三個 Toms、Hi-hat、Ride、Crash、rim-click；不用 Ride bell（大綱沒列）", "Full kit: snare, kick, 3 toms, hi-hat, ride, crash, rim-click; no ride bell (not listed)"] },
+  compound: { kind: "assumed", text: ["複拍子依附點四分分組；5/8 = 3+2、7/8 = 2+2+3（常見寫法，大綱沒寫）", "Compound time grouped in dotted crotchets; 5/8 = 3+2, 7/8 = 2+2+3 (common use; not in the syllabus)"] },
+  independence: { kind: "practice", text: ["進階手腳獨立：App 用比較多樣的大鼓節奏表示", "Extended independence: the App uses more varied kick rhythms"] },
   anyTerms: { kind: "practice", text: ["「任何常見術語與記號」只用前面各級列過的", "'Any common terms and signs': only those listed in earlier grades"] },
   meterChange: { kind: "assumed", text: ["換拍號只在句子之間", "Metre changes only between phrases"] },
   rimClick: { kind: "assumed", text: ["Rim-click 用 Cross stick 的記號和聲音", "Rim-click uses the cross-stick mark and sound"] },
-  singleLine: { kind: "assumed", text: ["Initial「只有單線」解讀成一次只打一個(手腳輪流,不同時)", "Initial 'single line' read as one stroke at a time (hands and feet alternate)"] },
-  cutTime: { kind: "assumed", text: ["2/2 半小節一拍:律動的小鼓反拍在第 3 個四分音符", "2/2 has two beats a bar: the groove backbeat is on the 3rd crotchet"] }
+  singleLine: { kind: "assumed", text: ["Initial「只有單線」解讀成一次只打一個（手腳輪流，不同時）", "Initial 'single line' read as one stroke at a time (hands and feet alternate)"] },
+  cutTime: { kind: "assumed", text: ["2/2 半小節一拍：律動的小鼓反拍在第 3 個四分音符", "2/2 has two beats a bar: the groove backbeat is on the 3rd crotchet"] }
 };
 
 /* ── 節奏格(App 的出題設計;練習設定)── */
@@ -442,7 +442,7 @@ function chooseLengths(C, R){
     }
     return out;
   }
-  throw new Error("Playback:找不到合乎範圍的長度");
+  throw new Error("Playback：找不到合乎範圍的長度");
 }
 
 /* 連結線(2 級起):過門 / 單線的音接到下一個同一個鼓件(下一個音下面沒有腳;不跨句子)。
@@ -473,7 +473,7 @@ const toEv = e => (e.rest ? { value: "r" + e.code } : { value: e.code, notes: e.
 
 /* ── 主程式 ── */
 export function genChart(params, seed = 1){
-  if (!params || !Array.isArray(params.time) || !params.time.length || !params.total || !params.phrase) throw new Error("Playback:參數不完整(用 playbackFor / playbackParams)");
+  if (!params || !Array.isArray(params.time) || !params.time.length || !params.total || !params.phrase) throw new Error("Playback：參數不完整（用 playbackFor / playbackParams）");
   const C = config(params), R = rng(seed);
   for (let attempt = 0; attempt < 40; attempt++) {
     const chart = build(C, R, params, seed);

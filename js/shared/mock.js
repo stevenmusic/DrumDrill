@@ -25,7 +25,7 @@ export function createMock({ store, save, onAbort }){
   m.begin = (data, mark) => { m.id++; m.state = "run"; m.reason = null; m.data = data; m.mark = mark ? { sys: mark.sys, grade: mark.grade } : null; store.mockRun = { at: Date.now(), ...(mark || {}) }; save(); return m.id; };
   m.alive = id => m.state === "run" && m.id === id;
   /* 正常結束(做完最後一項;視奏正式打中按停止也到這裡,記「中途停止」):標記拿掉。按「停止模擬考」是 close() */
-  m.finish = () => { m.id++; m.state = "result"; delete store.mockRun; save(); announce(tr("模擬考結束,結果在模擬考卡。", "Mock exam finished; see the results on the mock exam card.")); };
+  m.finish = () => { m.id++; m.state = "result"; delete store.mockRun; save(); announce(tr("模擬考結束，結果在模擬考卡。", "Mock exam finished; see the results on the mock exam card.")); };
   /* 中止(切分頁、背景、重新整理、旋轉、換考試):模組停掉播放與計時;標記留著,說明顯示過才拿掉(重新整理之後也看得到) */
   m.abort = reason => {
     if (m.state !== "run") return false;
@@ -51,11 +51,11 @@ export function createMock({ store, save, onAbort }){
 /* 中止的說明(為什麼中止;這一次不算) */
 export const abortText = reason => ({
   // 標題已經寫「模擬考已中止」:內文只寫為什麼、這次不算
-  leave: tr("中途離開了這一頁,這次不算。", "You left the page mid-way; this one doesn't count."),
-  reload: tr("上次沒有考完(重新整理或關掉了 App),這次不算。", "Last time didn't finish (reloaded or closed); it doesn't count."),
-  rotate: tr("螢幕旋轉了,這次不算。", "The screen rotated; this one doesn't count."),
-  exam: tr("考試或級數換了,這次不算。", "The exam or grade changed; this one doesn't count."),
-  load: tr("鼓聲載入失敗(第一次要連網路),這次不算;按「再考一次」重試。", "The drum sounds didn't load (needs internet once); tap Again to retry.")
+  leave: tr("中途離開了這一頁，這次不算。", "You left the page mid-way; this one doesn't count."),
+  reload: tr("上次沒有考完（重新整理或關掉了 App），這次不算。", "Last time didn't finish (reloaded or closed); it doesn't count."),
+  rotate: tr("螢幕旋轉了，這次不算。", "The screen rotated; this one doesn't count."),
+  exam: tr("考試或級數換了，這次不算。", "The exam or grade changed; this one doesn't count."),
+  load: tr("鼓聲載入失敗（第一次要連網路），這次不算；按「再考一次」重試。", "The drum sounds didn't load (needs internet once); tap Again to retry.")
 }[reason] || tr("這次不算。", "This one doesn't count."));
 
 /* 結果 / 進度的清單(.mock-res):rows = [{ id:"A", name:() => 文字, detail:() => 文字, mark:"ok" | "no" | "skip" | "cur" | "todo" }]
@@ -82,7 +82,7 @@ export function cardToTop(card){
   window.scrollTo({ top: Math.max(0, scrollY + card.getBoundingClientRect().top - top - 8) });
 }
 /* 模擬考卡的固定說明:不算總分 + practiceOnly(po = false:題目卡上已經有 practiceOnly,一個畫面只寫一次) */
-export const resultNote = (po = true) => tr("只有各項的練習回饋:不算總分、不換算成官方分數。", "Feedback per item only: no total, and it doesn't convert to an exam mark.") + (po ? " " + T("practiceOnly") : "");
+export const resultNote = (po = true) => tr("只有各項的練習回饋：不算總分、不換算成官方分數。", "Feedback per item only: no total, and it doesn't convert to an exam mark.") + (po ? " " + T("practiceOnly") : "");
 /* 開始 / 停止按鈕的文字 */
 export const mockLabel = state => (state === "item" ? tr("模擬考", "Mock exam") : state === "run" ? tr("停止模擬考", "Stop mock") : state === "idle" ? tr("開始模擬考", "Start mock") : tr("再考一次", "Again"));
 

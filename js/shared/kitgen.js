@@ -26,11 +26,11 @@ import { toEvents, specBeats, EVENT_NOTES } from "./kitevents.js";
 export const SIGHT_KIT_GRADES = [4, 5];
 export const KIT_SIGHT_PIECES = ["hh", "ride", "crash", "snare", "tomHi", "tomMid", "tomFloor", "kick"];
 export const NOTES = {
-  kitPieces: { kind: "assumed", text: ["大綱只寫「整組鼓」:App 用 Hi-hat、小鼓、大鼓、三個 Toms、Ride、Crash", "Syllabus says 'full kit': the App uses hi-hat, snare, kick, 3 toms, ride, crash"] },
-  developEnd: { kind: "assumed", text: ["2 小節自由發揮的位置大綱沒寫,App 放在最後兩小節(斜線)", "Position of the 2-bar development not stated; the App uses the last 2 bars (slashes)"] },
-  design: { kind: "practice", text: ["節奏型、過門與組合方式是 App 的出題設計,不是官方題目;附點八分只配十六分是出題限制,不是官方規定", "Grooves, fills and how they combine are the App's design, not official tests; pairing ♪. only with ♬ is the App's limit, not an official rule"] },
+  kitPieces: { kind: "assumed", text: ["大綱只寫「整組鼓」：App 用 Hi-hat、小鼓、大鼓、三個 Toms、Ride、Crash", "Syllabus says 'full kit': the App uses hi-hat, snare, kick, 3 toms, ride, crash"] },
+  developEnd: { kind: "assumed", text: ["2 小節自由發揮的位置大綱沒寫，App 放在最後兩小節（斜線）", "Position of the 2-bar development not stated; the App uses the last 2 bars (slashes)"] },
+  design: { kind: "practice", text: ["節奏型、過門與組合方式是 App 的出題設計，不是官方題目；附點八分只配十六分是出題限制，不是官方規定", "Grooves, fills and how they combine are the App's design, not official tests; pairing ♪. only with ♬ is the App's limit, not an official rule"] },
   pieceVel: EVENT_NOTES.pieceVel,
-  noMarks: { kind: "practice", text: ["大綱只列時值:App 不寫力度、重音、開關 Hi-hat", "The syllabus lists note values only: no dynamics, accents or open hi-hat"] },
+  noMarks: { kind: "practice", text: ["大綱只列時值：App 不寫力度、重音、開關 Hi-hat", "The syllabus lists note values only: no dynamics, accents or open hi-hat"] },
   tempoRandom: { kind: "practice", text: ["速度在官方範圍內隨機", "Tempo picked at random within the official range"] },
   developClick: { kind: "practice", text: ["自由發揮的小節播放時只有拍點", "Development bars play the click only"] }
 };
@@ -65,7 +65,7 @@ export function maskVoice(bar, wl, R, dot = 0.6){
   const out = [];
   for (let b = 0; b < bar.length; b++) {
     const mask = maskOf(bar[b]);
-    if (!cellOK(mask, wl)) throw new Error(`maskVoice:第 ${b + 1} 拍的寫法不在白名單(${mask})`);
+    if (!cellOK(mask, wl)) throw new Error(`maskVoice：第 ${b + 1} 拍的寫法不在白名單(${mask})`);
     if (mask === 1 && b % 2 === 0 && b + 1 < bar.length && maskOf(bar[b + 1]) === 4 && wl.values.has("4.") && wl.values.has("8") && R() < dot) {
       out.push({ value: "4.", notes: clone(bar[b][0]) }, { value: "8", notes: clone(bar[b + 1][2]) });
       b++; continue;
@@ -142,9 +142,9 @@ function grooveBar(C, R, plan){
 }
 
 export function genRslKit(spec, seed = 1, grade = spec && spec.grade){
-  if (!spec || spec.type !== "kit") throw new Error("genRslKit:只出整組鼓視奏(spec.type 要是 kit)");
+  if (!spec || spec.type !== "kit") throw new Error("genRslKit：只出整組鼓視奏（spec.type 要是 kit）");
   const time = spec.time && (spec.time.v || spec.time);
-  if (time !== "4/4") throw new Error("genRslKit:拍號只支援 4/4(" + time + ")");
+  if (time !== "4/4") throw new Error("genRslKit：拍號只支援 4/4(" + time + ")");
   const g = SIGHT_KIT_GRADES.includes(grade) ? grade : (spec.bpm && spec.bpm[1] > 90 ? 5 : 4);
   const R = rng(seed), wl = whitelist(spec), C = { wl, gi: g === 5 ? 1 : 0 };
   const bars = spec.bars || 8, dev = (spec.develop && spec.develop.bars) || 0, written = bars - dev;

@@ -26,17 +26,17 @@ import { rng, wpick, randInt, newBar, maskVoice } from "../shared/kitgen.js";
 export const RANGE_VALUES = ["4", "8", "8t3", "8.", "16", "16t6"];
 export const KIT_GROOVE_PIECES = ["hh", "hhOpen", "snare", "xstick", "kick", "hhFoot", "ride", "rideBell", "crash", "tomHi", "tomMid", "tomFloor"];
 export const NOTES = {
-  fillTime: { kind: "assumed", text: ["Fill 的拍號大綱沒寫,App 用 4/4", "Fill metre not stated; the App uses 4/4"] },
+  fillTime: { kind: "assumed", text: ["Fill 的拍號大綱沒寫，App 用 4/4", "Fill metre not stated; the App uses 4/4"] },
   fillLine: { kind: "practice", text: ["只用小鼓 → App 畫成單線譜", "Snare only, so the App writes it on a 1-line staff"] },
-  fillRange: { kind: "assumed", text: ["依官方範圍:「四分到十六分六連音」,App 用四分、八分、附點八分、八分三連音、十六分、十六分六連音", "Per the official range 'crotchets to semiquaver sextuplets': the App uses ♩ ♪ ♪., triplet ♪, ♬ and sextuplet ♬"] },
+  fillRange: { kind: "assumed", text: ["依官方範圍：「四分到十六分六連音」，App 用四分、八分、附點八分、八分三連音、十六分、十六分六連音", "Per the official range 'crotchets to semiquaver sextuplets': the App uses ♩ ♪ ♪., triplet ♪, ♬ and sextuplet ♬"] },
   fillDesign: { kind: "practice", text: ["一拍一格的組合方式是 App 的出題設計", "How beats are combined is the App's design"] },
-  distractor: { kind: "practice", text: ["其他選項:只改一拍,聽起來一定不一樣", "Other options change one beat and always sound different"] },
-  grooveTime: { kind: "assumed", text: ["律動的拍號大綱沒寫,App 用 4/4", "Groove metre not stated; the App uses 4/4"] },
-  grooveRepeat: { kind: "assumed", text: ["「two bar groove that is repeated」:App 兩小節播兩遍", "'Two bar groove that is repeated': the App plays the 2 bars twice"] },
-  grooveDesign: { kind: "practice", text: ["大綱只列鼓件:節奏型與每一級的難度遞增是 App 的出題設計", "Only the kit pieces are listed: patterns and how they get harder are the App's design"] },
-  kitPieces: { kind: "assumed", text: ["大綱只寫「整組鼓」:App 用 Hi-hat(開閉、腳踩)、小鼓、Cross stick、大鼓、Ride(含 Ride bell)、Crash、三個 Toms", "'Full kit': hi-hat (open/closed, foot), snare, cross stick, kick, ride (and bell), crash, 3 toms"] },
+  distractor: { kind: "practice", text: ["其他選項：只改一拍，聽起來一定不一樣", "Other options change one beat and always sound different"] },
+  grooveTime: { kind: "assumed", text: ["律動的拍號大綱沒寫，App 用 4/4", "Groove metre not stated; the App uses 4/4"] },
+  grooveRepeat: { kind: "assumed", text: ["「two bar groove that is repeated」：App 兩小節播兩遍", "'Two bar groove that is repeated': the App plays the 2 bars twice"] },
+  grooveDesign: { kind: "practice", text: ["大綱只列鼓件：節奏型與每一級的難度遞增是 App 的出題設計", "Only the kit pieces are listed: patterns and how they get harder are the App's design"] },
+  kitPieces: { kind: "assumed", text: ["大綱只寫「整組鼓」：App 用 Hi-hat（開閉、腳踩）、小鼓、Cross stick、大鼓、Ride（含 Ride bell）、Crash、三個 Toms", "'Full kit': hi-hat (open/closed, foot), snare, cross stick, kick, ride (and bell), crash, 3 toms"] },
   tempoRandom: { kind: "practice", text: ["速度在官方範圍內隨機", "Tempo picked at random within the official range"] },
-  noStyle: { kind: "omit", text: ["風格選項大綱沒寫,App 不出這一題", "Style options are not listed, so the App skips that question"] },
+  noStyle: { kind: "omit", text: ["風格選項大綱沒寫，App 不出這一題", "Style options are not listed, so the App skips that question"] },
   pieceVel: EVENT_NOTES.pieceVel
 };
 
@@ -98,17 +98,17 @@ const barOK = cells => cells.reduce((s, id) => s + cellById(id).notes, 0) >= 4 &
 
 export function genFill(spec, seed = 1, grade = spec && spec.grade){
   const f = fillPart(spec);
-  if (!f || f.bars !== 1 || !(f.pieces || []).includes("snare")) throw new Error("genFill:參數不對(要 ear[g] 或 ear[g].fill)");
+  if (!f || f.bars !== 1 || !(f.pieces || []).includes("snare")) throw new Error("genFill：參數不對（要 ear[g] 或 ear[g].fill）");
   const g = Number.isInteger(grade) ? grade : null;
-  if (g == null || g < 0 || g > 8) throw new Error("genFill:級數要是 0–8(" + grade + ")");
+  if (g == null || g < 0 || g > 8) throw new Error("genFill：級數要是 0–8(" + grade + ")");
   const R = rng(seed), pool = fillPool(f, g), must = MUST[g], wl = fillWhitelist(f);
-  if (!pool.length) throw new Error("genFill:這一級沒有可以用的格子");
+  if (!pool.length) throw new Error("genFill：這一級沒有可以用的格子");
   let cells = null;
   for (let t = 0; t < 300 && !cells; t++) {
     const c = [0, 1, 2, 3].map(() => wpick(R, pool, x => x.w[g] * (x.codes.includes(must) ? 1.5 : 1)).id);
     if (barOK(c) && (!wl.values.has(must) || c.some(id => cellById(id).codes.includes(must)))) cells = c;
   }
-  if (!cells) throw new Error("genFill:出不了題");
+  if (!cells) throw new Error("genFill：出不了題");
   const notes = ["fillTime", "fillLine", "fillDesign", "distractor", "pieceVel"];
   if (wl.range) notes.push("fillRange");
   const base = { grade: g, seed: seed >>> 0, kind: "fill", time: "4/4", bars: 1, bpm: f.bpm, pool: pool.map(c => c.id),
@@ -133,7 +133,7 @@ export function distractors(fill, n = (fill && fill.options ? fill.options - 1 :
       out.push({ ...fillOut(fill, cells), changed: b });
     }
   }
-  if (out.length < n) throw new Error(`distractors:只找到 ${out.length} 個干擾選項`);
+  if (out.length < n) throw new Error(`distractors：只找到 ${out.length} 個干擾選項`);
   return out;
 }
 
@@ -182,9 +182,9 @@ export const groovePieces = gr => {
 
 export function genGroove(spec, seed = 1, grade = spec && spec.grade){
   const gr = spec && spec.groove ? spec.groove : spec;
-  if (!gr || gr.bars !== 2 || !Array.isArray(gr.pieces)) throw new Error("genGroove:參數不對(要 ear[g] 或 ear[g].groove)");
+  if (!gr || gr.bars !== 2 || !Array.isArray(gr.pieces)) throw new Error("genGroove：參數不對（要 ear[g] 或 ear[g].groove）");
   const g = Number.isInteger(grade) ? grade : null;
-  if (g == null || g < 0 || g > 8) throw new Error("genGroove:級數要是 0–8(" + grade + ")");
+  if (g == null || g < 0 || g > 8) throw new Error("genGroove：級數要是 0–8(" + grade + ")");
   const P = new Set(groovePieces(gr)), R = rng(seed);
   const [lo, hi] = gr.bpm, bpm = lo === hi ? lo : randInt(R, lo, hi);
   const cyms = ["hh", ...(P.has("ride") ? ["ride"] : []), ...(P.has("rideBell") ? ["rideBell"] : [])];

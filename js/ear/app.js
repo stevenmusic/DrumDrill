@@ -253,18 +253,18 @@ function renderUnsupported(sys, g){
   let title, text;
   if (!d) {
     title = () => tr("考試資料還沒載好", "Exam data not loaded");
-    text = () => tr("第一次要連網路,之後會存在裝置上。", "Needs internet once; then it's cached.");
+    text = () => tr("第一次要連網路，之後會存在裝置上。", "Needs internet once; then it's cached.");
   } else if (!typeOK(sys, type) && sys === "rsl") {
     title = () => tr("RSL 沒有「接著打」(Playback)", "No Echo (Playback) in RSL");
-    text = () => tr("Playback(聽一句、馬上打回來)是 Trinity Rock & Pop 的 Session skills。RSL 的聽力是 Fill 與 Groove,在「過門」「律動」練。要練 Playback,到檢定分頁把考試換成 Trinity。",
+    text = () => tr("Playback（聽一句、馬上打回來）是 Trinity Rock & Pop 的 Session skills。RSL 的聽力是 Fill 與 Groove，在「過門」「律動」練。要練 Playback，到檢定分頁把考試換成 Trinity。",
       "Playback (listen and repeat each phrase) is a Trinity Rock & Pop session skill. RSL ear tests are Fill and Groove — see those tabs. To practice Playback, switch the exam to Trinity.");
   } else if (!typeOK(sys, type)) {
     title = () => tr("Rock & Pop 沒有聽力項目", "No ear tests in Rock & Pop");
-    text = () => tr("Fill、Groove 是 RSL 的聽力題。Trinity Rock & Pop 最接近的是 Session skills 的 Playback,在「接著打」練。要練 Fill / Groove,到檢定分頁把考試換成 RSL。",
+    text = () => tr("Fill、Groove 是 RSL 的聽力題。Trinity Rock & Pop 最接近的是 Session skills 的 Playback，在「接著打」練。要練 Fill / Groove，到檢定分頁把考試換成 RSL。",
       "Fill and Groove are RSL ear tests. The nearest in Trinity Rock & Pop is Playback (session skills) — see the Playback tab. To practice Fill / Groove, switch the exam to RSL.");
   } else {
     title = () => tr("圖例資料還沒載好", "Drum key not loaded");
-    text = () => tr("第一次要連網路,之後會存在裝置上。", "Needs internet once; then it's cached.");
+    text = () => tr("第一次要連網路，之後會存在裝置上。", "Needs internet once; then it's cached.");
   }
   V.pairStack($("unsupportedTitle"), title);
   pairText($("unsupportedText"), text);
@@ -283,7 +283,7 @@ function renderExam(){
   renderXList(sys, g);
   if (!d) {
     V.fillSpec($("sumSpec"), []); $("examSummary").textContent = "";
-    V.addPara(card(() => tr("考試規格", "Exam spec")), () => tr("考試資料還沒載好(第一次要連網路,之後會存在裝置上)。", "Exam data isn't loaded yet (needs internet once; then it's cached)."));
+    V.addPara(card(() => tr("考試規格", "Exam spec")), () => tr("考試資料還沒載好（第一次要連網路，之後會存在裝置上）。", "Exam data isn't loaded yet (needs internet once; then it's cached)."));
     return;
   }
   const rows = [];
@@ -294,7 +294,7 @@ function renderExam(){
     $("examSummary").textContent = tr(`聽力 ${it.max} 分`, `Ear tests, ${it.max} marks`);
   } else {
     const b = d.sessionBands;
-    rows.push({ k: () => tr("本項配分", "This section"), v: () => tr("Playback 或 Improvising 擇一:", "Playback or Improvising: ") + V.bandsText(b.bands), src: V.srcOf(sys, b.src.p) });
+    rows.push({ k: () => tr("本項配分", "This section"), v: () => tr("Playback 或 Improvising 擇一：", "Playback or Improvising: ") + V.bandsText(b.bands), src: V.srcOf(sys, b.src.p) });
     rows.push({ k: () => tr("數位考試", "Digital exam"), v: () => V.L(d.digitalNote.text), src: V.srcOf(sys, d.digitalNote.src.p) });
     $("examSummary").textContent = tr(`Session skills ${b.max} 分`, `Session skills, ${b.max} marks`);
   }
@@ -334,36 +334,36 @@ function renderRsl(d, g, withPractice){
     { k: () => tr("速度", "Tempo"), v: () => V.bpmText(f.bpm), src },
     { k: () => tr("音符", "Notes"), v: () => (f.values ? V.values(f.values) : tr(`${V.valueName(f.valueRange[0])}到${V.valueName(f.valueRange[1])}的所有時值與組合`, `All values from ${V.valueName(f.valueRange[0])} to ${V.valueName(f.valueRange[1])}`)), src },
     { k: () => tr("休止符", "Rests"), v: () => (f.rests.length ? V.rests(f.rests) : tr("大綱沒列", "None listed")), src },
-    { k: () => tr("播放", "Plays"), v: () => tr(`配節拍器聽 ${f.plays} 次,每次前面 ${f.countInBars} 小節預備拍`, `${f.plays} plays with metronome, ${f.countInBars}-bar count-in each`), src },
+    { k: () => tr("播放", "Plays"), v: () => tr(`配節拍器聽 ${f.plays} 次，每次前面 ${f.countInBars} 小節預備拍`, `${f.plays} plays with metronome, ${f.countInBars}-bar count-in each`), src },
     { k: () => tr("選項", "Options"), v: () => tr(`打完從 ${f.options} 份譜裡選出剛才那一份`, `Then pick it from ${f.options} charts`), src }
   ]);
   if (!f.values) V.addPara(c, () => V.L(d.earNote.fillValues));
-  if (withPractice) goBtn(c, () => tr("練習這一級的 Fill(App 出題)", "Practice this grade's Fill (App tests)"), "fill", "rsl", g);
+  if (withPractice) goBtn(c, () => tr("練習這一級的 Fill（App 出題）", "Practice this grade's Fill (App tests)"), "fill", "rsl", g);
   const c2 = card("Groove Recall", src);
   specIn(c2, [
     { k: () => tr("長度、鼓件", "Length, kit"), v: () => tr(`${gr.bars} 小節 · `, `${gr.bars} bars · `) + V.pieces(gr.pieces, key), src },
     { k: () => tr("速度", "Tempo"), v: () => V.bpmText(gr.bpm), src },
     { k: () => tr("播放", "Plays"), v: () => tr(`兩小節播 ${gr.repeat.v} 遍`, `The 2 bars played ${gr.repeat.v} times`) + V.assumed(gr.repeat.assumed) },
     // 「沒有這一題」的列不列出來
-    gr.styleChoices ? { k: () => tr("說出風格", "Name the style"), v: () => tr(`${gr.styleChoices} 選 1(選項大綱沒寫)`, `1 of ${gr.styleChoices} (options not listed)`), src } : null
+    gr.styleChoices ? { k: () => tr("說出風格", "Name the style"), v: () => tr(`${gr.styleChoices} 選 1（選項大綱沒寫）`, `1 of ${gr.styleChoices} (options not listed)`), src } : null
   ]);
   // 「兩小節播兩遍」已經在表上標推估;流程縮成一句(不混英文)
   if (gr.styleChoices) V.addPara(c2, () => V.L(d.earNote.styles));
-  V.addPara(c2, () => tr("流程跟 Fill 一樣:配拍點聽兩次 → 練習 → 跟拍點打出來。", "Same flow as Fill: two plays with a click → practice → play it back with the click."));
-  if (withPractice) goBtn(c2, () => tr("練習這一級的 Groove(App 出題)", "Practice this grade's Groove (App tests)"), "groove", "rsl", g);
+  V.addPara(c2, () => tr("流程跟 Fill 一樣：配拍點聽兩次 → 練習 → 跟拍點打出來。", "Same flow as Fill: two plays with a click → practice → play it back with the click."));
+  if (withPractice) goBtn(c2, () => tr("練習這一級的 Groove（App 出題）", "Practice this grade's Groove (App tests)"), "groove", "rsl", g);
 }
 
 function renderTrinity(d, g, withPractice){
-  const c = card(() => tr("Playback(聽一句打一句)", "Playback"), V.srcOf("trinity", d.earNote.src.p));
+  const c = card(() => tr("Playback（聽一句打一句）", "Playback"), V.srcOf("trinity", d.earNote.src.p));
   V.addPara(c, () => V.L(d.earNote.text));
   const fl = d.playback.flow, fsrc = V.srcOf("trinity", fl.src.p);
   specIn(c, [
-    { k: () => tr("看譜", "Study"), v: () => V.secText(fl.studySec) + tr("(可以試打;看不看譜自己決定)", " (may try out; reading is optional)"), src: fsrc },
-    { k: () => tr("播放", "Plays"), v: () => tr(`${fl.plays} 次(練習、評分);開頭有預備拍`, `${fl.plays} (practice, assessed); count-in first`), src: fsrc },
+    { k: () => tr("看譜", "Study"), v: () => V.secText(fl.studySec) + tr("（可以試打；看不看譜自己決定）", " (may try out; reading is optional)"), src: fsrc },
+    { k: () => tr("播放", "Plays"), v: () => tr(`${fl.plays} 次（練習、評分）；開頭有預備拍`, `${fl.plays} (practice, assessed); count-in first`), src: fsrc },
     { k: () => tr("速度、伴奏風格", "Tempo, style"), v: notStated }
   ]);
   V.addPara(c, () => tr("每一級的拍號、時值、鼓件見「視奏」的 Playback 規格。", "Each grade's metres, values and kit: see Playback under Sight-reading."));
-  if (withPractice) goBtn(c, () => tr("練習這一級的 Playback(App 出題)", "Practice this grade's Playback (App tests)"), "playback", "trinity", g);
+  if (withPractice) goBtn(c, () => tr("練習這一級的 Playback（App 出題）", "Practice this grade's Playback (App tests)"), "playback", "trinity", g);
   // Improvising:累積到這一級的規格(需要伴奏音軌,App 只列規格)
   const im = d.improvising, G = im.grades;
   let bars = null, solo = null; const time = [], styles = [];
@@ -382,9 +382,9 @@ function renderTrinity(d, g, withPractice){
   V.addPara(c2, () => V.L(im.flow.text), "spec-note", V.srcOf("trinity", im.flow.src.p));
   specIn(c2, [
     { k: () => tr("總小節數", "Total bars"), v: () => String(bars) + tr("(當作一次循環的長度", " (taken as one loop") + V.assumed(im.barsAs.assumed) + tr(")", ")"), src: s2 },
-    { k: () => tr("拍號", "Time signatures"), v: () => time.join(tr("、", ", ")) + (meterChange ? tr(",會換拍號", "; metre changes") : ""), src: s2 },
+    { k: () => tr("拍號", "Time signatures"), v: () => time.join(tr("、", ", ")) + (meterChange ? tr("，會換拍號", "; metre changes") : ""), src: s2 },
     { k: () => "Solo break", v: () => (solo ? tr(`最多 ${solo.maxBars} 小節`, `Up to ${solo.maxBars} bars`) : tr("沒有", "None")), src: s2 },
-    { k: () => tr("風格(累積)", "All styles"), v: () => styles.map(V.L).join(tr("、", ", ")), src: s2 },
+    { k: () => tr("風格（累積）", "All styles"), v: () => styles.map(V.L).join(tr("、", ", ")), src: s2 },
     { k: () => tr("速度", "Tempo"), v: notStated }
   ]);
   V.addPara(c2, () => V.L(im.legend));
@@ -420,7 +420,7 @@ function lvDesc(t, lv){
   const cu = lvParams(t, lv); if (!cu) return "";
   return paramDesc(cu, lv > 1 ? lvParams(t, lv - 1) : null, () => (t === "fill" ? valueList(cu.values, cu.rests)
     : t === "groove" ? (cu.pieces || []).map(p => ({ hh: ["Hi-hat", "hi-hat"], snare: ["小鼓", "snare"], kick: ["大鼓", "kick"] }[p] || [p, p])).map(x => tr(x[0], x[1])).join(tr("、", ", "))
-    : tr(`${cu.time.join("、")} 拍;`, `${cu.time.join(", ")}; `) + valueList(cu.values, [])));
+    : tr(`${cu.time.join("、")} 拍；`, `${cu.time.join(", ")}; `) + valueList(cu.values, [])));
 }
 /* ▲ ▼:馬上換一題這個難度的 */
 function stepLevel(d){
@@ -454,8 +454,8 @@ function tempoUI(){
   if (!cur) { pairText($("tempoNote"), () => ""); return; }
   const src = cur.sys === "rsl" ? V.srcOf("rsl", cur.q.src && cur.q.src.p) : "";
   if (plainMode()) pairText($("tempoNote"), () => (cur.type === "fill" ? tr("速度固定", "Fixed tempo") : cur.type === "groove" ? tr("每題速度不同", "Tempo varies per test") : tr("可以改速度", "Adjustable")));
-  else pairText($("tempoNote"), () => (cur.type === "fill" ? tr(`官方速度 ${V.bpmText(cur.q.bpm)}(固定)· ${src}`, `Official ${V.bpmText(cur.q.bpm)} (fixed) · ${src}`)
-    : cur.type === "groove" ? tr(`官方範圍 ${V.bpmText(cur.q.bpmRange)},每題隨機(練習設定)· ${src}`, `Official ${V.bpmText(cur.q.bpmRange)}, random per test (practice setting) · ${src}`)
+  else pairText($("tempoNote"), () => (cur.type === "fill" ? tr(`官方速度 ${V.bpmText(cur.q.bpm)}（固定）· ${src}`, `Official ${V.bpmText(cur.q.bpm)} (fixed) · ${src}`)
+    : cur.type === "groove" ? tr(`官方範圍 ${V.bpmText(cur.q.bpmRange)}，每題隨機（練習設定）· ${src}`, `Official ${V.bpmText(cur.q.bpmRange)}, random per test (practice setting) · ${src}`)
     : tr("官方沒寫速度", "Not in the syllabus")));   // 標籤已經寫「練習」
 }
 
@@ -481,7 +481,7 @@ function newQuestion(seed = newSeed(), force = null){
     if (sys === "rsl" && !q.src) q.src = d.ear[g].src;
     xml = scoreXML({ key, ...q.spec });
     if (opts) for (const o of opts) o.xml = scoreXML({ key, ...o.spec });
-  } catch (e) { console.error(e); say(() => tr("出題失敗:", "Could not make a test: ") + e.message); return; }
+  } catch (e) { console.error(e); say(() => tr("出題失敗：", "Could not make a test: ") + e.message); return; }
   const lanes = t === "fill" ? LANES[1] : LANES[3];
   cur = { key: keyOf(sys, g, t), type: t, sys, grade: g, seed, q, xml, lines: q.spec.lines === 1 ? 1 : 5, opts, answer, chosen: null, revealed: false,
     listened: 0, pass: 0, result: null, optsDrawn: 0, lanes, padPiece: padPieces(q, lanes), legendFor: null };
@@ -619,11 +619,11 @@ function segMsg(seg, n){
     return;
   }
   if (k === "listen") say(() => (isRsl() ? tr(`第 ${seg.take} 次播放中…`, `Play ${seg.take}…`) : tr("整份譜播放中…", "Playing the whole chart…")), false, seg.take > 1);
-  else if (k === "perform") say(() => tr("輪到你!照聽到的打…", "Your turn! Play what you heard…"), false, true);   // 不播報:開始時已經念過「開始打」
+  else if (k === "perform") say(() => tr("輪到你！照聽到的打…", "Your turn! Play what you heard…"), false, true);   // 不播報:開始時已經念過「開始打」
   else if (k === "pass") {
-    const p = perf ? perf.pass : 1, lbl = p === 1 ? tr("打一遍(練習)", "Practice run") : tr("打一遍(計分)", "Scored run");
+    const p = perf ? perf.pass : 1, lbl = p === 1 ? tr("打一遍（練習）", "Practice run") : tr("打一遍（計分）", "Scored run");
     // App 播的那句「先聽」、空檔「輪到你!」(亮起來)寫在最前面,第幾句、第幾次在後面
-    say(() => (seg.kind === "app" ? tr(`先聽 · 第 ${ph} / ${nph} 句 · ${lbl}`, `Listen · phrase ${ph} / ${nph} · ${lbl}`) : tr(`輪到你!第 ${ph} / ${nph} 句 · ${lbl}`, `Your turn! Phrase ${ph} / ${nph} · ${lbl}`)), false, true);
+    say(() => (seg.kind === "app" ? tr(`先聽 · 第 ${ph} / ${nph} 句 · ${lbl}`, `Listen · phrase ${ph} / ${nph} · ${lbl}`) : tr(`輪到你！第 ${ph} / ${nph} 句 · ${lbl}`, `Your turn! Phrase ${ph} / ${nph} · ${lbl}`)), false, true);
     $("feedback").classList.toggle("ok", seg.kind !== "app");
   }
 }
@@ -665,7 +665,7 @@ function finishListen(){
     if (phase === "idle") phase = "practice";
     if (mockRes() && mockRes().stage === "listen") { mockRes().stage = "practice"; renderMockCard(); }
     syncButtons();
-    if (phase === "practice") say(() => tr("先在鼓墊上試打(不計分),好了按「打一遍」", "Try it on the pad (not scored), then tap Play it"));
+    if (phase === "practice") say(() => tr("先在鼓墊上試打（不計分），好了按「打一遍」", "Try it on the pad (not scored), then tap Play it"));
     else say(() => tr("播完了。", "Done."));
   } else say(() => tr("播完了。", "Done."));
 }
@@ -738,7 +738,7 @@ async function startPerform(){
   if (!(t0 > 0)) { mic.cancel(); return; }
   phase = "perform";
   perf = { t0, bpm, taps: [], startedAt: performance.now(), tl: t, mic: useMic, click };
-  announce(tr("開始打:預備拍 1 小節後照聽到的打。", "Your turn: after a 1-bar count-in, play what you heard."));
+  announce(tr("開始打：預備拍 1 小節後照聽到的打。", "Your turn: after a 1-bar count-in, play what you heard."));
   cur.result = null; $("alongResult").hidden = true;
   syncButtons();
   bringIntoView($("pads"));
@@ -756,7 +756,7 @@ function abortRun(){
   if (phase === "perform") phase = cur && cur.listened ? "practice" : "idle";
   if (phase === "pass") phase = cur && cur.pass ? "between" : "ready";
   syncButtons();
-  if (active) say(() => tr("停止了(這一次不算)。", "Stopped (not counted)."));
+  if (active) say(() => tr("停止了（這一次不算）。", "Stopped (not counted)."));
   // 模擬考:自己按停止 = 這一題「中途停止」;RSL 可以按下一題,Trinity 直接看結果
   const mr = mockRes();
   if (mr) { mr.stopped = true; mr.stage = "done"; if (cur && cur.sys === "trinity") finishMock(); else { renderMockCard(); syncButtons(); } }
@@ -789,12 +789,12 @@ function finishPerform(){
     showOptions();
     // 選譜:畫面上只留選項上面那一句「哪一個是剛才的過門?」(狀態那行不再寫一次)
     say(() => "", false, true);
-    announce(tr("打完了。", "Done. ") + resultSpeech(cur.result) + tr("哪一個是剛才的過門?", " Which one did you hear?"));
+    announce(tr("打完了。", "Done. ") + resultSpeech(cur.result) + tr("哪一個是剛才的過門？", " Which one did you hear?"));
   } else {
     phase = "result";
     doReveal();
     if (active && !mockRes()) requestAnimationFrame(() => bringIntoView($("alongResult")));   // 結果沒露出來就捲過去
-    say(() => (cur && cur.type === "fill" ? tr("打完了,看下面的回饋", "Done. Feedback below") : tr("打完了,看下面的譜和回饋", "Done. Chart and feedback below")), false, true);
+    say(() => (cur && cur.type === "fill" ? tr("打完了，看下面的回饋", "Done. Feedback below") : tr("打完了，看下面的譜和回饋", "Done. Chart and feedback below")), false, true);
     announce(tr("打完了。", "Done. ") + resultSpeech(cur.result) + (cur.result.lvText ? " " + cur.result.lvText() : ""));
   }
   renderResult(); syncButtons(); renderStats();
@@ -836,7 +836,7 @@ function markOptions(){
     b.classList.toggle("right", done && i === cur.answer);
     b.classList.toggle("wrong", done && i === cur.chosen && i !== cur.answer);
     b.disabled = done;
-    b.setAttribute("aria-label", tr(`選項 ${"ABC"[i]}`, `Option ${"ABC"[i]}`) + (done && i === cur.answer ? tr("(正確)", " (correct)") : "")
+    b.setAttribute("aria-label", tr(`選項 ${"ABC"[i]}`, `Option ${"ABC"[i]}`) + (done && i === cur.answer ? tr("（正確）", " (correct)") : "")
       + tr(":", ": ") + describeSpec(cur.opts[i].spec, { key: drumKey() }));   // 無障礙:選項的譜(單線小鼓譜:每個音的時值)
   });
 }
@@ -911,8 +911,8 @@ function startStudy(){
   phase = "study"; left = studySec(); studyStarted = performance.now(); studyEnd = studyStarted + left * 1000;
   $("countdown").hidden = false; $("countdown").className = "countdown running"; $("countdownValue").textContent = String(left);
   showFloat(left);
-  say(() => tr("看譜時可以在鼓墊上試打,不計分", "While studying, try it on the pads (not scored)"), false, true);
-  announce(tr(`開始看譜 ${left} 秒;可以在鼓墊上試打(不計分)。`, `Study started: ${left} seconds; try it on the pads (not scored).`));
+  say(() => tr("看譜時可以在鼓墊上試打，不計分", "While studying, try it on the pads (not scored)"), false, true);
+  announce(tr(`開始看譜 ${left} 秒；可以在鼓墊上試打（不計分）。`, `Study started: ${left} seconds; try it on the pads (not scored).`));
   bringIntoView($("scoreCard"));
   clearInterval(countdown);
   countdown = setInterval(() => {
@@ -932,7 +932,7 @@ function endStudy(done){
   if (!done) $("countdownValue").textContent = String(studySec());
   syncButtons();
   if (done && mockRes()) { mockRes().stage = "pass1"; renderMockCard(); startPass(); return; }   // 模擬考:時間到自動第一次
-  if (done) say(() => tr("看譜時間到。按「打一遍(練習)」。", "Time's up. Tap Practice run."));
+  if (done) say(() => tr("看譜時間到。按「打一遍（練習）」。", "Time's up. Tap Practice run."));
   else if (active) say(idleMsg);
 }
 function showFloat(sec){
@@ -1001,8 +1001,8 @@ async function startPass(){
   if (!(t0 > 0)) { mic.cancel(); return; }
   phase = "pass";
   perf = { t0, bpm, taps: [], startedAt: performance.now(), tl: t, pass: k, phs, mic: useMic, click };
-  announce(k === 1 ? tr("打一遍(練習)開始:App 播一句,接著換你打。", "Practice run started: the App plays a phrase, then it's your turn.")
-    : tr("打一遍(計分)開始:App 播一句,接著換你打。", "Scored run started: the App plays a phrase, then it's your turn."));
+  announce(k === 1 ? tr("打一遍（練習）開始：App 播一句，接著換你打。", "Practice run started: the App plays a phrase, then it's your turn.")
+    : tr("打一遍（計分）開始：App 播一句，接著換你打。", "Scored run started: the App plays a phrase, then it's your turn."));
   syncButtons();
   bringIntoView($("pads"));   // 輪到你打時鼓墊要在畫面上
 }
@@ -1012,9 +1012,9 @@ function finishPass(){
   addSec((performance.now() - p.startedAt) / 1000, p.pass === 2 ? 1 : 0);
   if (p.pass === 1) {
     cur.pass = 1; phase = "between";
-    say(() => tr("打一遍(練習)完成,不計分。按「打一遍(計分)」。", "Practice run done — not scored. Tap Scored run."));
+    say(() => tr("打一遍（練習）完成，不計分。按「打一遍（計分）」。", "Practice run done — not scored. Tap Scored run."));
     syncButtons();
-    if (mockRes()) { mockRes().stage = "pass2"; renderMockCard(); say(() => tr("打一遍(練習)完成:接著打一遍(計分)。", "Practice run done: now the scored run.")); startPass(); }   // 模擬考:自動接第二次
+    if (mockRes()) { mockRes().stage = "pass2"; renderMockCard(); say(() => tr("打一遍（練習）完成：接著打一遍（計分）。", "Practice run done: now the scored run.")); startPass(); }   // 模擬考:自動接第二次
     return;
   }
   cur.pass = 2; phase = "result";
@@ -1029,7 +1029,7 @@ function finishPass(){
   save(); renderLog(); renderStats();
   renderResult(); syncButtons();
   if (active && !mockRes()) requestAnimationFrame(() => bringIntoView($("alongResult")));
-  say(() => tr("計分的一遍打完,下面是每一句的回饋", "Scored run done: feedback per phrase below"), false, true);
+  say(() => tr("計分的一遍打完，下面是每一句的回饋", "Scored run done: feedback per phrase below"), false, true);
   announce(tr("計分的一遍完成。", "Scored run done. ") + resultSpeech(cur.result) + (cur.result.lvText ? " " + cur.result.lvText() : ""));
   if (mockRes()) { mockRes().r = cur.result; mockRes().stage = "done"; finishMock(); }   // 模擬考:第二次完成 = 結果
   if (ctx) ctx.examChanged();
@@ -1169,7 +1169,7 @@ function coverChart(){
   const on = !!cur && cur.sys === "trinity" && SS.hideChart && playKind === "pass";
   $("stage").classList.toggle("covered", on);
   if ($("osmd").hasAttribute("role")) imgLabel($("osmd"), scoreLabel);
-  if (on) $("paperMsg").textContent = tr("譜蓋起來了(看不看譜自己決定)", "Chart hidden (reading is optional)");
+  if (on) $("paperMsg").textContent = tr("譜蓋起來了（看不看譜自己決定）", "Chart hidden (reading is optional)");
   else if ($("paperMsg").textContent && /蓋起來|hidden/.test($("paperMsg").textContent)) $("paperMsg").textContent = "";
 }
 const land = createLandPlay({ $, score, playing: () => playKind === "listen" && !$("scoreCard").hidden, stop: () => stopPlayer(), reveal: () => revealScore() });
@@ -1252,7 +1252,7 @@ async function ready(){
   const still = starting === token && active && cur === c0;
   if (starting === token) starting = 0;
   syncButtons();
-  if (!ok) { loadFailed = true; say(() => tr("鼓聲載入失敗,再按一次重試(需要網路,之後會存在裝置上)", "Could not load the drums — try again (needs internet once; then cached)")); return false; }
+  if (!ok) { loadFailed = true; say(() => tr("鼓聲載入失敗，再按一次重試（需要網路，之後會存在裝置上）", "Could not load the drums — try again (needs internet once; then cached)")); return false; }
   return still;
 }
 
@@ -1297,22 +1297,22 @@ function renderLabels(){
   let lbl;
   if (!has) lbl = () => tr("打一遍", "Play it");
   else if (rsl) lbl = () => (playKind === "perform" ? tr("停止", "Stop") : tr("打一遍", "Play it"));
-  else lbl = () => (playKind === "pass" ? tr("停止", "Stop") : cur.pass >= 1 && phase !== "result" ? tr("打一遍(計分)", "Scored run") : phase === "result" ? tr("從頭再來", "Start over") : tr("打一遍(練習)", "Practice run"));
+  else lbl = () => (playKind === "pass" ? tr("停止", "Stop") : cur.pass >= 1 && phase !== "result" ? tr("打一遍（計分）", "Scored run") : phase === "result" ? tr("從頭再來", "Start over") : tr("打一遍（練習）", "Practice run"));
   $("performBtn").textContent = lbl();
   const mr = mockRes();
   pairText($("nextLabel"), () => (mr ? (mock.data.i >= mock.data.queue.length - 1 ? tr("看結果", "Results") : tr("下一題", "Next")) : T("next")));
-  const pl = () => (rsl ? (cur && cur.revealed ? (cur.type === "fill" ? tr("再聽一次", "Hear it again") : tr("跟著譜再聽一次", "Hear it with the chart")) : tr("聽題目(兩次)", "Play the test (twice)")) : tr("聽整份譜(正確版本)", "Hear the whole chart"));
+  const pl = () => (rsl ? (cur && cur.revealed ? (cur.type === "fill" ? tr("再聽一次", "Hear it again") : tr("跟著譜再聽一次", "Hear it with the chart")) : tr("聽題目（兩次）", "Play the test (twice)")) : tr("聽整份譜（正確版本）", "Hear the whole chart"));
   $("playBtn").setAttribute("aria-label", pl()); $("playBtn").title = pl();
 }
 /* 聽力分頁(沒選考試)第一次進來這個題型(還沒做完一題):寫這個題型在練什麼、怎麼作答 */
 const INTRO = {
-  fill: ["聽完打回來,再選是哪一份譜", "Listen, play it back, then pick the chart"],
+  fill: ["聽完打回來，再選是哪一份譜", "Listen, play it back, then pick the chart"],
   groove: ["聽完打回來", "Listen, then play it back"],
-  playback: ["App 打一句,你接著打同一句", "The App plays a phrase — you play it back"]
+  playback: ["App 打一句，你接著打同一句", "The App plays a phrase — you play it back"]
 };
-const idleMsg = () => (!cur ? "" : freeLevel() && mode !== "exam" && !mockOn() && !SS.intro[cur.type] && INTRO[cur.type] ? tr(...INTRO[cur.type]) : isRsl() ? tr("按 ▶ 聽題目:配拍點聽兩次,每次前面 1 小節預備拍。", "Tap ▶: the test plays twice with a click, a 1-bar count-in each time.")
-  : plainMode() ? tr(`先看譜 ${studySec()} 秒(可以在鼓墊上試打),再按「打一遍(練習)」:App 播一句,你接著打同一句。`, `Study the chart for ${studySec()} s (try it on the pads), then tap Practice run: the App plays a phrase, you play it back.`)
-  : tr(`先看譜 ${studySec()} 秒(${studySrc()};可以在鼓墊上試打),再按「打一遍(練習)」:App 播一句,你接著打同一句。`, `Study the chart for ${studySec()} s (${studySrc()}; try it on the pads), then tap Practice run: the App plays a phrase, you play it back.`));
+const idleMsg = () => (!cur ? "" : freeLevel() && mode !== "exam" && !mockOn() && !SS.intro[cur.type] && INTRO[cur.type] ? tr(...INTRO[cur.type]) : isRsl() ? tr("按 ▶ 聽題目：配拍點聽兩次，每次前面 1 小節預備拍。", "Tap ▶: the test plays twice with a click, a 1-bar count-in each time.")
+  : plainMode() ? tr(`先看譜 ${studySec()} 秒（可以在鼓墊上試打），再按「打一遍（練習）」：App 播一句，你接著打同一句。`, `Study the chart for ${studySec()} s (try it on the pads), then tap Practice run: the App plays a phrase, you play it back.`)
+  : tr(`先看譜 ${studySec()} 秒（${studySrc()}；可以在鼓墊上試打），再按「打一遍（練習）」：App 播一句，你接著打同一句。`, `Study the chart for ${studySec()} s (${studySrc()}; try it on the pads), then tap Practice run: the App plays a phrase, you play it back.`));
 function refreshTexts(){
   if (!cur) return;
   const c = cur, name = tr(...TYPE_LABEL[c.type]);   // 標題 = 題型(考試名、級數在考試卡 / 練習題那一行;難度在題目卡自己的一列)
@@ -1324,7 +1324,7 @@ function refreshTexts(){
   pairText($("practiceOnly"), () => (plain ? "" : tr(`照 ${sysName(c.sys)} ${gl(c.grade, c.sys)}大綱出的練習題 · `, `Practice set from the ${sysName(c.sys)} ${gl(c.grade, c.sys)} syllabus · `) + TS("practiceOnly")));
   $("scoreTitle").textContent = tr("鼓譜", "Drum part");   // 譜卡標題一律「鼓譜」(畫面設計 2026-10)
   $("scoreSub").textContent = plain ? "" : c.sys === "rsl" ? V.srcOf("rsl", c.q.src && c.q.src.p) : V.srcOf("trinity", (c.q.src || []).join(", "));
-  pairText($("stepQ"), () => (phase === "choose" ? tr("哪一個是剛才的過門?", "Which one did you hear?") : ""));
+  pairText($("stepQ"), () => (phase === "choose" ? tr("哪一個是剛才的過門？", "Which one did you hear?") : ""));
   pairText($("alongNote"), () => alongNote());
   renderNotes();
   renderMeta(); renderSum(); tempoUI();
@@ -1349,7 +1349,7 @@ function renderMeta(){
   const c = cur.q, b = bpmNow(), tags = [];
   if (cur.sys === "rsl") {
     tags.push(cur.type === "fill" ? tr("1 小節 · 小鼓", "1 bar · snare") : tr(`2 小節 · 播 ${c.repeat} 遍`, `2 bars × ${c.repeat}`));
-    tags.push(plainMode() ? "4/4" : tr("4/4(大綱沒寫)", "4/4 (not stated)"), `♩=${b}`);
+    tags.push(plainMode() ? "4/4" : tr("4/4（大綱沒寫）", "4/4 (not stated)"), `♩=${b}`);
   } else {
     tags.push(c.times.join(" · "), tr(`${c.totalBars} 小節 · ${c.phrases.length} 句`, `${c.totalBars} bars · ${c.phrases.length} phrases`), plainMode() ? `♩=${b}` : `♩=${b} · ${tr("練習", "Practice")}`);   // 聽力分頁(沒選考試):速度不標「練習」
   }
@@ -1368,16 +1368,16 @@ function renderSum(){
 }
 /* 推估、練習設定、不出的項目(出題器的 NOTES + 這裡的 APP_NOTES) */
 const APP_NOTES = {
-  ciPerform: { kind: "assumed", text: ["打之前的預備拍 1 小節:大綱只寫考官數拍", "1-bar count-in before playing back: the syllabus only says the examiner counts in"] },
-  practiceTime: { kind: "practice", text: ["練習時間自己決定(大綱寫「一小段時間」)", "Practice time is up to you (the syllabus says a short time)"] },
-  grooveBack: { kind: "assumed", text: ["你打的長度跟播放一樣(兩小節兩遍)", "You play back as much as was played (2 bars twice)"] },
+  ciPerform: { kind: "assumed", text: ["打之前的預備拍 1 小節：大綱只寫考官數拍", "1-bar count-in before playing back: the syllabus only says the examiner counts in"] },
+  practiceTime: { kind: "practice", text: ["練習時間自己決定（大綱寫「一小段時間」）", "Practice time is up to you (the syllabus says a short time)"] },
+  grooveBack: { kind: "assumed", text: ["你打的長度跟播放一樣（兩小節兩遍）", "You play back as much as was played (2 bars twice)"] },
   tolerance: { kind: "practice", text: ["節奏回饋的容許範圍", "The timing tolerance of the feedback"] },
-  tempo80: { kind: "practice", text: ["速度:官方沒寫,預設 ♩=80,可以改", "Tempo: not in the syllabus; ♩=80 by default, adjustable"] },
-  countIn: { kind: "assumed", text: ["預備拍 1 小節(官方有預備拍,沒寫幾小節)", "1-bar count-in (the syllabus has a count-in, length not stated)"] },
+  tempo80: { kind: "practice", text: ["速度：官方沒寫，預設 ♩=80，可以改", "Tempo: not in the syllabus; ♩=80 by default, adjustable"] },
+  countIn: { kind: "assumed", text: ["預備拍 1 小節（官方有預備拍，沒寫幾小節）", "1-bar count-in (the syllabus has a count-in, length not stated)"] },
   gapSame: { kind: "assumed", text: ["每一句後面留同樣長度的空檔讓你接著打", "After each phrase, a gap of the same length to play it back"] },
   phraseScore: { kind: "practice", text: ["計分的一遍每一句分開評時間", "The scored run is timed phrase by phrase"] },
-  backing: { kind: "omit", text: ["伴奏音軌:官方整段配伴奏,App 只有拍點", "Backing track: the exam has one throughout; the App has a click only"] },
-  improv: { kind: "omit", text: ["Improvising:需要伴奏音軌,App 只在檢定頁列規格", "Improvising needs a backing track; spec only (Exams tab)"] }
+  backing: { kind: "omit", text: ["伴奏音軌：官方整段配伴奏，App 只有拍點", "Backing track: the exam has one throughout; the App has a click only"] },
+  improv: { kind: "omit", text: ["Improvising：需要伴奏音軌，App 只在檢定頁列規格", "Improvising needs a backing track; spec only (Exams tab)"] }
 };
 function renderNotes(){
   if (!cur) return;
@@ -1391,7 +1391,7 @@ function renderNotes(){
     : [...cur.q.notes.filter(k => k !== "noTempo").map(k => PB_NOTES[k]), APP_NOTES.tempo80, APP_NOTES.countIn, APP_NOTES.gapSame, APP_NOTES.phraseScore, APP_NOTES.tolerance, APP_NOTES.backing, APP_NOTES.improv];
   const by = kind => keys.filter(n => n && n.kind === kind).map(n => n.text);
   const n = keys.filter(Boolean).length;
-  pairText($("notesSum"), () => tr(`出處與推估(${n} 項)`, `Sources & assumptions (${n})`));
+  pairText($("notesSum"), () => tr(`出處與推估（${n} 項）`, `Sources & assumptions (${n})`));
   const groups = [["assumed", () => TS("srcAssumed")], ["practice", () => TS("srcPractice")], ["omit", () => tr("App 不出", "Not in the App")]];
   pairText($("notes"), () => groups.map(([k, lbl]) => { const a = by(k); return a.length ? `${lbl()}:${a.map(t => tr(t[0], t[1])).join(tr(";", "; "))}${tr("。", ".")}` : ""; }).filter(Boolean).join(" "));
 }
@@ -1402,14 +1402,14 @@ function feedbackPick(){
   if (!cur || cur.type !== "fill" || cur.chosen == null) return;
   const ok = cur.chosen === cur.answer;
   fb.classList.add(ok ? "ok" : "no");
-  say(() => (ok ? tr(`選對了:${"ABC"[cur.answer]}。`, `Right: ${"ABC"[cur.answer]}.`) : tr(`不是 ${"ABC"[cur.chosen]};答案是 ${"ABC"[cur.answer]}。`, `Not ${"ABC"[cur.chosen]}; it was ${"ABC"[cur.answer]}.`)), true);
+  say(() => (ok ? tr(`選對了：${"ABC"[cur.answer]}。`, `Right: ${"ABC"[cur.answer]}.`) : tr(`不是 ${"ABC"[cur.chosen]}；答案是 ${"ABC"[cur.answer]}。`, `Not ${"ABC"[cur.chosen]}; it was ${"ABC"[cur.answer]}.`)), true);
 }
 /* 無障礙:結果的一句話摘要(aria-live 播報;詳細的在 #e-alongResult) */
 function resultSpeech(R){
   if (!R) return "";
   if (!R.taps) return R.src === "mic" ? tr(...MIC_TEXT.silent) : tr("沒有打到鼓墊。", "No pad hits.");
   const r = R.kind === "rsl" ? R.r : R.all;
-  return tr(`練習回饋:${R.kind === "rsl" ? `準度 ${r.score == null ? "—" : r.score} / 100,` : ""}打中 ${r.hits} / ${r.total}。`,
+  return tr(`練習回饋：${R.kind === "rsl" ? `準度 ${r.score == null ? "—" : r.score} / 100,` : ""}打中 ${r.hits} / ${r.total}。`,
     `Practice feedback: ${R.kind === "rsl" ? `accuracy ${r.score == null ? "—" : r.score} / 100, ` : ""}hit ${r.hits} of ${r.total}.`);
 }
 /* 練習回饋(不是考試分數,不出現等第字眼,也不換算成官方分數) */
@@ -1421,7 +1421,7 @@ function renderResult(){
   const line = r => tr(`打中 ${r.hits} / ${r.total} · 漏打 ${r.missed} · 多打 ${r.extra}`,
     `Hit ${r.hits} / ${r.total} · missed ${r.missed} · extra ${r.extra}`);
   const keys = cur.lanes.length === 1 ? "J / F" : "F / J / K";
-  const orKeys = (zh, en) => (showKeys() ? [`${zh},或用鍵盤 ${keys}。`, `${en}, or use keys ${keys}.`] : [`${zh}。`, `${en}.`]);
+  const orKeys = (zh, en) => (showKeys() ? [`${zh}，或用鍵盤 ${keys}。`, `${en}, or use keys ${keys}.`] : [`${zh}。`, `${en}.`]);
   const byMic = R.src === "mic";
   if (R.kind === "rsl") {
     if (byMic) add("r-head", () => tr(...MIC_TEXT.head));   // 不加「練習回饋 · …」小標(畫面設計 2026-10)
@@ -1441,7 +1441,7 @@ function renderResult(){
       const ln = cur.lanes.length > 1 ? laneNote(r, cur.lanes) : null; if (ln) add("", () => tr(ln[0], ln[1]));
     }
   } else {
-    if (byMic) add("r-head", () => tr("計分(麥克風,每一句的節奏)", "Scored run (mic, rhythm per phrase)"));
+    if (byMic) add("r-head", () => tr("計分（麥克風，每一句的節奏）", "Scored run (mic, rhythm per phrase)"));
     if (R.micFail) add("", () => tr(...micFailText(R.micFail)));
     if (byMic && (R.silent || !R.taps)) add("", () => tr(...MIC_TEXT.silent));
     else if (!R.taps) add("", () => tr(...orKeys("沒有打到鼓墊。輪到你時點鼓墊", "No pad hits. Tap the pads on your turn")));
@@ -1450,17 +1450,17 @@ function renderResult(){
       for (const row of R.rows) {
         const li = document.createElement("li"); ol.appendChild(li);
         const r = row.r;
-        pairText(li, () => tr(`第 ${row.i + 1} 句(第 ${row.from}–${row.to} 小節):${r.score == null ? "—" : r.score} / 100 · 打中 ${r.hits} / ${r.total} · 漏打 ${r.missed} · 多打 ${r.extra}`,
+        pairText(li, () => tr(`第 ${row.i + 1} 句（第 ${row.from}–${row.to} 小節）：${r.score == null ? "—" : r.score} / 100 · 打中 ${r.hits} / ${r.total} · 漏打 ${r.missed} · 多打 ${r.extra}`,
           `Phrase ${row.i + 1} (bars ${row.from}–${row.to}): ${r.score == null ? "—" : r.score} / 100 · hit ${r.hits} / ${r.total} · missed ${r.missed} · extra ${r.extra}`));
       }
-      add("", () => tr("全部:", "All: ") + line(R.all));
+      add("", () => tr("全部：", "All: ") + line(R.all));
       const off = offsetNote(R.all); if (off) add("", () => tr(off[0], off[1]));
       const ln = laneNote(R.all, cur.lanes); if (ln) add("", () => tr(ln[0], ln[1]));
     }
   }
   // 固定說明一行
   if (byMic) add("disclaimer", () => tr(...MIC_TEXT.disclaimer));
-  else if (!R.free) add("disclaimer", () => tr("只評時間 · 練習回饋,不是考試分數", "Timing only · practice feedback, not an exam mark"));   // 自由練習不寫
+  else if (!R.free) add("disclaimer", () => tr("只評時間 · 練習回饋，不是考試分數", "Timing only · practice feedback, not an exam mark"));   // 自由練習不寫
   if (R.free && R.cat) paintVotes(box, R, v => vote(R, v));   // 沒選考試:這一題的難度(下一題照新的難度出)
   box.hidden = false;
 }
@@ -1594,21 +1594,21 @@ const TYPE_NAME = { fill: "Fill Playback & Recognition", groove: "Groove Recall"
 /* 一題的練習回饋(準度、選譜對錯、完成與否;不算總分) */
 function mockDetail(r){
   return () => {
-    if (r.stopped) return tr("中途停止(這一題沒有做完)", "Stopped part-way (not finished)");
+    if (r.stopped) return tr("中途停止（這一題沒有做完）", "Stopped part-way (not finished)");
     const R = r.r, parts = [];
-    if (r.type === "playback" && R) parts.push(tr("打一遍(練習)完成", "Practice run done"));
+    if (r.type === "playback" && R) parts.push(tr("打一遍（練習）完成", "Practice run done"));
     if (R) {
       const x = R.kind === "rsl" ? R.r : R.all;
       parts.push(R.taps && !R.silent ? tr(`${R.kind === "rsl" ? "打一遍" : "計分"} · 準度 ${x.score == null ? "—" : x.score} / 100 · 打中 ${x.hits} / ${x.total}`, `${R.kind === "rsl" ? "Play-back" : "Scored run"} · accuracy ${x.score == null ? "—" : x.score} / 100 · hit ${x.hits} / ${x.total}`)
         : R.src === "mic" ? tr(`${R.kind === "rsl" ? "打一遍" : "計分"} · 麥克風沒有聽到鼓聲`, `${R.kind === "rsl" ? "Play-back" : "Scored run"} · the mic heard no drums`)
         : tr(`${R.kind === "rsl" ? "打一遍" : "計分"} · 沒有打到鼓墊`, `${R.kind === "rsl" ? "Play-back" : "Scored run"} · no pad hits`));
     }
-    if (r.pick) parts.push(r.pick.chosen === r.pick.answer ? tr(`選譜:選對了(${"ABC"[r.pick.answer]})`, `Pick: right (${"ABC"[r.pick.answer]})`)
-      : tr(`選譜:選了 ${"ABC"[r.pick.chosen]},答案是 ${"ABC"[r.pick.answer]}`, `Pick: ${"ABC"[r.pick.chosen]}; it was ${"ABC"[r.pick.answer]}`));
+    if (r.pick) parts.push(r.pick.chosen === r.pick.answer ? tr(`選譜：選對了(${"ABC"[r.pick.answer]})`, `Pick: right (${"ABC"[r.pick.answer]})`)
+      : tr(`選譜：選了 ${"ABC"[r.pick.chosen]}，答案是 ${"ABC"[r.pick.answer]}`, `Pick: ${"ABC"[r.pick.chosen]}; it was ${"ABC"[r.pick.answer]}`));
     if (!parts.length) {
-      const st = { listen: tr("聽題目(兩次)", "Listening (twice)"), practice: tr("練習:準備好了按「打一遍」", "Practice, then play it"), perform: tr("輪到你打", "Your turn"),
-        choose: tr("選譜", "Pick the chart"), study: tr(`看譜 ${studySec()} 秒(不能暫停)`, `Study ${studySec()} s (no pausing)`), pass1: tr("打一遍(練習,不計分)", "Practice run (not scored)"),
-        pass2: tr("打一遍(計分)", "Scored run") }[r.stage];
+      const st = { listen: tr("聽題目（兩次）", "Listening (twice)"), practice: tr("練習：準備好了按「打一遍」", "Practice, then play it"), perform: tr("輪到你打", "Your turn"),
+        choose: tr("選譜", "Pick the chart"), study: tr(`看譜 ${studySec()} 秒（不能暫停）`, `Study ${studySec()} s (no pausing)`), pass1: tr("打一遍（練習，不計分）", "Practice run (not scored)"),
+        pass2: tr("打一遍（計分）", "Scored run") }[r.stage];
       return st || "";
     }
     return parts.join(tr(";", "; "));
@@ -1648,7 +1648,7 @@ function renderMockCard(){
   }
   if (ms === "result") {
     paintCard($, { title: () => tr("模擬考結果", "Mock exam result"),   // 系統與級數在考試卡上
-      text: () => (mock.data.res.some(x => x.r && x.r.src === "mic") ? tr("準度只看打的時間(鼓墊或麥克風)", "Accuracy is your timing (pads or mic)")
+      text: () => (mock.data.res.some(x => x.r && x.r.src === "mic") ? tr("準度只看打的時間（鼓墊或麥克風）", "Accuracy is your timing (pads or mic)")
         : tr("準度只看你在鼓墊上打的時間", "Accuracy is your timing on the pads")),
       rows: rows(), btn: ok ? { label: () => mockLabel("result") } : null, close: { label: () => tr("返回", "Back") } });
     return;
@@ -1657,8 +1657,8 @@ function renderMockCard(){
     const m = mock.data;
     // 看譜幾秒、不能暫停在清單;速度在標籤;practiceOnly 在題目卡(不寫系統與級數的副標、不重複)
     paintCard($, { title: () => tr("模擬考 · 聽力", "Mock exam · Aural"), sub: sys === "rsl" ? tr(`第 ${m.i + 1} / ${m.queue.length} 題`, `Test ${m.i + 1} / ${m.queue.length}`) : "",
-      text: () => (sys === "rsl" ? tr("每一題自動聽兩次(不能重聽);練好了按「打一遍」,過門打完再選譜。", "Each test plays twice (no replays); practice, then play it; for a fill, then pick the chart.")
-        : tr("看完譜自動接第一次、第二次;官方配伴奏音軌,App 只有拍點。", "Then the practice and scored runs follow; the exam has a backing track, the App a click only.")),
+      text: () => (sys === "rsl" ? tr("每一題自動聽兩次（不能重聽）；練好了按「打一遍」，過門打完再選譜。", "Each test plays twice (no replays); practice, then play it; for a fill, then pick the chart.")
+        : tr("看完譜自動接第一次、第二次；官方配伴奏音軌，App 只有拍點。", "Then the practice and scored runs follow; the exam has a backing track, the App a click only.")),
       rows: rows(), btn: { label: () => mockLabel("run") }, note: () => resultNote(false) });
     return;
   }

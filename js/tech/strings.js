@@ -8,12 +8,12 @@ addStrings("tech", {
   mGood: ["會了", "Got it"], mWeak: ["再練", "Needs work"],   // 熟練度按鈕上的小字(圖示旁)
   scoreTitle: ["鼓譜", "Drum part"],   // 譜卡標題一律「鼓譜」(系統化規則:不加功能說明)
   metroTitle: ["速度", "Tempo"],
-  bpmDown: ["慢 1(按住連續減少)", "Slower (hold)"], bpmUp: ["快 1(按住連續增加)", "Faster (hold)"], tempo: ["速度", "Tempo"],
+  bpmDown: ["慢 1（按住連續減少）", "Slower (hold)"], bpmUp: ["快 1（按住連續增加）", "Faster (hold)"], tempo: ["速度", "Tempo"],
   optLoop: ["循環播放", "Loop"], optRamp: ["每輪加快 4", "+4 each loop"], optClick: ["只聽拍點", "Click only"],
   logTitle: ["練習紀錄", "Practice log"], logStreak: ["連續天數", "Day streak"], logToday: ["今天次數", "Today"], logMin: ["今天分鐘", "Minutes"],
   examTitle: ["本級要求", "This grade"],
   bestLabel: ["示範最快", "Demo best"],
   draw: ["隨機抽一項", "Random"], next: ["下一項", "Next"],
-  targetList: ["回到本級要求", "Back to the grade list"], targetClose: ["離開目標(速度回到自己的設定)", "Leave target (back to your tempo)"],
+  targetList: ["回到本級要求", "Back to the grade list"], targetClose: ["離開目標（速度回到自己的設定）", "Leave target (back to your tempo)"],
   rScoreTitle: ["鼓譜", "Drum part"]   // 今日練習的路線段(js/tech/route.js)
 });

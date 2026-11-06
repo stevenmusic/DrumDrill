@@ -60,7 +60,7 @@ export const GENS = {
       if (threeInRow(test, line)) continue;
       return test;
     }
-    throw new Error("kick8:產生不出來");
+    throw new Error("kick8：產生不出來");
   },
   /* 讀小鼓:2、4 一定有;每小節再從 1&、2&、3&、4& 挑 1 個;兩小節不一樣 */
   snare8(R, bars, line){
@@ -103,7 +103,7 @@ export function barsOf(level, seed = 1){
     const name = v.slice(1);
     if (seen.has(name + ":" + line)) continue;
     seen.add(name + ":" + line);
-    const g = GENS[name]; if (!g) throw new Error(`產生器不認得:${v}`);
+    const g = GENS[name]; if (!g) throw new Error(`產生器不認得：${v}`);
     const at = bars.map((b, j) => (b[line] === v ? j : -1)).filter(j => j >= 0);
     bars = g(R, bars, line, at);
   }
@@ -123,18 +123,18 @@ function voiceOf(bar, lines, { compound, where, hands, key }){
     const live = strs.filter(([, s]) => /[^-]/.test(s));
     if (!live.length) { out.push({ value: compound ? "r4." : "r4" }); continue; }
     const lens = new Set(live.map(([, s]) => s.length));
-    if (lens.size > 1) throw new Error(`${where}:第 ${beat + 1} 拍各行的字數不一樣(${live.map(([k, s]) => k + " " + s).join("、")})`);
+    if (lens.size > 1) throw new Error(`${where}：第 ${beat + 1} 拍各行的字數不一樣(${live.map(([k, s]) => k + " " + s).join("、")})`);
     let len = [...lens][0], cells = live.map(([k, s]) => [k, s]);
     if (len === 2 && !compound) { cells = cells.map(([k, s]) => [k, s[0] + "-" + s[1] + "-"]); len = 4; }
     const grid = compound ? (len === 3 ? "c" : null) : len === 4 ? 4 : len === 3 ? 3 : null;
-    if (!grid) throw new Error(`${where}:第 ${beat + 1} 拍字數不對(${len};${compound ? "12/8 一拍 3 字" : "4/4 一拍 2、3 或 4 字"})`);
+    if (!grid) throw new Error(`${where}：第 ${beat + 1} 拍字數不對(${len};${compound ? "12/8 一拍 3 字" : "4/4 一拍 2、3 或 4 字"})`);
     let mask = 0;
     for (const [k, s] of cells) for (let i = 0; i < s.length; i++) {
       const c = s[i];
       if (c === "-") continue;
-      if (!NOTE[c]) throw new Error(`${where}:不認得的字「${c}」(${k})`);
-      if (c === "o" && k !== "hh") throw new Error(`${where}:o(開 Hi-hat)只能寫在 hh`);
-      if (c === "g" && k !== "sd") throw new Error(`${where}:g(鬼音)只能寫在 sd`);
+      if (!NOTE[c]) throw new Error(`${where}：不認得的字「${c}」(${k})`);
+      if (c === "o" && k !== "hh") throw new Error(`${where}:o（開 Hi-hat）只能寫在 hh`);
+      if (c === "g" && k !== "sd") throw new Error(`${where}:g（鬼音）只能寫在 sd`);
       mask |= 1 << i;
     }
     const code = CELLS[grid][mask], cym = hands && cells.some(([k]) => CYM.has(lines[k]));
@@ -187,10 +187,10 @@ export function displaySpec(spec, times = 4){
 /* 關卡 → { spec, bars(DSL 展開後), pieces, lenBeats(四分音符), time, compound, pulse(一拍幾個四分音符), seed } */
 export function toSpec(level, seed = 1, { key = null } = {}){
   const time = level.time || "4/4", compound = time === "12/8";
-  if (time !== "4/4" && !compound) throw new Error(`${level.id}:拍號只支援 4/4、12/8(${time})`);
+  if (time !== "4/4" && !compound) throw new Error(`${level.id}：拍號只支援 4/4、12/8(${time})`);
   const bars = barsOf(level, seed);
   const measures = bars.map((b, mi) => {
-    for (const k of Object.keys(b)) if (!HAND_LINES[k] && !FOOT_LINES[k]) throw new Error(`${level.id} 第 ${mi + 1} 小節:不認得的行 ${k}`);
+    for (const k of Object.keys(b)) if (!HAND_LINES[k] && !FOOT_LINES[k]) throw new Error(`${level.id} 第 ${mi + 1} 小節：不認得的行 ${k}`);
     const where = `${level.id} 第 ${mi + 1} 小節`;
     return { voices: [voiceOf(b, HAND_LINES, { compound, where: where + " 手", hands: true }), voiceOf(b, FOOT_LINES, { compound, where: where + " 腳", hands: false })] };
   });

@@ -226,7 +226,7 @@ const OSMD_OPTS = { backend: "svg", autoResize: false, drawTitle: false, drawSub
 /* el:放圖例的容器(會清空);pieces:用到的鼓件 id(照 drumkey.json 的順序,kitnotation.js 的 piecesUsed);lines:1 = 單線譜;
    plain:不寫出處小字(考試的頁碼)與考試用書的說明(視奏分頁的讀譜練習:畫面上不寫考試名稱、頁碼) */
 /* 畫面上「待核對」改寫「App 記法」(資料的 pending 不變:官方還沒核對到,這是 App 的寫法) */
-const APP_NOTE = { "待核對": ["App 記法", "App notation"], "位置待核對": ["位置:App 記法", "Pos.: App"] };
+const APP_NOTE = { "待核對": ["App 記法", "App notation"], "位置待核對": ["位置：App 記法", "Pos.: App"] };
 const appNote = (zh, en) => APP_NOTE[zh] || [zh, en];
 export async function drawLegend(el, { pieces, lines = 5, key = drumKeyCached(), plain = false } = {}){
   el.innerHTML = "";
@@ -234,13 +234,13 @@ export async function drawLegend(el, { pieces, lines = 5, key = drumKeyCached(),
   if (!key) { imgLabel(el, null); return; }
   const order = Object.keys(key.pieces), list = (pieces || order).filter(p => key.pieces[p]).sort((a, b) => order.indexOf(a) - order.indexOf(b));
   // 無障礙:圖例整塊當一張圖,說明 = 鼓件清單(格子裡畫的音符螢幕閱讀器讀不到)
-  imgLabel(el, () => tr(`圖例:${pieceNames(list, key)}(${lines === 1 ? "單線譜" : "五線譜"})`, `Drum key: ${pieceNames(list, key)} (${lines === 1 ? "single-line staff" : "five-line staff"})`));
+  imgLabel(el, () => tr(`圖例：${pieceNames(list, key)}(${lines === 1 ? "單線譜" : "五線譜"})`, `Drum key: ${pieceNames(list, key)} (${lines === 1 ? "single-line staff" : "five-line staff"})`));
   // 只有小鼓一個鼓件(單線譜):一行字就是圖例(「圖例:單線 = 小鼓」;檢定頁加出處),不畫格子
   if (list.length === 1 && list[0] === "snare" && lines === 1) {
     const ls = legendSrc(key, "snare", lines), p = key.pieces.snare;
     const line = document.createElement("p"); line.className = "kl-cell kl-line"; line.dataset.piece = "snare";
     el.appendChild(line);
-    pairText(line, () => tr(`圖例:單線 = ${p.name[0]}`, `Drum key: single line = ${p.name[1].toLowerCase()}`) + (plain ? "" : tr("(", " (") + ls.lines.map(([zh, en]) => tr(...appNote(zh, en))).join(tr(";", "; ")) + tr(")", ")")));
+    pairText(line, () => tr(`圖例：單線 = ${p.name[0]}`, `Drum key: single line = ${p.name[1].toLowerCase()}`) + (plain ? "" : tr("(", " (") + ls.lines.map(([zh, en]) => tr(...appNote(zh, en))).join(tr(";", "; ")) + tr(")", ")")));
     return;
   }
   const head = document.createElement("div"); head.className = "kl-head";
@@ -271,7 +271,7 @@ export async function drawLegend(el, { pieces, lines = 5, key = drumKeyCached(),
   // 自由練習(plain)沒有考卷可以對照:圖例下面不寫那一行
   if (!plain) {
     const foot = document.createElement("p"); foot.className = "kl-foot"; el.appendChild(foot);
-    pairText(foot, () => (anyApp ? tr("沒標頁碼的是 App 的寫法;記法以考試用書上的圖例為準", "No page = the App's notation; follow the exam book's key")
+    pairText(foot, () => (anyApp ? tr("沒標頁碼的是 App 的寫法；記法以考試用書上的圖例為準", "No page = the App's notation; follow the exam book's key")
       : tr("記法以考試用書上的圖例為準", "Follow the exam book's key")));
   }
   // 一格一個 OSMD(放在格子裡、寬度固定);畫完補畫 o 等記號
