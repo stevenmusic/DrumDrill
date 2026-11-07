@@ -78,6 +78,8 @@ export function renderRows(box, rows){
 /* 模擬考卡捲到頂欄下面(開始、結果、中止的說明):scrollTo top 在手機橫式、折疊機只看得到設定卡 */
 export function cardToTop(card){
   if (!card || card.hidden || !card.getClientRects().length) { window.scrollTo({ top: 0 }); return; }
+  // 寬畫面檢定頁(≥1100 兩欄,app.css):考試卡、本項列、題目卡(結果 / 中止 = 模擬考卡,drum.css)都在最上面一列 → 捲到頂,看得到考試卡與級數
+  if (document.body.classList.contains("view-exam") && matchMedia("(min-width:1100px) and (min-height:501px)").matches) { window.scrollTo({ top: 0 }); return; }
   const header = document.querySelector("header"), top = header ? header.getBoundingClientRect().bottom : 0;
   window.scrollTo({ top: Math.max(0, scrollY + card.getBoundingClientRect().top - top - 8) });
 }

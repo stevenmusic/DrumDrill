@@ -10,7 +10,7 @@ import * as audio from "../shared/audio.js";
 import { createScore } from "../shared/score.js";
 import { announce } from "../shared/a11y.js";
 import { createTempo } from "../shared/tempo.js";
-import { fitLandZoom, createLandPlay } from "../shared/landscape.js";
+import { fitLandZoom, createLandPlay, isPhoneLand } from "../shared/landscape.js";
 import { addLog, renderLog as paintLog, today, tapGoal } from "../shared/practicelog.js";
 import { createMock, abortText, paintCard, resultNote, mockLabel, cardToTop } from "../shared/mock.js";
 import { createDaily, clickPlays, dayNum } from "../shared/daily.js";
@@ -532,9 +532,24 @@ const score = createScore({
   msg: fn => setMsg("paperMsg", fn),
   errorText: e => tr("鼓譜繪製失敗：", "Could not draw the score: ") + e.message,
   onDrawn: xml => { window.__lastXml = xml; window.__scoreReady = (window.__scoreReady || 0) + 1; },
-  fitLand: () => fitLandZoom(score, { $, reserve: ctaH }),   // 今日練習(暖身)的底部按鈕列蓋住的不算
+  fitLand: () => (wideDaily() ? fitWideDaily() : fitLandZoom(score, { $, reserve: ctaH })),   // 今日練習(暖身)的底部按鈕列蓋住的不算
   label: () => scoreLabel()
 });
+/* 寬畫面的矮視窗(≥ 1100 寬、高 > 500,例如 1280×600)今日練習暖身:譜(含 R / L)到底部按鈕列放不下 → 縮到放得下(不小於 0.55,視奏考卷的下限);
+   縮到 0.55 還放不下 = 照原本大小(捲動看,main 底部有留按鈕列的高度)。借用 score.landZoom(手機橫式的縮放;兩種情況不會同時成立) */
+const wideDaily = () => innerWidth >= 1100 && innerHeight > 500 && !isPhoneLand() && ROOT.classList.contains("daily-on") && ctaH() > 0;
+function fitWideDaily(){
+  let drawn = false;
+  if (score.landZoom) { score.landZoom = null; score.refit(); drawn = true; }
+  const osmd = score.osmd, room = () => { const svg = $("osmd").querySelector("svg"); if (!svg) return null; const r = svg.getBoundingClientRect(); return { h: r.height, room: innerHeight - ctaH() - 4 - (r.top + scrollY) }; };
+  for (let k = 0; k < 2 && osmd; k++) {
+    const m = room(); if (!m || !m.h || m.h <= m.room) break;
+    const z = Math.floor(osmd.zoom * m.room / m.h * 100) / 100;
+    if (z < 0.55) { if (score.landZoom) { score.landZoom = null; score.refit(); drawn = true; } break; }
+    score.landZoom = z; score.refit(); drawn = true;
+  }
+  return drawn;
+}
 function renderScore(){ if (cur) score.load(rudimentXML(groups, { reps: (dailyPlay() || {}).reps || S.reps, title: cur.en })); }   // 今日練習:反覆次數 = 這一段實際播的
 /* 無障礙:鼓譜的文字說明 = 標題(打法名稱 / 練習型名稱)+ 一輪的左右手(Flam / Drag、重音、滾奏、多次反彈、休止標出來)+ 反覆次數 */
 function scoreLabel(){

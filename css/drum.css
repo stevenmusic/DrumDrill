@@ -342,6 +342,12 @@ button.xitem{cursor:pointer;border-color:transparent;background:var(--fill-btn)}
 /* 手機橫式的技巧題目卡是 grid(app.css:名稱 / 標籤 / 熟練度 / ▶ 一行):模擬考的說明與下一組那一列佔滿整行,
    不然長的英文說明會把第一欄撐寬、標籤那一欄變成 0(英文版標籤消失) */
 @media (max-height:420px), (orientation:landscape) and (max-height:500px){ #t-mockMsg,#t-mockFoot,#t-rMode{grid-column:1 / -1} }
+/* 寬畫面檢定頁(≥1100,app.css 的考試卡 | 本項列 + 題目卡):模擬考的結果、中止沒有題目卡 → 模擬考卡放進題目卡那一格(考試卡右邊),不留空格;
+   進行中有題目卡:照舊排在下面(mock.js 的 cardToTop 寬畫面捲到頂,看得到考試卡、題目卡) */
+@media (min-width:1100px) and (min-height:501px){
+  body.view-exam main{align-content:start}   /* 內容比 main 的最小高度矮(中止、聽力空狀態)時列不撐高:不然本項列那一列被拉高,右欄的卡往下掉 */
+  body.view-exam main > .mod:not([hidden]):not(:has(.quiz:not([hidden]))) .mock-card:not([hidden]){grid-column:2;grid-row:2;margin-top:8px}
+}
 .mock-step{font-size:var(--fs-xs);color:var(--muted-bright);font-variant-numeric:tabular-nums;min-width:0}
 /* 練習紀錄:每週目標(照 PianoDrill 聽音的 .goal;目標是分鐘)、各級 / 各題型的統計 */
 .goal .chip{white-space:nowrap}

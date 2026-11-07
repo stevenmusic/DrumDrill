@@ -38,7 +38,7 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
      再小就換行(像視奏的考卷):4 小節先試每行 2 小節(不小於 ONE_MIN),最後一小節一行(不小於 WRAP_MIN1)— 不左右捲 */
   const ONE_MIN = 0.55, WRAP_MIN1 = 0.45;   // 0.55 = 視奏考卷排法的下限(口袋總譜大小)
   const FILL = 1.35, FILL_H = 0.34;   // 短譜放大:最多正常大小的 1.35 倍、譜高 ≤ 畫面高的 34%(docs/DESIGN.md 第 5 節;照 PianoDrill 的 fitWrap)
-  let fitZ = null, fillZ = null, fitW = 0, wrapN = 0;
+  let fitZ = null, fillZ = null, fitW = 0, wrapN = 0, settled = false;
   const baseZ = () => (window.innerWidth < 600 ? 0.9 : window.innerWidth < 1100 ? 1 : 1.15);
   const zoom = () => fillZ || Math.min(baseZ(), fitZ || Infinity);
   function fitOnce(){
@@ -72,7 +72,7 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
   /* 短譜(整份一行、原本的大小就放得下):放大到用滿寬度,最多 FILL 倍、譜高不超過畫面的 FILL_H(第一個畫面還看得到題目卡與主要按鈕);
      R / L、×N、% 都畫完才量(不能超出畫布)。手機橫放照舊(score.js 的 fitWidth) */
   /* 寬畫面(≥ 1100 寬、不是手機橫放;PianoDrill docs/DESIGN.md 9.6):譜高上限不用畫面高的 FILL_H,改照「譜到底部按鈕列(沒有就到分頁列)」剩下的高度;
-     原本的大小就太高 → 縮,最小到正常大小的 85%(再不夠就讓它捲,不再縮譜) */
+     原本的大小就太高 → 縮到放得下(不小於 ONE_MIN;縮到 ONE_MIN 還放不下 = 只縮到正常大小的 85%,讓它捲) */
   const wideFit = () => innerWidth >= 1100 && innerHeight > 500 && !isPhoneLand();
   function wideRoomH(){
     const svg = $r("osmd").querySelector("svg"); if (!svg) return Infinity;
@@ -102,11 +102,16 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
     if (z > z0 + 0.005) fillZ = z;
     else if (wideFit()) {
       const tall = z => { o.zoom = z; score.render(); const svg = $r("osmd").querySelector("svg"); return !!svg && svg.getBoundingClientRect().height > capH; };
+      // 矮視窗(1280×720 等):縮到放得下,不小於 ONE_MIN(考卷排法的下限);縮到 ONE_MIN 還放不下(1280×600:譜在按鈕列下面)= 照舊只縮到 85%,捲動看
       const min = Math.ceil(baseZ() * 85) / 100;
-      if (z0 > min && tall(z0)) {
-        let lo2 = min, hi2 = z0;
-        if (!tall(min)) for (let k = 0; k < 6; k++) { const mid = (lo2 + hi2) / 2; if (tall(mid)) hi2 = mid; else lo2 = mid; }
-        fillZ = Math.max(min, Math.floor(lo2 * 100) / 100);
+      if (z0 > ONE_MIN && tall(z0)) {
+        if (!tall(ONE_MIN)) {
+          let lo2 = ONE_MIN, hi2 = z0;
+          for (let k = 0; k < 7; k++) { const mid = (lo2 + hi2) / 2; if (tall(mid)) hi2 = mid; else lo2 = mid; }
+          fillZ = Math.max(ONE_MIN, Math.floor(lo2 * 100) / 100);
+        } else if (z0 > min) fillZ = min;
+        // 第一次量的時候題目卡與鼓譜卡可能還沒合成一張(main.js 的 syncJoin 下一幀才做,中間多 12px):等兩幀照最後的版面再量一次(每份譜一次)
+        if (fillZ && !settled) { settled = true; requestAnimationFrame(() => requestAnimationFrame(() => { if (fillZ && !mode && cur && wideFit() && score.osmd && $r("osmd").offsetWidth) { fillZ = null; score.refit(); fitOnce(); } })); }
       }
     }
     score.refit();
@@ -205,7 +210,7 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
     $("rResult").hidden = true; $("rResult").innerHTML = "";
     syncRlBtn(); syncPadUI();
     if (score.osmd) setupKit(score.osmd, 5, xml);
-    fitZ = null; fillZ = null; wrapN = 0;
+    fitZ = null; fillZ = null; wrapN = 0; settled = false;
     score.load(osmdXML(xml)).then(done => { if (done && cur && cur.xml === xml) fitOnce(); });
     drawLegend($("rLegend"), { pieces: r.pieces, lines: 5, key, plain: true }).catch(e => console.error(e));
     preload();
