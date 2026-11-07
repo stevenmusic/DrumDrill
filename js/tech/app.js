@@ -1194,6 +1194,8 @@ function revealRoute(pads, perform){
   const hb = document.querySelector("header").getBoundingClientRect().bottom, qhEl = $("quizCard").querySelector(".q-head");
   const qh = qhEl ? qhEl.getBoundingClientRect() : { height: 0 };
   const keep = !perform && qh.height && qh.top < r.top ? qh.top - hb - 6 : Infinity;
+  // 手機橫式鼓墊模式(鼓譜在左、鼓墊在右並排;drum.css 的 #mod-tech.r-pad):捲到譜紙頂,譜與鼓墊一起在頂欄下、底部按鈕列上面
+  if (pads && isPhoneLand() && ROOT.classList.contains("r-pad")) { const d = $("rStage").getBoundingClientRect().top - hb - 4; if (Math.abs(d) > 2) window.scrollBy({ top: d, behavior: "smooth" }); return; }
   if (r.bottom > bottom - 4) { const d = Math.min(r.bottom - bottom + 8, r.top - hb - 4, keep); if (d > 2) window.scrollBy({ top: d, behavior: "smooth" }); }
 }
 const playOpts = () => ({ click: (dseg && dseg.click) || "every", solo: !!(dseg && dseg.click && dseg.click !== "every") });
