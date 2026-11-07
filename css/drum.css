@@ -288,6 +288,13 @@ button.xitem{cursor:pointer;border-color:transparent;background:var(--fill-btn)}
 #mod-ear .along{display:flex;flex-direction:column;gap:12px}
 #mod-ear .along .pads{width:100%}
 #mod-ear .along.you .tap-pad{box-shadow:0 0 0 2px var(--gold-bright)}
+/* 打一遍進行中鼓墊上面一行「預備拍 / 先聽 / 輪到你」(js/ear/app.js 的 syncCue):進行中才留位置,狀態句看得到時藏起來(visibility,不推鼓墊) */
+#mod-ear .e-cue{display:none;margin:0;min-height:1.4em;font-size:var(--fs-md);font-weight:700;color:var(--muted-bright);text-align:center;visibility:hidden}
+#mod-ear .along.running .e-cue{display:block}
+#mod-ear .along.running .e-cue.show{visibility:visible}
+#mod-ear .e-cue.ok{color:var(--teal)}
+#mod-ear .nw{white-space:nowrap}   /* 狀態句裡的按鈕名不在中間斷行(app.js 的 paintNw) */
+#e-studyLabel{display:inline-block}   /* 「看譜 30 秒」↔「結束看譜」寬度取寬的(app.js 的 holdWidth;主要按鈕不跳) */
 #mod-ear .along-row{display:flex;align-items:center;gap:8px 14px;flex-wrap:wrap}
 /* 主要動作在題目卡右下(打一遍 / 第一次 / 第二次;照視奏的 s-performTop):左邊小的「下一題」 */
 #mod-ear .q-foot{flex-wrap:wrap}

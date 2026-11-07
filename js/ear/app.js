@@ -45,7 +45,7 @@ import { fitLandZoom, createLandPlay, floorY } from "../shared/landscape.js";
 import { toEvents, hitsOnly } from "../shared/kitevents.js";
 import { genChart, phraseSpec, playbackParams, NOTES as PB_NOTES } from "../shared/playbackgen.js";
 import { genFill, fillOptions, genGroove, NOTES as EAR_NOTES } from "./gen.js";
-import { addLog, cleanLog, renderLog as paintLog, today, tapGoal, loadGoal } from "../shared/practicelog.js";
+import { addLog, cleanLog, renderLog as paintLog, today, tapGoal, loadGoal, neverPracticed } from "../shared/practicelog.js";
 import { createMock, abortText, paintCard, resultNote, mockLabel, cardToTop } from "../shared/mock.js";
 import { createMicTake, dropBleed, MIC_LANES, MIC_TEXT, micFailText, MIC_UI } from "../shared/micrhythm.js";
 import { createLevels, levelText, paintVotes, paramDesc, valueList } from "../shared/level.js";
@@ -161,6 +161,7 @@ export function enter(t){
   const had = cur;
   renderMic();   // 開關跟視奏共用:在視奏改過就照新的
   render();
+  requestAnimationFrame(() => { if (active && cur) renderLabels(); });   // 按鈕顯示以後再量一次會換字的標籤寬度(holdWidth)
   if ((mode !== "free" && !mockOn()) || !cur || cur !== had) return;
   preload();   // 同一題:整組鼓被釋放過就重新載(載過的 audio.loadKit 直接回傳)
   // 同一題:在別的分頁時延後的譜、選項,回到畫面再畫
@@ -198,6 +199,7 @@ export function relang(){
   relangPairs($("legend")); relangPairs($("ansLegend"));
   renderLog(); renderStats();
   if (mode === "exam") renderMockCard();
+  paintNw($("feedback"));
 }
 export function examStatus(){
   const ex = curExam(), st = k => (SS.stats[k] || {}).n || 0;
@@ -616,17 +618,32 @@ function segMsg(seg, n){
     const c = n || 1;
     if (k === "listen" && isRsl()) say(() => tr(`第 ${seg.take} 次 · 預備拍 ${c}`, `Play ${seg.take} · count-in ${c}`), false, true);
     else say(() => tr(`預備拍 ${c}`, `Count-in ${c}`), false, true);
+    setCue(() => tr(`預備拍 ${c}`, `Count-in ${c}`), false);
     return;
   }
   if (k === "listen") say(() => (isRsl() ? tr(`第 ${seg.take} 次播放中…`, `Play ${seg.take}…`) : tr("整份譜播放中…", "Playing the whole chart…")), false, seg.take > 1);
-  else if (k === "perform") say(() => tr("輪到你！照聽到的打…", "Your turn! Play what you heard…"), false, true);   // 不播報:開始時已經念過「開始打」
+  else if (k === "perform") { say(() => tr("輪到你！照聽到的打…", "Your turn! Play what you heard…"), false, true); setCue(() => tr("輪到你！", "Your turn!"), true); }   // 不播報:開始時已經念過「開始打」
   else if (k === "pass") {
     const p = perf ? perf.pass : 1, lbl = p === 1 ? tr("打一遍（練習）", "Practice run") : tr("打一遍（計分）", "Scored run");
     // App 播的那句「先聽」、空檔「輪到你!」(亮起來)寫在最前面,第幾句、第幾次在後面
     say(() => (seg.kind === "app" ? tr(`先聽 · 第 ${ph} / ${nph} 句 · ${lbl}`, `Listen · phrase ${ph} / ${nph} · ${lbl}`) : tr(`輪到你！第 ${ph} / ${nph} 句 · ${lbl}`, `Your turn! Phrase ${ph} / ${nph} · ${lbl}`)), false, true);
     $("feedback").classList.toggle("ok", seg.kind !== "app");
+    setCue(() => (seg.kind === "app" ? tr(`先聽 · 第 ${ph} / ${nph} 句`, `Listen · phrase ${ph} / ${nph}`) : tr(`輪到你！第 ${ph} / ${nph} 句`, `Your turn! Phrase ${ph} / ${nph}`)), seg.kind !== "app");
   }
 }
+/* 打一遍進行中鼓墊上面那一行(#e-cue):自動捲到鼓墊以後狀態句在頂欄後面,打的時候還是看得到「先聽 / 輪到你」;
+   狀態句看得到時藏起來(同一句不說兩次)。位置在進行中一直留著(visibility),出現 / 藏起來不推鼓墊 */
+let cueFn = null;
+function setCue(fn, ok){ cueFn = fn; $("cue").classList.toggle("ok", !!ok); syncCue(); }
+function syncCue(){
+  const c = $("cue"), on = active && (playKind === "perform" || playKind === "pass");
+  $("along").classList.toggle("running", on);
+  if (!on) { cueFn = null; c.classList.remove("show", "ok"); c.textContent = ""; return; }
+  c.textContent = cueFn ? cueFn() : "";
+  const r = $("feedback").getBoundingClientRect(), header = document.querySelector("header"), top = header ? header.getBoundingClientRect().bottom : 0;
+  c.classList.toggle("show", !!cueFn && !(r.height > 0 && r.top >= top && r.bottom <= floorY()));
+}
+addEventListener("scroll", () => { if (playKind === "perform" || playKind === "pass") syncCue(); }, { passive: true });
 
 /* ── 聽題目(RSL:配拍點聽兩次,每次前面 1 小節預備拍)/ 聽整份譜(Trinity,正確版本)── */
 async function toggleListen(){
@@ -666,9 +683,14 @@ function finishListen(){
     if (mockRes() && mockRes().stage === "listen") { mockRes().stage = "practice"; renderMockCard(); }
     syncButtons();
     if (phase === "practice") say(() => tr("先在鼓墊上試打（不計分），好了按「打一遍」", "Try it on the pad (not scored), then tap Play it"));
-    else say(() => tr("播完了。", "Done."));
-  } else say(() => tr("播完了。", "Done."));
+    else say(() => (tr("播完了。", "Done. ") + (phase === "result" ? tapNext() : "")).trim());
+  } else say(() => tr("播完了。", "Done. ") + (phase === "result" ? tapNext() : cur.pass >= 1 ? tr("按「打一遍（計分）」", "Tap Scored run") : tr("按「打一遍（練習）」跟著打", "Tap Practice run to play along")));
 }
+/* 「按「下一題」」(模擬考最後一題「看結果」;跟按鈕同一個字) */
+const tapNext = () => {
+  const last = mockRes() && mock.data.i >= mock.data.queue.length - 1;
+  return last ? tr("按「看結果」", "Tap Results") : tr("按「下一題」", "Tap Next");
+};
 function setPlayState(on){
   $("playBtn").classList.toggle("is-active", on);
   $("playBtn").setAttribute("aria-label", on ? tr("停止", "Stop") : T("playAria"));
@@ -1012,7 +1034,7 @@ function finishPass(){
   addSec((performance.now() - p.startedAt) / 1000, p.pass === 2 ? 1 : 0);
   if (p.pass === 1) {
     cur.pass = 1; phase = "between";
-    say(() => tr("打一遍（練習）完成，不計分。按「打一遍（計分）」。", "Practice run done — not scored. Tap Scored run."));
+    say(() => tr("練習完成。按「打一遍（計分）」", "Practice done. Tap Scored run"));
     syncButtons();
     if (mockRes()) { mockRes().stage = "pass2"; renderMockCard(); say(() => tr("打一遍（練習）完成：接著打一遍（計分）。", "Practice run done: now the scored run.")); startPass(); }   // 模擬考:自動接第二次
     return;
@@ -1276,13 +1298,15 @@ function syncButtons(){
   $("nextBtn").disabled = !has || !!mr && mr.stage !== "done";   // 模擬考:這一題做完才能下一題
   // 「下一題」是次要動作(像視奏的「新題目」);模擬考裡這一題做完,「下一題 / 看結果」才是主要動作
   $("nextBtn").classList.toggle("primary", !!mr); $("nextBtn").classList.toggle("ghost", !mr);
-  // 「看答案」聽過一次題目才出現,答完(選了譜、揭曉了)就藏起來
-  $("revealBtn").hidden = !rsl || !!mr || !cur.listened || cur.revealed || cur.chosen != null;
+  // 「看答案」聽過一次題目才出現,答完(選了譜、揭曉了)就看不見;RSL 一直佔著左邊的位置(visibility),主要按鈕的位置與寬度每一步一樣
+  const revOff = !rsl || !!mr || !cur.listened || cur.revealed || cur.chosen != null;
+  $("revealBtn").hidden = !rsl || !!mr; $("revealBtn").style.visibility = revOff ? "hidden" : "";
   $("studyBtn").hidden = !has || rsl; $("countdown").hidden = !has || rsl || !(phase === "study" || $("countdown").classList.contains("done"));   // 看譜倒數開始才出現
-  $("revealBtn").disabled = !has || cur.revealed;
+  $("revealBtn").disabled = !has || cur.revealed || revOff;
   $("studyBtn").disabled = !has || playKind === "pass" || !!mr;   // 模擬考:看譜時間不能提早結束
   lockTempo();
   $("alongMic").disabled = micLocked();
+  syncCue();
   const pb = $("performBtn");
   // 還沒聽題目(RSL,不是模擬考):主要按鈕的位置寫「▶ 聽題目」= 圓形 ▶ 的動作(像今日練習底部列的「▶ 跟著打一輪」),聽完換成「打一遍」;模擬考自動聽,照舊藏起來
   pb.hidden = rsl && !cur.listened && playKind !== "perform" && !!mockOn();
@@ -1295,6 +1319,7 @@ function renderLabels(){
   pairText($("revealLabel"), () => tr("看答案", "Answer"));
   const sfn = () => (phase === "study" ? tr("結束看譜", "End study") : tr(`看譜 ${studySec()} 秒`, `Study ${studySec()} s`));
   pairText($("studyLabel"), sfn); $("studyBtn").setAttribute("aria-label", sfn());
+  holdWidth($("studyLabel"), [tr("結束看譜", "End study"), tr(`看譜 ${studySec()} 秒`, `Study ${studySec()} s`)]);
   let lbl;
   if (!has) lbl = () => tr("打一遍", "Play it");
   else if (listenFirst()) lbl = () => (playKind === "listen" ? tr("停止", "Stop") : tr("▶ 聽題目", "▶ Listen"));
@@ -1305,6 +1330,15 @@ function renderLabels(){
   pairText($("nextLabel"), () => (mr ? (mock.data.i >= mock.data.queue.length - 1 ? tr("看結果", "Results") : tr("下一題", "Next")) : T("next")));
   const pl = () => (playKind === "listen" ? tr("停止", "Stop") : rsl ? (cur && cur.revealed ? (cur.type === "fill" ? tr("再聽一次", "Hear it again") : tr("跟著譜再聽一次", "Hear it with the chart")) : tr("聽題目（兩次）", "Play the test (twice)")) : tr("聽整份譜（正確版本）", "Hear the whole chart"));
   $("playBtn").setAttribute("aria-label", pl()); $("playBtn").title = pl();
+}
+/* 按鈕上會換字的標籤:寬度取兩種字比較寬的(「看譜 30 秒」↔「結束看譜」時主要按鈕不跳);看不到時(寬度 0)不量 */
+function holdWidth(el, texts){
+  el.style.minWidth = "";   // 先清掉(換語言、換題型時不留舊的寬度);看不到時不量,下一次顯示後 syncButtons 再量
+  if (!el.offsetParent) return;
+  const keep = el.textContent; let w = 0;
+  for (const t of texts) { el.textContent = t; w = Math.max(w, el.getBoundingClientRect().width); }
+  el.textContent = keep;
+  el.style.minWidth = w ? Math.ceil(w) + "px" : "";
 }
 /* 聽力分頁(沒選考試)第一次進來這個題型(還沒做完一題):寫這個題型在練什麼、怎麼作答 */
 const INTRO = {
@@ -1404,7 +1438,8 @@ function feedbackPick(){
   if (!cur || cur.type !== "fill" || cur.chosen == null) return;
   const ok = cur.chosen === cur.answer;
   fb.classList.add(ok ? "ok" : "no");
-  say(() => (ok ? tr(`選對了：${"ABC"[cur.answer]}。`, `Right: ${"ABC"[cur.answer]}.`) : tr(`不是 ${"ABC"[cur.chosen]}；答案是 ${"ABC"[cur.answer]}。`, `Not ${"ABC"[cur.chosen]}; it was ${"ABC"[cur.answer]}.`)), true);
+  // 選完狀態句寫下一步(主要按鈕照舊是「打一遍」,「下一題」在左邊;模擬考最後一題寫「看結果」)
+  say(() => (ok ? tr(`選對了：${"ABC"[cur.answer]}。`, `Right: ${"ABC"[cur.answer]}. `) : tr(`不是 ${"ABC"[cur.chosen]}；答案是 ${"ABC"[cur.answer]}。`, `Not ${"ABC"[cur.chosen]}; it was ${"ABC"[cur.answer]}. `)) + tapNext(), true);
 }
 /* 無障礙:結果的一句話摘要(aria-live 播報;詳細的在 #e-alongResult) */
 function resultSpeech(R){
@@ -1474,7 +1509,21 @@ function say(fn, keep, quiet){
   lastMsg = fn;
   if (!keep) $("feedback").classList.remove("ok", "no");
   pairText($("feedback"), fn);
+  paintNw($("feedback"));
 }
+/* 狀態句裡的按鈕名(「打一遍（計分）」「下一題」、Scored run…)包成 .nw 不在中間斷行(drum.css);
+   pairText 量另一種語言的高度時會把字整個換掉,所以大小變了(或換語言)再包一次 */
+const NW = { zh: /「[^」]*」|打一遍（[^）]*）/g, en: /\b(?:Practice run|Scored run|Play it|Start over|Results|Next)\b/g };
+function paintNw(el){
+  if (el.querySelector(".nw")) return;
+  const t = el.textContent, re = NW[getLang() === "en" ? "en" : "zh"], ms = [...t.matchAll(re)];
+  if (!ms.length) return;
+  const out = []; let i = 0;
+  for (const m of ms) { out.push(t.slice(i, m.index)); const sp = document.createElement("span"); sp.className = "nw"; sp.textContent = m[0]; out.push(sp); i = m.index + m[0].length; }
+  out.push(t.slice(i));
+  el.replaceChildren(...out);
+}
+if (typeof ResizeObserver !== "undefined") new ResizeObserver(() => paintNw($("feedback"))).observe($("feedback"));
 /* 題目固定一行:太長就把字縮小(中英文版面一樣);標籤先縮字(最多到 0.6) */
 function fitTitle(){
   const el = $("qTitle"); el.style.fontSize = "";
@@ -1502,8 +1551,11 @@ $("nextBtn").onclick = () => (mockOn() ? mockNext() : newQuestion());
 
 /* ══ 練習紀錄(js/shared/practicelog.js):回打完一題(Trinity:第二次)算一題;聽、看譜、回打的時間算進今天的秒數(保留 400 天);
    今天正確率 = 今天回打命中的音 + 選對的譜 ÷ 全部(沒有敲鼓墊的回打不算);每週目標 = 最近 7 天的分鐘數(點一下換,存在 SS.goal)══ */
+let pendSec = 0;
 function addSec(sec, n = 0, hits = 0, total = 0){
-  addLog(SS.log, { sec, n, hits, total });
+  // 從來沒做完一題:聽、看譜的秒數先記著,第一題做完一起寫(紀錄卡不會只聽了一次就變成「0 題」的三格數字)
+  if (!n && !total && neverPracticed(SS.log)) { pendSec += sec; return; }
+  addLog(SS.log, { sec: sec + pendSec, n, hits, total }); pendSec = 0;
   save(); renderLog();
 }
 function renderLog(){
