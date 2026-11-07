@@ -1538,8 +1538,7 @@ function startXp(){
   if (mode !== "exam" || mock.running() || ex.auto || !practicable(ex.system, ex.grade)) return;
   if (mock.state !== "idle") mock.close();
   xp = true; render();
-  // 兩欄(≥1100):題目卡在右欄最上面 → 捲回頂端;一欄:模擬考卡(回到規格)跟題目卡一起放得下就捲到模擬考卡,放不下(手機橫式)捲到題目卡
-  if (innerWidth >= 1100) { window.scrollTo({ top: 0 }); return; }
+  // 模擬考卡(回到規格)跟題目卡一起放得下就捲到模擬考卡,放不下(手機橫式)捲到題目卡(所有寬度都是一欄;寬畫面題目卡在考試卡右邊,docs/DESIGN.md 第 9 節)
   const m = $("mockCard").getBoundingClientRect(), q = $("quiz").getBoundingClientRect(), head = document.querySelector("header");
   const room = innerHeight - (head ? head.getBoundingClientRect().height : 0) - 70;
   cardToTop(q.bottom - m.top <= room && q.top >= m.top ? $("mockCard") : $("quiz"));

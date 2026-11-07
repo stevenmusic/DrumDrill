@@ -13,7 +13,6 @@
 .opt.rud span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.2;padding:2px 0;overflow-wrap:anywhere}
 @media (min-width:900px) and (min-height:501px){ #mod-tech .picker .opt.rud{font-size:min(calc(14rem / 17), 28px)} }   /* 寬畫面字放大(--fs-k)後「Single Paradiddle-diddle」會變三行被切:格子固定兩行,照原本字級 */
 @media (max-width:359px){ #mod-tech .picker .opts[data-k="no"]{grid-template-columns:1fr} }
-@media (min-width:1100px){ #mod-tech .picker .opts[data-k="no"]{--cw:150px;grid-template-columns:repeat(2, minmax(0, 1fr))} }
 #mod-tech .picker .opts[data-k="lead"],#mod-tech .picker .opts[data-k="reps"]{display:grid;gap:6px}
 #mod-tech .picker .opts[data-k="lead"]{grid-template-columns:repeat(2, minmax(0, 120px))}
 #mod-tech .picker .opts[data-k="reps"]{grid-template-columns:repeat(4, minmax(0, 72px))}
@@ -319,7 +318,7 @@ button.xitem{cursor:pointer;border-color:transparent;background:var(--fill-btn)}
 /* ══ 模擬考(S14;js/shared/mock.js)與練習紀錄 ══
    卡片順序(一欄):技巧 = 本級要求 2 → 模擬考 4(進行中:題目 2、鼓譜 3、模擬考 4);
    視奏 / 聽力 = 考試摘要 1 → 模擬考 2 → 規格卡 2(DOM 順序在後);進行中模擬考卡排到作答卡後面(.mock-run)。
-   兩欄(≥1100):模擬考卡在左欄(考試摘要下面;進行中左欄只剩它),題目、譜、鼓墊在右欄 */
+   寬畫面(≥1100)一欄框(PianoDrill docs/DESIGN.md 第 9 節):跟手機一樣照 order 排 */
 #t-mockCard{order:4}
 #s-mockCard,#e-mockCard{order:2}
 #mod-sight.mock-run #s-mockCard,#mod-ear.mock-run #e-mockCard{order:7}
@@ -398,10 +397,10 @@ button.xitem{cursor:pointer;border-color:transparent;background:var(--fill-btn)}
 .rd-ans-grid .opt.right{border-color:var(--teal);color:var(--teal);background:rgba(63,191,174,.12)}
 .rd-ans-grid .opt.wrong{border-color:transparent;color:var(--red);background:var(--red-tint)}
 .rd-ans-grid.idle{opacity:.45;pointer-events:none}
-/* 鼓件快捷(照學習順序,每一格包含前一格):窄畫面 2×2,每顆一行;單欄的寬畫面(平板直式)一排 4 顆。下面一行小字說明 */
+/* 鼓件快捷(照學習順序,每一格包含前一格):窄畫面 2×2,每顆一行;≥ 700 寬(平板、寬畫面的一欄框)一排 4 顆。下面一行小字說明 */
 .rd-quick{grid-template-columns:repeat(2,minmax(0,1fr))}
 .rd-seg.rd-quick .opt{white-space:nowrap;padding:4px 1px;letter-spacing:-.01em}
-@media (min-width:700px) and (max-width:1099px){ .rd-quick{grid-template-columns:repeat(4,minmax(0,1fr))} }
+@media (min-width:700px){ .rd-quick{grid-template-columns:repeat(4,minmax(0,1fr))} }
 .rd-row > .rd-hint{grid-column:2;margin-top:-4px;font-size:var(--fs-xs);color:var(--muted-bright);line-height:1.4;overflow-wrap:anywhere}
 @media (max-width:380px){ .rd-row > .rd-hint{grid-column:1;margin-top:0} }
 .rd-row:has(> .rd-quick) > .lbl{align-self:start;padding-top:14px}   /* 2×2 時標籤對齊第一排 */
@@ -410,8 +409,8 @@ button.xitem{cursor:pointer;border-color:transparent;background:var(--fill-btn)}
 .rd-row:has(> .rd-pieces){grid-template-columns:minmax(0,1fr);gap:4px}
 .rd-pieces{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
 .rd-seg.rd-pieces .opt{min-height:44px;padding:2px 3px;white-space:nowrap;font-size:var(--fs-sm)}
-@media (min-width:560px) and (max-width:1099px){ .rd-pieces{grid-template-columns:repeat(4,minmax(0,1fr))} }
-@media (min-width:760px) and (max-width:1099px){ .rd-pieces{grid-template-columns:repeat(5,minmax(0,1fr))} }
+@media (min-width:560px){ .rd-pieces{grid-template-columns:repeat(4,minmax(0,1fr))} }
+@media (min-width:760px){ .rd-pieces{grid-template-columns:repeat(5,minmax(0,1fr))} }
 @media (max-width:380px){ .rd-seg.rd-pieces .opt{font-size:var(--fs-xs);letter-spacing:-.01em} }
 /* 視奏分頁:難度在題目卡上(一直看得到,不放在收起來的設定卡) */
 #mod-sight .quiz .lvl-row{grid-column:1 / -1;margin:8px 0 0}

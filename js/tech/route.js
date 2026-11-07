@@ -71,13 +71,25 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
   }
   /* 短譜(整份一行、原本的大小就放得下):放大到用滿寬度,最多 FILL 倍、譜高不超過畫面的 FILL_H(第一個畫面還看得到題目卡與主要按鈕);
      R / L、×N、% 都畫完才量(不能超出畫布)。手機橫放照舊(score.js 的 fitWidth) */
+  /* 寬畫面(≥ 1100 寬、不是手機橫放;PianoDrill docs/DESIGN.md 9.6):譜高上限不用畫面高的 FILL_H,改照「譜到底部按鈕列(沒有就到分頁列)」剩下的高度;
+     原本的大小就太高 → 縮,最小到正常大小的 85%(再不夠就讓它捲,不再縮譜) */
+  const wideFit = () => innerWidth >= 1100 && innerHeight > 500 && !isPhoneLand();
+  function wideRoomH(){
+    const svg = $r("osmd").querySelector("svg"); if (!svg) return Infinity;
+    const r = svg.getBoundingClientRect(), st = $r("stage").getBoundingClientRect();
+    const c = [...document.querySelectorAll("#mod-tech .daily-cta")].find(e => e.offsetHeight), bar = document.getElementById("tabbar");
+    const bb = bar && bar.getClientRects().length ? bar.getBoundingClientRect() : null;
+    const floor = c ? c.getBoundingClientRect().top : bb && bb.top > innerHeight / 2 ? bb.top : innerHeight;
+    return floor - 4 - (r.top + scrollY) - Math.max(0, st.bottom - r.bottom);
+  }
   function fill(avail){
     const o = score.osmd; if (isPhoneLand() || !o) return;
+    const capH = wideFit() ? wideRoomH() : innerHeight * FILL_H;
     const ok = z => {
       o.zoom = z; score.render();
       const svg = $r("osmd").querySelector("svg"); if (!svg) return false;
       const r = svg.getBoundingClientRect();
-      if (r.width > avail * 0.97 + 1 || r.height > innerHeight * FILL_H) return false;
+      if (r.width > avail * 0.97 + 1 || r.height > capH) return false;
       const vb = svg.viewBox && svg.viewBox.baseVal, bb = svg.getBBox();
       return !(vb && vb.width) || (bb.x >= vb.x - 1 && bb.x + bb.width <= vb.x + vb.width + 1 && bb.y >= vb.y - 1 && bb.y + bb.height <= vb.y + vb.height + 1);
     };
@@ -88,6 +100,15 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
     }
     const z = Math.max(z0, Math.floor(lo * 100) / 100);   // 取整不能比原本的大小還小
     if (z > z0 + 0.005) fillZ = z;
+    else if (wideFit()) {
+      const tall = z => { o.zoom = z; score.render(); const svg = $r("osmd").querySelector("svg"); return !!svg && svg.getBoundingClientRect().height > capH; };
+      const min = Math.ceil(baseZ() * 85) / 100;
+      if (z0 > min && tall(z0)) {
+        let lo2 = min, hi2 = z0;
+        if (!tall(min)) for (let k = 0; k < 6; k++) { const mid = (lo2 + hi2) / 2; if (tall(mid)) hi2 = mid; else lo2 = mid; }
+        fillZ = Math.max(min, Math.floor(lo2 * 100) / 100);
+      }
+    }
     score.refit();
   }
   const score = createScore({
