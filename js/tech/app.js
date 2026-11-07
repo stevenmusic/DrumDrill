@@ -1148,7 +1148,7 @@ const dcard = createDailyCard({ $, daily, announce, routes: ROUTES,   // routes:
   warmName: warmName, log: () => S.log,
   onStart: () => { dShow(daily.begin()); window.scrollTo({ top: 0 }); },
   onNext: () => dNext(), onPause: () => { dExit(); announce(tr("今日練習暫停了", "Today's practice paused")); },
-  onMore: () => { const s = daily.addExtra(); if (s) dShow(s); },
+  onMore: () => { const s = daily.addExtra(); if (s) { dShow(s); window.scrollTo({ top: 0 }); } },   // 跟「開始」一樣從頂端開始(從捲下去的練完卡 / 路線按「再練一下」,手機橫放 ▶ 會被頂欄切掉)
   barHost: el => { if (ctx && ctx.subBar) ctx.subBar(el, "tech"); },   // 進行中:子項目列換成今日練習的那一行
   onOk: () => dTry({ self: "ok" }), onAgain: () => dTry({ self: "again" }),
   onBack: () => { stopPlayback(); if (daily.back()) dShow(daily.seg()); },
