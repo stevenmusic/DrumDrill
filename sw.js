@@ -12,7 +12,7 @@
 const APP = "drumdrill";
 // @app-end
 /*@precache-begin*/
-const CACHE = APP + "-app-f2cdcd98";
+const CACHE = APP + "-app-d710d950";
 const PRECACHE = [
   "./",
   "manifest.webmanifest",
@@ -72,10 +72,10 @@ const PRECACHE = [
   "js/sight/reading.js?v=15348f8957",
   "js/sight/stage.js?v=bee4aca9a4",
   "js/sight/strings.js?v=574db11364",
-  "js/tech/app.js?v=0db152c1f1",
+  "js/tech/app.js?v=a58fed1b1f",
   "js/tech/notation.js?v=5bee65ac3d",
   "js/tech/route.js?v=c3936b07e3",
-  "js/tech/routes.js?v=7936052324",
+  "js/tech/routes.js?v=7403d49d82",
   "js/tech/routespec.js?v=8125ab745a",
   "js/tech/rudiments.js?v=553c5590cc",
   "js/tech/store.js?v=70f9c4e359",

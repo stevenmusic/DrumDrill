@@ -19,16 +19,16 @@ const c = (zh, en) => [zh, en];
 const GROOVE = [
   // ── 0 初學基礎 ──
   { id: "G01", g: "0", name: c("跟拍點數拍", "Count along"), start: 56, target: 56, need: 2, review: false, oneHand: "R", pat: { sd: Q },
-    check: [c("右手打小鼓（沒有鼓就拍桌子），邊打邊數 1 2 3 4", "Right hand on the snare (or a table); count 1 2 3 4 out loud"), c("跟拍點同時下去", "Land with the click")] },
+    check: [c("右手打小鼓（沒有鼓就拍桌子），邊打邊數 1\u00a02\u00a03\u00a04", "Right hand on the snare (or a table); count 1\u00a02\u00a03\u00a04 out loud"), c("跟拍點同時下去", "Land with the click")] },
   // ── A 四分音符(手腳對齊)──
   { id: "A1", g: "A", name: c("右手和大鼓一起", "Hand and kick together"), start: 56, target: 80, pat: { hh: Q, bd: Q },
-    check: [c("右腳踩大鼓，跟右手同時下去", "Right foot on the kick, with the right hand"), c("數出來：1、2、3、4", "Count out loud: 1 2 3 4")] },
+    check: [c("右腳踩大鼓，跟右手同時下去", "Right foot on the kick, with the right hand"), c("數出來：1、2、3、4", "Count out loud: 1\u00a02\u00a03\u00a04")] },
   { id: "A2", g: "A", name: c("Hi-hat 和小鼓", "Hi-hat with snare"), start: 56, target: 84, pat: { hh: Q, sd: SD24 },
     check: [c("右手 Hi-hat、左手小鼓", "Right hand hi-hat, left hand snare"), c("2、4 拍兩手同時", "Both hands together on 2 and 4")] },
   { id: "A3", g: "A", name: c("大鼓和小鼓輪流", "Kick and snare trade"), start: 60, target: 96, pat: { sd: SD24, bd: BD13 },
     check: [c("大鼓 1、3，小鼓 2、4", "Kick on 1 & 3, snare on 2 & 4"), c("間隔一樣，不要越打越快", "Even spacing, don't rush")] },
   { id: "A4", g: "A", name: c("四分音符的基本節奏", "Quarter-note beat"), start: 60, target: 96, pat: { hh: Q, sd: SD24, bd: BD13 },
-    check: [c("三樣一起對齊", "All three line up"), c("跟著拍點數 1 2 3 4", "Count 1 2 3 4 with the click")] },
+    check: [c("三樣一起對齊", "All three line up"), c("跟著拍點數 1\u00a02\u00a03\u00a04", "Count 1\u00a02\u00a03\u00a04 with the click")] },
   // ── B 八分音符的 8 Beat(固定手、變化大鼓)──
   { id: "B1", g: "B", name: c("右手八分、大鼓 1、3", "Eighths over kick on 1 & 3"), start: 60, target: 92, pat: { hh: E8, bd: BD13 },
     check: [c("右手平均、不停", "Right hand even, never stops"), c("數 1 & 2 & 3 & 4 &（& 唸 and = 拍子的後半）", "Count 1 & 2 & 3 & 4 & (& = the second half of the beat)")] },

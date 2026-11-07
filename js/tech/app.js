@@ -1166,7 +1166,7 @@ rv = createRouteView({ $, tempo, drumKey: () => (ctx && ctx.drumKey ? ctx.drumKe
     $("playBtn").disabled = st === "perform";
     rv.syncPerform();
     syncPlaying();
-    if (st === "perform" || on) revealRoute(st === "perform");
+    if (st === "perform" || on) revealRoute(st === "perform", st === "perform");
   },
   // 整組鼓:背景載入只轉 ▶ 外圈;按了 ▶ / 打一遍(busy)還在載入才寫「載入中」,失敗寫沒有網路 / 再按一次
   onLoad: (p, failed) => {
@@ -1184,15 +1184,16 @@ function syncReady(){ dcard.ready(!!dseg && heardAt === heardKey()); }
 /* 底部按鈕「■ 停止」:正在播(或正在準備播放;路線段的示範、打一遍也算) */
 function syncPlaying(){ dcard.playing(!!(dseg && (play || starting || (rv && (rv.mode || rv.starting))))); }
 rv.pad = !!S.padMode;
-/* 按 ▶ / 打一遍:鼓譜(鼓墊模式連鼓墊)沒露出來就捲過去 */
-function revealRoute(pads){
+/* 按 ▶ / 打一遍:鼓譜(鼓墊模式連鼓墊)沒露出來就捲過去;
+   打一遍(perform)時 ▶ 不能按、停止在底部按鈕列 → 不用留題目卡標題列,整張鼓墊卡捲到底部按鈕列上面(鼓譜在它上面,放得下就一起看得到) */
+function revealRoute(pads, perform){
   const el = pads ? $("rPadCard") : $("rScoreCard"); if (!el || el.hidden) return;
   const r = el.getBoundingClientRect(), bar = document.querySelector(".tabbar");
   const bt = bar ? bar.getBoundingClientRect().top : innerHeight, bottom = Math.min(bt > innerHeight / 2 ? bt : innerHeight, innerHeight - ctaH());   // 底部按鈕列也會擋
   // 題目卡的標題列(大標題 + ▶)要留在頂欄下面:捲過頭會切掉標題、▶ 只露一半(停止也要按它;newbie.mjs,同步 PianoDrill revealScore)
   const hb = document.querySelector("header").getBoundingClientRect().bottom, qhEl = $("quizCard").querySelector(".q-head");
   const qh = qhEl ? qhEl.getBoundingClientRect() : { height: 0 };
-  const keep = qh.height && qh.top < r.top ? qh.top - hb - 6 : Infinity;
+  const keep = !perform && qh.height && qh.top < r.top ? qh.top - hb - 6 : Infinity;
   if (r.bottom > bottom - 4) { const d = Math.min(r.bottom - bottom + 8, r.top - hb - 4, keep); if (d > 2) window.scrollBy({ top: d, behavior: "smooth" }); }
 }
 const playOpts = () => ({ click: (dseg && dseg.click) || "every", solo: !!(dseg && dseg.click && dseg.click !== "every") });
