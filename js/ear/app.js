@@ -1284,8 +1284,9 @@ function syncButtons(){
   lockTempo();
   $("alongMic").disabled = micLocked();
   const pb = $("performBtn");
-  pb.hidden = rsl && !cur.listened && playKind !== "perform";   // 還沒聽題目:不顯示「打一遍」(聽完才出現,不留空位)
-  pb.disabled = !has || busy && !playKind || rsl && !cur.listened && playKind !== "perform"
+  // 還沒聽題目(RSL,不是模擬考):主要按鈕的位置寫「▶ 聽題目」= 圓形 ▶ 的動作(像今日練習底部列的「▶ 跟著打一輪」),聽完換成「打一遍」;模擬考自動聽,照舊藏起來
+  pb.hidden = rsl && !cur.listened && playKind !== "perform" && !!mockOn();
+  pb.disabled = !has || busy && !playKind || rsl && !cur.listened && playKind !== "perform" && !listenFirst()
     || !!mr && (rsl ? !(mr.stage === "practice" || playKind === "perform") : playKind !== "pass");   // 模擬考:RSL 練習時才能回打、Trinity 自動開始(只能停止)
   renderLabels();
 }
@@ -1296,12 +1297,13 @@ function renderLabels(){
   pairText($("studyLabel"), sfn); $("studyBtn").setAttribute("aria-label", sfn());
   let lbl;
   if (!has) lbl = () => tr("打一遍", "Play it");
+  else if (listenFirst()) lbl = () => (playKind === "listen" ? tr("停止", "Stop") : tr("▶ 聽題目", "▶ Listen"));
   else if (rsl) lbl = () => (playKind === "perform" ? tr("停止", "Stop") : tr("打一遍", "Play it"));
   else lbl = () => (playKind === "pass" ? tr("停止", "Stop") : cur.pass >= 1 && phase !== "result" ? tr("打一遍（計分）", "Scored run") : phase === "result" ? tr("從頭再來", "Start over") : tr("打一遍（練習）", "Practice run"));
   $("performBtn").textContent = lbl();
   const mr = mockRes();
   pairText($("nextLabel"), () => (mr ? (mock.data.i >= mock.data.queue.length - 1 ? tr("看結果", "Results") : tr("下一題", "Next")) : T("next")));
-  const pl = () => (rsl ? (cur && cur.revealed ? (cur.type === "fill" ? tr("再聽一次", "Hear it again") : tr("跟著譜再聽一次", "Hear it with the chart")) : tr("聽題目（兩次）", "Play the test (twice)")) : tr("聽整份譜（正確版本）", "Hear the whole chart"));
+  const pl = () => (playKind === "listen" ? tr("停止", "Stop") : rsl ? (cur && cur.revealed ? (cur.type === "fill" ? tr("再聽一次", "Hear it again") : tr("跟著譜再聽一次", "Hear it with the chart")) : tr("聽題目（兩次）", "Play the test (twice)")) : tr("聽整份譜（正確版本）", "Hear the whole chart"));
   $("playBtn").setAttribute("aria-label", pl()); $("playBtn").title = pl();
 }
 /* 聽力分頁(沒選考試)第一次進來這個題型(還沒做完一題):寫這個題型在練什麼、怎麼作答 */
@@ -1310,7 +1312,7 @@ const INTRO = {
   groove: ["聽完打回來", "Listen, then play it back"],
   playback: ["App 打一句，你接著打同一句", "The App plays a phrase — you play it back"]
 };
-const idleMsg = () => (!cur ? "" : freeLevel() && mode !== "exam" && !mockOn() && !SS.intro[cur.type] && INTRO[cur.type] ? tr(...INTRO[cur.type]) : isRsl() ? tr("按 ▶ 聽題目：配拍點聽兩次，每次前面 1 小節預備拍。", "Tap ▶: the test plays twice with a click, a 1-bar count-in each time.")
+const idleMsg = () => (!cur ? "" : freeLevel() && mode !== "exam" && !mockOn() && !SS.intro[cur.type] && INTRO[cur.type] ? tr(...INTRO[cur.type]) : isRsl() ? tr("配拍點聽兩次，每次前面 1 小節預備拍。", "Plays twice with a click, a 1-bar count-in each time.")
   : plainMode() ? tr(`先看譜 ${studySec()} 秒（可以在鼓墊上試打），再按「打一遍（練習）」：App 播一句，你接著打同一句。`, `Study the chart for ${studySec()} s (try it on the pads), then tap Practice run: the App plays a phrase, you play it back.`)
   : tr(`先看譜 ${studySec()} 秒（${studySrc()}；可以在鼓墊上試打），再按「打一遍（練習）」：App 播一句，你接著打同一句。`, `Study the chart for ${studySec()} s (${studySrc()}; try it on the pads), then tap Practice run: the App plays a phrase, you play it back.`));
 function refreshTexts(){
@@ -1491,7 +1493,9 @@ function fitTags(){
 function relangPairs(root){ for (const el of root.querySelectorAll("*")) if (el._pair) el.textContent = el._pair[getLang() === "en" ? 1 : 0]; }
 
 $("playBtn").onclick = () => toggleListen();
-$("performBtn").onclick = () => startPerform();
+/* RSL 還沒聽完題目(不是模擬考):主要按鈕 = 聽題目(跟圓形 ▶ 同一個動作) */
+const listenFirst = () => !!cur && isRsl() && !cur.listened && playKind !== "perform" && !mockOn();
+$("performBtn").onclick = () => (listenFirst() ? toggleListen() : startPerform());
 $("revealBtn").onclick = () => reveal();
 $("studyBtn").onclick = () => startStudy();
 $("nextBtn").onclick = () => (mockOn() ? mockNext() : newQuestion());

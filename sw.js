@@ -12,7 +12,7 @@
 const APP = "drumdrill";
 // @app-end
 /*@precache-begin*/
-const CACHE = APP + "-app-fdcc1f6e";
+const CACHE = APP + "-app-f2cdcd98";
 const PRECACHE = [
   "./",
   "manifest.webmanifest",
@@ -24,10 +24,10 @@ const PRECACHE = [
   "licenses.html",
   "privacy.html",
   "support.html",
-  "css/app.css?v=3a1122af27",
-  "css/drum.css?v=77c72fad84",
+  "css/app.css?v=3a1a41659d",
+  "css/drum.css?v=c0e9ac4d10",
   "vendor/opensheetmusicdisplay.min.js?v=4bfeb3d01c",
-  "js/ear/app.js?v=0a12a3be8a",
+  "js/ear/app.js?v=f9de403566",
   "js/ear/gen.js?v=cd5d9e1477",
   "js/ear/strings.js?v=7ba8fa190d",
   "js/main.js?v=69e604df2b",
@@ -42,7 +42,7 @@ const PRECACHE = [
   "js/shared/examdata.js?v=48f1b46bf2",
   "js/shared/examview.js?v=087d899e81",
   "js/shared/i18n.js?v=416213e793",
-  "js/shared/keystrip.js?v=7b9f4b242a",
+  "js/shared/keystrip.js?v=dd4d105375",
   "js/shared/kitevents.js?v=599b14d902",
   "js/shared/kitgen.js?v=12fd0101b6",
   "js/shared/kitnotation.js?v=1b100f0235",
