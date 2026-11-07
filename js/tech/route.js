@@ -86,6 +86,7 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
   /* 寬畫面(≥ 1100 寬、不是手機橫放;PianoDrill docs/DESIGN.md 9.6):譜高上限不用畫面高的 FILL_H,改照「譜到底部按鈕列(沒有就到分頁列)」剩下的高度;
      原本的大小就太高 → 縮到放得下(不小於 ONE_MIN;縮到 ONE_MIN 還放不下 = 只縮到正常大小的 85%,讓它捲) */
   const wideFit = () => innerWidth >= 1100 && innerHeight > 500 && !isPhoneLand();
+  const tabFit = () => innerWidth >= 700 && innerHeight > 500 && !wideFit() && !isPhoneLand();   // 平板直式(fill 的放大上限;鼓墊模式除外)
   function wideRoomH(){
     const svg = $r("osmd").querySelector("svg"); if (!svg) return Infinity;
     const r = svg.getBoundingClientRect(), st = $r("stage").getBoundingClientRect();
@@ -105,7 +106,9 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
       const vb = svg.viewBox && svg.viewBox.baseVal, bb = svg.getBBox();
       return !(vb && vb.width) || (bb.x >= vb.x - 1 && bb.x + bb.width <= vb.x + vb.width + 1 && bb.y >= vb.y - 1 && bb.y + bb.height <= vb.y + vb.height + 1);
     };
-    const z0 = o.zoom; let lo = z0, hi = baseZ() * (wideFit() ? FILL_WIDE : FILL);
+    // 平板直式(700–1099 寬、高 > 500):譜高照舊 ≤ FILL_H(圖例還在下面),放大上限跟寬畫面一樣 FILL_WIDE(原本 FILL 只到白紙一半寬);鼓墊模式照舊(鼓墊要在底部按鈕列上面)
+    const tab = tabFit() && !pad;
+    const z0 = o.zoom; let lo = z0, hi = baseZ() * (wideFit() || tab ? FILL_WIDE : FILL);
     if (hi > z0 + 0.005) {
       if (ok(hi)) lo = hi;
       else for (let k = 0; k < 6; k++) { const mid = (lo + hi) / 2; if (ok(mid)) lo = mid; else hi = mid; }
@@ -374,7 +377,7 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
   function syncPadUI(){
     const on = !!cur && pad;
     const mod = $("rPadCard").closest(".mod");
-    if (mod && mod.classList.contains("r-pad") !== on) { mod.classList.toggle("r-pad", on); requestAnimationFrame(resize); }
+    if (mod && mod.classList.contains("r-pad") !== on) { mod.classList.toggle("r-pad", on); if (tabFit()) fitW = 0; requestAnimationFrame(resize); }   // 平板直式:鼓墊模式的放大上限不一樣,重新排
     $("rPadCard").hidden = !on;
     $("rModeBtn").hidden = on;
     $("rPerform").hidden = !on;

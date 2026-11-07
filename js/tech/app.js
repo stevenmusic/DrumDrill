@@ -532,7 +532,7 @@ const score = createScore({
   msg: fn => setMsg("paperMsg", fn),
   errorText: e => tr("鼓譜繪製失敗：", "Could not draw the score: ") + e.message,
   onDrawn: xml => { window.__lastXml = xml; window.__scoreReady = (window.__scoreReady || 0) + 1; },
-  fitLand: () => (wideDaily() ? fitWideDaily() : fitLandZoom(score, { $, reserve: ctaH })),   // 今日練習(暖身)的底部按鈕列蓋住的不算
+  fitLand: () => (wideDaily() ? fitWideDaily() : tabDaily() ? fitTabDaily() : fitLandZoom(score, { $, reserve: ctaH })),   // 今日練習(暖身)的底部按鈕列蓋住的不算
   label: () => scoreLabel()
 });
 /* 寬畫面的矮視窗(≥ 1100 寬、高 > 500,例如 1280×600)今日練習暖身:譜(含 R / L)到底部按鈕列放不下 → 縮到放得下(不小於 0.55,視奏考卷的下限);
@@ -548,6 +548,22 @@ function fitWideDaily(){
     if (z < 0.55) { if (score.landZoom) { score.landZoom = null; score.refit(); drawn = true; } break; }
     score.landZoom = z; score.refit(); drawn = true;
   }
+  return drawn;
+}
+/* 平板直式(700–1099 寬、高 > 500)今日練習暖身:短譜原本最多放大到 1.6(score.js 的 fitWidth,跟手機一樣大),在 740–872 寬的白紙中間只佔一小塊 →
+   放大到用滿寬度,最多 TAB_FILL(= 1.6 × route.js 的 FILL_WIDE 1.6)、譜高 ≤ 畫面高的 34%(route.js 的 FILL_H)而且在底部按鈕列上面;只放大不縮小。
+   借用 score.landZoom(手機橫式的縮放;不會同時成立) */
+const TAB_FILL = 2.56, TAB_FILL_H = 0.34;
+const tabDaily = () => innerWidth >= 700 && innerWidth < 1100 && innerHeight > 500 && !isPhoneLand() && ROOT.classList.contains("daily-on") && ctaH() > 0;
+function fitTabDaily(){
+  let drawn = false;
+  if (score.landZoom) { score.landZoom = null; score.refit(); drawn = true; }
+  const osmd = score.osmd, svg = $("osmd").querySelector("svg"), avail = $("stage").clientWidth - 16;
+  if (!osmd || !svg || !avail) return drawn;
+  const r = svg.getBoundingClientRect(); if (!r.width || !r.height) return drawn;
+  const roomH = Math.min(innerHeight * TAB_FILL_H, innerHeight - ctaH() - 4 - (r.top + scrollY));
+  const z = Math.floor(Math.min(TAB_FILL, osmd.zoom * avail * 0.94 / r.width, osmd.zoom * roomH / r.height) * 100) / 100;
+  if (z > osmd.zoom + 0.03) { score.landZoom = z; score.refit(); drawn = true; }
   return drawn;
 }
 function renderScore(){ if (cur) score.load(rudimentXML(groups, { reps: (dailyPlay() || {}).reps || S.reps, title: cur.en })); }   // 今日練習:反覆次數 = 這一段實際播的
