@@ -545,6 +545,9 @@ body.view-exam .exam-info:is(#t-paneExam,#s-paneExam,#e-paneExam){order:20}
 .exam-info .spec-cards{margin-top:10px}
 .exam-info .spec-card{border:0;border-top:1px solid var(--line);border-radius:0;background:none;box-shadow:none;padding:10px 0 0}
 .exam-info > .spec-note,.exam-info > .practice-only{margin-top:10px}
+/* 收起來時內容不排版(Chromium 的 details 用 content-visibility 藏內容:量得到尺寸、ResizeObserver 卻不觸發,pairText 還沒等高;
+   打開時 display 變了 → ResizeObserver 觸發 → 中英等高) */
+details.exam-info:not([open]) > :not(summary){display:none}
 /* 技巧題目卡最後一行右邊:從檢定頁清單來練時的「下一項」 */
 #t-nextItem{margin-left:auto;min-height:44px;height:auto}
 @media (orientation:landscape) and (max-height:500px){ #t-nextItem{grid-column:1 / -1;justify-self:end} }
