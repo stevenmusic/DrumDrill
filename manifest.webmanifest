@@ -1,7 +1,7 @@
 {
   "name": "DrumDrill 爵士鼓檢定特訓",
   "short_name": "DrumDrill",
-  "description": "PAS 40 個基本打法:鼓譜、左右手、真實鼓聲示範、速度階梯;Trinity / RSL 爵士鼓檢定",
+  "description": "每天 10 分鐘的今日練習、PAS 40 個基本打法(鼓譜、左右手、真實鼓聲示範)、視奏與聽力,照爵士鼓檢定大綱練習",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

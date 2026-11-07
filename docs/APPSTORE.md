@@ -2,6 +2,7 @@
 
 > 這份是 **App Store Connect 要填的內容與送審準備**;iOS 原生步驟(Xcode、AppDelegate、Info.plist、隱私清單、TestFlight、實機檢查清單)在 `docs/IOS.md`。
 > PianoDrill 的 `docs/APPSTORE.md` 用同一個格式(章節一樣,內容各自的)。查證日期 2026-10-18。
+> **送審前對照 Apple 現行規格(截圖尺寸、年齡分級問卷)**:這兩項 Apple 常改,以 App Store Connect 當時的畫面為準。
 
 ## 1. 這邊已經準備好的
 
@@ -15,7 +16,7 @@
 | 隱私權政策(中英) | `privacy.html` → `https://stevenmusic.github.io/DrumDrill/privacy.html` |
 | 支援頁(中英) | `support.html` → `https://stevenmusic.github.io/DrumDrill/support.html`(常見問題、GitHub 回報;支援信箱設好才顯示寄信) |
 | 授權與出處(中英) | `licenses.html`(Naked Drums CC BY 4.0 + 修改說明、OSMD BSD-3 全文、PAS 出處、商標聲明) |
-| 麥克風 | **目前版本未開放**(畫面藏起來,之後再開);開放時視奏「正式打」、聽力「接著打」可選用(S15):**要加** `NSMicrophoneUsageDescription` 與中英文 InfoPlist.strings(`docs/IOS.md` 第 4 節)、AudioSession 外掛(第 3b 節) |
+| 麥克風 | **目前版本未開放**(畫面藏起來,之後再開;隱私權頁也這樣寫):**1.0 不帶麥克風權限**:不加 `NSMicrophoneUsageDescription`、不做 AudioSession 外掛、不測實機第 17–20 項(`docs/IOS.md` 第 0、3b、4、8 節)。之後開放時(視奏「正式打」、聽力「接著打」可選用,S15)再照 `docs/IOS.md` 第 3b、4 節加 |
 | 商店截圖 | `app/screenshots/{zh,en}/`:iPhone 6.9 吋 1290×2796、iPad 13 吋 2064×2752 各 5 張(真實畫面、沒有透明通道);`node tools/test/appshots.mjs` 重新產生(第 7 節) |
 
 ## 2. 2026 年的硬性規定(先看)
@@ -28,39 +29,47 @@
 
 | 欄位(上限) | English (U.S.)(主要語言) | 繁體中文 |
 |---|---|---|
-| 名稱(30 字) | DrumDrill: Drum Kit Exam Prep | DrumDrill 爵士鼓檢定特訓 |
-| 副標題(30 字) | Rudiments, Reading & Aural | 基本打法、視奏、聽力一次練好 |
+| 名稱(上限 30 字元) | DrumDrill: Drum Kit Exam Prep(29) | DrumDrill 爵士鼓檢定特訓(17) |
+| 副標題(上限 30 字元) | Rudiments, Reading & Aural(26) | 基本打法、視奏、聽力一次練好(14) |
 | 類別 | 教育 Education(次要:音樂 Music) | 同左 |
 | 價格 | 免費、沒有內購、沒有廣告 | 同左 |
 
+- 括號裡是實際字數(2026-11-07 量;空格、標點都算一個字)。Apple 上限:名稱 30、副標題 30、關鍵字 100 bytes、描述 4000 字元。
 - 名稱在 App Store 必須是唯一的;被用掉就改成「DrumDrill – Drum Exam Trainer」之類,中文名稱不變。
 - 用詞:App 內一律「檢定」「考試」;「考級」只放在關鍵字(有人這樣搜尋)。
 
 ## 4. 描述
 
 **繁體中文**
-> 準備爵士鼓檢定的學生、上課的老師,或只想把基本功練好的鼓手都可以用。
+> 每天 10 分鐘,跟著打就會。剛開始學爵士鼓的人、準備爵士鼓檢定的學生、上課的老師,或只想把基本功練好的鼓手都可以用。
+> 今日練習:App 每天排好約 10 分鐘(暖身、律動路線、過門路線、複習),從「跟拍點數拍」開始一關一關往上;真實鼓聲示範,速度從慢慢加到目標,打穩了就過關,過關的會照日子拿出來複習。沒有鼓也可以用手機當鼓墊打。漏練幾天沒關係,不會扣分。
 > 技巧:Percussive Arts Society(PAS)40 個國際標準基本打法,照官方表重新繪製鼓譜、每個音標左右手;真實鼓聲示範、預備拍,速度可以慢慢加,循環播放時每輪自動加快。
-> 視奏:依考試大綱的參數產生小鼓與整組鼓的視奏練習題,準備時間照大綱計時,用觸控鼓墊打一遍、看節奏的練習回饋,再聽正確版本。
-> 聽力:聽一段過門或律動、打回來再從譜裡選出聽到的那一個;也有「聽一句、打一句」的回打練習。
-> 檢定:選好考試系統和級數一次,技巧、視奏、聽力都照這一級;每一項要求都標出大綱頁碼。模擬考照大綱的準備時間與速度,一項一項打完,只看練習回饋、不算分數;練習紀錄記下每天練了多久。支援 Trinity Rock & Pop 與 RSL Rockschool 爵士鼓檢定的練習(Trinity、RSL Rockschool 為各自的商標,本 App 與其無關;僅供練習,實際要求以官方大綱為準)。
+> 視奏:依考試大綱的參數產生小鼓與整組鼓的視奏練習題,難度自動調整;用觸控鼓墊打一遍、看節奏的練習回饋,再聽正確版本。
+> 聽力:聽一段過門或律動、照節奏打一遍,再從譜裡選出聽到的那一個;也有「聽一句、打一句」的接著打練習。
+> 檢定:選好考試系統和級數一次,技巧、視奏、聽力都照這一級;每一項要求都標出大綱頁碼。模擬考照大綱的準備時間與速度,一項一項打完,只看練習回饋、不算分數。支援 Trinity Rock & Pop 與 RSL Rockschool 爵士鼓檢定的練習(Trinity、RSL Rockschool 為各自的商標,本 App 與其無關;僅供練習,實際要求以官方大綱為準)。
+> 練習紀錄:連續天數、每週目標、最近 7 天練了幾天。
 > 鼓聲內建在 App 裡,不用網路也能用;不需要登入、沒有廣告、不收集任何資料。
 
 **English**
-> For drum kit students preparing for a grade exam, teachers, and any drummer who wants solid fundamentals.
+> 10 minutes a day. Play along. For beginners, drum kit students preparing for a grade exam, teachers, and any drummer who wants solid fundamentals.
+> Today: the app plans about 10 minutes each day (warm-up, a groove route, a fill route and review), starting from "Count along" and moving up level by level. Real drum demos, a tempo that climbs slowly to the target; play it steadily to pass, and passed levels come back for review. No drums? Tap along on your phone. Missed days are never penalised.
 > Technique: all 40 Percussive Arts Society (PAS) International Drum Rudiments, re-engraved from the official sheet with sticking under every note; real drum sounds, count-in, and a tempo you can raise step by step, speeding up each time it loops.
-> Sight-reading: snare and full-kit reading tests generated from the syllabus parameters, timed preparation, play them on the touch pads for rhythm feedback, then hear the correct version.
-> Aural: hear a fill or groove, play it back and pick the matching chart; plus call-and-response playback practice.
-> Exams: set your board and grade once and technique, sight-reading and aural all follow it, with a syllabus page reference for every requirement. Mock exams follow the syllabus prep times and tempos item by item, with practice feedback only (no marks); a practice log tracks your daily minutes. Practice for Trinity Rock & Pop and RSL Rockschool drums exams (Trinity and RSL Rockschool are trademarks of their owners; this app is not affiliated with them. Practice only — the official syllabus is final).
+> Sight-reading: snare and full-kit reading tests generated from the syllabus parameters, with difficulty that adjusts to you; play them on the touch pads for rhythm feedback, then hear the correct version.
+> Aural: hear a fill or groove, play it in time and pick the matching chart; plus Echo, a listen-and-play-back exercise.
+> Exams: set your board and grade once and technique, sight-reading and aural all follow it, with a syllabus page reference for every requirement. Mock exams follow the syllabus prep times and tempos item by item, with practice feedback only (no marks). Practice for Trinity Rock & Pop and RSL Rockschool drums exams (Trinity and RSL Rockschool are trademarks of their owners; this app is not affiliated with them. Practice only — the official syllabus is final).
+> Practice log: day streak, weekly goal and the last 7 days.
 > Drum sounds are built in and work offline. No sign-in, no ads, no data collected.
 
-- 「檢定」那一句已補上模擬考與練習紀錄;**描述只寫 App 裡真的有的功能**(審核 2.3.1)。
+- 字數(Apple 上限 4000 字元):繁體中文 635 字、English 1669 字元(2026-11-07 量;改描述要重量)。
+- **描述只寫 App 裡真的有的功能**(審核 2.3.1);麥克風評分目前版本未開放,描述不提。
 - 宣傳文字(Promotional Text,170 字,可以隨時改不用送審):先留空,有新功能時再寫。
 
-## 5. 關鍵字(100 字元,逗號分隔、不重複名稱裡的字)
+## 5. 關鍵字(上限 100 bytes,逗號分隔、不重複名稱裡的字)
 
-- **繁體中文**:`打鼓,練鼓,鼓譜,鼓組,基本打法,滾奏,複點,視奏,聽力,節奏,節拍器,考級,打擊,rudiments,paradiddle,flam,drum exam`(77 字)
-- **English**:`rudiments,paradiddle,flam,drag,drumming,snare,sight reading,aural,rhythm,metronome,grade,groove`(95 字)
+- 上限算的是 **UTF-8 位元組**:中文一個字 3 bytes、英文與逗號 1 byte(2026-11-07 量的數字寫在後面;改了要重量)。
+
+- **繁體中文**:`打鼓,練鼓,鼓譜,鼓組,基本打法,滾奏,視奏,聽力,節奏,節拍器,考級,rudiments,flam`(50 字、100 bytes;舊版 135 bytes 超過上限,拿掉「複點」「打擊」「paradiddle」「drum exam」)
+- **English**:`rudiments,paradiddle,flam,drag,drumming,snare,sight reading,aural,rhythm,metronome,grade,groove`(95 bytes)
   - 名稱「DrumDrill: Drum Kit Exam Prep」已經有的 `drum kit`、`exam` 不再放(名稱的字本來就會被搜尋到,重複只浪費字數),換成 `snare`、`groove`。
 - **不放考試機構與其他組織的名稱**:Trinity、RSL、Rockschool、ABRSM、PAS(審核 2.3.7:關鍵字不能放別人的商標;本 App 與它們無關,放了容易被當成冒用而退件)。
 
@@ -72,9 +81,9 @@
 - Rudiments follow the Percussive Arts Society (PAS) International Drum Rudiments (© 1984 PAS); the notation is re-engraved by the app for practice. PAS is a trademark of its owner and is not affiliated with this app.
 - Sight-reading and aural tests are generated on the device by the app from the syllabus parameters (time signatures, note values, tempo ranges). They are not official test pieces.
 - Native functionality beyond a web page: native audio session (plays with the silent switch on), bundled multi-velocity drum samples with on-device mixing, interactive touch drum pads with rhythm feedback, generated exercises, offline use.
-- Microphone: not used in this version (the feature is switched off). When it returns (optional): only in Sight-reading "Perform" and Aural "Echo", only after the user ticks "Score my rhythm with the mic" and allows access; audio is analysed on the device for stroke times only and never recorded or uploaded. Declining keeps every other feature working (the touch pads are used instead).
+- Microphone: not used in this version (the feature is switched off, and the app does not request microphone permission — there is no NSMicrophoneUsageDescription). When it returns (optional): only in Sight-reading "Perform" and Aural "Echo", only after the user ticks "Score my rhythm with the mic" and allows access; audio is analysed on the device for stroke times only and never recorded or uploaded. Declining keeps every other feature working (the touch pads are used instead).
 - No data is collected; no tracking; no analytics or advertising SDKs. Practice settings stay on the device.
-- How to test: open the Technique tab and press play; open Exams, choose a board and grade, then try Sight-reading and Aural.
+- How to test: on first launch tap "Start practicing"; the Technique tab opens on Today — tap "Start today's practice" and press ▶ (or "No drums? Use phone" to use the touch pads). Then open Exams, choose a board and grade, and try Sight-reading and Aural.
 ```
 
 - 聯絡資訊填自己的姓名、電話、Email(只給審核員看,不公開)。
@@ -116,7 +125,7 @@
 
 - **Data Not Collected(不收集任何資料)**:沒有分析、沒有當機回報 SDK、沒有帳號;練習紀錄只存在裝置上。
 - 跟 `PrivacyInfo.xcprivacy`(全部空的,`docs/IOS.md` 第 5 節)、`privacy.html` 一致。
-- 麥克風只在裝置上分析敲擊的時間、不存不傳,不算「收集」。
+- 1.0 不用麥克風(沒有麥克風權限);之後開放時也只在裝置上分析敲擊的時間、不存不傳,不算「收集」。
 - App 版不載入 Google Fonts(app-www 拿掉了);網頁版的 Google Fonts、GitHub 取樣下載寫在 `privacy.html`。
 - 隱私權政策網址:`https://stevenmusic.github.io/DrumDrill/privacy.html`
 
@@ -152,16 +161,16 @@
 
 ## 14. 實機測試結果
 
-照 `docs/IOS.md` 第 8 節的 20 項(第 17–20 項是麥克風),用 TestFlight 版測完把結果填在這裡(✓ / ✗ + 備註)。
+照 `docs/IOS.md` 第 8 節的第 1–16 項(第 17–20 項是麥克風,1.0 沒有麥克風權限、不測),用 TestFlight 版測完把結果填在這裡(✓ / ✗ + 備註)。
 
 | # | iPhone SE | 一般 iPhone | iPad | 備註 |
 |---|---|---|---|---|
-| 1–20 | 未測 | 未測 | 未測 | |
+| 1–16 | 未測 | 未測 | 未測 | |
 
 ## 15. 需要你自己做或決定的
 
 1. Apple Developer Program 帳號、App Store Connect 的 App 記錄、DSA 交易者身分。
-2. 在 Mac 上照 `docs/IOS.md` 做:`cap add ios`、AppDelegate、AudioSession 外掛(第 3b 節)、Info.plist(含麥克風)、InfoPlist.strings、PrivacyInfo.xcprivacy、圖示、Archive、TestFlight。
+2. 在 Mac 上照 `docs/IOS.md` 做:`cap add ios`、AppDelegate、Info.plist(1.0 不加麥克風、不做第 3b 節的 AudioSession 外掛)、InfoPlist.strings、PrivacyInfo.xcprivacy、圖示、Archive、TestFlight。
 3. 實機測試(第 14 節),特別是「邊放音樂邊練」(`docs/IOS.md` 第 3 節還沒解決的那一點)。
 4. 支援信箱:要不要公開一個 Email?要的話填在 `support.html` 的 `APP.EMAIL`(空白時只顯示 GitHub 回報)。
 5. 上傳截圖(第 7 節;已產生,上傳前看過一次)、英文名稱是否被用掉(第 3 節)、中國大陸是否上架(第 12 節)。
