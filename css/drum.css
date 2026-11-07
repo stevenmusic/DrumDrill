@@ -228,6 +228,13 @@ button.xitem{cursor:pointer;border-color:transparent;background:var(--fill-btn)}
 @media (max-width:360px){ .pads:not([data-n="1"]) .tap-pad{font-size:var(--fs-lg)} }
 @media (max-width:300px){ .pads:not([data-n="1"]){gap:6px;margin:0 -11px} .pads:not([data-n="1"]) .tap-pad{font-size:var(--fs-md);padding:6px 2px} }
 @media (orientation:landscape) and (max-height:500px){ .pads .tap-pad{min-height:96px} }
+/* 平板直式(601–1099 寬、高 > 500;2026-11-07 使用者選):視奏、聽力的鼓墊在 740–872 寬的卡裡只有 320 × 96,像裝飾不像要敲的東西 →
+   1 個鼓墊 = 卡片的一半寬(最多 420)、高 120;3 個鼓墊平分整行。手機照舊 */
+@media (min-width:601px) and (max-width:1099px) and (min-height:501px){
+  :is(#mod-sight,#mod-ear) .pads{max-width:none}
+  :is(#mod-sight,#mod-ear) .pads[data-n="1"]{grid-template-columns:minmax(80px, min(50%, 420px))}
+  :is(#mod-sight,#mod-ear) .pads[data-n="1"] .tap-pad{min-height:120px}
+}
 
 /* ══ 聽力(S12 + S13;照 PianoDrill 聽音的卡片,一律限定在 #mod-ear / #e-…)══
    卡片順序(一欄):設定 1、說明 2、題目 3、譜 4、回打 5、紀錄 6;檢定頁:考試摘要 1、規格卡 2 */
@@ -551,10 +558,10 @@ button.xitem{cursor:pointer;border-color:transparent;background:var(--fill-btn)}
   #t-rLegend .kl-cell{flex-direction:row;align-items:center;gap:6px}
   #t-rLegend .kl-note{width:30px;height:40px;flex:none}
   #t-rLegend .kl-name{text-align:left;font-size:var(--fs-sm)}
-  #mod-tech .daily-step:has(> .daily-check + .daily-approw #t-rModeBtn:not([hidden])){flex-direction:row;flex-wrap:wrap;align-items:center}
-  #mod-tech .daily-step:has(> .daily-check + .daily-approw #t-rModeBtn:not([hidden])) > *{flex:1 1 100%}
-  #mod-tech .daily-step:has(> .daily-check + .daily-approw #t-rModeBtn:not([hidden])) > .daily-check{flex:1 1 0;min-width:0}
-  #mod-tech .daily-step:has(> .daily-check + .daily-approw #t-rModeBtn:not([hidden])) > .daily-check + .daily-approw{flex:0 0 auto;margin-left:auto}
+  #mod-tech .daily-step:has(> .daily-check:not(.daily-gone) + .daily-approw #t-rModeBtn:not([hidden])){flex-direction:row;flex-wrap:wrap;align-items:center}
+  #mod-tech .daily-step:has(> .daily-check:not(.daily-gone) + .daily-approw #t-rModeBtn:not([hidden])) > *{flex:1 1 100%}
+  #mod-tech .daily-step:has(> .daily-check:not(.daily-gone) + .daily-approw #t-rModeBtn:not([hidden])) > .daily-check{flex:1 1 0;min-width:0}
+  #mod-tech .daily-step:has(> .daily-check:not(.daily-gone) + .daily-approw #t-rModeBtn:not([hidden])) > .daily-check + .daily-approw{flex:0 0 auto;margin-left:auto}
 }
 /* 手機橫式 · 今日練習路線段「用手機打」(2026-11-07 使用者選甲):鼓譜在左、鼓墊在右並排(route.js 的 syncPadUI 加 .r-pad);
    鼓墊直排三顆:鈸在上、鼓中、大鼓 / 腳踩 Hi-hat 在下(跟譜上高低一樣),每顆 44–80 高;鼓墊頂對齊譜紙頂(--r-pad-top,route.js 的 padTop);

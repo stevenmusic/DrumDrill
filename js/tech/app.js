@@ -554,14 +554,16 @@ function fitWideDaily(){
    放大到用滿寬度,最多 TAB_FILL(= 1.6 × route.js 的 FILL_WIDE 1.6)、譜高 ≤ 畫面高的 34%(route.js 的 FILL_H)而且在底部按鈕列上面;只放大不縮小。
    借用 score.landZoom(手機橫式的縮放;不會同時成立) */
 const TAB_FILL = 2.56, TAB_FILL_H = 0.34;
-const tabDaily = () => innerWidth >= 700 && innerWidth < 1100 && innerHeight > 500 && !isPhoneLand() && ROOT.classList.contains("daily-on") && ctaH() > 0;
+const stepOn = () => { const c = $("dailyStep") && !$("dailyStep").hidden ? $("dailyStep").querySelector(".daily-cta") : null; return !!(c && c.offsetHeight); };   // 段落面板(含按鈕列)看得到
+const tabDaily = () => innerWidth >= 700 && innerWidth < 1100 && innerHeight > 500 && !isPhoneLand() && ROOT.classList.contains("daily-on") && stepOn();
 function fitTabDaily(){
   let drawn = false;
   if (score.landZoom) { score.landZoom = null; score.refit(); drawn = true; }
   const osmd = score.osmd, svg = $("osmd").querySelector("svg"), avail = $("stage").clientWidth - 16;
   if (!osmd || !svg || !avail) return drawn;
   const r = svg.getBoundingClientRect(); if (!r.width || !r.height) return drawn;
-  const roomH = Math.min(innerHeight * TAB_FILL_H, innerHeight - ctaH() - 4 - (r.top + scrollY));
+  const bar = document.getElementById("tabbar"), floor = ctaH() ? innerHeight - ctaH() : bar && bar.getClientRects().length ? bar.getBoundingClientRect().top : innerHeight;   // 按鈕列在題目卡裡(平板直式)= 到分頁列
+  const roomH = Math.min(innerHeight * TAB_FILL_H, floor - 4 - (r.top + scrollY));
   const z = Math.floor(Math.min(TAB_FILL, osmd.zoom * avail * 0.94 / r.width, osmd.zoom * roomH / r.height) * 100) / 100;
   if (z > osmd.zoom + 0.03) { score.landZoom = z; score.refit(); drawn = true; }
   return drawn;
@@ -861,9 +863,11 @@ function stopPlayback(natural, keepView){
 }
 /* 按播放時鼓譜要看得到:手機橫式 → 樂譜卡貼到頂欄下、放大到滿版(landscape.js);其他 → 沒露出來就捲過去 */
 const land = createLandPlay({ $, score, playing: () => !!play, stop: () => stopPlayback(), reveal: () => revealScore(), reserve: () => ctaH() });
-/* 今日練習的底部按鈕列(dailycard 的 .daily-cta,position:fixed 貼在畫面底部)佔掉的高度:手機橫放貼底;直式在分頁列上面 */
+/* 今日練習的底部按鈕列(dailycard 的 .daily-cta,position:fixed 貼在畫面底部)佔掉的高度:手機橫放貼底;直式在分頁列上面;
+   平板直式(app.css:601–1099 寬、高 > 500)不固定、在題目卡裡 = 不擋東西,0 */
 function ctaH(){
   let c = $("dailyStep") && !$("dailyStep").hidden ? $("dailyStep").querySelector(".daily-cta") : null;
+  if (c && c.offsetHeight && getComputedStyle(c).position !== "fixed") return 0;
   if (!c || !c.offsetHeight) {
     // 自由練習、檢定頁:題目卡最後一行固定在底部(main.js 的 syncCta、app.css 的 .cta-bar;手機;同步 PianoDrill ctaEl)
     const b = $("quizCard").querySelector(":scope > .cta-bar");

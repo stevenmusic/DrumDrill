@@ -77,7 +77,7 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
     if (score.landZoom) { score.landZoom = null; score.refit(); }
     const o = score.osmd, svg = $r("osmd").querySelector("svg"); if (!on || !o || !svg) return;
     const r = svg.getBoundingClientRect(), st = $r("stage").getBoundingClientRect(), hd = document.querySelector("header");
-    const c = [...document.querySelectorAll("#mod-tech .daily-cta")].find(e => e.offsetHeight);
+    const c = [...document.querySelectorAll("#mod-tech .daily-cta")].find(e => e.offsetHeight && getComputedStyle(e).position === "fixed");
     const room = (c ? c.getBoundingClientRect().top : innerHeight) - 4 - (hd ? hd.getBoundingClientRect().bottom + 4 : 0) - (r.top - st.top) - Math.max(0, st.bottom - r.bottom);
     if (r.height > room && room > 0) { const z = Math.max(ONE_MIN, Math.floor(o.zoom * room / r.height * 100) / 100); if (z < o.zoom) { score.landZoom = z; score.refit(); } }
   }
@@ -90,7 +90,7 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
   function wideRoomH(){
     const svg = $r("osmd").querySelector("svg"); if (!svg) return Infinity;
     const r = svg.getBoundingClientRect(), st = $r("stage").getBoundingClientRect();
-    const c = [...document.querySelectorAll("#mod-tech .daily-cta")].find(e => e.offsetHeight), bar = document.getElementById("tabbar");
+    const c = [...document.querySelectorAll("#mod-tech .daily-cta")].find(e => e.offsetHeight && getComputedStyle(e).position === "fixed"), bar = document.getElementById("tabbar");
     const bb = bar && bar.getClientRects().length ? bar.getBoundingClientRect() : null;
     const floor = c ? c.getBoundingClientRect().top : bb && bb.top > innerHeight / 2 ? bb.top : innerHeight;
     return floor - 4 - (r.top + scrollY) - Math.max(0, st.bottom - r.bottom);
