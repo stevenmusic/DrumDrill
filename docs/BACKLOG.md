@@ -7,6 +7,8 @@
 - [x] 檢定頁「考試內容」規格表(`#t-sumSpec`)在 laptop 寬中英高度不同:英文「Exam length」「Digital exam」與推估那行(`#t-sumAssumed`)換成兩行(改前就有 6 處,2026-11 寬畫面字放大 `--fs-k` 後推估那行多 1 處;bilingual.mjs laptop)。在收起來的卡裡,不影響練習;做法:規格表的 key 欄固定寬度或用 pairText
   → 打開的時候本來就等高(pairText);差在收起來的時候:Chromium 的 details 用 content-visibility 藏內容,量得到尺寸但 ResizeObserver 不觸發、還沒等高。drum.css 加 `details.exam-info:not([open]) > :not(summary){display:none}`(收起來不排版,打開時 ResizeObserver 觸發 → 等高);bilingual laptop / 390 通過
 - [ ] [小] 實機(TestFlight)確認:備份存檔 / 還原、分享本週摘要、中文檔名
+- [x] [小] 平板(601–1099 寬、高 > 500)聽力 Fill / Groove:主要按鈕「打一遍」被選譜推著跳(newbie ipad-768 / ipad-1024 各 2 處:打完選項出現在按鈕上面 +160px、選了問句與圖例收起來 −68px)
+  → drum.css 平板範圍:問句 + 選項 + 圖例(作答)排在按鈕那一行下面(版型 A:最後一行 → 作答);手機(底部固定)、≥ 1100 不變;newbie 平板兩輪 0 斷點
 
 - [x] [小] iphone-390 視奏 Trinity 8 級:英文標籤「Chart 12/8 5/8 22 bars ♩=80」掉到標題下一行、中文同一行(整頁差 2px;同步前就有)→ 英文縮短或兩種語言都在下一行
   → 一題有兩個以上拍號(拍號寫在同一個標籤)標籤一律在標題下一行(sight/app.js `metres` class + drum.css;原本「5 個以上」的規則碰不到),中英一樣

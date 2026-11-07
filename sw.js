@@ -12,7 +12,7 @@
 const APP = "drumdrill";
 // @app-end
 /*@precache-begin*/
-const CACHE = APP + "-app-27e9f123";
+const CACHE = APP + "-app-06b87091";
 const PRECACHE = [
   "./",
   "manifest.webmanifest",
@@ -25,7 +25,7 @@ const PRECACHE = [
   "privacy.html",
   "support.html",
   "css/app.css?v=5531b241d3",
-  "css/drum.css?v=7d8fc42071",
+  "css/drum.css?v=8158029812",
   "vendor/opensheetmusicdisplay.min.js?v=4bfeb3d01c",
   "js/ear/app.js?v=f9de403566",
   "js/ear/gen.js?v=cd5d9e1477",
