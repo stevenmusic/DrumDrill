@@ -638,6 +638,7 @@ function setCue(fn, ok){ cueFn = fn; $("cue").classList.toggle("ok", !!ok); sync
 function syncCue(){
   const c = $("cue"), on = active && (playKind === "perform" || playKind === "pass");
   $("along").classList.toggle("running", on);
+  ROOT.classList.toggle("e-run", on);   // 折疊機打的時候圖例縮成一行(drum.css),停止後還原
   if (!on) { cueFn = null; c.classList.remove("show", "ok"); c.textContent = ""; return; }
   c.textContent = cueFn ? cueFn() : "";
   const r = $("feedback").getBoundingClientRect(), header = document.querySelector("header"), top = header ? header.getBoundingClientRect().bottom : 0;

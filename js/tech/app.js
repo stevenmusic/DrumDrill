@@ -1205,7 +1205,7 @@ rv = createRouteView({ $, tempo, drumKey: () => (ctx && ctx.drumKey ? ctx.drumKe
   // 沒有打到鼓墊:不算嘗試(daily 不降速、不算不穩;不用懲罰),狀態句說下一步(第 27 輪 4)
   onNoTaps: () => {
     if (!dseg) return;
-    stepText = () => tr("沒有打到鼓墊。按「打一遍」，跟著拍點點下面的鼓墊", "No pad taps. Tap Play it, then tap the pads with the click");
+    stepText = () => tr("沒有打到鼓墊。按「打一遍」，跟著拍點打鼓墊", "No pad taps. Tap Play it, then tap the pads with the click");
     announce(stepText());
     paintStep(dseg, { status: stepText, passedDone: stepDone });
     revealPadResult("noTaps");
@@ -1350,7 +1350,7 @@ function dTry({ self = null, score: sc = null, res = null, at = null } = {}){
   const txt = () => dcard.resultText(r, s);
   announce(head() + txt());
   if (r.passed) cheer(); else if (r.verdict === "steady") cue();   // 過關 = 小鼓兩下 + 大鼓和 Crash;穩了(還沒過關)= 單音
-  if (r.passed && r.cont) { dShow(daily.seg(), txt); dcard.celebrate(); landBack(); return; }
+  if (r.passed && r.cont) { dShow(daily.seg(), txt); dcard.celebrate(); landBack(); if (res && !isPhoneLand()) revealPadResult("pass"); return; }   // 鼓墊過關:剛打完眼睛在鼓墊上,捲回來看得到橫幅與狀態句(手機橫式 landBack 已經捲回題目卡)
   dseg = daily.seg();
   if (s.k === "route") { bpm = r.nextBpm; target.bpm = bpm; syncTempoUI(); }
   renderTitle(); if (active) fitTitle();
@@ -1366,15 +1366,17 @@ function dTry({ self = null, score: sc = null, res = null, at = null } = {}){
 /* 手機鼓墊打完一遍(第 27 輪 2):結果(鼓墊卡最下面)與狀態句都要在頂欄下、底部按鈕列上面;
    放不下一個畫面(手機直式:中間隔著題目卡的重點與鼓譜)→ 先讓結果露出來(剛打完眼睛在鼓墊上;下一步 = 底部的「打一遍」)。
    kind:"result" = 結果優先;"noTaps"(沒打到鼓墊)= 對齊鼓墊、狀態句優先(那句就是回饋),鼓墊盡量露出來;
-   "switch"(剛切到鼓墊模式)= 鼓墊優先(第 27 輪 5:鼓墊 + 底部「打一遍」自己說明;放得下狀態句也留著) */
+   "switch"(剛切到鼓墊模式)= 鼓墊優先(第 27 輪 5:鼓墊 + 底部「打一遍」自己說明;放得下狀態句也留著);
+   "pass"(過關接下一關)= 過關橫幅與狀態句優先(橫幅疊在標籤列上,在狀態句上面),鼓墊盡量露出來 */
 function revealPadResult(kind = "result"){
   requestAnimationFrame(() => {
     const st = $("dailyStep") && $("dailyStep").querySelector(".daily-status"), el = kind === "result" ? $("rResult") : $("rPads");
     if (!st || !el || el.closest("[hidden]") || !el.getClientRects().length) return;
     const hb = document.querySelector("header").getBoundingClientRect().bottom, bar = document.querySelector(".tabbar");
     const bt = bar ? bar.getBoundingClientRect().top : innerHeight, floor = Math.min(bt > innerHeight / 2 ? bt : innerHeight, innerHeight - ctaH());
-    const lo = el.getBoundingClientRect().bottom - floor + 8, hi = st.getBoundingClientRect().top - hb - 6;
-    const d = lo <= hi ? Math.min(Math.max(0, lo), hi) : kind === "noTaps" ? hi : lo;
+    const top = kind === "pass" ? (ROOT.querySelector(".cel-under") || st) : st;   // 橫幅疊在標籤列(.cel-under)上;量標籤列(橫幅本身標籤列看不到時會改疊在譜紙上)
+    const lo = el.getBoundingClientRect().bottom - floor + 8, hi = top.getBoundingClientRect().top - hb - 6;
+    const d = lo <= hi ? Math.min(Math.max(0, lo), hi) : kind === "noTaps" || kind === "pass" ? hi : lo;
     if (Math.abs(d) > 2) window.scrollBy({ top: d, behavior: "smooth" });
   });
 }

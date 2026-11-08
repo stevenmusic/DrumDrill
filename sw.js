@@ -12,7 +12,7 @@
 const APP = "drumdrill";
 // @app-end
 /*@precache-begin*/
-const CACHE = APP + "-app-eb6427da";
+const CACHE = APP + "-app-31075c96";
 const PRECACHE = [
   "./",
   "manifest.webmanifest",
@@ -24,19 +24,19 @@ const PRECACHE = [
   "licenses.html",
   "privacy.html",
   "support.html",
-  "css/app.css?v=b1db3baf2e",
-  "css/drum.css?v=6f0d2b2b14",
+  "css/app.css?v=f3ba9d89d4",
+  "css/drum.css?v=aae96c4b5f",
   "vendor/opensheetmusicdisplay.min.js?v=4bfeb3d01c",
-  "js/ear/app.js?v=243b310a17",
+  "js/ear/app.js?v=97267f79d2",
   "js/ear/gen.js?v=cd5d9e1477",
   "js/ear/strings.js?v=7ba8fa190d",
   "js/main.js?v=ef68946665",
   "js/shared/a11y.js?v=af6364b77b",
   "js/shared/audio.js?v=cdfead7200",
   "js/shared/backup.js?v=620efafdf5",
-  "js/shared/celebrate.js?v=2678b61e87",
+  "js/shared/celebrate.js?v=f83964f212",
   "js/shared/daily.js?v=f345ae5399",
-  "js/shared/dailycard.js?v=f1fb9359ed",
+  "js/shared/dailycard.js?v=a5bab6bbe1",
   "js/shared/digest.js?v=a0bde17c3e",
   "js/shared/drill.js?v=9f698a5f44",
   "js/shared/examdata.js?v=48f1b46bf2",
@@ -72,7 +72,7 @@ const PRECACHE = [
   "js/sight/reading.js?v=bb6b2ae710",
   "js/sight/stage.js?v=bee4aca9a4",
   "js/sight/strings.js?v=fc4ac6d869",
-  "js/tech/app.js?v=321bda2fa2",
+  "js/tech/app.js?v=d9c0ad2f1f",
   "js/tech/notation.js?v=5bee65ac3d",
   "js/tech/route.js?v=5840174163",
   "js/tech/routes.js?v=7cd78a3977",

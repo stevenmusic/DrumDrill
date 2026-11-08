@@ -279,6 +279,15 @@ button.xitem{cursor:pointer;border-color:transparent;background:var(--fill-btn)}
 #e-answers .e-opt.done.right,#e-answers .e-opt.done.wrong{opacity:1}
 #e-ansLegend{margin-top:10px}
 #e-legend{margin-top:10px}
+/* 折疊機(≤ 300 寬)打一遍 / 回打進行中:圖例縮成一行小圖,譜的最後一行與鼓墊一起看得到;停止後還原。
+   標題、名稱、出處、說明藏起來(名稱在 aria-label;8 格以上 26px 寬放不下,會在字中間斷、中英不同高;打之前看過完整的圖例) */
+@media (max-width:300px){
+  #mod-ear.e-run #e-legend .kl-head,#mod-ear.e-run #e-legend .kl-name,#mod-ear.e-run #e-legend .kl-src,#mod-ear.e-run #e-legend .kl-foot{display:none}
+  #mod-ear.e-run #e-legend .kl-cells{grid-auto-flow:column;grid-template-columns:none;grid-auto-columns:minmax(0,1fr);gap:2px}
+  #mod-ear.e-run #e-legend .kl-cell.wide{grid-column:auto}
+  #mod-ear.e-run #e-legend .kl-cell.wide .kl-note{width:auto;align-self:stretch}
+  #mod-ear.e-run #e-legend .kl-note{height:40px}
+}
 /* 譜(js/shared/score.js 的 #e-scroll / #e-osmd 在上面「共用的譜面元件」):輪到你打時金色框;不看譜 = 播放中蓋起來 */
 #e-stage{transition:box-shadow .15s}
 #e-stage.you{box-shadow:inset 0 0 0 3px var(--gold)}
