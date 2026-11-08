@@ -30,7 +30,7 @@
      stats:{ "rsl-3": {n, hits, total} }(檢定頁的題目), cats:{ rhythm: {n, hits, total} }(視奏頁), level:{ rhythm: 2 }、streak(level.js), log:{ 日期: {n, sec} },
      goal、goalSet(每週目標分鐘;自己點過才 true), mockRun(進行中的模擬考標記), layout:{ 形狀: {measuresPerLine, zoom} } }
      讀進來先消毒:bpmOverride 夾在 30–240、不是有限數的刪掉;layout 每一項 zoom 夾在 0.45–1、每行小節數不對的刪掉;stats、cats、log 的數字;舊版的 pick 丟掉 */
-import { tr, T as TS, scoped, getLang, pairText } from "../shared/i18n.js";
+import { tr, T as TS, scoped, getLang, pairText, loadMsg } from "../shared/i18n.js";
 import { playbackFor } from "../shared/examdata.js";
 import * as V from "../shared/examview.js";
 import * as audio from "../shared/audio.js";
@@ -1065,7 +1065,8 @@ function preload(){
   })();
   return job;
 }
-const loadFailMsg = () => (cur && cur.kind !== "snare" ? tr("鼓聲載入失敗，按 ▶ 或「正式打」重試（需要網路，之後會存在裝置上）", "Could not load the kit — tap ▶ or Perform to retry (needs internet once; then cached)")
+// 沒有網路 = 跟技巧同一句(i18n 的 loadMsg:「現在沒有網路,連上網路後再按 ▶」);有網路但失敗才寫「載入失敗」
+const loadFailMsg = () => navigator.onLine === false ? loadMsg(false) : (cur && cur.kind !== "snare" ? tr("鼓聲載入失敗，按 ▶ 或「正式打」重試（需要網路，之後會存在裝置上）", "Could not load the kit — tap ▶ or Perform to retry (needs internet once; then cached)")
   : tr("小鼓聲音載入失敗，再按一次重試（需要網路，之後會存在裝置上）", "Could not load the snare — try again (needs internet once; then cached)"));
 /* 載入中:▶ 外圈畫進度、▶ 與正式打先不能按(載完才能開始);訊息列寫百分比 */
 function setLoading(p){

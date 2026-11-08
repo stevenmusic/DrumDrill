@@ -29,7 +29,7 @@
    - localStorage drumdrill.ear.v1:{ level:{ fill: 2 }、streak(沒選考試時各題型的難度;level.js), bpmBy(Trinity 每一級的練習速度), hideChart,
      stats:{ "rsl-3-fill": {n, picks, ok, hits, total} }, log:{ 日期: {n, sec, hits, total} }, goal、goalSet(每週目標分鐘;自己點過才 true), mockRun(進行中的模擬考標記) }
      讀進來先消毒:速度 30–240、數字;舊版的 grades、examSeen(設定卡選的級數)丟掉 */
-import { tr, T as TS, scoped, getLang, pairText } from "../shared/i18n.js";
+import { tr, T as TS, scoped, getLang, pairText, loadMsg } from "../shared/i18n.js";
 import { playbackFor } from "../shared/examdata.js";
 import * as V from "../shared/examview.js";
 import * as audio from "../shared/audio.js";
@@ -1276,7 +1276,7 @@ async function ready(){
   const still = starting === token && active && cur === c0;
   if (starting === token) starting = 0;
   syncButtons();
-  if (!ok) { loadFailed = true; say(() => tr("鼓聲載入失敗，再按一次重試（需要網路，之後會存在裝置上）", "Could not load the drums — try again (needs internet once; then cached)")); return false; }
+  if (!ok) { loadFailed = true; say(() => navigator.onLine === false ? loadMsg(false) : tr("鼓聲載入失敗，再按一次重試（需要網路，之後會存在裝置上）", "Could not load the drums — try again (needs internet once; then cached)")); return false; }
   return still;
 }
 
