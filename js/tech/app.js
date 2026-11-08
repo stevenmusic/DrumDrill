@@ -1144,7 +1144,9 @@ const dcard = createDailyCard({ $, daily, announce, routes: ROUTES,   // routes:
     solo: ["按 ▶ 自己打一輪，「穩了」就會亮", "Tap ▶ and play alone to unlock \"Steady\""],
     // 播完一輪的下一步(dailycard 的 ready;手機鼓墊模式由「打一遍」自己評分,不問)、自評 / 鼓墊結果後的下一步
     get ask(){ return rv && rv.pad ? null : ["打得穩就按「穩了」，不穩按「還要練」", "Steady? Tap Steady. If not, Not yet"]; },
-    get go(){ return rv && rv.pad ? ["按「打一遍」再打一次", "Tap Play it to go again"] : null; } },
+    get go(){ return rv && rv.pad ? ["按「打一遍」再打一次", "Tap Play it to go again"] : null; },
+    // 過關接下一關的下一步(鼓墊模式的主要按鈕是「打一遍」,不是 ▶)
+    get first(){ return rv && rv.pad ? ["按「打一遍」開始", "Tap Play it to start"] : null; } },
   mark: s => (s && s.level && s.level.time === "12/8" ? "♩.=" : "♩="),   // 12/8 的速度是附點四分
   warmName: warmName, log: () => S.log,
   onStart: () => { dShow(daily.begin()); window.scrollTo({ top: 0 }); },
@@ -1410,8 +1412,11 @@ function landReveal(){
     const pads = ROOT.classList.contains("r-pad"), el = pads ? $("rStage") : $("rScoreCard");
     if (!el || $("rScoreCard").hidden) return;
     if (el.getBoundingClientRect().bottom <= innerHeight - ctaH() - 4) return;
-    const d = el.getBoundingClientRect().top - document.querySelector("header").getBoundingClientRect().bottom - (pads ? 4 : 6);
+    const gap = () => el.getBoundingClientRect().top - document.querySelector("header").getBoundingClientRect().bottom - (pads ? 4 : 6);
+    const d = gap();
     if (d > 2) window.scrollBy({ top: d });
+    // 捲完下一幀外框才合併練習卡(main.js 的 syncJoin 拿掉卡片間距,鼓譜往上移 8px):再對一次,鼓墊頂(= 譜紙頂)不被頂欄切掉
+    if (d > 2) requestAnimationFrame(() => requestAnimationFrame(() => { const e = gap(); if (Math.abs(e) > 2) window.scrollBy({ top: e }); }));
   }));
 }
 /* 下一段:練過的那一段算一次練習 */
