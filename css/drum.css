@@ -543,6 +543,11 @@ button.xitem{cursor:pointer;border-color:transparent;background:var(--fill-btn)}
 #t-rPlayline::before{content:"";position:absolute;top:-2px;left:50%;transform:translateX(-50%);border:7px solid transparent;border-top:10px solid #B8860B}
 #t-rLegend{margin-top:10px}
 #t-rModeBtn{margin-top:0;min-height:44px}
+/* 過關沒接下一關、複習完(底部是「下一段 ›」):沒有東西可打 → 不放(第 27 輪 8);平板直式按鈕列在題目卡裡,留著位置、按鈕不跳(app.js 的 panel) */
+#mod-tech .daily-approw:has(> #t-rModeBtn.r-gone){display:none}
+@media (min-width:601px) and (max-width:1099px) and (min-height:501px){
+  #mod-tech .daily-approw:has(> #t-rModeBtn.r-gone){display:block;visibility:hidden}
+}
 #t-rPerform{min-height:44px;height:auto;min-width:120px;white-space:normal}
 /* 手機鼓墊模式:「打一遍」= 底部按鈕列的主要按鈕(dailycard 的 acts.primary;跟「▶ 跟著打一輪」同一個位置、同一個大小);穩了 / 還要練不出現 */
 #t-dailyStep .daily-cta #t-rPerform.cta-main{flex:1 1 0;min-width:0;min-height:52px;font-size:var(--fs-body);line-height:1.25}
@@ -576,19 +581,19 @@ button.xitem{cursor:pointer;border-color:transparent;background:var(--fill-btn)}
   #t-rLegend .kl-cell{flex-direction:row;align-items:center;gap:6px}
   #t-rLegend .kl-note{width:30px;height:40px;flex:none}
   #t-rLegend .kl-name{text-align:left;font-size:var(--fs-sm)}
-  #mod-tech .daily-step:has(> .daily-check:not(.daily-gone) + .daily-approw #t-rModeBtn:not([hidden])){flex-direction:row;flex-wrap:wrap;align-items:center}
-  #mod-tech .daily-step:has(> .daily-check:not(.daily-gone) + .daily-approw #t-rModeBtn:not([hidden])) > *{flex:1 1 100%}
-  #mod-tech .daily-step:has(> .daily-check:not(.daily-gone) + .daily-approw #t-rModeBtn:not([hidden])) > .daily-check{flex:1 1 0;min-width:0}
-  #mod-tech .daily-step:has(> .daily-check:not(.daily-gone) + .daily-approw #t-rModeBtn:not([hidden])) > .daily-check + .daily-approw{flex:0 0 auto;margin-left:auto}
+  #mod-tech .daily-step:has(> .daily-check:not(.daily-gone) + .daily-approw #t-rModeBtn:not([hidden]):not(.r-gone)){flex-direction:row;flex-wrap:wrap;align-items:center}
+  #mod-tech .daily-step:has(> .daily-check:not(.daily-gone) + .daily-approw #t-rModeBtn:not([hidden]):not(.r-gone)) > *{flex:1 1 100%}
+  #mod-tech .daily-step:has(> .daily-check:not(.daily-gone) + .daily-approw #t-rModeBtn:not([hidden]):not(.r-gone)) > .daily-check{flex:1 1 0;min-width:0}
+  #mod-tech .daily-step:has(> .daily-check:not(.daily-gone) + .daily-approw #t-rModeBtn:not([hidden]):not(.r-gone)) > .daily-check + .daily-approw{flex:0 0 auto;margin-left:auto}
 }
 /* 手機橫式 · 今日練習路線段「用手機打」(2026-11-07 使用者選甲):鼓譜在左、鼓墊在右並排(route.js 的 syncPadUI 加 .r-pad);
    鼓墊直排三顆:鈸在上、鼓中、大鼓 / 腳踩 Hi-hat 在下(跟譜上高低一樣),每顆 44–80 高;鼓墊頂對齊譜紙頂(--r-pad-top,route.js 的 padTop);
    按「打一遍」捲到譜紙頂(app.js 的 revealRoute):譜與鼓墊都在底部按鈕列上面 */
 /* 手機橫式 · 今日練習路線段(第 26 輪):「沒有鼓?用手機打」放在狀態句與重點的右邊(省一整列,鼓譜進到第一個畫面、不被底部按鈕列蓋住) */
 @media (orientation:landscape) and (max-height:500px){
-  #mod-tech .daily-step:has(> .daily-approw #t-rModeBtn:not([hidden])){display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;row-gap:8px;align-items:start}
-  #mod-tech .daily-step:has(> .daily-approw #t-rModeBtn:not([hidden])) > :not(.celebrate){grid-column:1}
-  #mod-tech .daily-step:has(> .daily-approw #t-rModeBtn:not([hidden])) > .daily-approw{grid-column:2;grid-row:1 / span 2;align-self:center}
+  #mod-tech .daily-step:has(> .daily-approw #t-rModeBtn:not([hidden]):not(.r-gone)){display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;row-gap:8px;align-items:start}
+  #mod-tech .daily-step:has(> .daily-approw #t-rModeBtn:not([hidden]):not(.r-gone)) > :not(.celebrate){grid-column:1}
+  #mod-tech .daily-step:has(> .daily-approw #t-rModeBtn:not([hidden]):not(.r-gone)) > .daily-approw{grid-column:2;grid-row:1 / span 2;align-self:center}
 }
 @media (orientation:landscape) and (max-height:500px){
   #mod-tech.r-pad{display:grid;grid-template-columns:minmax(0,1fr) 232px;column-gap:0;align-items:start}

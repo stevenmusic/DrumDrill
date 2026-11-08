@@ -1169,7 +1169,8 @@ const dcard = createDailyCard({ $, daily, announce, routes: ROUTES,   // routes:
     left: () => (routeOn() && rv.pad && rv.done ? [$("rPerform")] : []),
     // 「沒有鼓?用手機打」放在題目卡面板裡一行(跟「回上一關」同一種文字鈕),不放底部:底部只有「還要練」+ 主要,主要按鈕位置不會變(newbie.mjs)
     // 過關沒接下一關、複習完(底部是「下一段 ›」)沒有東西可打 → 不放(第 27 輪 8;暖身不是路線段,本來就沒有)
-    panel: (s, o) => (routeOn() && !rv.pad && !(o && o.passedDone) ? [$("rModeBtn")] : []) } });
+    // 平板直式(按鈕列在題目卡裡、不固定)藏起來但留著位置(.r-gone,drum.css),「下一段 ›」才不會往上跳(第 30 輪回歸;跟 .daily-gone 一樣)
+    panel: (s, o) => { const b = $("rModeBtn"); b.classList.toggle("r-gone", !!(o && o.passedDone)); return routeOn() && !rv.pad ? [b] : []; } } });
 /* 段落狀態句的「按 ▶ 跟著打一輪」包成 .nw(drum.css):不在 ▶ 前後斷行,放不下整組掉到下一行(第 26 輪;ear/app.js 的 paintNw 同一種做法)。
    dailycard(共用檔)用 pairText 寫字、量另一種語言時會把字整個換掉 → 看著狀態句,字變了再包一次;中英包的個數不一樣就都不包(版面一致) */
 const DNW = { zh: /按 ▶ [^，。]+/g, en: /Tap ▶(?: again| and play (?:along|alone))/g };

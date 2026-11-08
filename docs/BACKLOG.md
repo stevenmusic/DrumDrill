@@ -278,3 +278,10 @@ DrumDrill 補做(2026-11-07):今日練習從頭走到尾 iphone-390 / iphone-lan
 - [x] [小] 7.(優先 7)筆電縮窄視窗(直式)開著模擬考 = 螢幕旋轉規則中止,畫面寫「螢幕旋轉了,這次不算」(用 `matchMedia(orientation:portrait)`;我截圖整頁時視窗變高就被中止)→ 電腦視窗沒有真的旋轉,字不對 → 寬 ≥ 1100 的電腦文字改「視窗大小變了,這次不算」(中止規則不動) → 已做(2026-11-08 主代理指示,不只改字):mock.js 旋轉中止只算手機、平板(pointer:coarse,或觸控而且沒有滑鼠 / 觸控板);電腦拉窄視窗不中止
 ### 要使用者決定
 - [x] [外觀] 8.(優先 低)桌機 1920×1080 一個框 1040 左右各 440 的空白,RSL 5 技巧清單 A 組 6 項排兩列、第二列只有 2 顆,看起來參差(截圖 mF.png 右)→ ★ 推薦:維持(DESIGN.md 第 9 節規定);備選:清單格子固定 4 欄對齊 → 2026-11-08 主代理代決:★ 維持(DESIGN.md 第 9 節),不改
+
+## 2026-11-08 第 30 輪回歸測試(第 25–29 輪之後全套;舊版對照 6e5c83b)
+全部通過:verify(含 sync)、layout 19 尺寸、bilingual 5 尺寸、clip 8 尺寸、human 150 3、playback、playhead、tasks、pad、a11y、kitaudio、dailyfit、newbie(iphone-390 / fold-280 / iphone-land / en-390 / rm-390 / ipad-768)。
+- [x] [小] **回歸**(第 27 輪 8,36ec8cc):newbie `ONLY=ipad-768` 今日練習「再練:第 4 段」複習按「穩了」→ 複習完:主要按鈕往上跳 52px(379→327)。原因:複習完不放「沒有鼓?用手機打」= 整列拿掉,平板直式按鈕列在題目卡裡、不固定,就跟著往上跳
+  → app.js 的 `acts.panel` 照樣回傳按鈕、複習完 / 過關沒接下一關加 `.r-gone`;drum.css:那一列 `display:none`,平板直式(601–1099 寬、高 > 500)`visibility:hidden` 留位置(跟 `.daily-gone` 一樣);`:not([hidden])` 的排法規則加 `:not(.r-gone)`
+- [ ] [小] notation.mjs:圖例 hhFoot / hhClosed / hhOpen 的出處「Trinity DK p.107」3 行(規則最多 2 行;舊版一樣,不是這幾輪造成的)
+- 檢定頁「準備 90 秒」倒數中 newbie 警告「看不到下一步」:設計如此(倒數中正式打不能按),不改
