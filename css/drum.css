@@ -8,7 +8,7 @@
 #mod-tech .picker .opt.rud{height:44px;min-width:0;padding:0 10px;display:flex;align-items:center;gap:8px;text-align:left;
   border-radius:var(--radius-sm);white-space:normal;font-size:var(--fs-sm)}
 .opt.rud b{flex:none;width:1.6em;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted-bright)}
-.opt.rud[aria-pressed="true"] b{color:var(--on-fill)}
+.opt.rud[aria-pressed="true"] b{color:var(--sel-on)}
 /* 上下各留 2px:中文字框比 1.2 行高高一點,不然 overflow:hidden 會切掉字頂(clip.mjs) */
 .opt.rud span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.2;padding:2px 0;overflow-wrap:anywhere}
 @media (min-width:900px) and (min-height:501px){ #mod-tech .picker .opt.rud{font-size:min(calc(14rem / 17), 28px)} }   /* 寬畫面字放大(--fs-k)後「Single Paradiddle-diddle」會變三行被切:格子固定兩行,照原本字級 */
@@ -113,7 +113,7 @@ body.land-play #e-stage{flex:1;display:flex;flex-direction:column;justify-conten
 @media (max-width:600px){ #mod-sight .along-row .btn{width:100%} }
 #mod-sight .along-result{border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 14px;line-height:1.5;background:var(--surface-inset)}
 #mod-sight .along-result .r-head{font-size:var(--fs-xs);letter-spacing:.08em;color:var(--muted-bright)}
-#mod-sight .along-result .big{font-family:inherit;font-size:var(--fs-title);font-weight:700;color:var(--ivory);line-height:1.25}
+#mod-sight .along-result .big{font-family:inherit;font-size:var(--fs-head);font-weight:700;color:var(--ivory);line-height:1.25}
 #mod-sight .along-result .big small{font-family:"Noto Sans TC",sans-serif;font-size:var(--fs-sm);font-weight:400;color:var(--muted-bright);margin-left:4px}
 #mod-sight .along-result p{margin-top:4px;color:var(--muted-bright);font-size:var(--fs-sm);overflow-wrap:anywhere}
 #mod-sight .along-result .disclaimer{color:var(--muted);font-size:var(--fs-xs)}
@@ -145,7 +145,7 @@ body.land-play #e-stage{flex:1;display:flex;flex-direction:column;justify-conten
 .practice-only{font-size:var(--fs-xs);color:var(--muted-bright);line-height:1.6;margin-top:10px}
 #t-listCard .progress{margin-top:0}
 /* RSL 每組一列:組別字母、名稱、♩、頁碼;下面是這一組的項目(PAS 原譜可以點「練習」) */
-.xgroup{border-top:1px solid var(--line);padding-top:10px;margin-top:10px}
+.xgroup{border-top:0;padding-top:0;margin-top:20px}   /* 組別之間留白、不畫線(第 30 輪) */
 .xhead{display:flex;align-items:center;gap:8px}
 .xid{flex:none;width:24px;height:24px;border-radius:50%;background:var(--fill-tag);color:var(--ivory);display:inline-flex;align-items:center;justify-content:center;font-size:var(--fs-sm)}
 .xname{flex:1 1 auto;min-width:0;font-weight:700;color:var(--ivory);font-size:var(--fs-md);line-height:1.4;overflow-wrap:anywhere}
@@ -154,7 +154,7 @@ body.land-play #e-stage{flex:1;display:flex;flex-direction:column;justify-conten
 .xwrap{min-width:0}
 .xitem{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;padding:6px 10px;border-radius:var(--radius-sm);border:1px solid transparent;
   background:var(--fill-inset);color:var(--ivory);font-family:inherit;font-size:var(--fs-sm);text-align:left}
-button.xitem{cursor:pointer;border-color:transparent;background:var(--fill-btn)}   /* 能按的:金色淡底、無框(設計規格 B) */
+button.xitem{cursor:pointer;border-color:transparent;background:var(--fill-btn);padding:6px 10px 6px 14px}   /* 能按的:金色淡底、無框(設計規格 B) */
 .xitem svg{flex:none;color:var(--gold)}
 .xitem.book svg{color:var(--muted-bright)}
 .xi-name{flex:1 1 auto;min-width:0;line-height:1.35;overflow-wrap:anywhere}
@@ -207,12 +207,12 @@ button.xitem{cursor:pointer;border-color:transparent;background:var(--fill-btn)}
 /* 鼓組譜上補畫的記號(鬼音括號、開 HH 的 o):跟音符同色(紙一律白底) */
 .kit-mark{fill:#16130D}
 
-/* 觸控鼓墊(js/shared/pad.js):1 個 = 小鼓(置中,最寬 320)、3 個 = 鈸 / 鼓 / 大鼓與腳踩 HH 平均分;
+/* 觸控鼓墊(js/shared/pad.js):1 個 = 小鼓(用滿卡片寬,跟其他內容同一條左線;平板直式半寬置中)、3 個 = 鈸 / 鼓 / 大鼓與腳踩 HH 平均分;
    每個至少 80×96(280 寬的折疊機:卡片裡只剩 236,鼓墊列伸進卡片左右內距 11px(不壓到框線),3 個 ≥ 80 + 間距 6 放得下);
    字跟著鼓墊大小,固定高度(換行不改版面,中英一樣高);touch-action:none(多指同時點、不捲動、不縮放) */
-.pads{display:grid;grid-template-columns:repeat(3, minmax(80px, 1fr));gap:10px;max-width:720px;margin:0 auto;touch-action:none;
+.pads{display:grid;grid-template-columns:repeat(3, minmax(80px, 1fr));gap:10px;max-width:720px;margin:0;touch-action:none;
   -webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-.pads[data-n="1"]{grid-template-columns:minmax(80px, 320px);justify-content:center}
+.pads[data-n="1"]{grid-template-columns:minmax(80px, 1fr)}
 .pads .tap-pad{width:auto;min-width:80px;height:auto;min-height:96px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
   font-size:var(--fs-xl);line-height:1.2;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
 /* 設計 B(docs/DESIGN.md):不用框線;能按的 = 金色淡底(--fill-btn)+ 卡片陰影浮起來;打到(.hit / :active)= 金底、陰影收起、微縮一點 */
@@ -232,7 +232,7 @@ button.xitem{cursor:pointer;border-color:transparent;background:var(--fill-btn)}
    1 個鼓墊 = 卡片的一半寬(最多 420)、高 120;3 個鼓墊平分整行。手機照舊 */
 @media (min-width:601px) and (max-width:1099px) and (min-height:501px){
   :is(#mod-sight,#mod-ear) .pads{max-width:none}
-  :is(#mod-sight,#mod-ear) .pads[data-n="1"]{grid-template-columns:minmax(80px, min(50%, 420px))}
+  :is(#mod-sight,#mod-ear) .pads[data-n="1"]{grid-template-columns:minmax(80px, min(50%, 420px));justify-content:center}
   :is(#mod-sight,#mod-ear) .pads[data-n="1"] .tap-pad{min-height:120px}
 }
 
@@ -275,6 +275,7 @@ button.xitem{cursor:pointer;border-color:transparent;background:var(--fill-btn)}
 #e-answers .e-opt.right .e-letter{background:var(--teal-fill);border-color:var(--teal-fill);color:var(--on-fill)}
 #e-answers .e-opt.wrong{border:2px solid var(--red-fill)}
 #e-answers .e-opt.wrong .e-letter{background:var(--red-fill);border-color:var(--red-fill);color:#fff}
+#e-answers .e-opt:not(.right):not(.wrong){border:2px solid transparent}   /* 選完以前沒有框(跟選完的對 / 錯框同粗,位置不跳;第 30 輪) */
 #e-answers .e-opt.done{opacity:.6}
 #e-answers .e-opt.done.right,#e-answers .e-opt.done.wrong{opacity:1}
 #e-ansLegend{margin-top:10px}
@@ -311,7 +312,7 @@ button.xitem{cursor:pointer;border-color:transparent;background:var(--fill-btn)}
 #mod-ear .along-note{flex:1 1 180px;min-width:0;color:var(--muted);font-size:var(--fs-xs);line-height:1.5;overflow-wrap:anywhere}
 #mod-ear .along-result{border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 14px;line-height:1.5;background:var(--surface-inset)}
 #mod-ear .along-result .r-head{font-size:var(--fs-xs);letter-spacing:.08em;color:var(--muted-bright)}
-#mod-ear .along-result .big{font-family:inherit;font-size:var(--fs-title);font-weight:700;color:var(--ivory);line-height:1.25}
+#mod-ear .along-result .big{font-family:inherit;font-size:var(--fs-head);font-weight:700;color:var(--ivory);line-height:1.25}
 #mod-ear .along-result .big small{font-family:"Noto Sans TC",sans-serif;font-size:var(--fs-sm);font-weight:400;color:var(--muted-bright);margin-left:4px}
 #mod-ear .along-result p,#mod-ear .along-result li{margin-top:4px;color:var(--muted-bright);font-size:var(--fs-sm);overflow-wrap:anywhere}
 #mod-ear .along-result .e-phrases{margin:4px 0 0;padding-left:0;list-style:none}
@@ -335,7 +336,7 @@ button.xitem{cursor:pointer;border-color:transparent;background:var(--fill-btn)}
   #e-playBtn{grid-column:3;grid-row:1;width:44px;height:44px}
   #e-feedback{grid-column:1 / -1;font-size:var(--fs-sm);min-height:0}
   #e-stepQ,#e-answers,#e-ansLegend,#mod-ear .q-foot,#e-practiceOnly{grid-column:1 / -1}
-  #mod-ear .q-tag{font-size:var(--fs-sub);padding:0 8px;line-height:26px}
+  #mod-ear .q-tag{font-size:var(--fs-sub);padding:0;line-height:26px}
 }
 
 /* ══ 模擬考(S14;js/shared/mock.js)與練習紀錄 ══
@@ -542,6 +543,13 @@ button.xitem{cursor:pointer;border-color:transparent;background:var(--fill-btn)}
 }
 #t-rPlayline::before{content:"";position:absolute;top:-2px;left:50%;transform:translateX(-50%);border:7px solid transparent;border-top:10px solid #B8860B}
 #t-rLegend{margin-top:10px}
+/* 圖例一行:「圖例 [小圖 名稱]…」(每種寬度都一樣;寬畫面併進鼓譜卡標題列,第 30 輪) */
+#t-rLegend{display:flex;align-items:center;gap:10px;min-width:0}
+#t-rLegend .kl-head{margin:0}
+#t-rLegend .kl-cells{display:flex;flex-wrap:wrap;gap:4px 14px}
+#t-rLegend .kl-cell{flex-direction:row;align-items:center;gap:6px}
+#t-rLegend .kl-note{width:30px;height:40px;flex:none}
+#t-rLegend .kl-name{text-align:left;font-size:var(--fs-sub)}
 #t-rModeBtn{margin-top:0;min-height:44px}
 /* 過關沒接下一關、複習完(底部是「下一段 ›」):沒有東西可打 → 不放(第 27 輪 8);平板直式按鈕列在題目卡裡,留著位置、按鈕不跳(app.js 的 panel) */
 #mod-tech .daily-approw:has(> #t-rModeBtn.r-gone){display:none}
@@ -575,12 +583,7 @@ button.xitem{cursor:pointer;border-color:transparent;background:var(--fill-btn)}
   #t-rScoreCard > .score-head > .card-title{grid-column:1;grid-row:1}
   #t-rScoreCard #t-rlBtn{grid-column:3;grid-row:1}
   #t-rScoreCard > #t-rStage{grid-column:1 / -1;grid-row:2;width:100%}
-  #t-rScoreCard > #t-rLegend{grid-column:2;grid-row:1;margin:0;display:flex;align-items:center;gap:10px;min-width:0}
-  #t-rLegend .kl-head{margin:0}
-  #t-rLegend .kl-cells{display:flex;flex-wrap:wrap;gap:4px 14px}
-  #t-rLegend .kl-cell{flex-direction:row;align-items:center;gap:6px}
-  #t-rLegend .kl-note{width:30px;height:40px;flex:none}
-  #t-rLegend .kl-name{text-align:left;font-size:var(--fs-sm)}
+  #t-rScoreCard > #t-rLegend{grid-column:2;grid-row:1;margin:0}
   #mod-tech .daily-step:has(> .daily-check:not(.daily-gone) + .daily-approw #t-rModeBtn:not([hidden]):not(.r-gone)){flex-direction:row;flex-wrap:wrap;align-items:center}
   #mod-tech .daily-step:has(> .daily-check:not(.daily-gone) + .daily-approw #t-rModeBtn:not([hidden]):not(.r-gone)) > *{flex:1 1 100%}
   #mod-tech .daily-step:has(> .daily-check:not(.daily-gone) + .daily-approw #t-rModeBtn:not([hidden]):not(.r-gone)) > .daily-check{flex:1 1 0;min-width:0}
@@ -636,7 +639,7 @@ details.exam-info:not([open]) > :not(summary){display:none}
   body:not(.view-exam) #mod-tech:not(.daily-on) .q-intro{grid-column:1 / 4}
 }
 /* 手機直式:視奏題目卡標籤(小鼓譜 · 4/4 · 4 小節 · ♩=80)跟標題同一行;內距與間距小一點,中英文(4 小節 / 12 bars)都放得下(跟 PianoDrill sight.css 一樣) */
-@media (max-width:430px){ #mod-sight .q-ht .q-tags{gap:4px} #mod-sight .q-ht .q-tag{padding-left:6px;padding-right:6px} }
+@media (max-width:430px){ #mod-sight .q-ht .q-tags{gap:10px} }
 /* 折疊機:視奏題目卡最後一行(準備 90 秒 · 倒數 · 下一題 · 正式打)間距小一點,英文 Perform 比正式打寬,兩種語言才都一行 */
 @media (max-width:400px){ #s-quiz .q-foot{column-gap:6px} #mod-sight #s-quiz .s-perform-top{padding:0 14px} }   /* 檢定頁準備中:準備 + 倒數 + 下一題 + 正式打 一行放得下(字 14 以後;中英一樣) */
 /* 折疊機:聽力題目卡照技巧的排法 = 第一行標題 + ▶,標籤在下一行用滿整行寬度(伸到 ▶ 下面);標籤 3–4 個(「5/8 · 3/8」「23 bars · 4 phrases」)在 ▶ 左邊的窄欄放不下,中英會不同高 */
@@ -651,6 +654,7 @@ details.exam-info:not([open]) > :not(summary){display:none}
 /* 檢定頁的視奏標籤多了出處(4/4 · 推估、♩=80 · 練習設定),英文 Assumed / Practice setting 長:一律放在標題下一行,中英一樣高(自由練習的標籤照舊跟標題同一行) */
 body.view-exam #mod-sight .q-ht .q-tags{flex:1 1 100%}
 @media (max-width:360px){ #mod-sight .q-ht .q-tags{flex:1 1 100%} }   /* SE 320 / 折疊機:視奏標籤放不下標題旁邊(中文「小鼓譜」、英文「12 bars」輪流掉行),一律在標題下一行 */
+@media (max-width:600px){ #mod-ear .q-ht .q-tags{flex:1 1 100%} }   /* 手機:聽力標籤一律在標題下一行(標籤沒有內距以後「過門」「Echo」有時一種語言放得下、另一種放不下,中英會不一樣高;第 30 輪) */
 #mod-sight .q-ht .q-tags:has(> :nth-child(5)),#mod-sight .q-ht .q-tags.metres{flex:1 1 100%}   /* 標籤 5 個以上、或一題有好幾個拍號(Trinity 高級;拍號寫在同一個標籤「12/8 5/8」):一律在標題下一行(只看內容,中英一定一樣) */
 /* 平板、筆電、桌機(≥ 601 寬、高 > 500;題目卡最後一行不固定在底部、留在卡裡):Fill / Groove 選譜(問句 + 選項 + 圖例)= 作答,排在按鈕那一行下面(版型 A:最後一行 → 作答),
    打完出現選項、選了以後問句與圖例收起來,主要按鈕「打一遍」位置都不跳(newbie.mjs ipad-768 / ipad-1024 / laptop / desktop);手機底部固定照舊 */
