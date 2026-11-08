@@ -1117,11 +1117,12 @@ function warmItem(d, today){
   const w = list[Math.abs(hashDay(today)) % list.length];
   return { pas: w.pas, sticking: w.sticking, value: w.value, name: w.name, check: w.check, bpm: w.value ? 60 : S.bpm[w.pas] || 56 };
 }
-/* 暖身項目的名稱:WARM 有寫的照寫;練習型 = PAS 名稱 + 時值;PAS 原譜 = 編號 + 名稱(換語言重算) */
+/* 暖身項目的名稱:WARM 有寫的照寫;練習型 = PAS 名稱 + 時值;PAS 原譜 = 名稱(換語言重算)。
+   今日練習不寫 PAS 編號(「20.」初學者看不懂;第 26 輪);自由練習的打法清單、檢定頁照舊寫編號 */
 function warmName(it){
   if (it.name) return it.name;
   const r = byNo(it.pas);
-  return it.value ? patternName({ pas: it.pas, sticking: it.sticking, value: it.value }) : [`${r.no}. ${r.zh}`, `${r.no}. ${r.en}`];
+  return it.value ? patternName({ pas: it.pas, sticking: it.sticking, value: it.value }).replace(/^\d+\. /, "") : [r.zh, r.en];
 }
 const hashDay = k => Number(k.replace(/-/g, "")) || 0;
 /* 舊版用考試項目排的暖身(item.exam):今天的暖身還沒開始就照路線進度重排(今日練習不看考試級數) */
@@ -1166,6 +1167,30 @@ const dcard = createDailyCard({ $, daily, announce, routes: ROUTES,   // routes:
     left: () => (routeOn() && rv.pad && rv.done ? [$("rPerform")] : []),
     // 「沒有鼓?用手機打」放在題目卡面板裡一行(跟「回上一關」同一種文字鈕),不放底部:底部只有「還要練」+ 主要,主要按鈕位置不會變(newbie.mjs)
     panel: () => (routeOn() && !rv.pad ? [$("rModeBtn")] : []) } });
+/* 段落狀態句的「按 ▶ 跟著打一輪」包成 .nw(drum.css):不在 ▶ 前後斷行,放不下整組掉到下一行(第 26 輪;ear/app.js 的 paintNw 同一種做法)。
+   dailycard(共用檔)用 pairText 寫字、量另一種語言時會把字整個換掉 → 看著狀態句,字變了再包一次;中英包的個數不一樣就都不包(版面一致) */
+const DNW = { zh: /按 ▶ [^，。]+/g, en: /Tap ▶(?: again| and play (?:along|alone))/g };
+function dailyNw(){
+  const el = $("dailyStep") && $("dailyStep").querySelector(".daily-status");
+  if (!el || el.querySelector(".nw")) return;
+  const en = getLang() === "en", t = el.textContent, ms = [...t.matchAll(DNW[en ? "en" : "zh"])], other = el._pair && el._pair[en ? 0 : 1];
+  if (!ms.length || other == null || [...other.matchAll(DNW[en ? "zh" : "en"])].length !== ms.length) return;
+  const out = []; let i = 0;
+  for (const m of ms) { out.push(t.slice(i, m.index)); const sp = document.createElement("span"); sp.className = "nw"; sp.textContent = m[0]; out.push(sp); i = m.index + m[0].length; }
+  out.push(t.slice(i)); el.replaceChildren(...out);
+}
+/* 路線圖展開時,第一條路線「現在」那一組在畫面下面(練了幾週,前面都是 ✓)→ 捲到看得到(第 26 輪;dailycard 先處理點擊、這裡在冒泡時接著捲) */
+if ($("dailyCard")) $("dailyCard").addEventListener("click", e => {
+  const b = e.target.closest(".daily-road-btn"); if (!b || b.getAttribute("aria-expanded") !== "true") return;
+  const g = $("dailyCard").querySelector(".daily-road .road-g.st-cur"); if (!g) return;
+  const t = document.getElementById("tabbar"), tt = t ? t.getBoundingClientRect().top : innerHeight;
+  const floor = tt > innerHeight / 2 ? tt : innerHeight;   // 分頁列在底部(直式)= 算到分頁列上面;手機橫式在左邊 = 算到畫面底
+  // 卡上的主要按鈕(開始 / 繼續 / 再練一下)不捲出頂欄下面:能捲多少捲多少(折疊機、手機橫式只捲一部分)
+  const hd = document.querySelector("header"), top = hd ? Math.max(0, hd.getBoundingClientRect().bottom) : 0, pb = $("dailyCard").querySelector(".btn.primary");
+  const want = g.getBoundingClientRect().bottom + 8 - floor, room = pb ? pb.getBoundingClientRect().top - 8 - top : want;
+  const dy = Math.min(want, room); if (dy > 0) window.scrollBy(0, dy);
+});
+if ($("dailyStep")) new MutationObserver(dailyNw).observe($("dailyStep"), { childList: true, subtree: true, characterData: true });
 /* 鼓墊模式的下一步(還沒打過 / 打完):照路線的狀態一句 */
 const PAD_HINT = { hint: ["▶ 聽示範，再按「打一遍」用鼓墊打", "▶ for the demo, then Play it on the pads"],
   solo: ["只有拍點：按「打一遍」用鼓墊打", "Click only: tap Play it, use the pads"] };

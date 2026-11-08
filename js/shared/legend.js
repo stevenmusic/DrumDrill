@@ -261,7 +261,7 @@ export async function drawLegend(el, { pieces, lines = 5, key = drumKeyCached(),
     cell.append(note, name);
     if (!plain) cell.append(src);
     cells.appendChild(cell);
-    pairText(name, () => tr(p.name[0], p.name[1]));
+    pairText(name, () => tr(p.name[0], p.name[1]).replace(/-/g, "\u2011"));   // Hi-hat 不在連字號斷行(不斷行連字號;只在空白處換行)
     // 「待核對」(= App 的寫法)不在每一格寫,圖例下面寫一次;格子裡只留官方出處
     const official = ls.lines.filter(([zh]) => !APP_NOTE[zh]);
     if (official.length < ls.lines.length) anyApp = true;
