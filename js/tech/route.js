@@ -25,7 +25,7 @@ import { toSpec, eventsOf, handsOf, displaySpec } from "./routespec.js";
 const NS = "http://www.w3.org/2000/svg";
 const DEMO_SEC = 150;   // 示範一直循環:最多這麼久自己停(練習設定)
 
-export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, onResult, onPlayState, onLoad, rlFor, setRl, onHeard = () => {} }){
+export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, onResult, onPlayState, onLoad, rlFor, setRl, onHeard = () => {}, onNoTaps = () => {} }){
   const $r = id => $("r" + id[0].toUpperCase() + id.slice(1));
   let cur = null;      // { seg, level, r(toSpec 的結果), xml, key }
   let mode = null;     // "demo" | "perform" | null
@@ -323,7 +323,7 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
     if (!R) return;
     const sec = Math.max(0, (performance.now() - R.startedAt) / 1000 - R.ciU * R.unit * 60 / R.qbpm);
     if (sec >= 0.5) addSec(sec);
-    if (m === "perform" && judge) { onHeard(); judgeRun(R); }   // 鼓墊打完一遍也算播過
+    if (m === "perform" && judge) judgeRun(R);   // 鼓墊打完一遍也算播過(judgeRun 的 onHeard;沒打到鼓墊不評分)
     else if (m === "demo") announce(judge ? tr("播完了", "Finished") : tr("停止了", "Stopped"));
   }
   function stop(){
@@ -341,23 +341,24 @@ export function createRouteView({ $, tempo, drumKey, getBpm, isActive, addSec, o
     const reps = Math.round(R.lenU / R.patU);
     const ev = repeatEvents(hitsOnly(eventsOf(r, R.qbpm, cur.level)), r.lenBeats, reps);
     const taps = R.taps.filter(x => x.time >= -sec / 2);
+    // 沒有打到鼓墊:不評分、不算一輪(不降速、不寫準度 0;不用懲罰),結果區不寫(狀態句一句說,app.js 的 onNoTaps)
+    if (!taps.length) { $("rResult").hidden = true; $("rResult").innerHTML = ""; onNoTaps(); return; }
+    onHeard();
     const res = scoreLanes(expectedByLane(ev, R.qbpm, LANES[3]), taps, { tempoBpm: R.qbpm });
-    const sc = taps.length ? res.score : 0;
-    paintResult(res, taps.length);
-    onResult({ score: res.offsetTooLarge ? null : sc, res, taps: taps.length, bpm: Math.round(R.qbpm / r.pulse) });   // 速度 = 開始打的那一個(打的時候改了不算)
+    paintResult(res);
+    onResult({ score: res.offsetTooLarge ? null : res.score, res, taps: taps.length, bpm: Math.round(R.qbpm / r.pulse) });   // 速度 = 開始打的那一個(打的時候改了不算)
   }
-  function paintResult(res, n){
+  /* 結果(鼓墊卡最下面):準度 +「打中 · 漏打 · 多打」一行(畫面設計版型 A;不加「練習回饋 · …」小標、今日練習不寫「不是考試分數」;
+     準度只在這裡寫一次,狀態句只寫下一步) */
+  function paintResult(res){
     const el = $("rResult");
     el.hidden = false;
     const notes = [offsetNote(res), laneNote(res, LANES[3])].filter(Boolean);
-    const big = res.offsetTooLarge || !n ? "" : `<p class="big"><small class="lead"></small>${res.score}<small>/ 100</small></p>`;
-    el.innerHTML = `<p class="r-head"></p>${big}<p class="r-line"></p>` + notes.map(() => `<p class="r-note"></p>`).join("") + `<p class="disclaimer"></p>`;
-    pairText(el.querySelector(".r-head"), () => tr("練習回饋 · 節奏", "Practice feedback · rhythm"));
+    const big = res.offsetTooLarge ? "" : `<p class="big"><small class="lead"></small>${res.score}<small>/ 100</small></p>`;
+    el.innerHTML = `${big}<p class="r-line"></p>` + notes.map(() => `<p class="r-note"></p>`).join("");
     const lead = el.querySelector(".big .lead"); if (lead) pairText(lead, () => tr("準度", "Accuracy"));
-    pairText(el.querySelector(".r-line"), () => (n ? tr(`打中 ${res.hits}/${res.total} · 漏打 ${res.missed} · 多打 ${res.extra}`, `Hit ${res.hits}/${res.total} · missed ${res.missed} · extra ${res.extra}`)
-      : tr("沒有打到鼓墊", "No pad taps")));
+    pairText(el.querySelector(".r-line"), () => tr(`打中 ${res.hits}/${res.total} · 漏打 ${res.missed} · 多打 ${res.extra}`, `Hit ${res.hits}/${res.total} · missed ${res.missed} · extra ${res.extra}`));
     el.querySelectorAll(".r-note").forEach((p, i) => pairText(p, () => tr(notes[i][0], notes[i][1])));
-    pairText(el.querySelector(".disclaimer"), () => tr("只評時間，不是考試分數", "Timing only, not an exam mark"));
   }
 
   /* ── 鼓墊 ── */

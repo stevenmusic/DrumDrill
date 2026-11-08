@@ -1166,7 +1166,8 @@ const dcard = createDailyCard({ $, daily, announce, routes: ROUTES,   // routes:
     },
     left: () => (routeOn() && rv.pad && rv.done ? [$("rPerform")] : []),
     // 「沒有鼓?用手機打」放在題目卡面板裡一行(跟「回上一關」同一種文字鈕),不放底部:底部只有「還要練」+ 主要,主要按鈕位置不會變(newbie.mjs)
-    panel: () => (routeOn() && !rv.pad ? [$("rModeBtn")] : []) } });
+    // 過關沒接下一關、複習完(底部是「下一段 ›」)沒有東西可打 → 不放(第 27 輪 8;暖身不是路線段,本來就沒有)
+    panel: (s, o) => (routeOn() && !rv.pad && !(o && o.passedDone) ? [$("rModeBtn")] : []) } });
 /* 段落狀態句的「按 ▶ 跟著打一輪」包成 .nw(drum.css):不在 ▶ 前後斷行,放不下整組掉到下一行(第 26 輪;ear/app.js 的 paintNw 同一種做法)。
    dailycard(共用檔)用 pairText 寫字、量另一種語言時會把字整個換掉 → 看著狀態句,字變了再包一次;中英包的個數不一樣就都不包(版面一致) */
 const DNW = { zh: /按 ▶ [^，。]+/g, en: /Tap ▶(?: again| and play (?:along|alone))/g };
@@ -1201,6 +1202,14 @@ rv = createRouteView({ $, tempo, drumKey: () => (ctx && ctx.drumKey ? ctx.drumKe
   isActive: () => active,
   addSec: sec => addPracticeSec(sec),
   onResult: ({ score: sc, res, bpm: b }) => dTry({ score: sc, res, at: b }),
+  // 沒有打到鼓墊:不算嘗試(daily 不降速、不算不穩;不用懲罰),狀態句說下一步(第 27 輪 4)
+  onNoTaps: () => {
+    if (!dseg) return;
+    stepText = () => tr("沒有打到鼓墊。按「打一遍」，跟著拍點點下面的鼓墊", "No pad taps. Tap Play it, then tap the pads with the click");
+    announce(stepText());
+    paintStep(dseg, { status: stepText, passedDone: stepDone });
+    revealPadResult("noTaps");
+  },
   onPlayState: st => {
     $("playBtn").classList.toggle("busy", st === "busy");
     if (st === "busy" && kitLoading) loadSay(true);
@@ -1253,7 +1262,8 @@ function setPadMode(on){
   rv.pad = !!on;
   $("quizCard").classList.toggle("pad-mode", !!on && routeOn());
   if (dseg) paintStep(dseg, { status: stepStatus(), passedDone: stepDone });
-  if (on) requestAnimationFrame(() => revealRoute(true));
+  // 鼓墊捲進畫面(第 27 輪 5:手機直式切過去鼓墊在第一個畫面下面,7 歲不知道在哪裡;譜只露一部分,放得下狀態句也留著)。手機橫式照舊捲到譜紙頂
+  if (on) requestAnimationFrame(() => (isPhoneLand() ? revealRoute(true) : revealPadResult("switch")));
 }
 let stepDone = false, stepText = null;
 /* 段落面板(dailycard.js 畫的;路線段的兩顆按鈕經 createDailyCard 的 acts 放進按鈕列) */
@@ -1335,9 +1345,10 @@ function dTry({ self = null, score: sc = null, res = null, at = null } = {}){
   if (self) stopPlayback();
   const s = dseg, r = daily.attempt(res ? { bpm: at || bpm, score: sc } : { bpm, self });
   if (!r) return;
-  const head = res ? (res.offsetTooLarge ? () => "" : () => tr(`準度 ${sc} · `, `Accuracy ${sc} · `)) : () => "";
-  const txt = () => head() + dcard.resultText(r, s);
-  announce(txt());
+  // 鼓墊結果:準度寫在鼓墊卡的結果區(route.js 的 paintResult),狀態句只寫下一步(同一件事只說一次;第 27 輪 3);播報照舊帶準度
+  const head = res && !res.offsetTooLarge ? () => tr(`準度 ${sc} · `, `Accuracy ${sc} · `) : () => "";
+  const txt = () => dcard.resultText(r, s);
+  announce(head() + txt());
   if (r.passed) cheer(); else if (r.verdict === "steady") cue();   // 過關 = 小鼓兩下 + 大鼓和 Crash;穩了(還沒過關)= 單音
   if (r.passed && r.cont) { dShow(daily.seg(), txt); dcard.celebrate(); landBack(); return; }
   dseg = daily.seg();
@@ -1347,9 +1358,25 @@ function dTry({ self = null, score: sc = null, res = null, at = null } = {}){
   if (self) heardAt = null;   // 每一次自評 = 打過一輪:要再按 ▶ 打一輪才能再自評(狀態寫「按 ▶ 再打一次」)
   syncReady();
   paintStep(dseg, { status: txt, passedDone: stepDone });
-  landBack();
+  if (!res) landBack();   // 鼓墊結果:捲到結果(revealPadResult;手機橫式也是,準度只寫在結果區)
   dcard.render();
   if (r.passed) dcard.celebrate();   // 過關慶祝:狀態句上面一條短橫幅(複習升盒不放)
+  if (res) revealPadResult();
+}
+/* 手機鼓墊打完一遍(第 27 輪 2):結果(鼓墊卡最下面)與狀態句都要在頂欄下、底部按鈕列上面;
+   放不下一個畫面(手機直式:中間隔著題目卡的重點與鼓譜)→ 先讓結果露出來(剛打完眼睛在鼓墊上;下一步 = 底部的「打一遍」)。
+   kind:"result" = 結果優先;"noTaps"(沒打到鼓墊)= 對齊鼓墊、狀態句優先(那句就是回饋),鼓墊盡量露出來;
+   "switch"(剛切到鼓墊模式)= 鼓墊優先(第 27 輪 5:鼓墊 + 底部「打一遍」自己說明;放得下狀態句也留著) */
+function revealPadResult(kind = "result"){
+  requestAnimationFrame(() => {
+    const st = $("dailyStep") && $("dailyStep").querySelector(".daily-status"), el = kind === "result" ? $("rResult") : $("rPads");
+    if (!st || !el || el.closest("[hidden]") || !el.getClientRects().length) return;
+    const hb = document.querySelector("header").getBoundingClientRect().bottom, bar = document.querySelector(".tabbar");
+    const bt = bar ? bar.getBoundingClientRect().top : innerHeight, floor = Math.min(bt > innerHeight / 2 ? bt : innerHeight, innerHeight - ctaH());
+    const lo = el.getBoundingClientRect().bottom - floor + 8, hi = st.getBoundingClientRect().top - hb - 6;
+    const d = lo <= hi ? Math.min(Math.max(0, lo), hi) : kind === "noTaps" ? hi : lo;
+    if (Math.abs(d) > 2) window.scrollBy({ top: d, behavior: "smooth" });
+  });
 }
 /* 手機橫放:播放時鼓譜捲到頂欄下(滿版);自評後播放停了,捲回題目卡標題(結果那一句、▶ 看得到;PianoDrill 停止時捲回 landScroll;newbie.mjs) */
 function landBack(){
