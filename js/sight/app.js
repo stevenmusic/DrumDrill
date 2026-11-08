@@ -1610,7 +1610,7 @@ function renderMockCard(){
   }
   if (ms === "run") {
     // 題目卡的狀態已經寫「看譜 90 秒,時間到自動開始」:這裡只列步驟;系統與級數在考試卡、practiceOnly 在題目卡(不寫副標、不重複)
-    paintCard($, { title: () => tr("模擬考 · 視奏", "Mock exam · Sight reading"), rows: rows(), btn: { label: () => mockLabel("run") }, note: () => resultNote(false) });
+    paintCard($, { title: () => tr("模擬考 · 視奏", "Mock exam · Sight reading"), rows: rows(), btn: { label: () => mockLabel("run"), stop: true }, note: () => resultNote(false) });
     return;
   }
 }

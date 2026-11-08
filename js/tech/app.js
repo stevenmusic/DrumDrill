@@ -532,7 +532,7 @@ const score = createScore({
   msg: fn => setMsg("paperMsg", fn),
   errorText: e => tr("鼓譜繪製失敗：", "Could not draw the score: ") + e.message,
   onDrawn: xml => { window.__lastXml = xml; window.__scoreReady = (window.__scoreReady || 0) + 1; },
-  fitLand: () => (wideDaily() ? fitWideDaily() : tabDaily() ? fitTabDaily() : fitLandZoom(score, { $, reserve: ctaH })),   // 今日練習(暖身)的底部按鈕列蓋住的不算
+  fitLand: () => (wideDaily() ? fitWideDaily() : tabDaily() ? fitTabDaily() : fitLandZoom(score, { $, reserve: ctaH, floor: ROOT.classList.contains("daily-on") ? 130 : 60 })),   // 今日練習(暖身)的底部按鈕列蓋住的不算;自由練習 / 檢定頁放不下就縮(底部「會了 / 再練」那一列不蓋譜)
   label: () => scoreLabel()
 });
 /* 寬畫面的矮視窗(≥ 1100 寬、高 > 500,例如 1280×600)今日練習暖身:譜(含 R / L)到底部按鈕列放不下 → 縮到放得下(不小於 0.55,視奏考卷的下限);
@@ -1020,7 +1020,7 @@ const stepDetail = (st, i) => () => {
   if (st.status === "none") return tr(`沒有打 · ${b}`, `Not played · ${b}`) + mark;
   return mock.running() && mock.data.i === i ? tr(`進行中 · ${b}`, `Now · ${b}`) : b;
 };
-const stepMark = (st, i) => (st.status === "done" ? "ok" : st.status === "skip" ? "skip" : st.status === "stopped" || st.status === "none" ? "no" : mock.running() && mock.data.i === i ? "cur" : "todo");
+const stepMark = (st, i) => (st.status === "done" ? "ok" : st.status === "skip" ? "skip" : st.status === "stopped" || st.status === "none" ? "none" : mock.running() && mock.data.i === i ? "cur" : "todo");
 /* 模擬考卡:檢定頁的說明 + 開始 / 進行中的進度 / 結果 / 中止的說明 */
 /* 本項列(檢定頁最上面一行)+ 題目卡的空狀態(畫面設計 2026-10 版型 B):技巧 [會了 n/m] … 模擬考;「拍點只響第一小節」是本項列下面一顆小 chip(大綱寫可選的級數);
    空狀態 = 一句 + 右下「隨機抽一項」(Trinity 沒有技巧項目:只有一句,沒有按鈕) */
@@ -1036,7 +1036,7 @@ function renderItem(d, g){
     pairText($("mockOneBar"), () => tr("拍點只響第一小節", "Count-in only"));   // 頁碼在說明裡
   }
   $("xEmpty").hidden = ms !== "idle" || tab !== "exam";
-  pairText($("xHint"), () => (!d ? tr("考試資料還沒載好。", "Exam data isn't loaded yet.") : !rsl ? ((d.ownChoice && d.ownChoice.grades[g] || {}).practice || []).length ? tr("點下面一類練", "Pick a family below") : tr("這一級沒有單獨要練的技巧項目", "No separate technique items at this grade")
+  pairText($("xHint"), () => (!d ? tr("考試資料還沒載好。", "Exam data isn't loaded yet.") : !rsl ? ((d.ownChoice && d.ownChoice.grades[g] || {}).practice || []).length ? tr("點下面一項去練", "Pick one below to practice") : tr("這一級沒有單獨要練的技巧項目", "No separate technique items at this grade")
     : pool.length ? tr("點下面一項開始練", "Or pick one below") : tr("這一級還沒有 App 能直接練的項目", "Nothing in this grade can be practiced in the App yet")));
   $("xGo").hidden = !pool.length;
   $("xGo").textContent = tr("隨機抽一項", "Random");
@@ -1070,7 +1070,7 @@ function renderMockCard(d, g){
     paintCard($, { title: () => tr("模擬考 · 技巧", "Mock exam · Technique"), sub: tr(`${m.i + 1} / ${m.steps.length} 組`, `Group ${m.i + 1} / ${m.steps.length}`),
       text: () => { const p = d && d.tech && d.tech[m.grade] ? srcOf("rsl", d.tech[m.grade].src.p) : "";
         return tr(`每一組抽一項，照官方速度(${p})。`, `One item per group at the official tempo (${p}).`); },
-      rows, btn: { label: () => mockLabel("run") }, note: () => tr(`每一項 ${MOCK_BEATS / 4} 小節(${TS("srcPractice")})。`, `${MOCK_BEATS / 4} bars each (${TS("srcPractice").toLowerCase()}).`) + " " + resultNote() });
+      rows, btn: { label: () => mockLabel("run"), stop: true }, note: () => tr(`每一項 ${MOCK_BEATS / 4} 小節(${TS("srcPractice")})。`, `${MOCK_BEATS / 4} bars each (${TS("srcPractice").toLowerCase()}).`) + " " + resultNote() });
     return;
   }
 }

@@ -58,9 +58,9 @@ export const abortText = reason => ({
   load: tr("鼓聲載入失敗（第一次要連網路），這次不算；按「再考一次」重試。", "The drum sounds didn't load (needs internet once); tap Again to retry.")
 }[reason] || tr("這次不算。", "This one doesn't count."));
 
-/* 結果 / 進度的清單(.mock-res):rows = [{ id:"A", name:() => 文字, detail:() => 文字, mark:"ok" | "no" | "skip" | "cur" | "todo" }]
-   名稱、說明用 pairText(中英高度一樣);右邊的記號:✓ 完成、✗ 沒有完成、– 跳過(用檢定書練)、▸ 進行中 */
-const MARK = { ok: "✓", no: "✗", skip: "–", cur: "▸", todo: "·" };
+/* 結果 / 進度的清單(.mock-res):rows = [{ id:"A", name:() => 文字, detail:() => 文字, mark:"ok" | "no" | "none" | "skip" | "cur" | "todo" }]
+   名稱、說明用 pairText(中英高度一樣);右邊的記號:✓ 完成、✗ 打了但沒有過(紅色只給真的錯)、– 沒有打 / 中途停止(淡色,不用懲罰)、– 跳過(用檢定書練)、▸ 進行中 */
+const MARK = { ok: "✓", no: "✗", none: "–", skip: "–", cur: "▸", todo: "·" };
 export function renderRows(box, rows){
   box.innerHTML = "";
   box.classList.add("mock-res");
@@ -89,13 +89,13 @@ export const resultNote = (po = true) => tr("只有各項的練習回饋：不�
 export const mockLabel = state => (state === "item" ? tr("模擬考", "Mock exam") : state === "run" ? tr("停止模擬考", "Stop mock") : state === "idle" ? tr("開始模擬考", "Start mock") : tr("再考一次", "Again"));
 
 /* 模擬考卡(模組的 $("mockCard") 裡固定的 id:mockTitle、mockSub、mockText、mockList、mockBtn、mockLabel、mockClose、mockCloseLabel、mockNote)。
-   btn = { label:() => 文字, disabled } | null(藏起來);close = { label } | null;rows = renderRows 的格式(null = 沒有清單) */
+   btn = { label:() => 文字, disabled, stop(進行中的停止 = 次要外觀) } | null(藏起來);close = { label } | null;rows = renderRows 的格式(null = 沒有清單) */
 export function paintCard($, { title, sub = "", text, rows = null, btn = null, close = null, note = resultNote, item = false }){
   /* item = 本項卡(畫面設計 2026-10 版型 B:檢定頁還沒在考的時候,模擬考卡就是這一項的卡):大標題 = 這一項、標籤 = 進度(sub)、一句 --fs-md 淡色;
      最後一行 左 =「模擬考」(btn,次要)、右 = 這一項的主要動作(close,主要) */
   $("mockCard").classList.toggle("item-card", !!item);
   $("mockText").classList.toggle("item-hint", !!item);
-  $("mockBtn").classList.toggle("primary", !item);
+  $("mockBtn").classList.toggle("primary", !item && !(btn && btn.stop));   // 進行中的「停止模擬考」= 次要(主要是題目卡的「下一組 / 打一遍」;一個畫面一顆主要)
   $("mockClose").classList.toggle("primary", item === true);   // item: "head" = 出了題目以後的標題列(兩顆都是次要)
   pairText($("mockTitle"), title);
   $("mockSub").textContent = sub;

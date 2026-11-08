@@ -181,8 +181,8 @@ button.xitem{cursor:pointer;border-color:transparent;background:var(--fill-btn)}
 .target-note{flex:1 1 100%;font-size:var(--fs-xs);color:var(--muted-bright);line-height:1.45;overflow-wrap:anywhere}
 .target-text{flex:1 1 auto;min-width:0;font-size:var(--fs-sm);font-weight:700;color:var(--ivory);line-height:1.4;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
 .btn.icon{width:36px;height:36px;padding:0;flex:none}
-/* 窄手機:目標文字跟回清單 / × 同一行(文字自己換兩行),題目卡才在畫面上半部 */
-@media (max-width:360px){ .target-text{flex:1 1 0} }
+/* 目標文字跟回清單 / × 一律同一行(文字自己換行;390 寬原本 × 會單獨掉到第二行),題目卡才在畫面上半部 */
+.target-text{flex:1 1 0}
 /* 兩種語言疊在同一格(examview.js pairStack):高度 = 比較高的那個語言 */
 .pstack{display:grid}
 .pstack > span{grid-area:1 / 1;min-width:0}
@@ -348,7 +348,7 @@ button.xitem{cursor:pointer;border-color:transparent;background:var(--fill-btn)}
 .mock-res .mr-name{overflow-wrap:anywhere}
 .mock-res .mr-detail{font-size:var(--fs-xs);color:var(--muted-bright);overflow-wrap:anywhere}
 .mock-res i{flex:none;min-width:1.2em;text-align:center}
-.mock-res i.skip,.mock-res i.todo{color:var(--muted)}
+.mock-res i.skip,.mock-res i.todo,.mock-res i.none{color:var(--muted)}   /* 沒有打 / 中途停止(none)跟「用檢定書練」一樣淡色 –:不用懲罰,紅 ✗ 只給打錯 */
 .mock-res i.cur{color:var(--ivory)}
 .mock-res div.cur{border-color:var(--sel-ring)}
 #t-mockMsg{margin-top:8px;font-size:var(--fs-sm)}
@@ -608,6 +608,13 @@ details.exam-info:not([open]) > :not(summary){display:none}
 /* 技巧題目卡最後一行右邊:從檢定頁清單來練時的「下一項」 */
 #t-nextItem{margin-left:auto;min-height:44px;height:auto}
 @media (orientation:landscape) and (max-height:500px){ #t-nextItem{grid-column:1 / -1;justify-self:end} }
+/* 手機橫式 · 技巧自由練習(不是今日練習、不是檢定頁):「會了 / 再練」在底部固定列,第一行空出來 → 標籤放回標題右邊同一行;
+   ▶ 的小字伸進說明那一行的 ▶ 欄(說明不佔 ▶ 那一欄),不另外留一行:鼓譜在第一個畫面露出來、不被底部列蓋住(fitLandZoom 的 floor 再縮到放得下) */
+@media (orientation:landscape) and (max-height:500px){
+  body:not(.view-exam) #mod-tech:not(.daily-on) .q-tags{grid-column:2 / 4;grid-row:1}
+  body:not(.view-exam) #mod-tech:not(.daily-on) .play-round[data-cap]{margin-bottom:0}
+  body:not(.view-exam) #mod-tech:not(.daily-on) .q-intro{grid-column:1 / 4}
+}
 /* 手機直式:視奏題目卡標籤(小鼓譜 · 4/4 · 4 小節 · ♩=80)跟標題同一行;內距與間距小一點,中英文(4 小節 / 12 bars)都放得下(跟 PianoDrill sight.css 一樣) */
 @media (max-width:430px){ #mod-sight .q-ht .q-tags{gap:4px} #mod-sight .q-ht .q-tag{padding-left:6px;padding-right:6px} }
 /* 折疊機:視奏題目卡最後一行(準備 90 秒 · 倒數 · 下一題 · 正式打)間距小一點,英文 Perform 比正式打寬,兩種語言才都一行 */

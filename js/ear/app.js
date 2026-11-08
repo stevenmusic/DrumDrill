@@ -1697,7 +1697,7 @@ function renderMockCard(){
   const rows = () => mock.data.queue.map((t, i) => {
     const r = mock.data.res[i];
     return { id: String(i + 1), name: () => TYPE_NAME[t], detail: r ? mockDetail(r) : () => tr("還沒開始", "Not started"),
-      mark: !r ? "todo" : r.stage !== "done" ? (ms === "run" ? "cur" : "no") : r.stopped ? "no" : "ok" };
+      mark: !r ? "todo" : r.stage !== "done" ? (ms === "run" ? "cur" : "none") : r.stopped ? "none" : "ok" };   // 沒打完 / 中途停止 = 淡色 –(不是錯)
   });
   if (ms === "aborted") {
     paintCard($, { title: () => tr("模擬考已中止", "Mock exam stopped"), sub: name, text: () => abortText(mock.reason),
@@ -1718,7 +1718,7 @@ function renderMockCard(){
     paintCard($, { title: () => tr("模擬考 · 聽力", "Mock exam · Aural"), sub: sys === "rsl" ? tr(`第 ${m.i + 1} / ${m.queue.length} 題`, `Test ${m.i + 1} / ${m.queue.length}`) : "",
       text: () => (sys === "rsl" ? tr("每一題自動聽兩次（不能重聽）；練好了按「打一遍」，過門打完再選譜。", "Each test plays twice (no replays); practice, then play it; for a fill, then pick the chart.")
         : tr("看完譜自動接第一次、第二次；官方配伴奏音軌，App 只有拍點。", "Then the practice and scored runs follow; the exam has a backing track, the App a click only.")),
-      rows: rows(), btn: { label: () => mockLabel("run") }, note: () => resultNote(false) });
+      rows: rows(), btn: { label: () => mockLabel("run"), stop: true }, note: () => resultNote(false) });
     return;
   }
 }

@@ -30,8 +30,9 @@ function openSetupHeight(stage){
   return h;
 }
 /* score:js/shared/score.js 的 createScore 回傳的物件(landZoom、osmd、refit());回傳 true = 縮放改了、已經重畫
-   reserve() = 畫面底部被蓋住的高度(沒給 = 固定在底部的按鈕列 .daily-cta / .cta-bar,ctaReserve) */
-export function fitLandZoom(score, { $, reserve = ctaReserve }){
+   reserve() = 畫面底部被蓋住的高度(沒給 = 固定在底部的按鈕列 .daily-cta / .cta-bar,ctaReserve)
+   floor = 譜框最少算多高(預設 130;技巧自由練習給小一點:放不下時縮到 0.6,譜才不被底部按鈕列蓋住) */
+export function fitLandZoom(score, { $, reserve = ctaReserve, floor = 130 }){
   if (!score.osmd) { score.landZoom = null; return false; }   // 沒有譜(clear 之後):不能 refit
   if (score.wrapped) { if (score.landZoom) { score.landZoom = null; return score.refit(); } return false; }   // 換行排法(聽力的接著打):照紙張寬度排,不照高度放大
   if (!isPhoneLand()) { if (score.landZoom) { score.landZoom = null; return score.refit(); } return false; }
@@ -41,7 +42,7 @@ export function fitLandZoom(score, { $, reserve = ctaReserve }){
   const playing = document.body.classList.contains("land-play");
   const top = playing ? document.querySelector("header").offsetHeight + $("scoreCard").querySelector(".card-title").offsetHeight + 30
     : $("stage").getBoundingClientRect().top + scrollY - openSetupHeight($("stage"));
-  const avail = Math.max(130, innerHeight - top - 14 - reserve());   // 底部按鈕列蓋住的那一塊不算
+  const avail = Math.max(floor, innerHeight - top - 14 - reserve());   // 底部按鈕列蓋住的那一塊不算
   const z = Math.max(0.6, Math.min(1.8, osmd.zoom * avail / H));
   if (Math.abs(z - osmd.zoom) < 0.03) { score.landZoom = osmd.zoom; return false; }
   score.landZoom = z; return score.refit();

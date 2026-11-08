@@ -12,7 +12,7 @@
 const APP = "drumdrill";
 // @app-end
 /*@precache-begin*/
-const CACHE = APP + "-app-d0d0732e";
+const CACHE = APP + "-app-ceda4182";
 const PRECACHE = [
   "./",
   "manifest.webmanifest",
@@ -25,12 +25,12 @@ const PRECACHE = [
   "privacy.html",
   "support.html",
   "css/app.css?v=e6c0802354",
-  "css/drum.css?v=2a8af0a1f3",
+  "css/drum.css?v=806796766a",
   "vendor/opensheetmusicdisplay.min.js?v=4bfeb3d01c",
-  "js/ear/app.js?v=023939aa25",
+  "js/ear/app.js?v=8b690fed0b",
   "js/ear/gen.js?v=cd5d9e1477",
   "js/ear/strings.js?v=7ba8fa190d",
-  "js/main.js?v=163e7fd681",
+  "js/main.js?v=ef68946665",
   "js/shared/a11y.js?v=af6364b77b",
   "js/shared/audio.js?v=cdfead7200",
   "js/shared/backup.js?v=620efafdf5",
@@ -46,25 +46,25 @@ const PRECACHE = [
   "js/shared/kitevents.js?v=599b14d902",
   "js/shared/kitgen.js?v=12fd0101b6",
   "js/shared/kitnotation.js?v=1b100f0235",
-  "js/shared/landscape.js?v=cec65dab42",
+  "js/shared/landscape.js?v=3a37d0ad2d",
   "js/shared/legend.js?v=cd3a97d62e",
   "js/shared/level.js?v=2fc19e17ec",
   "js/shared/mic.js?v=5450b68a2d",
   "js/shared/micrhythm.js?v=21f5734f52",
   "js/shared/milestone.js?v=40a9ff0313",
-  "js/shared/mock.js?v=f596d60ec0",
+  "js/shared/mock.js?v=9df65989b6",
   "js/shared/onsets.js?v=d8df0b9ef2",
   "js/shared/pad.js?v=68bda76506",
   "js/shared/playbackgen.js?v=85598e8957",
   "js/shared/player.js?v=3b242c7289",
-  "js/shared/practicelog.js?v=d3461179e1",
+  "js/shared/practicelog.js?v=251db99df8",
   "js/shared/roadmap.js?v=cd243150ea",
   "js/shared/score.js?v=2cc03a640d",
   "js/shared/staffframe.js?v=7d869b31d1",
   "js/shared/tempo.js?v=1e38af7d3f",
   "js/shared/timing.js?v=c72b213c42",
   "js/shared/values.js?v=e240ea1b65",
-  "js/sight/app.js?v=1dc67ffac2",
+  "js/sight/app.js?v=c4e8e6a57d",
   "js/sight/fingerprint.js?v=3460b8fafa",
   "js/sight/gen.js?v=7dec9f68c1",
   "js/sight/meter.js?v=94d1b94ae1",
@@ -72,7 +72,7 @@ const PRECACHE = [
   "js/sight/reading.js?v=bb6b2ae710",
   "js/sight/stage.js?v=bee4aca9a4",
   "js/sight/strings.js?v=fc4ac6d869",
-  "js/tech/app.js?v=a778d0f13f",
+  "js/tech/app.js?v=4f9c32cf2b",
   "js/tech/notation.js?v=5bee65ac3d",
   "js/tech/route.js?v=977879fcb5",
   "js/tech/routes.js?v=7403d49d82",
@@ -82,7 +82,7 @@ const PRECACHE = [
   "js/tech/strings.js?v=e67e6d52a8",
   "data/drumkey.json?v=a479cd9dd6",
   "data/exam-rsl.json?v=62a690625a",
-  "data/exam-trinity.json?v=e40791773a"
+  "data/exam-trinity.json?v=e3550ce8e2"
 ];
 /*@precache-end*/
 self.addEventListener("install", e => {
