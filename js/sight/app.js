@@ -887,16 +887,18 @@ async function drawOnce(c){
   } catch (e) { console.error(e); say(() => tr("樂譜繪製失敗：", "Could not draw the score: ") + e.message); $("score").classList.remove("entering"); return; }
   if (cur !== c) { drawAgain = true; return; }
   if (!active || !$("stage").clientWidth) { pendingDraw = true; $("score").classList.remove("entering"); return; }
+  // 圖例:這一題用到的鼓件(每一份鼓組譜旁邊都要有;鼓件或線數變了才重畫)。先畫好再排譜:視奏分頁手機直式的譜高要扣掉圖例與鼓墊(padsTail)
+  const key = drumKey();
+  if (key) {
+    const pieces = piecesUsed({ ...c.test.score, key }), lk = c.test.lines + ":" + pieces.join(",") + (c.free ? ":plain" : "");
+    if (lk !== legendKey) { legendKey = lk; await drawLegend($("legend"), { pieces, lines: c.test.lines, key, plain: c.free }).catch(e => { console.error(e); legendKey = ""; }); }
+    if (cur !== c) { drawAgain = true; return; }
+    if (!active || !$("stage").clientWidth) { pendingDraw = true; $("score").classList.remove("entering"); return; }
+  }
   try { fitScore(c); } catch (e) { console.error(e); say(() => tr("樂譜繪製失敗：", "Could not draw the score: ") + e.message); }
   renderedWidth = innerWidth;
   requestAnimationFrame(() => requestAnimationFrame(() => $("score").classList.remove("entering")));
   drawn++;
-  // 圖例:這一題用到的鼓件(每一份鼓組譜旁邊都要有;鼓件或線數變了才重畫)
-  const key = drumKey();
-  if (key) {
-    const pieces = piecesUsed({ ...c.test.score, key }), lk = c.test.lines + ":" + pieces.join(",") + (c.free ? ":plain" : "");
-    if (lk !== legendKey) { legendKey = lk; drawLegend($("legend"), { pieces, lines: c.test.lines, key, plain: c.free }).catch(e => { console.error(e); legendKey = ""; }); }
-  }
 }
 /* 無障礙:譜的文字說明(N 小節小鼓譜 / 整組鼓譜、拍號、速度、每小節的簡述;a11y.js) */
 function scoreLabel(){
@@ -920,7 +922,16 @@ function availableScoreHeight(){
   const header = document.querySelector("header"), top = header ? header.getBoundingClientRect().height : 0;
   const bottom = floorY(true);   // 固定在底部的按鈕列(.cta-bar)也扣掉
   const chrome = $("score").getBoundingClientRect().top - $("scoreCard").getBoundingClientRect().top;
-  return Math.max(120, bottom - top - chrome - SCORE_BOTTOM_GAP);
+  const tail = padsTail();
+  return Math.max(120, bottom - top - chrome - (tail ? tail + 12 : SCORE_BOTTOM_GAP));
+}
+/* 視奏分頁手機直式(底部按鈕列固定):打的時候鼓墊要在底部列上面整顆看得到、能打(第 27 輪:鼓組譜難度 2 的鼓墊被蓋住一半)→
+   譜下緣到鼓墊下緣(圖例、卡片間距、鼓墊卡上半)也算進去;放不下照舊縮到 MIN_ZOOM 為止。檢定頁、手機橫式照舊(只算譜) */
+function padsTail(){
+  if (!cur || !cur.free || !CTA_MQ.matches || innerWidth > innerHeight) return 0;
+  const pads = $("pads"), sc = $("score");
+  if (!pads.getClientRects().length || !sc.getClientRects().length) return 0;
+  return Math.max(0, pads.getBoundingClientRect().bottom - sc.getBoundingClientRect().bottom);
 }
 /* 題目卡最後一行固定在畫面底部(main.js 共用部分的 syncCta、app.css 的 .cta-bar;手機)時回傳那一列(照 PianoDrill 視奏) */
 function ctaFixed(){
@@ -1140,7 +1151,12 @@ const player = createPlayer({
       const x = q + tl.countIn.len, ps = tl.countIn.pulses;
       let i = 0; ps.forEach((p, j) => { if (x >= p - 1e-6) i = j; });
       const n = ps.length - i;
-      if (n !== countShown) { countShown = n; say(() => tr(`預備拍 ${n}`, `Count-in ${n}`), true); }
+      if (n !== countShown) {
+        const first = countShown == null;
+        countShown = n; say(() => tr(`預備拍 ${n}`, `Count-in ${n}`), true);
+        // 狀態句換成「預備拍 n」(原本的說明可能好幾行)上面的題目卡變矮、樂譜卡往上移:再對一次,譜頂與鼓墊才在頂欄與底部列之間(第 27 輪)
+        if (first && playKind === "perform" && !mockOn()) requestAnimationFrame(() => { if (active && phase === "perform") bringScoreIntoView(); });
+      }
       return;
     }
     if (countShown !== 0) { countShown = 0; say(() => (playKind === "perform" ? tr("正在正式打…", "Performing…") : tr("正確版本播放中…", "Playing the correct version…"))); }

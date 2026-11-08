@@ -1133,10 +1133,10 @@ let pads = makePads(LANES[1]);
 
 /* ══ 譜:一整行 + 播放軸(js/shared/score.js);鼓組譜照 legend.js 的 setupKit / decorate ══ */
 const scoreZoom = () => (window.innerWidth < 600 ? 0.9 : window.innerWidth < 1100 ? 1 : 1.15);
-/* 接著打(Trinity Playback)的譜 = 換行排法(跟今日練習的路線譜一樣,不左右捲):先試每行 4 小節(≥ 正常大小的 85%),
-   放不下就每行 2 小節(≥ 0.55,最後手段 0.45);看譜 30 秒時整份看得到,播放軸照每一行上下移動 */
+/* 接著打(Trinity Playback)與律動(Groove 揭曉後)的譜 = 換行排法(跟今日練習的路線譜一樣,不左右捲):先試每行 4 小節(≥ 正常大小的 85%),
+   放不下就每行 2 小節(≥ 0.55,最後手段 0.45);律動(2 小節)放不下每行 1 小節(≥ 0.55,最後 0.45);看譜 30 秒時整份看得到,播放軸照每一行上下移動 */
 let wrapN = 0, fitZ = null, fitW = 0;
-const wrapOn = () => !!cur && cur.type === "playback";
+const wrapOn = () => !!cur && (cur.type === "playback" || cur.type === "groove");
 function fitWrap(){
   const o = score.osmd;
   if (!wrapOn() || !o || !$("stage").clientWidth) return;
@@ -1148,14 +1148,15 @@ function fitWrap(){
     return sys.length === Math.ceil(bars / n) && sys.every((sy, i) => (sy.GraphicalMeasures || []).length === (i === sys.length - 1 && rem ? rem : n));
   };
   let pick = null;
-  for (const [n, floor] of [[4, base * 0.85], [2, 0.55], [2, 0.45]]) {
+  const tries = cur.type === "groove" ? [[4, base * 0.85], [2, 0.55], [1, 0.55], [1, 0.45]] : [[4, base * 0.85], [2, 0.55], [2, 0.45]];
+  for (const [n, floor] of tries) {
     if (!fits(n, floor)) continue;
     let lo = floor, hi = base;
     if (fits(n, hi)) lo = hi;
     else for (let k = 0; k < 6; k++) { const mid = (lo + hi) / 2; if (fits(n, mid)) lo = mid; else hi = mid; }
     pick = { n, z: Math.floor(lo * 100) / 100 }; break;
   }
-  if (!pick) pick = { n: 2, z: 0.45 };
+  if (!pick) pick = { n: cur.type === "groove" ? 1 : 2, z: 0.45 };
   wrapN = pick.n; fitZ = pick.z; score.refit();
 }
 const score = createScore({
