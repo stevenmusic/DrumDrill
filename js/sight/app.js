@@ -363,7 +363,7 @@ function grooveHint(){
   if (freeCat !== "groove" || !curExam().auto) return "";
   let passed = false;
   try { const t = JSON.parse(localStorage.getItem("drumdrill.tech.v1") || "null"), e = t && t.daily && t.daily.lv && t.daily.lv["groove/B8"]; passed = !!(e && e.passed); } catch (e) {}
-  return passed ? "" : tr(`先把今日練習的律動練到第 ${B8} 關會比較順`, `Easier after Today's grooves to level ${B8}`);
+  return passed ? "" : tr(`先把今日練習的律動練到第 ${B8} 關會比較順`, `Tip: do Today's grooves up to level ${B8} first`);
 }
 /* 題目卡的難度列(視奏分頁才有):「▼ 難度 2 / 4 ▲」+ 一句白話寫這個難度是什麼 */
 function renderLevel(){
@@ -671,7 +671,7 @@ function refreshTexts(){
   note.hidden = c.kind === "snare" || (c.free && c.kind === "playback");
   if (c.kind === "kit" && c.free) {
     const a = t.develop.from + 1, b = t.develop.from + t.develop.bars;
-    pairText(note, () => tr(`第 ${a}–${b} 小節（斜線）照前面的風格自由打，不評分`, `Bars ${a}–${b} (slashes): your own fill, not scored`));
+    pairText(note, () => tr(`第 ${a}–${b} 小節自由發揮，不評分`, `Bars ${a}–${b}: play your own, not scored`));   // 自由練習不寫「斜線」(初學者看不懂)
   } else if (c.kind === "kit") {
     const a = t.develop.from + 1, b = t.develop.from + t.develop.bars;
     pairText(note, () => tr(`第 ${a}–${b} 小節（斜線）照前面的風格自由打，不評分`, `Bars ${a}–${b} (slashes): your own fill, not scored`));   // 位置是推估:寫在「出處與推估」
@@ -952,8 +952,8 @@ function perLineCandidates(bars){
 const shapeOf = c => `${c.key}:${c.test.bars}:${(c.test.times || [c.test.time]).join("+")}:${widthClass()}`;
 /* 照 PianoDrill js/sight/app.js 的 fitScore:先決定每行幾小節(縮到放得下寬度),再看高度(整份在畫面裡;不小於 MIN_ZOOM);
    同形狀沿用同一個排法與大小,下一題比較密要更小才放得下就一起縮(只縮不放大) */
-/* 視奏分頁(自由練習)手機寬度(< 500):小鼓譜難度 1–2 每行 2 小節(字大、初學者看得清楚;檢定頁照考卷排法) */
-const twoPerLine = c => !!(c.free && c.cat === "rhythm" && c.lv <= 2 && innerWidth < 500 && c.test.bars >= 2);
+/* 視奏分頁(自由練習)手機寬度(< 500):小鼓譜、鼓組譜、樂譜難度 1–2 每行 2 小節(字大、初學者看得清楚;檢定頁照考卷排法) */
+const twoPerLine = c => !!(c.free && CATS.includes(c.cat) && c.lv <= 2 && innerWidth < 500 && c.test.bars >= 2);
 function fitScore(c){
   const total = c.test.bars, shape = shapeOf(c), two = twoPerLine(c);
   let cached = SS.layout[shape];

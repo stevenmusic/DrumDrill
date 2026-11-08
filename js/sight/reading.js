@@ -103,8 +103,8 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
     }
     // 譜和作答格子之間這一行不空著:平常寫題目,答了寫對錯
     // 60 秒 / 連對還沒開始:不寫題目(先按「開始」)
-    // 第一次(還沒答過):寫這一格在練什麼、怎麼作答
-    say(() => (R.mode === "practice" || drill.running ? (R.seen ? tr("哪個鼓件？", "Which drum?") : tr("這是哪個鼓件？", "Which drum is this?")) : ""));
+    // 題目一律「這是哪個鼓件?」(第一次與之後同一種寫法)
+    say(() => (R.mode === "practice" || drill.running ? tr("這是哪個鼓件？", "Which drum is this?") : ""));
     paintAns();
     draw();
   }
@@ -143,6 +143,7 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
     // 作答格子上面一行:答對 3 題以前寫「不知道就先猜」
     $("rdGuess").hidden = R.okN >= 3 || !q || valOn();
     if (!$("rdGuess").hidden) pairText($("rdGuess"), () => tr("不會就猜，答錯會告訴你", "Just guess — a miss shows you"));
+    $("rdGuess").style.visibility = tapped != null ? "hidden" : "";   // 答了以後(對錯已經寫在上面)這行藏起來、保留位置(版面不跳)
     const box = $("rdAns"), list = valOn() ? BEATS.slice() : valid().sort((a, b) => order().indexOf(a) - order().indexOf(b));
     const sig = list.join(",");
     if (box.dataset.sig !== sig) {
@@ -190,9 +191,10 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
     pairText($("rdSet"), setText);
     const run = drill.running, m = R.mode;
     let s = "";
-    if (m === "practice") s = session.n ? tr(`答對 ${session.ok} / ${session.n}`, `${session.ok} / ${session.n} right`) : "";
+    if (m === "practice") s = session.n ? tr(`答對 ${session.ok} / ${session.n}`, `Correct ${session.ok} / ${session.n}`) : "";
     else if (run) s = m === "time" ? tr(`${drill.score} 題 · 剩 ${drill.left()} 秒`, `${drill.score} · ${drill.left()} s left`) : tr(`連續答對 ${drill.score}`, `Streak ${drill.score}`);
-    else s = tr(`最高 ${drill.best(setting(), m)}`, `Best ${drill.best(setting(), m)}`);
+    else s = endRes && endRes.newBest ? tr(`新紀錄！最高 ${drill.best(setting(), m)}`, `New best! ${drill.best(setting(), m)}`)   // 「新紀錄」寫在這一格,不跟答案、成績擠在狀態那一行
+      : tr(`最高 ${drill.best(setting(), m)}`, `Best ${drill.best(setting(), m)}`);
     $("rdScoreTxt").textContent = s;
     const waiting = m !== "practice" && !run;
     $("rdStart").hidden = !waiting;
@@ -209,8 +211,8 @@ export function createReading({ $, store, save, drumKey, onAnswered = () => {} }
     endRes = res; clearTimeout(nextTimer); lock = true;
     if (res.reason === "stop" || res.reason === "restart") { paintTop(); return; }
     const wn = res.reason === "wrong" ? wrongName : null;
-    say(() => (wn ? (valOn() ? tr(`答案是 ${beatText(VALUES[wn].beat)}(${valueName(wn)})。`, `It's ${beatText(VALUES[wn].beat)} (${valueName(wn)}). `) : tr(`答案是 ${nameOf(wn)}。`, `It was ${nameOf(wn)}. `)) : "") + (res.kind === "time" ? tr(`時間到：答對 ${res.score} 題`, `Time's up: ${res.score} right`) : tr(`連續答對 ${res.score} 題`, `Streak: ${res.score}`))
-      + (res.newBest ? tr(" · 新紀錄！", " · New best!") : tr(` · 最高 ${res.best}`, ` · best ${res.best}`)), res.newBest ? "ok" : "");
+    say(() => (wn ? (valOn() ? tr(`答案是 ${beatText(VALUES[wn].beat)}(${valueName(wn)})。`, `It's ${beatText(VALUES[wn].beat)} (${valueName(wn)}). `) : tr(`答案是 ${nameOf(wn)}。`, `It was ${nameOf(wn)}. `)) : "") + (res.kind === "time" ? tr(`時間到：答對 ${res.score} 題`, `Time's up: ${res.score} right`) : tr(`連續答對 ${res.score} 題`, `Streak: ${res.score}`)),
+      res.newBest ? "ok" : "");   // 最高 / 新紀錄在右上角那一格(paintTop)
     paintTop(); paintMiss();
   }
   function changed(){

@@ -62,7 +62,7 @@ const NM = {
 const names = (k, list) => (list || []).map(x => (k === "time" ? [x, x] : NM[k][x] || null)).filter(Boolean);
 export const valueList = (vals, rests) => {
   const v = names("values", vals), r = names("rests", rests);
-  return tr([v.length ? v.map(x => x[0]).join("、") + "音符" : "", r.length ? r.map(x => x[0].replace(/休止符$/, "")).join("、") + "休止符" : ""].filter(Boolean).join(","),
+  return tr([v.length ? v.map(x => x[0]).join("、") + "音符" : "", r.length ? r.map(x => x[0].replace(/休止符$/, "")).join("、") + "休止符" : ""].filter(Boolean).join("，"),
     [v.length ? v.map(x => x[1]).join(", ") + " notes" : "", r.length ? r.map(x => x[1].replace(/ rest$/, "")).join(", ") + " rests" : ""].filter(Boolean).join("; "));
 };
 export function paramDesc(cur, prev, base){
