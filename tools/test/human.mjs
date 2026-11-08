@@ -217,7 +217,9 @@ const appCheck = async () => {
       if (["perform", "pass", "study"].includes(s.phase)) out.push(`聽力不在畫面上還在 ${s.phase}`);
     } else if (s.key) {
       const lbl = document.getElementById("e-performBtn").textContent;
-      if ((s.kind === "perform" || s.kind === "pass") !== ["停止", "Stop"].includes(lbl)) out.push(`聽力 ${s.kind} 但回打按鈕寫「${lbl}」`);
+      // 還沒聽完題目(RSL)主要按鈕 =「▶ 聽題目」,聽題目時寫「停止」(app.js 的 listenFirst),所以 listen 兩種都可以
+      const stop = ["停止", "Stop"].includes(lbl), playing = s.kind === "perform" || s.kind === "pass";
+      if (playing ? !stop : stop && s.kind !== "listen") out.push(`聽力 ${s.kind} 但回打按鈕寫「${lbl}」`);
       if ((s.kind === "listen") !== document.getElementById("e-playBtn").classList.contains("is-active")) out.push(`聽力播放鈕狀態不一致(${s.kind})`);
       if ((s.phase === "study") !== s.timer) out.push(`聽力看譜倒數不一致(${s.phase}, timer ${s.timer})`);
       if (s.phase === "choose" && document.getElementById("e-answers").hidden) out.push("聽力選譜但沒有選項");

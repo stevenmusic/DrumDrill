@@ -447,6 +447,8 @@ button.xitem{cursor:pointer;border-color:transparent;background:var(--fill-btn)}
 .quiz > .cta-bar .btn{min-width:44px}   /* 折疊機只剩圖示的「準備 90 秒」「下一題」也 ≥ 44(主要導覽;newbie.mjs) */
 /* 接著打(Trinity):看答案 + 看譜 30 秒 + 倒數 + 下一題 + 打一遍 中文一行放不下的寬度(折疊機;341–379 看譜鈕有字),主要按鈕整條在下一行(中英一樣高) */
 @media (max-width:300px), (min-width:341px) and (max-width:379px){ #mod-ear #e-quizCard > .cta-bar:has(#e-studyBtn:not([hidden])) .e-perform{flex-basis:100%} }
+/* 過門 / 律動(RSL):看答案(一直佔位置)+ 下一題 + 主要按鈕,折疊機中文放不下、英文剛好擠得下 → 主要按鈕一律整條在下一行(中英一樣高) */
+@media (max-width:300px){ #mod-ear #e-quizCard > .cta-bar:has(#e-revealBtn:not([hidden])) .e-perform{flex-basis:100%} }
 @media (orientation:landscape) and (max-height:500px){ #mod-sight #s-quiz > .cta-bar .s-perform-top,#mod-ear #e-quizCard > .cta-bar .e-perform{min-height:44px} }
 @media (max-width:340px){ #s-generate .btn-label{display:none} #s-generate{padding:0 12px} #s-quiz.free #s-generate .btn-label{display:inline} }
 /* 手機橫式:認譜的題目卡左右排(左 = 譜、右 = 訊息與作答),設定卡的第一排在同一個畫面看得到 */
@@ -593,6 +595,9 @@ body.view-exam .exam-info:is(#t-paneExam,#s-paneExam,#e-paneExam){order:20}
 .x-empty{order:1}
 /* 空狀態:提示與按鈕放得下就同一行、放不下按鈕在下一行右邊(= app.css 的 #t-quizCard / #s-quiz / #e-quizCard.hint-empty,PianoDrill 同一種排法) */
 .x-empty.hint-empty{display:flex;flex-flow:row wrap;align-items:center;gap:8px 12px}
+/* 視奏的提示與按鈕中英長度差很多(「New chart → Study 30 s → Play with a click」「Practice kit reading」):同一行放不放得下照固定寬度判斷、
+   不照字的長度,按鈕那一格固定最少 11em(最長的英文按鈕放得下),提示的寬度中英一樣(高度 pairText 等高);手機的按鈕列固定在底部,不受影響 */
+@media (min-width:601px){ #s-xEmpty.hint-empty .q-hint{flex-basis:12em} #s-xEmpty.hint-empty > .q-foot{min-width:11em} }
 #e-xList{order:3}
 .exam-info .spec-cards{margin-top:10px}
 .exam-info .spec-card{border:0;border-top:1px solid var(--line);border-radius:0;background:none;box-shadow:none;padding:10px 0 0}
