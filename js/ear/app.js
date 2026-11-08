@@ -1513,11 +1513,14 @@ function say(fn, keep, quiet){
 }
 /* 狀態句裡的按鈕名(「打一遍（計分）」「下一題」、Scored run…)包成 .nw 不在中間斷行(drum.css);
    pairText 量另一種語言的高度時會把字整個換掉,所以大小變了(或換語言)再包一次 */
-const NW = { zh: /「[^」]*」|打一遍（[^）]*）/g, en: /\b(?:Practice run|Scored run|Play it|Start over|Results|Next)\b/g };
+const NW = { zh: /「[^」]*」|打一遍（[^）]*）/g, en: /\b(?:Practice run|Scored run|Play it|Start over|Results|Next)\b/gi };
 function paintNw(el){
   if (el.querySelector(".nw")) return;
-  const t = el.textContent, re = NW[getLang() === "en" ? "en" : "zh"], ms = [...t.matchAll(re)];
+  const en = getLang() === "en", t = el.textContent, ms = [...t.matchAll(NW[en ? "en" : "zh"])];
   if (!ms.length) return;
+  // 中英要包一樣多個(看得到的元素中英一樣多,版面一致;bilingual.mjs 照順序比),數量不同就都不包
+  const other = el._pair && el._pair[en ? 0 : 1];
+  if (other == null || [...other.matchAll(NW[en ? "zh" : "en"])].length !== ms.length) return;
   const out = []; let i = 0;
   for (const m of ms) { out.push(t.slice(i, m.index)); const sp = document.createElement("span"); sp.className = "nw"; sp.textContent = m[0]; out.push(sp); i = m.index + m[0].length; }
   out.push(t.slice(i));
