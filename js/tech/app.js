@@ -1371,13 +1371,27 @@ function cheer(){
     CHEER.forEach(([p, at, v]) => audio.playKit(p, t + at, v));
   });
 }
+/* 手機橫放:題目卡 + 鼓譜卡放不下一個畫面,換到下一段時鼓譜被底部按鈕列蓋住(只露上緣;BACKLOG 第 26 輪 1)→ 把鼓譜卡捲到頂欄下
+   (鼓墊模式捲到譜紙頂,同 revealRoute;底部按鈕是「▶ 跟著打一輪」/「打一遍」,不用題目卡的 ▶;同步 PianoDrill landReveal)。
+   暖身不捲(底部是「下一段 ›」,▶ 只在題目卡);剛按「開始」的第一個畫面照舊看得到標題與 ▶(tasks.mjs) */
+function landReveal(){
+  if (!isPhoneLand()) return;
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (!routeOn() || !ctaH()) return;
+    const pads = ROOT.classList.contains("r-pad"), el = pads ? $("rStage") : $("rScoreCard");
+    if (!el || $("rScoreCard").hidden) return;
+    if (el.getBoundingClientRect().bottom <= innerHeight - ctaH() - 4) return;
+    const d = el.getBoundingClientRect().top - document.querySelector("header").getBoundingClientRect().bottom - (pads ? 4 : 6);
+    if (d > 2) window.scrollBy({ top: d });
+  }));
+}
 /* 下一段:練過的那一段算一次練習 */
 function dNext(){
   stopPlayback();
   const t = daily.today(), i = t.i, worked = t.sec[i] > 0 || t.tries[i] > 0;
   const s = daily.next();
   if (worked) { addLog(S.log, { n: 1 }); store.save(); renderLog(); }
-  if (s) { dShow(s); return; }
+  if (s) { dShow(s); landReveal(); return; }
   dExit(); switchTab(tab); window.scrollTo({ top: 0 });
   announce(tr("今天練完了", "Done for today"));
 }
