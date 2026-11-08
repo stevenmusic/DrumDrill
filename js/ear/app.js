@@ -298,7 +298,7 @@ function renderExam(){
     const b = d.sessionBands;
     rows.push({ k: () => tr("本項配分", "This section"), v: () => tr("Playback 或 Improvising 擇一：", "Playback or Improvising: ") + V.bandsText(b.bands), src: V.srcOf(sys, b.src.p) });
     rows.push({ k: () => tr("數位考試", "Digital exam"), v: () => V.L(d.digitalNote.text), src: V.srcOf(sys, d.digitalNote.src.p) });
-    $("examSummary").textContent = tr(`Session skills ${b.max} 分`, `Session skills, ${b.max} marks`);
+    $("examSummary").textContent = tr(`臨場技能（Session skills）${b.max} 分`, `Session skills, ${b.max} marks`);
   }
   rows.push(...V.summaryRows(sys, d, g), V.dataRow(d));
   V.fillSpec($("sumSpec"), rows);
@@ -1651,7 +1651,6 @@ function renderXList(sys, g){
     box.appendChild(b);
   }
 }
-const TYPE_NAME = { fill: "Fill Playback & Recognition", groove: "Groove Recall", playback: "Playback" };
 /* 一題的練習回饋(準度、選譜對錯、完成與否;不算總分) */
 function mockDetail(r){
   return () => {
@@ -1698,7 +1697,7 @@ function renderMockCard(){
   const queue = ex.system === "rsl" ? ["fill", "groove"] : ["playback"], ok = !ex.auto && queue.every(t => practicable(ex.system, ex.grade, t));
   const rows = () => mock.data.queue.map((t, i) => {
     const r = mock.data.res[i];
-    return { id: String(i + 1), name: () => TYPE_NAME[t], detail: r ? mockDetail(r) : () => tr("還沒開始", "Not started"),
+    return { id: String(i + 1), name: () => tr(...X_NAME[t]),   // 跟本級聽力清單同一個說法(官方英文題名在「考試內容」) detail: r ? mockDetail(r) : () => tr("還沒開始", "Not started"),
       mark: !r ? "todo" : r.stage !== "done" ? (ms === "run" ? "cur" : "none") : r.stopped ? "none" : "ok" };   // 沒打完 / 中途停止 = 淡色 –(不是錯)
   });
   if (ms === "aborted") {

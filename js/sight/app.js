@@ -406,12 +406,12 @@ function renderExam(){
     const label = () => (g >= 6 ? "Quick Study Piece" : g === 0 ? tr("視奏", "Sight reading") : tr("視奏或即興", "Sight reading or I&I"));
     // 配分值不重複摘要那一行的「視奏 15 分」:只寫等第(1–5 級加一句可以改考即興)
     rows.push({ k: () => tr("本項配分", "This section"), v: () => (g >= 1 && g <= 5 ? label() + tr(":", ": ") : "") + V.bandsText(it.bands), src: V.srcOf(sys, d.marks.gradeExam.src.p) });
-    $("examSummary").textContent = tr(`${g >= 6 ? "QSP" : "視奏"} ${it.max} 分`, `${g >= 6 ? "QSP" : "Sight reading"}, ${it.max} marks`);
+    $("examSummary").textContent = tr(`${g >= 6 ? "Quick Study Piece（視奏曲）" : "視奏 "}${it.max} 分`, `${g >= 6 ? "Quick Study Piece" : "Sight reading"}, ${it.max} marks`);
   } else {
     const b = d.sessionBands;
     rows.push({ k: () => tr("本項配分", "This section"), v: () => tr("Playback 或 Improvising 擇一：", "Playback or Improvising: ") + V.bandsText(b.bands), src: V.srcOf(sys, b.src.p) });
     rows.push({ k: () => tr("數位考試", "Digital exam"), v: () => V.L(d.digitalNote.text), src: V.srcOf(sys, d.digitalNote.src.p) });
-    $("examSummary").textContent = tr(`Session skills ${b.max} 分`, `Session skills, ${b.max} marks`);
+    $("examSummary").textContent = tr(`臨場技能（Session skills）${b.max} 分`, `Session skills, ${b.max} marks`);
   }
   rows.push(...V.summaryRows(sys, d, g), V.dataRow(d));
   V.fillSpec($("sumSpec"), rows);
@@ -1579,7 +1579,7 @@ function renderItem(){
   $("xEmpty").hidden = ms !== "idle" || xpOn();
   const P = ex.system === "rsl" ? specOf(ex.system, ex.grade) : null, sec = ex.system === "trinity" ? ((dataOf("trinity") && dataOf("trinity").playback.flow.studySec) || 30) : P && P.prepSec;
   pairText($("xHint"), () => (!dataOf(ex.system) ? tr("考試資料還沒載好。", "Exam data isn't loaded yet.")
-    : qsp ? tr("6–8 級是 Quick Study Piece（要伴奏音軌和 lead sheet），App 不出題", "Grades 6–8 have a Quick Study Piece (backing track, lead sheet): no App tests")
+    : qsp ? tr("6–8 級是 Quick Study Piece（視奏曲，要伴奏音軌和 lead sheet），App 不出題", "Grades 6–8 have a Quick Study Piece (backing track, lead sheet): no App tests")
     : !ok ? tr("圖例資料還沒載好。", "The drum key isn't loaded yet.")
     : ex.system === "trinity" ? tr(`出題 → 看譜 ${sec} 秒 → 跟拍點打`, `New chart → Study ${sec} s → Play with a click`)
     : tr(`出題 → 準備 ${sec} 秒 → 正式打`, `New test → Prepare ${sec} s → Perform`)));

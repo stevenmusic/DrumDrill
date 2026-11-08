@@ -269,12 +269,12 @@ DrumDrill 補做(2026-11-07):今日練習從頭走到尾 iphone-390 / iphone-lan
 優先順序 1 最重要。
 
 ### 可以直接做
-- [ ] [小] 1.(優先 1)Trinity 視奏 / 聽力「考試內容」標題「Session skills 20 分」(zh)— 英文名直接放在中文畫面,家長看不懂;CLAUDE.md 寫中文介面第一次出現的英文名加中文 → 中文寫「臨場技能(Session skills)20 分」
-- [ ] [小] 2.(優先 2)RSL 6–8 視奏「QSP 10 分」— 縮寫 QSP 中英都沒先說全名,下面那句才出現 Quick Study Piece → 標題寫「Quick Study Piece(視奏曲)10 分」(EN「Quick Study Piece, 10 marks」),句子裡不再用縮寫;RSL 7 技巧 F 組「選的風格同時決定 Quick Study Piece 的風格」也加「(視奏曲)」
-- [ ] [小] 3.(優先 3)RSL 聽力模擬考卡中文寫「Fill Playback & Recognition」「Groove Recall」(mD.png 右下;清單與題目卡寫「過門」「律動」)— 同一件事兩種說法,英文名在中文畫面 → 中文寫「過門(Fill Playback & Recognition)」「律動(Groove Recall)」,或只寫「過門」「律動」、官方名放「考試內容」
-- [ ] [小] 4.(優先 4)聽力模擬考進行中 — practiceOnly 說兩遍:題目卡「照 RSL 3 級大綱出的練習題 · 僅供練習;實際要求以官方大綱為準」+ 模擬考卡「只有各項的練習回饋…僅供練習;…」;CLAUDE.md 規定題目卡看得到時模擬考卡不再寫(`resultNote(false)`)→ 聽力模擬考進行中模擬考卡拿掉那句
-- [ ] [小] 5.(優先 5)筆電(1366×768)模擬考進行中 — 聽力的模擬考卡「模擬考 · 聽力 第 1 / 2 題 · 停止模擬考」在鼓墊下面、畫面外(mD.png 右下只露出標題一半),技巧在鼓譜下面;「停止」與進度要捲才看得到 → 筆電也比照手機 `cardToTop`,或把「停止模擬考」併到本項列右邊(原本「模擬考」鈕的位置換成「停止」)
-- [ ] [小] 6.(優先 6)RSL 5 技巧 C 組標題「Flam accent / drag tap」(zh)— 英文組名無中文 → 「Flam accent / Drag tap(裝飾音練習)」或照 RSL 官方組名後加中文簡述(只用大綱已有的字,不自己發明內容)
-- [ ] [小] 7.(優先 7)筆電縮窄視窗(直式)開著模擬考 = 螢幕旋轉規則中止,畫面寫「螢幕旋轉了,這次不算」(用 `matchMedia(orientation:portrait)`;我截圖整頁時視窗變高就被中止)→ 電腦視窗沒有真的旋轉,字不對 → 寬 ≥ 1100 的電腦文字改「視窗大小變了,這次不算」(中止規則不動)
+- [x] [小] 1.(優先 1)Trinity 視奏 / 聽力「考試內容」標題「Session skills 20 分」(zh)— 英文名直接放在中文畫面,家長看不懂;CLAUDE.md 寫中文介面第一次出現的英文名加中文 → 中文寫「臨場技能(Session skills)20 分」 → 已做:視奏、聽力 examSummary 中文「臨場技能（Session skills）20 分」(英文不變)
+- [x] [小] 2.(優先 2)RSL 6–8 視奏「QSP 10 分」— 縮寫 QSP 中英都沒先說全名,下面那句才出現 Quick Study Piece → 標題寫「Quick Study Piece(視奏曲)10 分」(EN「Quick Study Piece, 10 marks」),句子裡不再用縮寫;RSL 7 技巧 F 組「選的風格同時決定 Quick Study Piece 的風格」也加「(視奏曲)」 → 已做:標題「Quick Study Piece（視奏曲）10 分」(EN「Quick Study Piece, 10 marks」)、空狀態那句「6–8 級是 Quick Study Piece（視奏曲，…）」、exam-rsl.json 6–8 級 F 組「Quick Study Piece(視奏曲)的風格」;「到視奏頁練鼓組譜(不是 QSP)」鈕沒改(zhpunct KEEP_PAREN 是共用檔、折疊機寬度)
+- [x] [小] 3.(優先 3)RSL 聽力模擬考卡中文寫「Fill Playback & Recognition」「Groove Recall」(mD.png 右下;清單與題目卡寫「過門」「律動」)— 同一件事兩種說法,英文名在中文畫面 → 中文寫「過門(Fill Playback & Recognition)」「律動(Groove Recall)」,或只寫「過門」「律動」、官方名放「考試內容」 → 已做:模擬考卡清單名稱改用 X_NAME(中文「過門 / 律動 / 接著打」,EN 照官方題名);官方題名在「考試內容」照寫
+- [x] [小] 4.(優先 4)聽力模擬考進行中 — practiceOnly 說兩遍:題目卡「照 RSL 3 級大綱出的練習題 · 僅供練習;實際要求以官方大綱為準」+ 模擬考卡「只有各項的練習回饋…僅供練習;…」;CLAUDE.md 規定題目卡看得到時模擬考卡不再寫(`resultNote(false)`)→ 聽力模擬考進行中模擬考卡拿掉那句 → 量過已符合:聽力模擬考進行中模擬考卡已是 resultNote(false)(1366×768 RSL 3 只有 e-practiceOnly 一處);結果 / 中止時題目卡藏起來,模擬考卡寫一次。不用改
+- [x] [小] 5.(優先 5)筆電(1366×768)模擬考進行中 — 聽力的模擬考卡「模擬考 · 聽力 第 1 / 2 題 · 停止模擬考」在鼓墊下面、畫面外(mD.png 右下只露出標題一半),技巧在鼓譜下面;「停止」與進度要捲才看得到 → 筆電也比照手機 `cardToTop`,或把「停止模擬考」併到本項列右邊(原本「模擬考」鈕的位置換成「停止」) → 已做:mock.js cardToTop 寬畫面只在模擬考卡位於畫面上半(結果 / 中止那一格)才捲到頂,進行中跟手機一樣捲到頂欄下
+- [x] [小] 6.(優先 6)RSL 5 技巧 C 組標題「Flam accent / drag tap」(zh)— 英文組名無中文 → 「Flam accent / Drag tap(裝飾音練習)」或照 RSL 官方組名後加中文簡述(只用大綱已有的字,不自己發明內容) → 已做:exam-rsl.json 組名「Flam accent / Drag tap(裝飾音練習)」(EN 不變;Flam、Drag 照規則不翻)
+- [x] [小] 7.(優先 7)筆電縮窄視窗(直式)開著模擬考 = 螢幕旋轉規則中止,畫面寫「螢幕旋轉了,這次不算」(用 `matchMedia(orientation:portrait)`;我截圖整頁時視窗變高就被中止)→ 電腦視窗沒有真的旋轉,字不對 → 寬 ≥ 1100 的電腦文字改「視窗大小變了,這次不算」(中止規則不動) → 已做(2026-11-08 主代理指示,不只改字):mock.js 旋轉中止只算手機、平板(pointer:coarse,或觸控而且沒有滑鼠 / 觸控板);電腦拉窄視窗不中止
 ### 要使用者決定
-- [ ] [外觀] 8.(優先 低)桌機 1920×1080 一個框 1040 左右各 440 的空白,RSL 5 技巧清單 A 組 6 項排兩列、第二列只有 2 顆,看起來參差(截圖 mF.png 右)→ ★ 推薦:維持(DESIGN.md 第 9 節規定);備選:清單格子固定 4 欄對齊
+- [x] [外觀] 8.(優先 低)桌機 1920×1080 一個框 1040 左右各 440 的空白,RSL 5 技巧清單 A 組 6 項排兩列、第二列只有 2 顆,看起來參差(截圖 mF.png 右)→ ★ 推薦:維持(DESIGN.md 第 9 節規定);備選:清單格子固定 4 欄對齊 → 2026-11-08 主代理代決:★ 維持(DESIGN.md 第 9 節),不改

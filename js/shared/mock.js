@@ -40,9 +40,11 @@ export function createMock({ store, save, onAbort }){
   m.close = () => { m.id++; m.state = "idle"; m.data = null; m.mark = null; m.reason = null; m.seen(); };
   /* 這一場的系統與級數(進行中 / 結果 / 中止的說明);沒有就用現在的考試 ex */
   m.who = ex => { const w = m.data || m.mark; return w ? { sys: w.sys, grade: w.grade } : { sys: ex.system, grade: ex.grade }; };
-  // 旋轉螢幕:進行中就中止(畫面重排、鼓墊移位,這一次不算)
+  // 旋轉螢幕:進行中就中止(畫面重排、鼓墊移位,這一次不算)。只算手機、平板(觸控、沒有滑鼠 / 觸控板):
+  // 電腦把視窗拉窄拉高也會讓 orientation 變,那不是旋轉,不中止
   if (typeof matchMedia === "function") {
-    const mq = matchMedia("(orientation: portrait)"), h = () => { if (m.state === "run") m.abort("rotate"); };
+    const handheld = () => matchMedia("(pointer: coarse)").matches || ((navigator.maxTouchPoints || 0) > 0 && !matchMedia("(any-pointer: fine)").matches);
+    const mq = matchMedia("(orientation: portrait)"), h = () => { if (m.state === "run" && handheld()) m.abort("rotate"); };
     if (mq.addEventListener) mq.addEventListener("change", h); else if (mq.addListener) mq.addListener(h);
   }
   return m;
@@ -78,8 +80,10 @@ export function renderRows(box, rows){
 /* 模擬考卡捲到頂欄下面(開始、結果、中止的說明):scrollTo top 在手機橫式、折疊機只看得到設定卡 */
 export function cardToTop(card){
   if (!card || card.hidden || !card.getClientRects().length) { window.scrollTo({ top: 0 }); return; }
-  // 寬畫面檢定頁(≥1100 兩欄,app.css):考試卡、本項列、題目卡(結果 / 中止 = 模擬考卡,drum.css)都在最上面一列 → 捲到頂,看得到考試卡與級數
-  if (document.body.classList.contains("view-exam") && matchMedia("(min-width:1100px) and (min-height:501px)").matches) { window.scrollTo({ top: 0 }); return; }
+  // 寬畫面檢定頁(≥1100 兩欄,app.css):結果 / 中止的模擬考卡在最上面一列(drum.css)→ 捲到頂,看得到考試卡與級數;
+  // 進行中的模擬考卡在題目卡、鼓墊下面(筆電 768 高在畫面外)→ 跟手機一樣捲到頂欄下(看得到進度與「停止模擬考」)
+  if (document.body.classList.contains("view-exam") && matchMedia("(min-width:1100px) and (min-height:501px)").matches
+    && scrollY + card.getBoundingClientRect().top < innerHeight / 2) { window.scrollTo({ top: 0 }); return; }
   const header = document.querySelector("header"), top = header ? header.getBoundingClientRect().bottom : 0;
   window.scrollTo({ top: Math.max(0, scrollY + card.getBoundingClientRect().top - top - 8) });
 }
